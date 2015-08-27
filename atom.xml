@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2015-08-27T16:50:34+08:00</updated>
+  <updated>2015-08-27T16:54:26+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -14,11 +14,404 @@
 
   
   <entry>
-    <title type="html"><![CDATA[百思不得姐]]></title>
-    <link href="http://triplecc.github.io/blog/2015-08-27-bai-si-bu-de-jie/"/>
-    <updated>2015-08-27T16:49:11+08:00</updated>
-    <id>http://triplecc.github.io/blog/bai-si-bu-de-jie</id>
-    <content type="html"><![CDATA[
+    <title type="html"><![CDATA[第三方框架源代码解析]]></title>
+    <link href="http://triplecc.github.io/blog/2015-08-27-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/"/>
+    <updated>2015-08-27T14:53:13+08:00</updated>
+    <id>http://triplecc.github.io/blog/runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling</id>
+    <content type="html"><![CDATA[<h1>UIView-FDCollapsibleConstraints</h1>
+
+<h2>框架使用效果</h2>
+
+<p><img src="./image/screenshot0.gif" alt="" /><br>
+<img src="./image/screenshot1.gif" alt="" /><br></p>
+
+<h2>源代码解析</h2>
+
+<ul>
+<li><p>实现思路</p>
+
+<ul>
+<li><code>将需要和view关联且需要动态修改的约束添加进一个特定的数组里面</code></li>
+<li><code>根据view的内容是否为nil，对特定数组中的约束值进行统一设置</code></li>
+</ul>
+</li>
+<li><p>头文件</p>
+
+<ul>
+<li><code>IBOutletCollection</code>表示xib中的相同的控件连接到一个数组中（<a href="http://southpeak.github.io/blog/2015/05/10/ioszhi-shi-xiao-ji-di-%5B%3F%5D-qi-2015-dot-05-dot-10/">介绍链接</a>）
+
+<ul>
+<li>这里表示将NSLayoutConstraint控件添加到fd_collapsibleConstraints数组中</li>
+<li>IBOutletCollectionh和IBOutlet操作方式一样，需要<code>在IB中进行相应的拖拽</code>才能把对应的控件加到数组中（<code>UIView-&gt;NSLayoutConstraint</code>）</li>
+<li>设置了IBOutletCollection之后，当从storybooard或者xib中加载时，根据<code>KVC原理</code>，<code>最终会</code>调用fd_collapsibleConstraints的setter方法，然后就可以在其setter方法中做相应的操作了</li>
+</ul>
+</li>
+<li><code>IBInspectable</code> 表示这个属性可以在IB中更改，如下图
+<img src="./image/Snip20150704_1.png" alt="" />
+
+<ul>
+<li>还有一个这里没用，<code>IB_DESIGNABLE</code>，这个表示可以在IB中实时显示修改的效果</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="bp">UIView</span> <span class="nl">(FDCollapsibleConstraints)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// Assigning this property immediately disables the view&#39;s collapsible constraints&#39;</span>
+</span><span class='line'><span class="c1">/// by setting their constants to zero.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">assign</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">fd_collapsed</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// Specify constraints to be affected by &quot;fd_collapsed&quot; property by connecting in</span>
+</span><span class='line'><span class="c1">/// Interface Builder.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">copy</span><span class="p">)</span> <span class="n">IBOutletCollection</span><span class="p">(</span><span class="bp">NSLayoutConstraint</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">fd_collapsibleConstraints</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="bp">UIView</span> <span class="nl">(FDAutomaticallyCollapseByIntrinsicContentSize)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// Enable to automatically collapse constraints in &quot;fd_collapsibleConstraints&quot; when</span>
+</span><span class='line'><span class="c1">/// you set or indirectly set this view&#39;s &quot;intrinsicContentSize&quot; to {0, 0} or absent.</span>
+</span><span class='line'><span class="c1">///</span>
+</span><span class='line'><span class="c1">/// For example:</span>
+</span><span class='line'><span class="c1">///  imageView.image = nil;</span>
+</span><span class='line'><span class="c1">///  label.text = nil, label.text = @&quot;&quot;;</span>
+</span><span class='line'><span class="c1">///</span>
+</span><span class='line'><span class="c1">/// &quot;NO&quot; by default, you may enable it by codes.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">assign</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">fd_autoCollapse</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// &quot;IBInspectable&quot; property, more friendly to Interface Builder.</span>
+</span><span class='line'><span class="c1">/// You gonna find this attribute in &quot;Attribute Inspector&quot;, toggle &quot;On&quot; to enable.</span>
+</span><span class='line'><span class="c1">/// Why not a &quot;fd_&quot; prefix? Xcode Attribute Inspector will clip it like a shit.</span>
+</span><span class='line'><span class="c1">/// You should not assgin this property directly by code, use &quot;fd_autoCollapse&quot; instead.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">assign</span><span class="p">,</span> <span class="k">getter</span><span class="o">=</span><span class="n">fd_autoCollapse</span><span class="p">)</span> <span class="n">IBInspectable</span> <span class="kt">BOOL</span> <span class="n">autoCollapse</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>_FDOriginalConstantStorage
+
+<ul>
+<li>在这个分类中，给NSLayoutConstraint约束关联一个存储<code>约束初始值</code>的浮点数，以便在修改约束值后，可以还原
+
+<ul>
+<li>objc_setAssociatedObject 设置关联对象</li>
+<li>objc_getAssociatedObject 获取关联对象</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">/// A stored property extension for NSLayoutConstraint&#39;s original constant.</span>
+</span><span class='line'><span class="k">@implementation</span> <span class="bp">NSLayoutConstraint</span> <span class="nl">(_FDOriginalConstantStorage)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 给NSLayoutConstraint关联一个初始约束值</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setFd_originalConstant:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">originalConstant</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">objc_setAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="k">@selector</span><span class="p">(</span><span class="n">fd_originalConstant</span><span class="p">),</span> <span class="l">@(</span><span class="n">originalConstant</span><span class="l">)</span><span class="p">,</span> <span class="n">OBJC_ASSOCIATION_RETAIN</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nf">fd_originalConstant</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="cp">#if CGFLOAT_IS_DOUBLE</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">)</span> <span class="n">doubleValue</span><span class="p">];</span>
+</span><span class='line'><span class="cp">#else</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">)</span> <span class="n">floatValue</span><span class="p">];</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p>FDCollapsibleConstraints</p>
+
+<ul>
+<li>实现fd_collapsibleConstraints属性的setter和getter方法 (<code>关联一个存储约束的对象</code>)
+
+<ul>
+<li>在<code>getter方法中创建关联对象constraints</code>（和<code>懒加载</code>的方式类似，不过不是创建成员变量）</li>
+<li>在<code>setter方法中设置约束的初始值</code>，并<code>添加进关联对象constraints</code>中，方便统一操作</li>
+</ul>
+</li>
+<li>从IB中关联的约束，根据KVC地层原理，最终会调用setFd_collapsibleConstraints:方法，也就是这一步不需要手动调用，系统自己完成（在awakeFromNib之前完成IB这些值的映射）</li>
+</ul>
+
+
+<pre><code class="objc">- (NSMutableArray *)fd_collapsibleConstraints
+{
+  // 获取对象的所有约束关联值
+  NSMutableArray *constraints = objc_getAssociatedObject(self, _cmd);
+  if (!constraints) {
+      constraints = @[].mutableCopy;
+      // 设置对象的所有约束关联值
+      objc_setAssociatedObject(self, _cmd, constraints, OBJC_ASSOCIATION_RETAIN);
+  }
+
+  return constraints;
+}
+
+// IBOutletCollection表示xib中的相同的控件连接到一个数组中
+// 因为设置了IBOutletCollection，所以从xib使用KVC加载时，最终会调用set方法
+// 然后就来到了这个方法
+- (void)setFd_collapsibleConstraints:(NSArray *)fd_collapsibleConstraints
+{
+  // Hook assignments to our custom `fd_collapsibleConstraints` property.
+  // 返回保存原始约束的数组，使用关联对象
+  NSMutableArray *constraints = (NSMutableArray *)self.fd_collapsibleConstraints;
+
+  [fd_collapsibleConstraints enumerateObjectsUsingBlock:^(NSLayoutConstraint *constraint, NSUInteger idx, BOOL *stop) {
+      // Store original constant value
+      // 保存原始的约束
+      constraint.fd_originalConstant = constraint.constant;
+      [constraints addObject:constraint];
+  }];
+}
+</code></pre>
+
+<ul>
+<li>使用Method Swizzling交换自己的和系统的-setValue:forKey:方法
+
+<ul>
+<li>实现自己的KVC的-setValue:forKey:方法</li>
+<li>Method Swizzling的完全体</li>
+</ul>
+
+
+<pre><code class="objc">+ (void)load
+{
+static dispatch_once_t onceToken;
+dispatch_once(&amp;onceToken, ^{
+    Class class = [self class];
+
+    SEL origionSel = @selector(viewDidLoad);
+    SEL swizzlingSel = @selector(tpc_viewDidLoad);
+    //    IMP origionMethod = class_getMethodImplementation(class, origionSel);
+    //    IMP swizzlingMethod = class_getMethodImplementation(class, swizzlingSel);
+    Method origionMethod = class_getInstanceMethod(class, origionSel);
+    Method swizzlingMethod = class_getInstanceMethod(class, swizzlingSel);
+
+    BOOL hasAdded = class_addMethod(class, origionSel, method_getImplementation(swizzlingMethod), method_getTypeEncoding(swizzlingMethod));
+
+    if (hasAdded) {
+        class_replaceMethod(class, swizzlingSel, method_getImplementation(origionMethod), method_getTypeEncoding(origionMethod));
+    } else {
+        method_exchangeImplementations(origionMethod, swizzlingMethod);
+    }
+});
+}
+</code></pre></li>
+<li>这一步作者的意思是这种类型的IBOutlet不会触发其setter方法，但是经过测试，注释掉这段代码后，系统还是自己触发了setter方法，说明这种IBOutlet还是可以触发setter方法的。所以，即使没有这一段代码，应该也是可行的<br>
+<img src="./image/Snip20150704_8.png" alt="" /><br></li>
+</ul>
+
+
+<pre><code class="objc">  #pragma mark - Hacking KVC
+
+  // load先从原类,再调用分类的开始调用
+  // 也就是调用的顺序是
+  // 原类
+  // FDCollapsibleConstraints
+  // FDAutomaticallyCollapseByIntrinsicContentSize
+  // 所以并不冲突
+
+  + (void)load
+  {
+      // Swizzle setValue:forKey: to intercept assignments to `fd_collapsibleConstraints`
+      // from Interface Builder. We should not do so by overriding setvalue:forKey:
+      // as the primary class implementation would be bypassed.
+      SEL originalSelector = @selector(setValue:forKey:);
+      SEL swizzledSelector = @selector(fd_setValue:forKey:);
+
+      Class class = UIView.class;
+      Method originalMethod = class_getInstanceMethod(class, originalSelector);
+      Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
+
+      method_exchangeImplementations(originalMethod, swizzledMethod);
+  }
+
+
+  // xib也就是xml，再加载进行decode时，会调用setValue:forKey:，把他的方法替换成自身的，然后获取添加的约束
+  // 不使用重写这个KVC方法的方式，是因为这样会覆盖view本身在这个方法中进行的操作
+
+  - (void)fd_setValue:(id)value forKey:(NSString *)key
+  {
+      NSString *injectedKey = [NSString stringWithUTF8String:sel_getName(@selector(fd_collapsibleConstraints))];
+
+      if ([key isEqualToString:injectedKey]) {
+          // This kind of IBOutlet won't trigger property's setter, so we forward it.
+          // 作者的意思是，IBOutletCollection不会触发对应属性的setter方法，所以这里执行手动调用
+          self.fd_collapsibleConstraints = value;
+      } else {
+          // Forward the rest of KVC's to original implementation.
+          [self fd_setValue:value forKey:key];
+      }
+  }
+</code></pre>
+
+<ul>
+<li>设置对应的约束值
+
+<ul>
+<li>注意，这里只要传入的是YES，那么，这个UIView对应的存入<code>constraints关联对象的所有约束</code>，都会置为0</li>
+</ul>
+
+
+<pre><code class="objc">#pragma mark - Dynamic Properties
+
+- (void)setFd_collapsed:(BOOL)collapsed
+{
+    [self.fd_collapsibleConstraints enumerateObjectsUsingBlock:
+ ^(NSLayoutConstraint *constraint, NSUInteger idx, BOOL *stop) {
+     if (collapsed) {
+         // 如果view的内容为nil，则将view关联的constraints对象所有值设置为0
+         constraint.constant = 0;
+     } else {
+        // 如果view的内容不为nil，则将view关联的constraints对象所有值返回成原值
+         constraint.constant = constraint.fd_originalConstant;
+     }
+ }];
+    // 设置fd_collapsed关联对象，供自动collapsed使用
+    objc_setAssociatedObject(self, @selector(fd_collapsed), @(collapsed), OBJC_ASSOCIATION_RETAIN);
+}
+
+- (BOOL)fd_collapsedFDAutomaticallyCollapseByIntrinsicContentSize{
+return [objc_getAssociatedObject(self, _cmd) boolValue];
+}
+@end
+</code></pre></li>
+</ul>
+</li>
+<li><p>FDAutomaticallyCollapseByIntrinsicContentSize</p>
+
+<ul>
+<li>使用Method Swizzling交换自己的和系统的-fd_updateConstraints方法</li>
+<li>[self fd_updateConstraints]调用的是self的updateConstraints方法，fd_updateConstraints和updateConstraints方法的Method（映射SEL和IMP）已经调换了</li>
+<li><code>intrinsicContentSize(控件的内置大小)</code>默认为UIViewNoIntrinsicMetric，当<code>控件中没有内容时</code>，调用intrinsicContentSize返回的即为<code>默认值</code>（<a href="http://www.mgenware.com/blog/?p=491">介绍链接</a>）</li>
+</ul>
+
+
+<pre><code class="objc">#pragma mark - Hacking "-updateConstraints"
+
+  + (void)load
+  {
+  // Swizzle to hack "-updateConstraints" method
+  SEL originalSelector = @selector(updateConstraints);
+  SEL swizzledSelector = @selector(fd_updateConstraints);
+
+  Class class = UIView.class;
+  Method originalMethod = class_getInstanceMethod(class, originalSelector);
+  Method swizzledMethod = class_getInstanceMethod(class, swizzledSelector);
+
+  method_exchangeImplementations(originalMethod, swizzledMethod);
+  }
+
+  - (void)fd_updateConstraints
+  {
+  // Call primary method's implementation
+  [self fd_updateConstraints];
+
+  if (self.fd_autoCollapse &amp;&amp; self.fd_collapsibleConstraints.count &gt; 0) {
+
+      // "Absent" means this view doesn't have an intrinsic content size, {-1, -1} actually.
+      const CGSize absentIntrinsicContentSize = CGSizeMake(UIViewNoIntrinsicMetric, UIViewNoIntrinsicMetric);
+
+      // 当设置控件显示内容为nil时，计算出来的contentSize和上面的相等
+      // Calculated intrinsic content size
+      const CGSize contentSize = [self intrinsicContentSize];
+
+      // When this view doesn't have one, or has no intrinsic content size after calculating,
+      // it going to be collapsed.
+      if (CGSizeEqualToSize(contentSize, absentIntrinsicContentSize) ||
+          CGSizeEqualToSize(contentSize, CGSizeZero)) {
+          // 当控件没有内容时，则设置控件关联对象constraints的所有约束值为0
+          self.fd_collapsed = YES;
+      } else {
+          // 当控件有内容时，则设置控件关联对象constraints的所有约束值返回为原值
+          self.fd_collapsed = NO;
+      }
+  }
+  }
+</code></pre>
+
+<ul>
+<li>设置一些动态属性（关联对象）</li>
+</ul>
+
+
+<pre><code class="objc">#pragma mark - Dynamic Properties
+
+  - (BOOL)fd_autoCollapse
+{
+  return [objc_getAssociatedObject(self, _cmd) boolValue];
+}
+
+  - (void)setFd_autoCollapse:(BOOL)autoCollapse
+{
+  objc_setAssociatedObject(self, @selector(fd_autoCollapse), @(autoCollapse), OBJC_ASSOCIATION_RETAIN);
+}
+
+  - (void)setAutoCollapse:(BOOL)collapse
+{
+  // Just forwarding
+  self.fd_autoCollapse = collapse;
+}
+</code></pre></li>
+</ul>
+
 ]]></content>
   </entry>
   
