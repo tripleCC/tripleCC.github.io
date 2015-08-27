@@ -9,8 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="
-">
+  <meta name="description" content="UIView-FDCollapsibleConstraints 框架使用效果 源代码解析 实现思路 将需要和view关联且需要动态修改的约束添加进一个特定的数组里面
+根据view的内容是否为nil，对特定数组中的约束值进行统一设置 头文件 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,35 +66,6 @@
     <div id="content">
       <div class="blog-index">
   
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-08-27-chang-yong-runtimehan-shu/">常用runtime函数</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-08-27T21:28:57+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:28 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content">
-</div>
-  
-  
-
-
-    </article>
   
   
     <article>
@@ -709,7 +680,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015-02-22-number-chang-yong-runtimehan-shu/">#常用runtime函数</a></h1>
+      <h1 class="entry-title"><a href="/blog/2015-02-22-chang-yong-runtimehan-shu/">#常用runtime函数</a></h1>
     
     
       <p class="meta">
@@ -3186,6 +3157,284 @@ block<code>捕捉变量</code>拷贝函数为<code>_Block_object_assign</code>�
 
     </article>
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">runtime应用之KVC</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-01-21T20:16:13+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2015</span></span> <span class='time'>8:16 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>runtime可以以底层的角度来对一些实现方式进行更改，比如说KVC<br>
+首先，先来了解下KVC的底层原理:<br>
+key : value</p>
+
+<ul>
+<li>1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值</li>
+<li>2.如果没有setValue:，就在模型中查找_value属性</li>
+<li>3.如果没有_value属性，就查找value属性</li>
+<li>4.如果还没有就报错</li>
+</ul>
+
+
+<p>在和后台通信的JSON数据中，可能会看到这种JSON数据：<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="s">&quot;id&quot;</span> <span class="o">:</span> <span class="s">&quot;tripleCC&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s">&quot;age&quot;</span> <span class="o">:</span> <span class="s">&quot;30&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s">&quot;address&quot;</span> <span class="o">:</span> <span class="s">&quot;杭州&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s">&quot;schooll&quot;</span> <span class="o">:</span> <span class="s">&quot;HDU&quot;</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中的id是什么？是Objective-C关键字，也就是说我不能定义以下属性：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="kt">id</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于数据模型名称没有和JSON的键值一一对应，我们不能使用以下方法，对模型中的成员变量进行统一设置：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setValuesForKeysWithDictionary:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">keyedValues</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>既然这样，可以选择手动一个个去实现。但是这样在数据少的时候可以试试，在数据比较多时就不太现实了，程序的可扩展性也不好。<br>
+现在来了解下相对比较简单的两种解决方法：</p>
+
+<h2>方式1.重写setValue:forKey:</h2>
+
+<p>setValuesForKeysWithDictionary:的底层是调用setValue:forKey:的，所以可以考虑重写这个方法，并且判断其key是id时，手动转换成模型的成员变量名，这里假设把id对应成以下属性：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">ID</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>有了对应的属性名后，就可以重写底层方法了：
+  - 如下所示，当判断到key的值为id时，我手动将key转换成了模型属性名，即ID</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setValue:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">value</span> <span class="nf">forKey:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">key</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">key</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;id&quot;</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="s">@&quot;ID&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">super</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKey</span><span class="p">:</span><span class="n">key</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样，当使用setValuesForKeysWithDictionary:就不会出现模型中找不到对应的成员变量的错误了。</p>
+
+<h2>方式2.使用runtime</h2>
+
+<p>考虑到runtime和KVC的实现原理，可以使用另一种实现思路，就是<code>先在模型中找到对应的成员变量，然后从JSON字典中找到对应的数据进行赋值</code>。<br>
+这里先要了解runtime的两个实例变量操作方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取成员变量列表</span>
+</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span> <span class="nf">class_copyIvarList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">);</span>
+</span><span class='line'><span class="c1">// 获取成员变量名</span>
+</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">ivar_getName</span> <span class="p">(</span> <span class="n">Ivar</span> <span class="n">v</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>详细实现步骤：<br></p>
+
+<ul>
+<li>1.获取模型中的所有实例变量</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>2.将获取出来以'<em>&lsquo;开头的实例变量名去处&rsquo;</em>&lsquo;符号</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>   <span class="bp">NSString</span> <span class="o">*</span><span class="n">ivarName</span> <span class="o">=</span> <span class="l">@(</span><span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">)</span><span class="l">)</span><span class="p">;</span>
+</span><span class='line'>   <span class="n">ivarName</span> <span class="o">=</span> <span class="p">[</span><span class="n">ivarName</span> <span class="nl">substringFromIndex</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>3.获取JOSN字典中对应的value，如果没有，手动设置我们传入的字典映射，以指定对应的模型变量名，最后调用setValue:forKeyPath:设置模型实例变量值</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 由外界通知内部，模型中成员变量名对应字典里面的哪个key</span>
+</span><span class='line'><span class="c1">// 这里是ID -&gt; id</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 这里的mapDict就是外界传入的映射字典</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">mapDict</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">keyName</span> <span class="o">=</span> <span class="n">mapDict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">keyName</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">[</span><span class="n">objc</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="n">ivarName</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于需要针对所有模型使用，可以将其设置为NSObject分类。以上步骤的完整代码为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// dict  -&gt; 资源文件提供的字典</span>
+</span><span class='line'><span class="c1">// mapDict  -&gt; 提供的key映射（实际变量名:资源文件key）</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">objcWithDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">dict</span> <span class="nf">mapDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">mapDict</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">objc</span> <span class="o">=</span> <span class="p">[[</span><span class="nb">self</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 遍历模型中成员变量</span>
+</span><span class='line'>    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">Ivar</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivars</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 成员变量名称</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">ivarName</span> <span class="o">=</span> <span class="l">@(</span><span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">)</span><span class="l">)</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 获取出来的是`_`开头的成员变量名，需要截取`_`之后的字符串</span>
+</span><span class='line'>        <span class="n">ivarName</span> <span class="o">=</span> <span class="p">[</span><span class="n">ivarName</span> <span class="nl">substringFromIndex</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>        <span class="c1">// 由外界通知内部，模型中成员变量名对应字典里面的哪个key</span>
+</span><span class='line'>        <span class="c1">// ID -&gt; id</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">mapDict</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="bp">NSString</span> <span class="o">*</span><span class="n">keyName</span> <span class="o">=</span> <span class="n">mapDict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">keyName</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">objc</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">objc</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">itemWithDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">dict</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 传入key和实例变量名的映射字典@{@&quot;ID&quot;:@&quot;id&quot;}</span>
+</span><span class='line'>    <span class="n">TPCItem</span> <span class="o">*</span><span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">TPCItem</span> <span class="nl">objcWithDict</span><span class="p">:</span><span class="n">dict</span> <span class="nl">mapDict</span><span class="p">:</span><span class="l">@{</span><span class="s">@&quot;ID&quot;</span><span class="o">:</span><span class="s">@&quot;id&quot;</span><span class="l">}</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">item</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -3211,15 +3460,11 @@ block<code>捕捉变量</code>拷贝函数为<code>_Block_object_assign</code>�
   <ul id="recent_posts">
     
       <li class="post">
-        <a href="/blog/2015-08-27-chang-yong-runtimehan-shu/">常用runtime函数</a>
-      </li>
-    
-      <li class="post">
         <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">第三方框架源代码解析</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2015-02-22-number-chang-yong-runtimehan-shu/">#常用runtime函数</a>
+        <a href="/blog/2015-02-22-chang-yong-runtimehan-shu/">#常用runtime函数</a>
       </li>
     
       <li class="post">
