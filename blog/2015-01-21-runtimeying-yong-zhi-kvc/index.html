@@ -11,10 +11,9 @@
   
   <meta name="description" content="runtime可以以底层的角度来对一些实现方式进行更改，比如说KVC
 首先，先来了解下KVC的底层原理:
-key : value
-- 1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值
-- 2.如果没有setValue:，就在模型中查找value属性
-- 3. &hellip;">
+key : value 1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值
+2.如果没有setValue:，就在模型中查找_value属性
+3. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -91,11 +90,15 @@ key : value
 
 <div class="entry-content"><p>runtime可以以底层的角度来对一些实现方式进行更改，比如说KVC<br>
 首先，先来了解下KVC的底层原理:<br>
-key : value
-- 1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值
-- 2.如果没有setValue:，就在模型中查找<em>value属性
-- 3.如果没有</em>value属性，就查找value属性
-- 4.如果还没有就报错</p>
+key : value</p>
+
+<ul>
+<li>1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值</li>
+<li>2.如果没有setValue:，就在模型中查找_value属性</li>
+<li>3.如果没有_value属性，就查找value属性</li>
+<li>4.如果还没有就报错</li>
+</ul>
+
 
 <p>在和后台通信的JSON数据中，可能会看到这种JSON数据：<br></p>
 
@@ -184,40 +187,65 @@ key : value
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>详细实现步骤：<br>
-- 1.获取模型中的所有实例变量</p>
-
-<pre><code>```objc
-unsigned int outCount = 0;
-Ivar *ivars = class_copyIvarList(self, &amp;outCount);
-```
-</code></pre>
+<p>详细实现步骤：<br></p>
 
 <ul>
-<li><p>2.将获取出来以'<em>&lsquo;开头的实例变量名去处&rsquo;</em>&lsquo;符号</p>
-
-<pre><code class="`objc"> NSString *ivarName = @(ivar_getName(ivar));
- ivarName = [ivarName substringFromIndex:1];
-</code></pre></li>
-<li><p>3.获取JOSN字典中对应的value，如果没有，手动设置我们传入的字典映射，以指定对应的模型变量名，最后调用setValue:forKeyPath:设置模型实例变量值</p>
-
-<pre><code class="``objc">  id value = dict[ivarName];
-  // 由外界通知内部，模型中成员变量名对应字典里面的哪个key
-  // 这里是ID -&gt; id
-  if (value == nil) {
-      // 这里的mapDict就是外界传入的映射字典
-      if (mapDict) {
-          NSString *keyName = mapDict[ivarName];
-
-          value = dict[keyName];
-      }
-  }
-  [objc setValue:value forKeyPath:ivarName];
-</code></pre>
-
-<p>由于需要针对所有模型使用，可以将其设置为NSObject分类。以上步骤的完整代码为：</p></li>
+<li>1.获取模型中的所有实例变量</li>
 </ul>
 
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>2.将获取出来以'<em>&lsquo;开头的实例变量名去处&rsquo;</em>&lsquo;符号</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>   <span class="bp">NSString</span> <span class="o">*</span><span class="n">ivarName</span> <span class="o">=</span> <span class="l">@(</span><span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">)</span><span class="l">)</span><span class="p">;</span>
+</span><span class='line'>   <span class="n">ivarName</span> <span class="o">=</span> <span class="p">[</span><span class="n">ivarName</span> <span class="nl">substringFromIndex</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>3.获取JOSN字典中对应的value，如果没有，手动设置我们传入的字典映射，以指定对应的模型变量名，最后调用setValue:forKeyPath:设置模型实例变量值</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 由外界通知内部，模型中成员变量名对应字典里面的哪个key</span>
+</span><span class='line'><span class="c1">// 这里是ID -&gt; id</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 这里的mapDict就是外界传入的映射字典</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">mapDict</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">keyName</span> <span class="o">=</span> <span class="n">mapDict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">keyName</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">[</span><span class="n">objc</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="n">ivarName</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于需要针对所有模型使用，可以将其设置为NSObject分类。以上步骤的完整代码为：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -368,6 +396,14 @@ Ivar *ivars = class_copyIvarList(self, &amp;outCount);
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-08-27-chang-yong-runtimehan-shu/">常用runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-08-27-number-chang-yong-runtimehan-shu/">#常用runtime函数</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">第三方框架源代码解析</a>
       </li>
     
@@ -389,6 +425,10 @@ Ivar *ivars = class_copyIvarList(self, &amp;outCount);
     
       <li class="post">
         <a href="/blog/2014-08-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-01-04-autorezingde-ying-yong/">Autorezing的应用</a>
       </li>
     
   </ul>
