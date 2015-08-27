@@ -1,0 +1,973 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Runtime基础 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="runtimebasic Objective-C的runtime语言使它具备了动态语言的特性，也就是平时所说的“运行时”。在runtime的基础上，可以做很多平时难以想到事，或者化简原先 较为繁杂的解决方案。
+相对于静态语言，比如C的以下程序 1
+2
+3
+4
+5
+6
+7
+#include &lt; &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2015-01-10-runtimeji-chu/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Runtime基础</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-01-10T20:14:17+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:14 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h1>runtimebasic</h1>
+
+<p>Objective-C的runtime语言使它具备了动态语言的特性，也就是平时所说的“运行时”。在runtime的基础上，可以做很多平时难以想到事，或者化简原先 较为繁杂的解决方案。<br>
+相对于静态语言，比如C的以下程序</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;stdio.h&gt;</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">run</span><span class="p">()</span>
+</span><span class='line'><span class="p">{}</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>执行<code>clang -c</code>进行编译后，获取符号表<code>nm run.o</code>，可以得到全局唯一的符号<code>_run</code>，对函数run的调用直接参考链接后_run符号在代码段的地址</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="mo">0000000000000010</span> <span class="n">T</span> <span class="n">_main</span>
+</span><span class='line'><span class="mo">0000000000000000</span> <span class="n">T</span> <span class="n">_run</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>对比Objective-C的以下函数<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">Dog</span> : <span class="bp">NSObject</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">run</span>
+</span><span class='line'><span class="p">{}</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">@autoreleasepool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">Dog</span> <span class="o">*</span><span class="n">dog</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Dog</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">dog</span> <span class="n">run</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>执行<code>clang -rewrite-objc main.m</code>将其转换成底层C++文件后可以得到</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+</span><span class='line'>    <span class="cm">/* @autoreleasepool */</span> <span class="p">{</span> <span class="n">__AtAutoreleasePool</span> <span class="n">__autoreleasepool</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">Dog</span> <span class="o">*</span><span class="n">dog</span> <span class="o">=</span> <span class="p">((</span><span class="n">Dog</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)((</span><span class="n">Dog</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)</span><span class="n">objc_getClass</span><span class="p">(</span><span class="s">&quot;Dog&quot;</span><span class="p">),</span> <span class="n">sel_registerName</span><span class="p">(</span><span class="s">&quot;alloc&quot;</span><span class="p">)),</span> <span class="n">sel_registerName</span><span class="p">(</span><span class="s">&quot;init&quot;</span><span class="p">));</span>
+</span><span class='line'>        <span class="p">((</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)</span><span class="n">dog</span><span class="p">,</span> <span class="n">sel_registerName</span><span class="p">(</span><span class="s">&quot;run&quot;</span><span class="p">));</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，对Objective-C编译前期，会将内部的方法调用，转换成调用<code>objc_msgSend</code>。也就是说，编译完成后，方法地址是不能确定的，需要在运行时，通过Selector进行查找，而这正是runtime的关键，也就是发送消息机制。</p>
+
+<h2>runtime的基本要素</h2>
+
+<p>如上面例子所示，在编译后<code>[dog run]</code>被编译器转化成了</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">((</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)</span><span class="n">dog</span><span class="p">,</span> <span class="n">sel_registerName</span><span class="p">(</span><span class="s">&quot;run&quot;</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 假设能省略(void (*)(id, SEL))(void *)和id指针强转[实际上还是需要的]</span>
+</span><span class='line'><span class="c1">// sel_registerName表示注册一个selector</span>
+</span><span class='line'><span class="n">objc_msgSend</span><span class="p">(</span><span class="n">dog</span><span class="p">,</span> <span class="n">sel_registerName</span><span class="p">(</span><span class="s">&quot;run&quot;</span><span class="p">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>将上面的情况抽取成统一的说法就是，在编译器编译后<code>[receiver message]</code>会被转化成以下形式</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">objc_msgSend</span><span class="p">(</span><span class="n">receiver</span><span class="p">,</span> <span class="n">selector</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>objc_msgSend</code>是一个消息发送函数，它以消息接收者和方法名作为基础参数。<br>
+在有参数的情况下，则会被转换为</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">objc_msgSend</span><span class="p">(</span><span class="n">receiver</span><span class="p">,</span> <span class="n">selector</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">,</span> <span class="p">...)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>消息的接收者receiver在接受到消息后，查找对应selector的实现，根据查找的结果可以进行若干种种不同的处理。<br>
+更深层的了解，需要了解下对应的数据结构</p>
+
+<h3>id</h3>
+
+<p>上文中<code>objc_msgSend</code>的第一个参数有个强转类型，即id。id是可以指向对象的万能指针，查看runtime源码，得知其定义如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="n">objc_object</span> <span class="o">*</span><span class="kt">id</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// objc_object</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">objc_object</span> <span class="p">{</span>
+</span><span class='line'><span class="nl">private</span><span class="p">:</span>
+</span><span class='line'>    <span class="kt">isa_t</span> <span class="n">isa</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// isa_t</span>
+</span><span class='line'><span class="k">union</span> <span class="kt">isa_t</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">Class</span> <span class="n">cls</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">uintptr_t</span> <span class="n">bits</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>根据<code>union</code>联合的存储空间以大成员的存储空间计算性质，可以猜测<code>isa_t</code>的作用只是真不同位数处理器的优化，我们可以直接这样表示：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">objc_object</span> <span class="p">{</span>
+</span><span class='line'><span class="nl">private</span><span class="p">:</span>
+</span><span class='line'>    <span class="kt">Class</span> <span class="n">isa</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看出，<code>id</code>是一个指向<code>objc_object</code>结构体的指针（注意，在runtime中对象可以用结构体进行表示）。<br>
+<code>objc_object</code>结构体包含了<code>Class isa</code>成员，而<code>isa</code>就是我们常说的创建一个对象时，用来指向所属类的<code>指针</code>。因此根据<code>isa</code>就可以获取对应的类。
+- 注：C++中结构的作用被拓宽了，也表示定义一个类的类型，struct和class的区别就在默认类型上一个是public,一个是private，这里就直接描述为结构体了</p>
+
+<h3>Class</h3>
+
+<p>上文中，<code>isa</code>为<code>Class</code>类型，而<code>Class</code>则是<code>objc_class</code>指针类型的别名：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="n">objc_class</span> <span class="o">*</span><span class="kt">Class</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>而<code>objc_class</code>具体的定义如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="nl">objc_class</span> <span class="p">:</span> <span class="n">objc_object</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Class ISA;</span>
+</span><span class='line'>    <span class="kt">Class</span> <span class="n">superclass</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">cache_t</span> <span class="n">cache</span><span class="p">;</span>             <span class="c1">// formerly cache pointer and vtable</span>
+</span><span class='line'>    <span class="kt">class_data_bits_t</span> <span class="n">bits</span><span class="p">;</span>    <span class="c1">// class_rw_t * plus custom rr/alloc flags</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// class_data_bits_t</span>
+</span><span class='line'><span class="k">struct</span> <span class="kt">class_data_bits_t</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="nl">public</span><span class="p">:</span>
+</span><span class='line'>    <span class="kt">class_rw_t</span><span class="o">*</span> <span class="n">data</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="p">(</span><span class="kt">class_rw_t</span> <span class="o">*</span><span class="p">)(</span><span class="n">bits</span> <span class="o">&amp;</span> <span class="n">FAST_DATA_MASK</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// class_rw_t</span>
+</span><span class='line'><span class="k">struct</span> <span class="kt">class_rw_t</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">uint32_t</span> <span class="n">flags</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">uint32_t</span> <span class="n">version</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">class_ro_t</span> <span class="o">*</span><span class="n">ro</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">union</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kt">method_list_t</span> <span class="o">**</span><span class="n">method_lists</span><span class="p">;</span>  <span class="c1">// RW_METHOD_ARRAY == 1</span>
+</span><span class='line'>        <span class="kt">method_list_t</span> <span class="o">*</span><span class="n">method_list</span><span class="p">;</span>    <span class="c1">// RW_METHOD_ARRAY == 0</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">chained_property_list</span> <span class="o">*</span><span class="n">properties</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">protocol_list_t</span> <span class="o">**</span> <span class="n">protocols</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">Class</span> <span class="n">firstSubclass</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">Class</span> <span class="n">nextSiblingClass</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">char</span> <span class="o">*</span><span class="n">demangledName</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// class_ro_t</span>
+</span><span class='line'><span class="k">struct</span> <span class="kt">class_ro_t</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">uint32_t</span> <span class="n">flags</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">uint32_t</span> <span class="n">instanceStart</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">uint32_t</span> <span class="n">instanceSize</span><span class="p">;</span>
+</span><span class='line'><span class="cp">#ifdef __LP64__</span>
+</span><span class='line'>    <span class="kt">uint32_t</span> <span class="n">reserved</span><span class="p">;</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">uint8_t</span> <span class="o">*</span> <span class="n">ivarLayout</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">name</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">method_list_t</span> <span class="o">*</span> <span class="n">baseMethods</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">protocol_list_t</span> <span class="o">*</span> <span class="n">baseProtocols</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">ivar_list_t</span> <span class="o">*</span> <span class="n">ivars</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">uint8_t</span> <span class="o">*</span> <span class="n">weakIvarLayout</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">property_list_t</span> <span class="o">*</span><span class="n">baseProperties</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在上文中已经介绍过<code>objc_object</code>结构体，<code>objc_class</code>继承自结构体<code>objc_object</code>。可以看出<code>objc_object</code>的<code>isa</code>为<code>private</code>类型成员变量，<code>objc_class</code>继承后无法访问，所以<code>objc_object</code>提供了以下两个成员函数:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">Class</span> <span class="nf">ISA</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// getIsa内部调用ISA返回isa_t联合中cls成员</span>
+</span><span class='line'><span class="kt">Class</span> <span class="nf">getIsa</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>所以，对<code>objc_class</code>重要的成员变量进行下解释:</p>
+
+<ul>
+<li><code>isa</code>为指向对象对应类的指针（这里注意一点，由于类也是一个对象（单例），所以这个单例中也有一个<code>isa</code>指针指向类对象所属的类-><code>metaClass</code>，即元类）</li>
+<li><code>superclass</code>为指向父类的指针</li>
+<li><code>cache</code>用于对调用方法的缓存，类似CPU先访问L1、L2、L3缓存的目的相似，它也是推断<code>最近调用的方法极有可能被二次调用</code>，并将其存入<code>cache</code>，在二次调用时先在<code>cache</code>查找方法，而不是直接在类的方法列表中查找</li>
+<li><code>properties</code>为属性列表</li>
+<li><code>protocols</code>为协议列表</li>
+<li><code>method_lists</code>/<code>method_list</code>为方法列表</li>
+<li><code>ivars</code>为成员变量列表</li>
+<li><p><code>class_ro_t</code>结构体中存储的都是类基本的东西，比如获取<code>'load'</code>方法时，是从<code>baseMethods</code>获取相应的IMP函数实现的：</p>
+
+<p>  ```objc
+IMP objc_class::getLoadMethod()
+{
+  rwlock_assert_locked(&amp;runtimeLock);</p>
+
+<p>  const method_list_t *mlist;
+  uint32_t i;</p>
+
+<p>  assert(isRealized());
+  assert(ISA()->isRealized());
+  assert(!isMetaClass());
+  assert(ISA()->isMetaClass());</p>
+
+<p>  mlist = ISA()->data()->ro->baseMethods;
+  if (mlist) {
+      for (i = 0; i &lt; mlist->count; i++) {
+          method_t <em>m = method_list_nth(mlist, i);
+          const char </em>name = sel_cname(m->name);
+          if (0 == strcmp(name, &ldquo;load&rdquo;)) {
+              return m->imp;
+          }
+      }
+  }</p>
+
+<p>  return nil;
+}</p></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">其中先了解下`</span><span class="kt">ivar_list_t</span><span class="err">`、`</span><span class="kt">method_list_t</span><span class="err">`、`</span><span class="kt">cache_t</span><span class="err">`的结构定义：</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">`</span><span class="kt">ivar_list_t</span><span class="err">`的结构为：</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="err">`</span><span class="kt">ivar_t</span><span class="err">`就是对应的成员变量</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+struct ivar_list_t {
+    uint32_t entsize;
+    uint32_t count;
+    ivar_t first;
+};</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">`</span><span class="kt">method_list_t</span><span class="err">`为：</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="err">其中`</span><span class="n">method_iterator</span><span class="err">`为结构体自己构造的一个迭代器，用来访问方法，可以看到，构造的迭代器结构体中包含了`</span><span class="n">method</span><span class="err">`成员变量</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+struct method_list_t {
+    uint32_t entsize_NEVER_USE;  // high bits used for fixup markers
+    uint32_t count;
+    method_t first;</p>
+
+<pre><code>// iterate methods, taking entsize into account
+// fixme need a proper const_iterator
+struct method_iterator {
+    uint32_t entsize;
+    uint32_t index;  // keeping track of this saves a divide in operator-
+    method_t* method;
+...
+}
+</code></pre>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">`</span><span class="kt">cache_t</span><span class="err">`为：</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="err">可以看出`</span><span class="kt">bucket_t</span><span class="err">`包含了一个`</span><span class="kt">IMP</span><span class="err">`类型的私有成员，供查找后调用实现</span>
+</span><span class='line'>  <span class="o">-</span> <span class="err">`</span><span class="n">_occupied</span><span class="err">`和`</span><span class="n">_mask</span><span class="err">`分别表示`实际占用`的缓存</span><span class="n">_buckets</span><span class="err">总数和`分配`的缓存</span><span class="n">_buckets</span><span class="err">总数</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+struct cache_t {
+    struct bucket_t *<em>buckets;
+    mask_t </em>mask;
+    mask_t _occupied;
+&hellip;
+}</p>
+
+<p>// bucket_t
+struct bucket_t {
+private:
+    cache_key_t <em>key;
+    IMP </em>imp;
+&hellip;
+}</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">上文还涉及到了一个概念`</span><span class="n">metaClass</span><span class="err">`元类，元类为类对象所属的类，以实例解释：</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'><span class="err">当我们调用类方法时，消息的接收者即为类，如文中一开始的代码：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+Dog *dog = [[Dog alloc] init];</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">这里的`</span><span class="n">alloc</span><span class="err">`消息即发送给了`</span><span class="n">Dog</span><span class="err">`类，编译转换后的代码为</span><span class="o">:</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+Dog <em>dog = ((Dog </em>(<em>)(id, SEL))(void </em>)objc_msgSend)((id)((Dog <em>(</em>)(id, SEL))(void *)objc_msgSend)((id)objc_getClass(&ldquo;Dog&rdquo;), sel_registerName(&ldquo;alloc&rdquo;)), sel_registerName(&ldquo;init&rdquo;));</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">我们只需要关注这一行：</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="err">这里获取到的是类对象，只要再获取一次就得到了元类</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+// objc_getClass表示根据对象名获取对应的类
+objc_getClass(&ldquo;Dog&rdquo;)</p>
+
+<p>// 获取元类
+objc_getClass(objc_getClass(&ldquo;Dog&rdquo;))</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">关于元类，苹果提供了这么一张表：</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'><span class="o">!</span><span class="p">[](.</span><span class="o">/</span><span class="n">image</span><span class="o">/</span><span class="n">Snip20150711_1</span><span class="p">.</span><span class="n">png</span><span class="p">)</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'><span class="err">图中的实线是`</span><span class="n">superclass</span><span class="err">`指针，虚线是`</span><span class="n">isa</span><span class="err">`指针。可以看到，根元类的超类`</span><span class="bp">NSObject</span><span class="err">`</span><span class="p">(</span><span class="n">Root</span> <span class="k">class</span><span class="p">)</span><span class="err">并没有对应的超类，并且，它的`</span><span class="n">isa</span><span class="err">`指针指向了自己。</span>
+</span><span class='line'><span class="err">总结一下：</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="err">每个实例对象的`</span><span class="n">isa</span><span class="err">`都指向了所属的`类`</span>
+</span><span class='line'><span class="o">-</span> <span class="err">每个类对象的`</span><span class="n">isa</span><span class="err">`都指向了所属的类，即`元类`，其`</span><span class="n">superclass</span><span class="err">`指针指向继承的`父类`</span>
+</span><span class='line'><span class="o">-</span> <span class="err">每个元类的`</span><span class="n">isa</span><span class="err">`都指向了`超类`，即`</span><span class="bp">NSObject</span><span class="err">`</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">###Ivar</span>
+</span><span class='line'><span class="err">`</span><span class="n">Ivar</span><span class="err">`，我把它理解成`</span><span class="n">instance</span> <span class="n">variable</span><span class="err">`，也就是实例变量，可以观察它的定义：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+typedef struct ivar_t *Ivar;</p>
+
+<p>// ivar_t
+struct ivar_t {
+    int32_t <em>offset;
+    const char </em>name;
+    const char *type;
+    // alignment is sometimes -1; use alignment() instead
+    uint32_t alignment_raw;
+    uint32_t size;
+    // 内存中数据对齐（如字对齐、半字对齐等）
+    uint32_t alignment() {
+        if (alignment_raw == ~(uint32_t)0) return 1U &lt;&lt; WORD_SHIFT;
+        return 1 &lt;&lt; alignment_raw;
+    }
+};</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">`</span><span class="n">Ivar</span><span class="err">`其实是指向`</span><span class="kt">ivar_t</span><span class="err">`结构体的指针，它包含了实例变量名（</span><span class="n">name</span><span class="err">）、类型（</span><span class="n">type</span><span class="err">）、相对对象地址偏移（</span><span class="n">offset</span><span class="err">）以及内存数据对齐等信息。</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'><span class="err">跟多关于实例变量的剖析可以查看</span><span class="p">[</span><span class="n">Objective</span><span class="o">-</span><span class="n">C</span><span class="err">类成员变量深度剖析</span><span class="p">](</span><span class="nl">http</span><span class="p">:</span><span class="c1">//quotation.github.io/objc/2015/05/21/objc-runtime-ivar-access.html)</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">###Method</span>
+</span><span class='line'><span class="err">从以下定义的结构体可以看出，`</span><span class="n">Method</span><span class="err">`主要住用为关联了方法名`</span><span class="kt">SEL</span><span class="err">`和方法的实现`</span><span class="kt">IMP</span><span class="err">`，当遍通过`</span><span class="n">Method</span><span class="err">`自己的定义的迭代器查找方法名`</span><span class="kt">SEL</span><span class="err">`时，就可以找到对应的方法实现`</span><span class="kt">IMP</span><span class="err">`，从而调用方法的实现执行相关的操作。`</span><span class="n">types</span><span class="err">`表示方法实现的参数以及返回值类型。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+typedef struct method_t *Method;</p>
+
+<p>// method_t
+struct method_t {
+    SEL name;
+    const char *types;
+    IMP imp;
+    &hellip;
+}</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">###SEL</span>
+</span><span class='line'><span class="err">`</span><span class="kt">SEL</span><span class="err">`为方法选择器，观察下它的定义：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+typedef struct objc_selector *SEL;</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">可以看出`</span><span class="kt">SEL</span><span class="err">`实际是`</span><span class="n">objc_selector</span><span class="err">`指针类型的别名，它用于表示运行时方法的名字，以便进行方法实现的查找。因为要对应方法实现，所以每一个方法对应的`</span><span class="kt">SEL</span><span class="err">`都是唯一的。因此它不具备</span><span class="n">C</span><span class="o">++</span><span class="err">可以进行函数重载的特性，当两个方法名一样时，会发生编译错误，即使参数不一样。</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">###IMP</span>
+</span><span class='line'><span class="err">`</span><span class="kt">IMP</span><span class="err">`的定义如下：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc</p>
+
+<h1>if !OBJC_OLD_DISPATCH_PROTOTYPES</h1>
+
+<p>typedef void (<em>IMP)(void /</em> id, SEL, &hellip; */ );</p>
+
+<h1>else</h1>
+
+<p>typedef id (*IMP)(id, SEL, &hellip;);</p>
+
+<h1>endif</h1>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">可以看出`</span><span class="kt">IMP</span><span class="err">`其实就是一个函数指针的别名，也可以把它理解为函数名。它有两个必须的参数：</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="err">`</span><span class="kt">id</span><span class="err">`，为`</span><span class="nb">self</span><span class="err">`指针，表示消息接收者</span>
+</span><span class='line'><span class="o">-</span> <span class="err">`</span><span class="kt">SEL</span><span class="err">`，方法选择器，表示一个方法的`</span><span class="n">selector</span><span class="err">`指针</span>
+</span><span class='line'><span class="o">-</span> <span class="err">后面的为传送消息的一些参数</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">在某些情况下，通过获取`</span><span class="kt">IMP</span><span class="err">`而直接调用方法实现，可以直接跳过消息传递机制，像</span><span class="n">C</span><span class="err">语言调用函数那样，在一定程度上，可以提供程序的性能。</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">###消息传递</span>
+</span><span class='line'><span class="err">了解完</span><span class="n">runtime</span><span class="err">中一些必要的元素，继续回到文章开头的代码：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+@implementation Dog : NSObject
+- (void)run
+{}
+@end</p>
+
+<p>int main(int argc, const char * argv[]) {
+    @autoreleasepool {
+        Dog *dog = [[Dog alloc] init];
+        [dog run];
+    }
+    return 0;
+}</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">编译器将其转换成了：</span>
+</span><span class='line'>  <span class="o">-</span> <span class="err">为了看起来简洁点，我把一些强制转换变为别名</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+typedef (Dog <em>(</em>)(id, SEL))(void *) MyImp;</p>
+
+<p>int main(int argc, const char * argv[]) {
+    /<em> @autoreleasepool </em>/ { <strong>AtAutoreleasePool </strong>autoreleasepool;
+        Dog *dog = ((MyImp)objc_msgSend)((id)((MyImp)objc_msgSend)((id)objc_getClass(&ldquo;Dog&rdquo;), sel_registerName(&ldquo;alloc&rdquo;)), sel_registerName(&ldquo;init&rdquo;));
+        ((MyImp)objc_msgSend)((id)dog, sel_registerName(&ldquo;run&rdquo;));
+    }
+    return 0;
+}</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">从上面的代码可以看出，第二个`</span><span class="n">objc_msgSend</span><span class="err">`返回值是作为第一个`</span><span class="n">objc_msgSend</span><span class="err">`的首个参数的。</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'><span class="err">上文已经说过，`</span><span class="p">[</span><span class="n">receiver</span> <span class="n">message</span><span class="p">]</span><span class="err">`会被转化成以下形式</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+objc_msgSend(receiver, selector, &hellip;)</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">接下来看看它主要做了哪几件事情：</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="err">根据`</span><span class="n">receiver</span><span class="err">`的`</span><span class="n">isa</span><span class="err">`指针，获取到所属类，先在类的`</span><span class="n">cache</span><span class="err">`即缓存中查找`</span><span class="n">selector</span><span class="err">`，如果没有找到，再在类的`</span><span class="n">method_lists</span><span class="err">`即方法列表中查找</span>
+</span><span class='line'><span class="o">-</span> <span class="err">如果没有找到`</span><span class="n">selector</span><span class="err">`，则会沿着下图类的联系路径一直查找，直到`</span><span class="bp">NSObject</span><span class="err">`类</span>
+</span><span class='line'><span class="o">-</span> <span class="err">如果找到了`</span><span class="n">selector</span><span class="err">`，则获取实现方法并调用，并传入接收者对象以及方法的所有参数；没有找到时走方法解析和消息转发流程。</span>
+</span><span class='line'><span class="o">-</span> <span class="err">将实现的返回值作为它自己的返回值</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'><span class="o">!</span><span class="p">[](.</span><span class="o">/</span><span class="n">image</span><span class="o">/</span><span class="n">Snip20150711_2</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">除此之外，`</span><span class="n">objc_msgSend</span><span class="err">`还会传递两个隐藏参数：</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="err">消息接收对象（`</span><span class="nb">self</span><span class="err">`引用的对象）</span>
+</span><span class='line'><span class="o">-</span> <span class="err">方法选择器（`</span><span class="n">_cmd</span><span class="err">`，调用的方法）</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">`</span><span class="n">objc_msgSend</span><span class="err">`找到方法实现后，会在调用该实现时，传入这两个隐藏参数，这样就能够在方法实现里面里面获取消息接受对象，即方法调用者了。</span><span class="o">&lt;</span><span class="n">br</span><span class="o">&gt;</span>
+</span><span class='line'><span class="err">`隐藏参数`表示这两个参数在源代码方法的定义中并没有声明这两个参数，这两个参数是在`代码编译期间`，被`插入`到实现中的。</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">###self和super的联系</span>
+</span><span class='line'><span class="err">根据上文对`</span><span class="n">objc_msgSend</span><span class="err">`的了解，可以解决以下代码输出一致问题</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+@implementation Dog : NSObject</p>
+
+<ul>
+<li>(void)run
+{
+  NSLog(@&ldquo;%@&rdquo;, [self class]);
+  NSLog(@&ldquo;%@&rdquo;, [super class]);
+}</li>
+</ul>
+
+
+<p>@end</p>
+
+<p>int main(int argc, const char * argv[]) {
+    @autoreleasepool {
+        Dog *dog = [[Dog alloc] init];</p>
+
+<pre><code>    [dog run];
+}
+return 0;
+</code></pre>
+
+<p>}</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">输出为：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+[5491:173185] Dog
+[5491:173185] Dog</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">这是为什么呢？先来看看编译后的`</span><span class="o">-</span><span class="n">run</span><span class="err">`方法的情况</span><span class="o">:</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+static void <em>I_Dog_run(Dog * self, SEL </em>cmd) {
+    NSLog((NSString <em>)&amp;<strong>NSConstantStringImpl</strong>var_folders_50_3f5nr6h10h1csn8byghy30q80000gn_T_main_d06ff4_mi_0, ((Class (</em>)(id, SEL))(void <em>)objc_msgSend)((id)self, sel_registerName(&ldquo;class&rdquo;)));
+    NSLog((NSString </em>)&amp;<strong>NSConstantStringImpl</strong>var_folders_50_3f5nr6h10h1csn8byghy30q80000gn_T_main_d06ff4_mi_1, ((Class (<em>)(__rw_objc_super </em>, SEL))(void *)objc_msgSendSuper)((__rw_objc_super){ (id)self, (id)class_getSuperclass(objc_getClass(&ldquo;Dog&rdquo;)) }, sel_registerName(&ldquo;class&rdquo;)));
+}</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">这里面只要关注两句：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>objc
+// [self class]
+((Class (<em>)(id, SEL))(void </em>)objc_msgSend)((id)self, sel_registerName(&ldquo;class&rdquo;))</p>
+
+<p>// [super class]
+((Class (<em>)(__rw_objc_super </em>, SEL))(void *)objc_msgSendSuper)((__rw_objc_super){ (id)self, (id)class_getSuperclass(objc_getClass(&ldquo;Dog&rdquo;)) }, sel_registerName(&ldquo;class&rdquo;))</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">首先我们需要了解`</span><span class="nb">self</span><span class="err">`和`</span><span class="nb">super</span><span class="err">`的差异：</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="err">`</span><span class="nb">super</span><span class="err">`：`编译标识符`，告诉编译器，调用方法时，去调用父类的方法，而不是本类的方法</span>
+</span><span class='line'><span class="o">-</span> <span class="err">`</span><span class="nb">self</span><span class="err">`：`隐藏参数`，每个方法的实现第一个参数就是`</span><span class="nb">self</span><span class="err">`</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">这里可以看出，编译后，经过`</span><span class="nb">super</span><span class="err">`标识符修饰的方法调用，会调用`</span><span class="n">objc_msgSendSuper</span><span class="err">`函数来进行消息的发送，而不是`</span><span class="n">objc_msgSend</span><span class="err">`。先来了解下`</span><span class="n">objc_msgSendSuper</span><span class="err">`的声明：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>id objc_msgSendSuper ( struct objc_super *super, SEL op, &hellip; );</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">其中`</span><span class="n">objc_super</span><span class="err">`的定义为：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>// receiver   消息实际接收者
+// class      指向当前类的父类
+struct objc_super { id receiver; Class class; };</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">结合以上信息，我们可以知道：</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>(__rw_objc_super){ (id)self, (id)class_getSuperclass(objc_getClass(&ldquo;Dog&rdquo;)) }
+<code>``
+就是对结构体</code>objc_super<code>的赋值，也就是说</code>objc_super->receiver=self<code>。到这里可能就有点明了了，</code>super<code>只是告诉编译器，去查找父类中的</code>class<code>方法，当找到之后，使用</code>objc_super->receiver<code>即</code>self<code>进行调用。用流程表示就是：&lt;br&gt;
+</code>[super class]->objc_msgSendSuper(objc_super{self, superclass)}, sel_registerName(&ldquo;class&rdquo;))->objc_msgSend(objc_super->self, sel_registerName(&ldquo;class&rdquo;))＝[self class]<code>。&lt;br&gt;
+可以看出两者输出结果一致的关键就是，</code>[self class]<code>的消息接收者和</code>[super class]`的消息接收者一样，都是调用方法的实例对象。</p>
+
+<h3>方法解析和消息转发</h3>
+
+<p>当上文<code>objc_msgSend</code>处理流程中，<code>selector</code>没有找到时，会触发三个阶段，在这三个阶段都可以进行相关处理使程序不抛出异常：
+- Method Resolution  (动态方法解析)
+- Fast Forwarding    (备用接收者)
+- Normal Forwarding  (完整转发)<br></p>
+
+<p>由于实际代码中很少有看到这种操作，所以这里不做详细解释，参考这个资料即可<a href="http://southpeak.github.io/blog/2014/11/03/objective-c-runtime-yun-xing-shi-zhi-san-:fang-fa-yu-xiao-xi-zhuan-fa/">Objective-C Runtime 运行时之三：方法与消息</a></p>
+
+<h3>参考</h3>
+
+<p>1.<a href="http://southpeak.github.io/blog/2014/10/25/objective-c-runtime-yun-xing-shi-zhi-lei-yu-dui-xiang/">Objective-C Runtime 运行时之一：类与对象</a><br>
+2.<a href="http://yulingtianxia.com/blog/2014/11/05/objective-c-runtime/">Objective-C Runtime</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-01-10T20:14:17+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:14 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014-08-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/" title="Previous Post: UINavigationBar属性小结及返回按钮更改">&laquo; UINavigationBar属性小结及返回按钮更改</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/" title="Next Post: runtime应用之KVC">runtime应用之KVC &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">第三方框架源代码解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
