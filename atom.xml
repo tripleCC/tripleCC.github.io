@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2015-08-28T09:04:18+08:00</updated>
+  <updated>2015-08-28T09:36:20+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -14,7 +14,7 @@
 
   
   <entry>
-    <title type="html"><![CDATA[第三方框架源代码解析]]></title>
+    <title type="html"><![CDATA[runtime应用之关联对象和MethodSwizzling]]></title>
     <link href="http://triplecc.github.io/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/"/>
     <updated>2015-04-10T14:53:13+08:00</updated>
     <id>http://triplecc.github.io/blog/runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling</id>
@@ -4199,8 +4199,8 @@ key : value</p>
   
   <entry>
     <title type="html"><![CDATA[UINavigationBar属性小结及返回按钮更改]]></title>
-    <link href="http://triplecc.github.io/blog/2014-08-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/"/>
-    <updated>2014-08-27T20:17:32+08:00</updated>
+    <link href="http://triplecc.github.io/blog/2014-02-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/"/>
+    <updated>2014-02-27T20:17:32+08:00</updated>
     <id>http://triplecc.github.io/blog/uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai</id>
     <content type="html"><![CDATA[<h2>UINavigationBar属性</h2>
 
@@ -4298,13 +4298,187 @@ key : value</p>
 
 
 <h2>返回按钮更改</h2>
+
+<p>系统原装效果:<br>
+<img src="./images/Snip20150724_13.png" alt="" /><br></p>
+
+<p>如果有以下需求:</p>
+
+<ul>
+<li>去除上面返回按钮上“我是标题”字样，并设置返回图片为白色</li>
+</ul>
+
+
+<h6>分析</h6>
+
+<ul>
+<li>图片修改
+
+<ul>
+<li>方式1：设置返回图片颜色</li>
+<li>方式2：直接设置返回图片</li>
+<li>方式3：使用按钮覆盖返回图片(这种方式会使返回箭头图片和左边距离加大，但可以用取巧的方式调整)</li>
+</ul>
+</li>
+<li>文字修改
+
+<ul>
+<li>方式1：设置控制器navigationItem的backBarButtonItem显示文字为""</li>
+<li>方式2：设置返回按钮文字偏移量，使其移出屏幕</li>
+<li>方式3：采用控制器navigationItem的leftBarButtonItem进行覆盖</li>
+</ul>
+</li>
+</ul>
+
+
+<h6>解决</h6>
+
+<p>综合以上说明，这里给出三种方式(都是针对的自定义UINavigationController)：</p>
+
+<ul>
+<li>方式1:在<code>-pushViewController:animated:</code>中设置文字 ，在<code>+initialize</code>方法中设置返回图片或改变返回图片颜色
+
+<ul>
+<li>注意导航栏对图片的渲染</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">pushViewController</span><span class="p">:(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">animated</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">backBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTitle</span><span class="p">:</span><span class="s">@&quot;&quot;</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">action</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取特定类的所有导航条</span>
+</span><span class='line'><span class="bp">UINavigationBar</span> <span class="o">*</span><span class="n">navigationBar</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 方式1：使用自己的图片替换原来的返回图片</span>
+</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorTransitionMaskImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 方式2：设置返回图片颜色</span>
+</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">whiteColor</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>方式2:在<code>+initialize</code>方法中设置所有返回按钮文字的偏移量，其他设置和方式1一致</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">appearance</span><span class="p">]</span> <span class="nl">setBackButtonTitlePositionAdjustment</span><span class="p">:</span><span class="n">UIOffsetMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="nl">forBarMetrics</span><span class="p">:</span><span class="n">UIBarMetricsDefault</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>方式3.重写<code>-pushViewController:animated:</code>方法,使用控制器的<code>navigationItem的leftBarButtonItem</code>覆盖返回按钮
+
+<ul>
+<li>需要判断是否为根控制器，如果是根控制器就不添加
+
+<ul>
+<li>导航控制器的<code>viewControllers.count</code>不为0即表示传入的为非根控制器</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">pushViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">viewControllers</span><span class="p">.</span><span class="n">count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithImage</span><span class="p">:[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">]</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">action</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">back</span><span class="p">)];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">back</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">popViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>方案对比</h6>
+
+<ul>
+<li>方案1和方案2改动较小，对系统自带的返回功能无影响。<br></li>
+<li>方式3灵活性最高，但是会<code>使系统的滑动返回失效</code>，需要自己实现，具体实现参照<a href="https://github.com/forkingdog/FDFullscreenPopGesture">forkingdog全屏手势分类</a><br></li>
+<li>方式3还会使按钮更加偏向右边：</li>
+</ul>
+
+
+<p><img src="./images/Snip20150722_10.png" alt="" /><br>
+通过以下方式可以使按钮向左边靠：
+<img src="./images/Snip20150722_11.png" alt="" /><br>
+- 采用customView，<code>添加自己定义的UIButton</code><br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="c1">// 返回按钮内容左靠</span>
+</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentHorizontalAlignment</span> <span class="o">=</span> <span class="n">UIControlContentHorizontalAlignmentLeft</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 让返回按钮内容继续向左边偏移10</span>
+</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentEdgeInsets</span> <span class="o">=</span> <span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithCustomView</span><span class="p">:</span><span class="n">button</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
 ]]></content>
   </entry>
   
   <entry>
     <title type="html"><![CDATA[Autorezing的应用]]></title>
-    <link href="http://triplecc.github.io/blog/2014-01-04-autorezingde-ying-yong/"/>
-    <updated>2014-01-04T21:34:02+08:00</updated>
+    <link href="http://triplecc.github.io/blog/2013-08-04-autorezingde-ying-yong/"/>
+    <updated>2013-08-04T21:34:02+08:00</updated>
     <id>http://triplecc.github.io/blog/autorezingde-ying-yong</id>
     <content type="html"><![CDATA[<h2>Autoresizing的使用［前提是关闭Autolayout功能］</h2>
 
