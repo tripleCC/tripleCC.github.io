@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Fork写时拷贝 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="当fork函数被当前进程调用时，内核为新进程创建各种数据结构，并分配它一个唯一的PID，为了给这个新进程创建虚拟存储器，它创建了当前进程的mm_struct、区域结构和页表的原样拷贝。它将两个进程中的每个页面都标记为只读，并将两个进程中的每个区域结构都标记为私有的写时拷贝。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2013-03-07-forkxie-shi-kao-bei/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Fork写时拷贝</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-03-07T22:21:31+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:21 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>当fork函数被当前进程调用时，内核为新进程创建各种数据结构，并分配它一个唯一的PID，为了给这个新进程创建虚拟存储器，它创建了当前进程的mm_struct、区域结构和页表的<code>原样拷贝</code>。它将两个进程中的每个页面都标记为只读，并将两个进程中的每个区域结构都标记为<code>私有的写时拷贝</code>。</p>
+
+<p>当fork在新进程中返回时，新进程现在的虚拟存储器刚好和调用fork时存在的虚拟存储器相同（就是父进程<code>运行到fork时</code>的虚拟存储器，所以子进程运行的地方是从fork返回时开始的，并不是从头开始）。当这两个进程的任一个后来进行写操作时，写时拷贝机制就会创建新的<code>物理页面</code>。（深入理解计算机系统二 558页）</p>
+
+<p>通俗一点说，就是在exec之前两个进程用的是相同的物理空间（内存区）（所谓用是只读，不能写的），子进程的代码段、数据段、堆栈都是指向父进程的物理空间。当父子进程中有更改相应段的行为发生时，再为子进程相应的段分配物理空间（这时创建拷贝的进程的页表条目会指向这个新的物理页面（拷贝），然后恢复这个页面的可写权限），如果不是因为exec，内核会给子进程的数据段、堆栈段分配相应的物理空间（至此两者有各自的进程空间，互不影响），而代码段继续共享父进程的物理空间（两者的代码完全相同）。而如果是因为exec，由于两者执行的代码不同，子进程的代码段也会分配单独的物理空间。</p>
+
+<p>通常来说，fork函数的代码段基本是只读类型的，而且在运行阶段也只是复制，并不会对内容进行修改，因此父子进程是共享代码段，而数据段、Bss段、堆栈段等会在运行的过程中发生写过程，这样就导致了不同的段发生相应的写时拷贝过程，实现了不同进程的独立空间。</p>
+
+<p>相应网页：
+<a href="http://blog.chinaunix.net/uid-20937170-id-3012588.html">http://blog.chinaunix.net/uid-20937170-id-3012588.html</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-03-07T22:21:31+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:21 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013-03-02-signalxin-hao-tong-xin/" title="Previous Post: signal信号通信">&laquo; signal信号通信</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013-03-10-chu-li-duo-ge-xin-hao-shi-chan-sheng-de-wen-ti/" title="Next Post: 处理多个信号时产生的问题">处理多个信号时产生的问题 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-07-04-ocji-ben-yu-fa/">OC基本语法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-28-2013nian-zhong-bei-cui-ji/">2013年中悲催记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-15-shi-yong-iofu-yong-he-duo-xian-cheng-wen-ti/">使用IO复用和多线程问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-13-unixxi-tong-xi-ti-10-6/">UNIX系统习题10-6</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-10-unixxi-tong-wen-jian-he-xin-xi/">UNIX系统文件和信息</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-01-unixxi-tong-jin-cheng-jian-tong-xin/">UNIX系统进程间通信</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

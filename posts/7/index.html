@@ -1,0 +1,1454 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="pag171 1
+2
+ID-----0 通常为调度进程，常常被称为交换进程，不执行任何磁盘上的程序，也被称为系统进程。
+ID-----1 通常为init进程，通常读与系统有关的初始化文件，并将系统引导到一个状态，init进程绝不会终止。(普通用户进程（与交换进程不同，不是内核中的系统进程）， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/posts/7/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-06-unixxi-tong-jin-cheng-kong-zhi/">UNIX系统进程控制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-06T17:12:21+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>5:12 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag171</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">ID</span><span class="o">-----</span><span class="mi">0</span>        <span class="err">通常为调度进程，常常被称为交换进程，不执行任何磁盘上的程序，也被称为系统进程。</span>
+</span><span class='line'><span class="n">ID</span><span class="o">-----</span><span class="mi">1</span>        <span class="err">通常为</span><span class="n">init</span><span class="err">进程，通常读与系统有关的初始化文件，并将系统引导到一个状态，</span><span class="n">init</span><span class="err">进程绝不会终止。</span><span class="p">(</span><span class="err">普通用户进程（与交换进程不同，不是内核中的系统进程），但以超级用户特权运行</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getpid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程ID</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">getppid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//父进程ID</span>
+</span><span class='line'><span class="kt">uid_t</span> <span class="nf">getuid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程实际用户ID</span>
+</span><span class='line'><span class="kt">uid_t</span> <span class="nf">geteuid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程有效用户ID</span>
+</span><span class='line'><span class="kt">gid_t</span> <span class="nf">getgid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程实际组ID</span>
+</span><span class='line'><span class="kt">gid_t</span> <span class="nf">getegid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程有效组ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag172</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="n">fork</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span><span class='line'><span class="err">子进程返回</span><span class="mi">0</span>               <span class="err">（一个进程只有一个父进程，总可以调用</span><span class="n">getppid</span><span class="err">获得父进程</span><span class="n">ID</span><span class="err">）</span>
+</span><span class='line'><span class="err">父进程返回新子进程</span><span class="n">ID</span><span class="err">（可能有多个子进程，且没有一个函数使一个进程获得其所有子进程的进程</span><span class="n">ID</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>子进程是父进程的副本：</h6>
+
+<ul>
+<li>子进程获得父进程的<code>数据空间</code>，<code>堆</code>和<code>栈</code>的副本。父子进程并<code>不共享这些存储空间</code>部分，他们<code>共享正文段</code>（非存储空间）。
+
+<h6>写时拷贝：</h6></li>
+<li>并不执行父进程数据段，栈和堆的完全拷贝，这些区域由父子进程共享，内核将他们的访问权限改变为只读。当父子进程中任何一个<code>试图改变这些区域</code>时，<code>内核只为修改区域的那块内存制作一个副本</code>。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">strlen</span><span class="err">：包含终止</span><span class="n">null</span><span class="err">字节</span>
+</span><span class='line'><span class="k">sizeof</span><span class="err">：不包含</span><span class="n">null</span><span class="err">字节</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag174</h3>
+
+<p>在重定向父进程的标准输出时，子进程的标准输出也被重定向。（fork：父进程所有打开文件描述符都被复制到子进程中）</p>
+
+<h6>子进程继承的属性</h6>
+
+<ul>
+<li>实际用户ID、实际组ID、有效用户ID、有效组ID（进程和用户）（关系到权限）</li>
+<li>附加组ID</li>
+<li>进程组ID（进程和进程）（不关系到权限）</li>
+<li>会话ID</li>
+<li>控制终端</li>
+<li>设置用户ID标识和设置组ID标识</li>
+<li>当前工作目录</li>
+<li>根目录</li>
+<li>文件模式创建屏蔽字（umask）</li>
+<li>信号屏蔽和安排</li>
+<li>针对任一文件描述符的在执行时关闭（close on exec）标识</li>
+<li>环境</li>
+<li>连接的共享存储段</li>
+<li>存储映射</li>
+<li>资源限制</li>
+<li>文件描述符</li>
+</ul>
+
+
+<h6>父子进程间区别</h6>
+
+<ul>
+<li>fork返回值</li>
+<li>进程ID</li>
+<li>父进程ID</li>
+<li>子进程tms_*部分设置为0</li>
+<li>父进程设置的文件锁不会被子进程继承</li>
+<li>子进程的未处理闹钟被清除</li>
+<li>子进程的未处理信号集设置为空集</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">vfork</span> <span class="p">:</span><span class="err">不将父进程地址空间完全复制到子进程中，在子进程调用</span><span class="n">exec</span><span class="err">或</span><span class="n">exit</span><span class="err">之前，他在父进程的空间中运行。</span>
+</span><span class='line'><span class="n">vfork</span><span class="err">保证子进程先运行，在子进程调用</span><span class="n">exec</span><span class="err">或</span><span class="n">exit</span><span class="err">之前，内核会使父进程处于休眠状态。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag178</h3>
+
+<p>对于父进程已经终止的所有进程，他们的<code>父进程都改变为init</code>进程。<br>
+一个已经终止，但是其<code>父进程尚未对其进行善后处理</code>（获取终止进程的有关信息，释放他仍占用的资源）的进程称为<code>僵尸进程</code>(调用wait、waitpid获取状态)<br>
+<code>init</code>只要有一个子进程终止就会调用一个wait函数取得终止状态，所以<code>不会产生僵尸进程</code>。</p>
+
+<h3>pag182</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">wait</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">statloc</span><span class="p">);</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">waitpid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">statloc</span><span class="p">,</span> <span class="kt">int</span> <span class="n">options</span><span class="p">);</span><span class="c1">//WNOHANG可使调用者不阻塞</span>
+</span><span class='line'><span class="nl">pid</span><span class="p">:</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="o">-------</span><span class="err">等待任意子进程</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span>   <span class="o">-------</span><span class="err">等待其进程</span><span class="n">ID</span><span class="err">与</span><span class="n">pid</span><span class="err">相等的子进程</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="o">--------</span><span class="err">等待其组</span><span class="n">ID</span><span class="err">与等于调用进程组</span><span class="n">ID</span><span class="err">的任一子进程</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">1</span> <span class="o">--------</span><span class="err">等待其组</span><span class="n">ID</span><span class="err">等于</span><span class="n">pid</span><span class="err">绝对值的任一子进程</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">waitid</span><span class="p">(</span><span class="kt">idtype_t</span> <span class="n">idtype</span><span class="p">,</span> <span class="kt">id_t</span> <span class="kt">id</span><span class="p">,</span> <span class="kt">siginfo_t</span> <span class="o">*</span><span class="n">infop</span><span class="p">,</span> <span class="kt">int</span> <span class="n">options</span><span class="p">);</span>
+</span><span class='line'><span class="n">idtype</span><span class="err">：</span>
+</span><span class='line'><span class="nl">P_PID</span><span class="p">:</span><span class="err">等待特定进程</span>
+</span><span class='line'><span class="nl">P_PGID</span><span class="p">:</span><span class="err">等待特定进程组中任一子进程</span>
+</span><span class='line'><span class="nl">P_ALL</span><span class="p">:</span><span class="err">等待任一子进程</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果一个进程fork一个子进程，但不要他等待子进程终止，也不希望子进程处于僵死状态知道父进程终止，可以调用fork两次，先让父进程wait第一个子进程终止，使第二个子进程被init领养。（init子进程不会成为僵死进程）</p>
+
+<h3>pag188</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">execl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[]);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execle</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execve</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">envp</span><span class="p">[]);</span><span class="c1">//内核系统调用</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execlp</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execvp</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[]);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>exec函数：</h6>
+
+<ul>
+<li>进程调用此函数时，该进程执行的程序完全替换为新程序，而新程序则从其main函数开始执行。</li>
+<li>exec并不创建新进程，所以前后进程ID未改变。</li>
+<li>exec函数用一个全新的程序替换了当前进程的正文、数据、堆、栈段。
+
+<h6>6个exec函数中字符寓意：</h6></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">----</span><span class="n">p</span><span class="err">：该函数取</span><span class="n">filename</span><span class="err">作为参数，并且用</span><span class="n">PATH</span><span class="err">环境变量寻找可执行文件。</span>
+</span><span class='line'><span class="o">----</span><span class="n">l</span><span class="err">：该函数取一个参数表，他与字母</span><span class="n">v</span><span class="err">互斥</span><span class="c1">//参数表以NULL指针结尾</span>
+</span><span class='line'><span class="o">----</span><span class="n">v</span><span class="err">：该函数取一个</span><span class="n">argv</span><span class="p">[]</span><span class="err">矢量。</span>
+</span><span class='line'><span class="o">----</span><span class="n">e</span><span class="err">：该函数取</span><span class="n">envp</span><span class="p">[]</span><span class="err">数组，而不使用当前环境</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>执行exec后保持的属性：</h6>
+
+<ul>
+<li>进程ID和父进程ID</li>
+<li>实际用户ID和实际组ID</li>
+<li>附加组ID</li>
+<li>进程组ID</li>
+<li>会话ID</li>
+<li>控制终端</li>
+<li>闹钟尚余留时间</li>
+<li>当前工作目录</li>
+<li>根文件</li>
+<li>文件模式创建屏蔽子</li>
+<li>文件锁</li>
+<li>进程信号屏蔽字</li>
+<li>未处理信号</li>
+<li>资源限制</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">tms_</span><span class="o">*</span>
+</span><span class='line'><span class="nl">FD_CLOEXEC</span><span class="p">:</span><span class="err">进程中每个打开的描述符都有一个执行时关闭标志。若此标志设置则在执行</span><span class="n">exec</span><span class="err">时关闭该描述符，否则该描述符打开。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag193</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">setuid</span><span class="p">(</span><span class="kt">uid_t</span> <span class="n">uid</span><span class="p">);</span><span class="c1">//设置实际用户ID和有效用户ID</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setgid</span><span class="p">(</span><span class="kt">gid_t</span> <span class="n">gid</span><span class="p">);</span><span class="c1">//设置实际组ID和有效组ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>关于内核维护的三个用户ID，注意：
+- 只有<code>超级用户进程</code>可以更改<code>实际用户ID</code>。（setuid设置全部三个用户ID）
+- 仅当对程序文件设置了设置用户ID位时，exec函数才会设置有效用户ID。任何时候都可以调用setuid，将有效用户ID设置为实际用户ID或保存的设置用户ID。
+- 保存的设置用户ID是由复制有效用户ID而得来的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">setreuid</span><span class="p">(</span><span class="kt">uid_t</span> <span class="n">ruid</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">euid</span><span class="p">);</span><span class="c1">//交换实际用户ID和有效用户ID</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setregid</span><span class="p">(</span><span class="kt">gid_t</span> <span class="n">rgid</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">egid</span><span class="p">);</span><span class="c1">//交换实际组ID和有效组ID</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">seteuid</span><span class="p">(</span><span class="kt">uid_t</span> <span class="n">uid</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setegid</span><span class="p">(</span><span class="kt">gid_t</span> <span class="n">gid</span><span class="p">);</span> <span class="c1">//pag196设置不同用户ID的各函数</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag200</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">system</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cmdstring</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>在其实现中调用了fork、exec和waitpid。</li>
+<li>如果一个进程正以<code>特殊权限</code>（设置用户ID或设置组ID）运行，他又想<code>生成另一个进程执行另一个程序</code>，则他应当直接使用fork和exec，而且在fork之后，exec之前要改回到普通权限（exec会复制有效ID-》保存设置ID）。设置用户ID或设置组ID程序决不应调用system函数。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">getlogin</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//获取登录名</span>
+</span><span class='line'><span class="kt">clock_t</span> <span class="nf">time</span><span class="p">(</span><span class="k">struct</span> <span class="n">tms</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>不提供返回保存的设置用户ID（只是供setuid时做为一个参考，看要设置的有效id和保存的设置用户id相不相等）的函数，我们必须在进程开始时保存有效用户ID。</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-05-unixjin-cheng-huan-jing/">UNIX进程环境</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-05T11:04:16+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:04 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag147</h3>
+
+<h4>main执行前：</h4>
+
+<ul>
+<li>调用一个特殊的启动例程</li>
+<li>可执行程序文件将此启动例程指定为程序的起始地址</li>
+<li>启动例程从内核取得命令行参数和环境变量值</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">exit</span><span class="p">(</span><span class="kt">int</span> <span class="n">status</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="nf">_Exit</span><span class="p">(</span><span class="kt">int</span> <span class="n">status</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="nf">_exit</span><span class="p">(</span><span class="kt">int</span> <span class="n">status</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em>exit和</em>Exit立刻进入内核，exit则先执行一些清理处理，然后进入内核。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">echo</span> <span class="err">$</span><span class="o">?</span> <span class="err">打印终止状态</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">atexit</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">func</span><span class="p">)(</span><span class="kt">void</span><span class="p">));</span><span class="c1">//终止处理程序，由exit调用，顺序与登记时相反</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>内核使程序<strong>执行的唯一方法</strong>是调用一个<strong>exec</strong>函数。进程<strong>自愿终止</strong>的唯一方法是显式或隐式地（通过调用exit）调用<strong><em>exit或</em>Exit</strong></p>
+
+<p>ISOC和POSIX.1都要求argv[argc]是一个空指针，则参数循环处理可写为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">argv</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">malloc</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">size</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">calloc</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">nobj</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">realloc</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">newsize</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="nf">free</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>sbrk扩充（或缩小）进程的堆。<br></p>
+
+<p>大多数malloc和free的实现都不减小进程的存储空间。释放的空间可供以后再分配，但通常将他们保持在malloc池中而不返回给内核。<br></p>
+
+<p>alloca函数：在当前函数的栈帧上分配存储空间，而不是在堆中</p>
+
+<ul>
+<li>优点：自动释放</li>
+<li>缺点：增加栈帧长度，某些函数可能不支持</li>
+</ul>
+
+
+<h4>环境变量：</h4>
+
+<h6>字符串格式：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">name</span><span class="o">=</span><span class="n">value</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">export</span> <span class="n">name</span><span class="o">=</span><span class="n">value</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们能影响的只是<strong>当前进程及调用进程</strong>的任何<strong>子进程的环境</strong>，但<strong>不能影响父进程的环境</strong>。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">getenv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">);</span><span class="c1">//返回指向name=value字符串中的value</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">putenv</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span><span class="c1">//采取形式为name=value的字符串，将其放到环境表中，已存在则先删除</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setenv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">value</span><span class="p">,</span> <span class="kt">int</span> <span class="n">rewrite</span><span class="p">);</span><span class="c1">//已存在，rewrite非0删除，0不删除</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">unsetenv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">);</span><span class="c1">//删除name定义</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>putenv传递的是字符串地址，将存放在栈中的字符串作为参数传给该函数就会发生错误。</p>
+
+<h3>pag161</h3>
+
+<p>在栈上跳过若干栈帧</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">setjmp</span><span class="p">(</span><span class="kt">jmp_buf</span> <span class="n">env</span><span class="p">);</span><span class="c1">//env变量定义为全局变量</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="nf">longjmp</span><span class="p">(</span><span class="kt">jmp_buf</span> <span class="n">env</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span><span class="p">);</span><span class="c1">//val 从setjmp返回的值</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>一个自动变量<strong>不想使其值回滚</strong>，则定义其为具有volatile属性，声明为全局变量或静态变量的值在执行longjmp时保持不变。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">getrlimit</span><span class="p">(</span><span class="kt">int</span> <span class="n">resource</span><span class="p">,</span> <span class="k">struct</span> <span class="n">rlimit</span> <span class="o">*</span><span class="n">rlptr</span><span class="p">);</span><span class="c1">//查询进程限制</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setrlimit</span><span class="p">(</span><span class="kt">int</span> <span class="n">resource</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">rlimit</span> <span class="o">*</span><span class="n">rlptr</span><span class="p">);</span><span class="c1">//更改进程限制</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>进程的<strong>资源限制</strong>通常是在系统初始化时由<strong>进程0建立</strong>的，然后由<strong>每个后续进程继承</strong>。<br></p>
+
+<p>资源限制<strong>影响</strong>到<strong>调用进程</strong>并由其<strong>子进程继承</strong>。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-01-unixxi-tong-biao-zhun-io/">UNIX系统标准IO</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-01T10:42:32+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>10:42 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag111</h3>
+
+<p>流定向决定了所读、写的字符是单字节还是多字节的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">fwide</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mode</span><span class="p">);</span><span class="c1">//设置流定向</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>文件描述符</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">STDIN_FILENO</span><span class="err">、</span><span class="n">STDOUT_FILENO</span><span class="err">、</span><span class="n">STDERR_FILENO</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>文件指针</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">stdin</span><span class="err">、</span><span class="n">stdout</span><span class="err">、</span><span class="n">stderr</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>默认缓冲机制</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">标准出错</span><span class="o">---------------------</span><span class="err">不带缓冲</span>
+</span><span class='line'><span class="err">终端设备流</span><span class="o">------------------</span><span class="err">行缓冲</span>
+</span><span class='line'><span class="err">其他流</span><span class="o">-----------------------</span><span class="err">全缓冲</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>行缓冲限制</h6>
+
+<ul>
+<li>1、只要填满了缓冲区，即使没有写一换行符，也进行IO操作。</li>
+<li>2、任何时候只要通过标准IO库要求从（a）一个不带缓冲的流，或者（b）一个行缓冲的流（要求从内核得到数据）的到输入数据，那么会造成冲洗所有行缓冲输出流（fgets，gets等循环调用会冲洗输出流）</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">setbuf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">);</span><span class="c1">//更改缓冲类型</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setvbuf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">);</span><span class="c1">//_IOFBF/_IOLBF/_IONBF</span>
+</span><span class='line'><span class="err">如果要使用改变缓冲类型函数，则要在打开流后并且在对该流执行任何操作之前</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">fflush</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//强制冲洗一个流（fd=NULL，冲洗所有输出流）</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">fopen</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">type</span><span class="p">);</span><span class="c1">//打开标准IO流，指定文件</span>
+</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">freopen</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">type</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fd</span><span class="p">);</span><span class="c1">//在指定流上打开指定文件，此函数一般用于将一个指定的文件打开为一个预定义的流：标准输入、标准输出、标准出错</span>
+</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">fdopen</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">type</span><span class="p">);</span><span class="c1">//获取现有描述符与一个标准IO流结合（与fileno相对）（open,dup,dup2,fcntl,pipe,socket,socketpair,ept获得描述符），不能截断他为写而打开的任一文件</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>当以读和写类型打开一文件时（+）具有以下限制：（此限制不是很理解）</h6>
+
+<ul>
+<li>1、如果中间没有fflush、fseek、fsetpos、rewind，则在输出的后面不能直接跟随输入</li>
+<li>2、如果中间没有fseek、fsetpos、rewind，或者一个输出操作没有到达文件尾端，则在输入操作之后不能直接跟随输出</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">fclose</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//关闭一个打开的流</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">getc</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//getchar 等价于getc(stdin)</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fgetc</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">getchar</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">ferror</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span> <span class="c1">//出错检查</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">feof</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span> <span class="c1">//文件结束检查</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">ungetc</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//将字符压送回流中</span>
+</span><span class='line'><span class="err">压送回流中的字符以后可以从流中读出，但读出字符的顺序与压送回的顺序相反。不能回送</span><span class="n">EOF</span><span class="err">。一次成功的</span><span class="n">ungetc</span><span class="err">调用会清除该流的文件结束标志。</span><span class="p">(</span><span class="err">有时需要先看下一个字符，以决定如何处理当前字符时有用</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">putc</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fputc</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">putchar</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">);</span>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">fgets</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span><span class="c1">//读取n-1个字符，自行添加NUL</span>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">gets</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fputs</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">str</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">puts</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">gets</span><span class="o">----------</span><span class="err">不保留换行符</span>                            <span class="n">puts</span><span class="o">----------------</span><span class="err">添加换行符</span>
+</span><span class='line'><span class="n">fgets</span><span class="o">----------</span><span class="err">保留换行符</span>                             <span class="n">fputs</span><span class="o">---------------</span><span class="err">不添加换行符</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">getc</span><span class="o">---------</span><span class="err">可实现为宏</span>
+</span><span class='line'><span class="n">so</span><span class="err">：</span><span class="n">getc</span><span class="err">的参数不应当时具有副作用的表达式。</span>
+</span><span class='line'><span class="n">fgetc</span><span class="o">--------</span><span class="err">一定时个函数</span>
+</span><span class='line'><span class="n">so</span><span class="err">：可得到其地址，</span><span class="n">fgetc</span><span class="err">的地址可做为参数。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>EOF类型为int，所以单字符获取函数的返回值为int型，定义变量时要注意定义为int型，否则可能无法检测出EOF错误。</p>
+
+<h6>二进制IO（前提）</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">size_t</span> <span class="nf">fread</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">ptr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nobj</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">size_t</span> <span class="nf">fwrite</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">ptr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nobj</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>定位流</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">long</span> <span class="nf">ftell</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fseek</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">,</span> <span class="kt">long</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">int</span> <span class="n">whence</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">rewind</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fgetpos</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">fpos_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pos</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fsetpos</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">fpos_t</span> <span class="o">*</span><span class="n">pos</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag121</h3>
+
+<h6>格式化IO</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">printf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fprintf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">sprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span><span class="c1">//在尾端自动添加NUL，该字节不包括在返回值中</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">snprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>转换说明：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">%</span><span class="p">[</span><span class="n">flags</span><span class="p">][</span><span class="n">fldwidth</span><span class="p">][</span><span class="n">precision</span><span class="p">][</span><span class="n">lenmodifier</span><span class="p">]</span><span class="n">convtype</span>
+</span><span class='line'><span class="n">fldwidth</span><span class="err">：转换的最小字段宽度。如少则用空格填充。</span>
+</span><span class='line'><span class="nl">precision</span><span class="p">:</span><span class="err">说明整形转换后最少输出数字位数、浮点数转换后小数点后的最少位数、字符串转换后的最大字符数。精度是一个句点（</span><span class="p">.</span><span class="err">），后接一个可选非负十进制整数或一个星号。</span><span class="p">(</span><span class="err">字符是限制，其他类型是规定最小标准</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">vprintf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">vfprintf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">vsprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">vsnprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">scanf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fscanf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">sscanf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>转换说明：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">%</span><span class="p">[</span><span class="o">*</span><span class="p">][</span><span class="n">fldwidth</span><span class="p">][</span><span class="n">lenmodifier</span><span class="p">]</span><span class="n">convtype</span>
+</span><span class='line'><span class="n">fldwidth</span><span class="err">：最大宽度（最大字符数）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">scanf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">vfscanf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">vsscanf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag125</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">fileno</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span> <span class="c1">//获取与流相关连的文件描述符</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>临时文件</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">tmpnam</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">ptr</span><span class="p">);</span><span class="c1">//产生一个与现有文件名不同的一个有效路径名字符串</span>
+</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">tmpfile</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//创建临时二进制文件，在关闭文件或程序结束时自动删除该文件</span>
+</span><span class='line'><span class="err">常用标准技术：先调用</span><span class="n">tmpnam</span><span class="err">产生一个唯一的路径名，然后用该路径名创建一个文件，并立即</span><span class="n">unlink</span><span class="err">它（链接计数为</span><span class="mi">0</span><span class="err">）（关闭时引用计数为</span><span class="mi">0</span><span class="err">，此时才删除其内容）</span>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="n">tempnam</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">directory</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">prefix</span><span class="p">);</span><span class="c1">//为产生的路径名指定目录和前缀，prefix最多包含5个字符的字符串</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>按序判断：</p>
+
+<ul>
+<li>1、如果定义了环境变量TMPDIR,则用其作为目录</li>
+<li>2、如果参数directory非NULL，则用其作为目录</li>
+<li>3、将中的字符串P_tmpdir用作目录</li>
+<li>4、将本地目录（通常是/tmp）用作目录</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">mkstemp</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">template</span><span class="p">);</span><span class="c1">//创建临时文件，返回打开的文件描述符（不会自动删除，要调用unlink）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-04-28-unixxi-tong-wen-jian-he-mu-lu/">UNIX系统文件和目录</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-04-28T10:20:09+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:20 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag72</h3>
+
+<h5>目录文件：包含其他文件的名字以及指向与这些文件有关信息的指针。（知道目录也时文件）</h5>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">stat</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fstat</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">lstat</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">);</span> <span class="err">（</span><span class="n">link</span> <span class="n">stat</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>lstat与stat类似，但是当命名的文件是一个符号链接时，lstat返回该符号链接的有关信息，而不是该符号链接引用文件的信息(stat)。</p>
+
+<h5>文件类型：<br></h5>
+
+<ul>
+<li>1.普通文件<br>                                                                                                                                S_ISREG</li>
+<li>2、目录文件。包含其他文件的名字以及指向这些文件有关信息的指针。<br>                                  S_ISDIR</li>
+<li>3、块特殊文件。提供对设备带缓冲的访问。 <br>                                                                                 S_ISBLK</li>
+<li>4、字符特殊文件。提供设备不带缓冲访问(系统中设备要么是 字符特殊文件，要么是块特殊文件)<br>  S_ISCHR</li>
+<li>5、 FIFO。命名管 道   <br>                                                                                                                     S_ISFIFO</li>
+<li>6、套接字  <br>                                                                                                                                   S_ISSOCK</li>
+<li>7、符号链接。这种文件指向另一个文件   <br>                                                                                       S_ISLNK<br><br/>
+所有类型文件都有访问权限</li>
+</ul>
+
+
+<h3>pag75</h3>
+
+<ul>
+<li><strong>主要先辨别ID针对的对象：进程还是文件（这个对理解各ID的差异与概念很重要）</strong><br></li>
+<li><p><strong>两个所有者ID是文件的性质，两个有效ID和附加组ID是进程的性质。</strong></p></li>
+<li><p>进程相关联ID：（执行文件时才说明这些ID）</p></li>
+<li>实际用户ID、实际组ID：进程执行者，当前所在的用户。</li>
+</ul>
+
+
+<h6>有效用户ID、有效组ID、附加组ID</h6>
+
+<p>决定访问权限。大多数情况下为实际用户ID、实际组ID（除了设置了设置用户ID位及设置组ID位这种情况）。当<code>设置-用户-ID（SUID）位</code>设置，则有效用户ID等于文件的所有者的uid(struct stat中的st_uid,st_gid)，而不是实际用户ID；<br>
+同样，如果设置了<code>设置-用户组-ID（SGID）位</code>，则有效用户组ID等于文件所有者的gid，而不是实际用户组ID。（实际用户是root时可能有点不同）设置用户ID位及设置组ID位都包含在st_mode值中，可用常量S_ISUID和S_ISGID测试。</p>
+
+<h6>保存的设置用户ID、保存的设置组ID</h6>
+
+<p>有效用户ID、有效组ID的副本。<br>
+例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">ls</span>
+</span><span class='line'><span class="o">-</span><span class="n">rw</span><span class="o">-</span><span class="n">r</span><span class="o">--</span><span class="n">r</span><span class="o">--</span> <span class="mi">1</span> <span class="n">root</span>  <span class="n">ad</span> <span class="p">..................(</span><span class="err">这个</span><span class="n">root</span><span class="err">表示的是文件所有者，即最初创建此文件的进程的有效用户</span><span class="n">ID</span><span class="err">；</span><span class="n">ad</span><span class="err">表示当所属用户组</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">whoami</span>
+</span><span class='line'><span class="n">ad</span>                                         <span class="p">(</span><span class="err">这个</span><span class="n">ad</span><span class="err">表示的是实际用户</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag76</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">st_mode</span><span class="err">屏蔽</span><span class="o">---------------------------------</span><span class="err">意义</span>
+</span><span class='line'><span class="n">S_IRUSR</span>     <span class="o">---------------------------------</span><span class="err">用户</span><span class="o">-</span><span class="err">读</span>
+</span><span class='line'><span class="n">S_IWUSR</span>    <span class="o">---------------------------------</span><span class="err">用户</span><span class="o">-</span><span class="err">写</span>
+</span><span class='line'><span class="n">S_IXUSR</span>     <span class="o">---------------------------------</span><span class="err">用户</span><span class="o">-</span><span class="err">执行</span>
+</span><span class='line'><span class="n">S_IRGRP</span>    <span class="o">---------------------------------</span><span class="err">组</span><span class="o">-</span><span class="err">读</span>
+</span><span class='line'><span class="n">S_IWGRP</span>    <span class="o">---------------------------------</span><span class="err">组</span><span class="o">-</span><span class="err">写</span>
+</span><span class='line'><span class="n">S_IXGRP</span>     <span class="o">---------------------------------</span><span class="err">组</span><span class="o">-</span><span class="err">执行</span>
+</span><span class='line'><span class="n">S_IROTH</span>     <span class="o">---------------------------------</span><span class="err">其他</span><span class="o">-</span><span class="err">读</span>
+</span><span class='line'><span class="n">S_IWOTH</span>    <span class="o">---------------------------------</span><span class="err">其他</span><span class="o">-</span><span class="err">写</span>
+</span><span class='line'><span class="n">S_IXOTH</span>     <span class="o">---------------------------------</span><span class="err">其他</span><span class="o">-</span><span class="err">执行</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>目录读权限与执行权限的差异</h6>
+
+<ul>
+<li>读权限：允许我们读目录获得在该目录中所有文件名的列表。</li>
+<li>执行权限：允许我们通过该目录，即搜索该目录，寻找一个特定的名字。</li>
+</ul>
+
+
+<p>为了<strong>删除</strong>一个现有文件，必须对<strong>包含该文件的目录</strong>具有写权限和<strong>执行权限</strong>，<strong>对该文件本身则不需要有读写权限</strong>。
+在目录中创建文件也一样。对于目录通常至少要设置一个执行权限位，以允许访问该目录中的文件名。</p>
+
+<h3>pag77</h3>
+
+<p>新文件的用户ID（所有者ID）设置为进程的有效用户ID。<br>
+新文件组ID：<br></p>
+
+<ul>
+<li>1、进程的有效组ID。</li>
+<li>2、所在目录的组ID。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">access</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mode</span><span class="p">);</span><span class="c1">//按实际用户ID和实际组ID进行访问权限测试</span>
+</span><span class='line'><span class="n">mode</span><span class="err">：</span>
+</span><span class='line'><span class="n">R_OK</span>          <span class="err">读权限</span>
+</span><span class='line'><span class="n">W_OK</span>          <span class="err">写权限</span>
+</span><span class='line'><span class="n">X_OK</span>          <span class="err">执行权限</span>
+</span><span class='line'><span class="n">F_OK</span>          <span class="err">文件是否存在</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag79</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">mode_t</span> <span class="n">umask</span><span class="p">(</span> <span class="kt">mode_t</span> <span class="n">cmask</span> <span class="p">)</span>
+</span><span class='line'><span class="c1">// umask函数为进程设置文件模式创建屏蔽字并返回以前的值。当调用umask后，在此函数以下创建的文件都受umask屏蔽字的影响(设置1时关闭)，在函数以上的则保持原先的访问权限。pag80中例子必须不在root用户下执行才能得到与书中一致的结果。更改进程的文件模式创建屏蔽字并不影响其父进程（常常是shell）的屏蔽字。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">chmod</span><span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">fchmod</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span> <span class="p">)</span>
+</span><span class='line'><span class="c1">// chmod函数在指定的文件上进行操作，fchmod对已打开的文件进行操作。</span>
+</span><span class='line'><span class="err">为改变一个文件的权限位，进程的有效用户</span><span class="n">ID</span><span class="err">必须等于文件的所有者</span><span class="n">ID</span><span class="err">，或者该进程必须具有超级用户权限。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">chown</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">owner</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">group</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fchown</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">owner</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">group</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">lchown</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">owner</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">group</span><span class="p">);</span>
+</span><span class='line'><span class="c1">// 更改文件的用户ID（文件所有者ID）和组ID。lchown更改符号链接本身的所有者，而不是该符号链接所指向的文件。如两个参数owner或group中的任意一个是-1，则对应的ID不变。</span>
+</span><span class='line'><span class="err">如果这些函数由非超级用户进程调用，则在成功返回时，该文件的设置用户</span><span class="n">ID</span><span class="err">位和设置组</span><span class="n">ID</span><span class="err">位都会被清除。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">truncate</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">length</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">ftruncate</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">length</span><span class="p">);</span>
+</span><span class='line'><span class="c1">// 把文件长度截断为length字节。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag87</h3>
+
+<p>一个磁盘可以分成多个分区，每个分区可以包含一个文件系统。</p>
+
+<ul>
+<li>i节点是固定长度的记录项，他包含有关文件的大部分信息。
+
+<h6>关于i节点的理解</h6></li>
+<li>i节点包含了大多数与文件有关的信息：文件类型、文件访问权限位、文件长度、指向该文件所占用的数据块指针等。
+<strong>要注意引用计数（进程）与链接计数（目录项）</strong></li>
+</ul>
+
+
+<h6>硬链接与符号链接</h6>
+
+<ul>
+<li><code>硬链接</code>：文件中为所指向文件的内容（直接指向文件的i节点）（多个文件名可指向同一索引节点）
+
+<ul>
+<li>每个i节点都有一个链接计数，其值是指向该i节点的目录项数，只有当链接计数减少至0时，才可删除文件。</li>
+</ul>
+</li>
+<li><code>符号链接</code>：文件中包含所指向文件的名字（指向一个文件的间接指针）
+
+<ul>
+<li>ln -s () ()创建符号链接，ls -l 可看出符号链接所指向的文件</li>
+<li>ln -P () ()创建硬链接，打开创建的硬链接，内容即为硬链接指向文件<br></li>
+</ul>
+</li>
+</ul>
+
+
+<p>硬链接限制：<br></p>
+
+<ul>
+<li>1.通常要求链接和文件位于同一文件系统中。</li>
+<li>2.只有超级用户才能创建指向目录的硬链接。</li>
+</ul>
+
+
+<p>任何一个叶目录（不包含任何其他目录的目录）的链接计数<strong>总是2</strong>，数值2来自于命名该目录的目录项..和该目录中的.项。父目录中的每一个子目录都会使该父目录的链接计数增1.</p>
+
+<h3>pag89</h3>
+
+<p>任何一个文件可以有多个目录项指向其i节点。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">link</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">existingpath</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">newpath</span><span class="p">);</span><span class="c1">//创建一个指向现有文件的链接（硬链接)</span>
+</span><span class='line'><span class="err">只创建</span><span class="n">newpath</span><span class="err">中最后一个分量，路径中的其他部分应当已经存在。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">unlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//删除现有目录项</span>
+</span><span class='line'><span class="err">删除目录项，并将由</span><span class="n">pathname</span><span class="err">所引用文件的链接计数减</span><span class="mf">1.</span><span class="err">（当文件还是打开的时候，不会将其内容删除，只有当进程关闭该文件或终止时该文件内容才会被删除）</span><span class="n">open</span><span class="err">或</span><span class="n">create</span><span class="err">创建文件时，文件有</span><span class="mi">1</span><span class="err">个引用计数（进程指向</span><span class="n">i</span><span class="err">节点的文件描述符），一个链接计数（所创建文件名所在的目录项），当两者都为</span><span class="mi">0</span><span class="err">时才释放空间。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">remove</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//解除对一个文件或目录的链接</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">rename</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">oldname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">newname</span><span class="p">);</span><span class="c1">//文件或目录用rename函数更名（如为符号链接，则处理的是符号链接本身）</span>
+</span><span class='line'><span class="err">给出符号链接名的情况下，没有一个函数能删除由该链接所引用的文件。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">symlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">actualpath</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">sympath</span><span class="p">);</span><span class="c1">//创建一个符号链接</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">readlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">bufsize</span><span class="p">);</span><span class="c1">//打开链接本身，并读链接中的名字（open跟随符号链接）</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">目录是包含目录项（文件名和相关的</span><span class="n">i</span><span class="err">节点编号）的文件。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">utime</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">utimbuf</span> <span class="o">*</span><span class="n">times</span><span class="p">);</span><span class="c1">//修改文件访问和修改时间</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">mkdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span><span class="p">);</span><span class="c1">//创建空目录（.和..目录自动创建）（对目录通常至少要设置1个文件执行权限位，以允许访问该目录中的文件名）</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">rmdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//删除空目录（空目录是只包含.和..目录的目录）</span>
+</span><span class='line'><span class="err">如果调用此函数后目录链接计数为</span><span class="mi">0</span><span class="err">，并且没有其他进程打开此目录，则释放此目录占用空间。（链接计数为</span><span class="mi">0</span><span class="err">不一定释放空间，还要看有无被进程打开（引用计数是否变为</span><span class="mi">0</span><span class="err">））</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>pag98</h4>
+
+<p>为了防止文件系统产生混乱，只有内核才能写目录（一个目录的写、执行权限位决定了在该目录中能否创建新文件以及删除文件，并不表示能否写目录本身）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">DIR</span> <span class="o">*</span><span class="nf">opendir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//返回DIR指针由以下5个函数使用</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">dirent</span> <span class="o">*</span><span class="nf">readdir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">rewinddir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">closedir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">long</span> <span class="nf">telldir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">seekdir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">,</span> <span class="kt">long</span> <span class="n">loc</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当前工作目录是进程的属性，起始目录是登录名的属性。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">chdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//更改当前目录（影响进程本身）</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fchdir</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="n">getcwd</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span><span class="err">（</span><span class="n">get</span> <span class="n">current</span> <span class="n">working</span> <span class="n">directory</span><span class="err">）</span><span class="p">;</span><span class="c1">//从当前目录（.目录）开始，用..目录找到上一级目录，然后读其目录项，直到该目录项中的i节点编号和工作目录i节点编号相同，这样就找到了其对应的文件名。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-04-05-vimchang-yong-ming-ling/">Vim常用命令</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-04-05T21:53:49+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:53 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>光标移动：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Ctrl+f 向文件尾翻一屏             Ctrl+b 向文件首翻一屏
+</span><span class='line'>n+     光标下移n行                 n-    光标上移n行
+</span><span class='line'>0（零）光标移至行首              $  光标移至行尾
+</span><span class='line'>^       光标移至行首第一个单词
+</span><span class='line'>nG     光标移至n行行首           :n 光标移至n行行首
+</span><span class='line'>gg    跳至文件开头                 G   跳至文件末尾
+</span><span class='line'>【
+</span><span class='line'>w    向后跳一个单词至词首     e  向后跳一个单词至词首尾  
+</span><span class='line'>b    向前跳一个单词至词首                    （+shift（大写） 忽略非单词字符）
+</span><span class='line'>】
+</span><span class='line'>:''             跳至刚才位置                          crtl+o   跳到一个older的地方（跳回到G过来的地方）
+</span><span class='line'>ctrl+i        跳到较新的地方</span></code></pre></td></tr></table></div></figure>
+
+
+<p>文本插入：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>i 在光标前开始插入文本              I在行首开始插入文本 
+</span><span class='line'>a在光标后开始插入文本              A  在行尾开始插入文本
+</span><span class='line'>o 在当前行之下新开一行            O 在当前行之上新开一行
+</span><span class='line'>s删除当前字符并插入                 S 删除当前行并插入</span></code></pre></td></tr></table></div></figure>
+
+
+<p>文本删除复制：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>d0 删除至行首                    d$\D删除至行尾
+</span><span class='line'>x 删除光标后的一个字符            X 删除光标前的一个字符
+</span><span class='line'>ndd删除当前行向后的n行         ndw 删除从光标开始的n个单词（dw 删除一个）
+</span><span class='line'>nyy复制当前行向后的n行          nyw 复制从光标开始的n个单词（yw 复制一个）</span></code></pre></td></tr></table></div></figure>
+
+
+<p>复制：<br>
+方法2：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>命令行模式下输入
+</span><span class='line'>6,9 co 12
+</span><span class='line'>复制第6行到第9行之间的内容到第12行后面。</span></code></pre></td></tr></table></div></figure>
+
+
+<p>方法3：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>有时候不想费劲看多少行或复制大量行时，可以使用标签来替代
+</span><span class='line'>光标移到起始行，输入ma
+</span><span class='line'>光标移到结束行，输入mb
+</span><span class='line'>光标移到粘贴行，输入mc
+</span><span class='line'>然后 :'a,'b co 'c      （用marks查看所有标记）
+</span><span class='line'>  把co 改成 m 就成剪切了
+</span><span class='line'>要删除多行的话，可以用 ：5, 9de</span></code></pre></td></tr></table></div></figure>
+
+
+<p>搜索替换：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/pattern 从光标开始处向文件尾搜索   ?pattern 文件首搜索
+</span><span class='line'>n 在同一方向上重复上一次搜索        N 在反方向上重复上次搜索
+</span><span class='line'>:s/p1/p2/g  在当前行中所有p1均用p2替代  :n1,n2s/p1/p2/g 将第n1至n2行中的所有p1均用p2替代
+</span><span class='line'>:%s/p1/p2/g  将文件中所有p1均用p2替换</span></code></pre></td></tr></table></div></figure>
+
+
+<p>退出保存：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>:w 保存文件               :wq保存退出
+</span><span class='line'>:q 退出                  :q! 强制退出不保存</span></code></pre></td></tr></table></div></figure>
+
+
+<p>进入头文件：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>gf 进入头文件                   :bd      退出头文件</span></code></pre></td></tr></table></div></figure>
+
+
+<p>切换窗口：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ctrl+w+w</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>u   撤销
+</span><span class='line'>Ctrl+r 恢复</span></code></pre></td></tr></table></div></figure>
+
+
+<p>批量缩进：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>1、v
+</span><span class='line'>2、j、k选择行
+</span><span class='line'>3、键入&lt;、&gt;</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>:sp              将屏幕横向分成两屏（同个文件复制方便）</span></code></pre></td></tr></table></div></figure>
+
+
+<p>字符界面下不同文件复制：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>1、ctrl+w+n     新开个窗口
+</span><span class='line'>2、:edit file      编辑新文件(可做字符界面下复制)（不同文件复制方便）
+</span><span class='line'>3、ctrl+w+w    切换窗口</span></code></pre></td></tr></table></div></figure>
+
+
+<p>图形界面下不同文件复制：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>1、*y或+y
+</span><span class='line'>2、*p或+p</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>ctrl + t 返回上一层
+</span><span class='line'>ctrl + ] 查找函数</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/posts/8">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+    <a class="next" href="/posts/6">Newer &rarr;</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-07-04-ocji-ben-yu-fa/">OC基本语法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-28-2013nian-zhong-bei-cui-ji/">2013年中悲催记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-15-shi-yong-iofu-yong-he-duo-xian-cheng-wen-ti/">使用IO复用和多线程问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-13-unixxi-tong-xi-ti-10-6/">UNIX系统习题10-6</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-10-unixxi-tong-wen-jian-he-xin-xi/">UNIX系统文件和信息</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-06-01-unixxi-tong-jin-cheng-jian-tong-xin/">UNIX系统进程间通信</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
