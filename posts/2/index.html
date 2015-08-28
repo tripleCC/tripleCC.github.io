@@ -9,15 +9,11 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="Objective-C的runtime语言使它具备了动态语言的特性，也就是平时所说的“运行时”。在runtime的基础上，可以做很多平时难以想到事，或者化简原先 较为繁杂的解决方案。
-相对于静态语言，比如C的以下程序 1
-2
-3
-4
-5
-6
-7
-#include &lt;stdio.h&gt; &hellip;">
+  <meta name="description" content="runtime可以以底层的角度来对一些实现方式进行更改，比如说KVC
+首先，先来了解下KVC的底层原理:
+key : value 1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值
+2.如果没有setValue:，就在模型中查找_value属性
+3. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -73,6 +69,284 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">runtime应用之KVC</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-01-21T20:16:13+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2015</span></span> <span class='time'>8:16 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>runtime可以以底层的角度来对一些实现方式进行更改，比如说KVC<br>
+首先，先来了解下KVC的底层原理:<br>
+key : value</p>
+
+<ul>
+<li>1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值</li>
+<li>2.如果没有setValue:，就在模型中查找_value属性</li>
+<li>3.如果没有_value属性，就查找value属性</li>
+<li>4.如果还没有就报错</li>
+</ul>
+
+
+<p>在和后台通信的JSON数据中，可能会看到这种JSON数据：<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="s">&quot;id&quot;</span> <span class="o">:</span> <span class="s">&quot;tripleCC&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s">&quot;age&quot;</span> <span class="o">:</span> <span class="s">&quot;30&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s">&quot;address&quot;</span> <span class="o">:</span> <span class="s">&quot;杭州&quot;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s">&quot;schooll&quot;</span> <span class="o">:</span> <span class="s">&quot;HDU&quot;</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中的id是什么？是Objective-C关键字，也就是说我不能定义以下属性：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="kt">id</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于数据模型名称没有和JSON的键值一一对应，我们不能使用以下方法，对模型中的成员变量进行统一设置：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setValuesForKeysWithDictionary:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">keyedValues</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>既然这样，可以选择手动一个个去实现。但是这样在数据少的时候可以试试，在数据比较多时就不太现实了，程序的可扩展性也不好。<br>
+现在来了解下相对比较简单的两种解决方法：</p>
+
+<h2>方式1.重写setValue:forKey:</h2>
+
+<p>setValuesForKeysWithDictionary:的底层是调用setValue:forKey:的，所以可以考虑重写这个方法，并且判断其key是id时，手动转换成模型的成员变量名，这里假设把id对应成以下属性：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">ID</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>有了对应的属性名后，就可以重写底层方法了：
+  - 如下所示，当判断到key的值为id时，我手动将key转换成了模型属性名，即ID</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setValue:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">value</span> <span class="nf">forKey:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">key</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">key</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;id&quot;</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="s">@&quot;ID&quot;</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">super</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKey</span><span class="p">:</span><span class="n">key</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样，当使用setValuesForKeysWithDictionary:就不会出现模型中找不到对应的成员变量的错误了。</p>
+
+<h2>方式2.使用runtime</h2>
+
+<p>考虑到runtime和KVC的实现原理，可以使用另一种实现思路，就是<code>先在模型中找到对应的成员变量，然后从JSON字典中找到对应的数据进行赋值</code>。<br>
+这里先要了解runtime的两个实例变量操作方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取成员变量列表</span>
+</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span> <span class="nf">class_copyIvarList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">);</span>
+</span><span class='line'><span class="c1">// 获取成员变量名</span>
+</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">ivar_getName</span> <span class="p">(</span> <span class="n">Ivar</span> <span class="n">v</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>详细实现步骤：<br></p>
+
+<ul>
+<li>1.获取模型中的所有实例变量</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>2.将获取出来以'<em>&lsquo;开头的实例变量名去处&rsquo;</em>&lsquo;符号</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>   <span class="bp">NSString</span> <span class="o">*</span><span class="n">ivarName</span> <span class="o">=</span> <span class="l">@(</span><span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">)</span><span class="l">)</span><span class="p">;</span>
+</span><span class='line'>   <span class="n">ivarName</span> <span class="o">=</span> <span class="p">[</span><span class="n">ivarName</span> <span class="nl">substringFromIndex</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>3.获取JOSN字典中对应的value，如果没有，手动设置我们传入的字典映射，以指定对应的模型变量名，最后调用setValue:forKeyPath:设置模型实例变量值</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 由外界通知内部，模型中成员变量名对应字典里面的哪个key</span>
+</span><span class='line'><span class="c1">// 这里是ID -&gt; id</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 这里的mapDict就是外界传入的映射字典</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">mapDict</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">keyName</span> <span class="o">=</span> <span class="n">mapDict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">keyName</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">[</span><span class="n">objc</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="n">ivarName</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于需要针对所有模型使用，可以将其设置为NSObject分类。以上步骤的完整代码为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// dict  -&gt; 资源文件提供的字典</span>
+</span><span class='line'><span class="c1">// mapDict  -&gt; 提供的key映射（实际变量名:资源文件key）</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">objcWithDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">dict</span> <span class="nf">mapDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">mapDict</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">objc</span> <span class="o">=</span> <span class="p">[[</span><span class="nb">self</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 遍历模型中成员变量</span>
+</span><span class='line'>    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">Ivar</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivars</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 成员变量名称</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">ivarName</span> <span class="o">=</span> <span class="l">@(</span><span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">)</span><span class="l">)</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 获取出来的是`_`开头的成员变量名，需要截取`_`之后的字符串</span>
+</span><span class='line'>        <span class="n">ivarName</span> <span class="o">=</span> <span class="p">[</span><span class="n">ivarName</span> <span class="nl">substringFromIndex</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>        <span class="c1">// 由外界通知内部，模型中成员变量名对应字典里面的哪个key</span>
+</span><span class='line'>        <span class="c1">// ID -&gt; id</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">mapDict</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="bp">NSString</span> <span class="o">*</span><span class="n">keyName</span> <span class="o">=</span> <span class="n">mapDict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">keyName</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">objc</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="n">ivarName</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">objc</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">itemWithDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">dict</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 传入key和实例变量名的映射字典@{@&quot;ID&quot;:@&quot;id&quot;}</span>
+</span><span class='line'>    <span class="n">TPCItem</span> <span class="o">*</span><span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">TPCItem</span> <span class="nl">objcWithDict</span><span class="p">:</span><span class="n">dict</span> <span class="nl">mapDict</span><span class="p">:</span><span class="l">@{</span><span class="s">@&quot;ID&quot;</span><span class="o">:</span><span class="s">@&quot;id&quot;</span><span class="l">}</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">item</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -944,304 +1218,6 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2014-02-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-02-27T20:17:32+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:17 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>UINavigationBar属性</h2>
-
-<ul>
-<li>如果想统一设置，可以通过以下方法，获取当前类下的所有对象的导航条，然后进行设置</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景图片<br>
-<img src="./images/Snip20150724_4.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// barMetrics需要设置成UIBarMetricsDefault</span>
-</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setBackgroundimages</span><span class="p">:(</span><span class="n">UIimages</span> <span class="o">*</span><span class="p">)</span><span class="n">backgroundimages</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景阴影图片<br>
-<img src="./images/Snip20150724_5.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">shadowimages</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景颜色<br>
-<img src="./images/Snip20150724_6.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">barTintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题文字属性<br>
-<img src="./images/Snip20150724_10.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">titleTextAttributes</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>系统类型按钮文字颜色<br>
-<img src="./images/Snip20150724_9.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">tintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>返回按钮图片<br>
-<img src="./images/Snip20150724_11.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 必须要两个都设置，并且图片要设置成不渲染</span>
-</span><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorimages</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorTransitionMaskimages</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题垂直偏移<br>
-<img src="./images/Snip20150724_12.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setTitleVerticalPositionAdjustment</span><span class="p">:(</span><span class="n">CGFloat</span><span class="p">)</span><span class="n">adjustment</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>返回按钮更改</h2>
-
-<p>系统原装效果:<br>
-<img src="./images/Snip20150724_13.png" alt="" /><br></p>
-
-<p>如果有以下需求:</p>
-
-<ul>
-<li>去除上面返回按钮上“我是标题”字样，并设置返回图片为白色</li>
-</ul>
-
-
-<h6>分析</h6>
-
-<ul>
-<li>图片修改
-
-<ul>
-<li>方式1：设置返回图片颜色</li>
-<li>方式2：直接设置返回图片</li>
-<li>方式3：使用按钮覆盖返回图片(这种方式会使返回箭头图片和左边距离加大，但可以用取巧的方式调整)</li>
-</ul>
-</li>
-<li>文字修改
-
-<ul>
-<li>方式1：设置控制器navigationItem的backBarButtonItem显示文字为""</li>
-<li>方式2：设置返回按钮文字偏移量，使其移出屏幕</li>
-<li>方式3：采用控制器navigationItem的leftBarButtonItem进行覆盖</li>
-</ul>
-</li>
-</ul>
-
-
-<h6>解决</h6>
-
-<p>综合以上说明，这里给出三种方式(都是针对的自定义UINavigationController)：</p>
-
-<ul>
-<li>方式1:在<code>-pushViewController:animated:</code>中设置文字 ，在<code>+initialize</code>方法中设置返回图片或改变返回图片颜色
-
-<ul>
-<li>注意导航栏对图片的渲染</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">pushViewController</span><span class="p">:(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">animated</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">backBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTitle</span><span class="p">:</span><span class="s">@&quot;&quot;</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">action</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取特定类的所有导航条</span>
-</span><span class='line'><span class="bp">UINavigationBar</span> <span class="o">*</span><span class="n">navigationBar</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式1：使用自己的图片替换原来的返回图片</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorTransitionMaskImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式2：设置返回图片颜色</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">whiteColor</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式2:在<code>+initialize</code>方法中设置所有返回按钮文字的偏移量，其他设置和方式1一致</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">appearance</span><span class="p">]</span> <span class="nl">setBackButtonTitlePositionAdjustment</span><span class="p">:</span><span class="n">UIOffsetMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="nl">forBarMetrics</span><span class="p">:</span><span class="n">UIBarMetricsDefault</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式3.重写<code>-pushViewController:animated:</code>方法,使用控制器的<code>navigationItem的leftBarButtonItem</code>覆盖返回按钮
-
-<ul>
-<li>需要判断是否为根控制器，如果是根控制器就不添加
-
-<ul>
-<li>导航控制器的<code>viewControllers.count</code>不为0即表示传入的为非根控制器</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">pushViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">viewControllers</span><span class="p">.</span><span class="n">count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithImage</span><span class="p">:[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">]</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">action</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">back</span><span class="p">)];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">back</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">popViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>方案对比</h6>
-
-<ul>
-<li>方案1和方案2改动较小，对系统自带的返回功能无影响。<br></li>
-<li>方式3灵活性最高，但是会<code>使系统的滑动返回失效</code>，需要自己实现，具体实现参照<a href="https://github.com/forkingdog/FDFullscreenPopGesture">forkingdog全屏手势分类</a><br></li>
-<li>方式3还会使按钮更加偏向右边：</li>
-</ul>
-
-
-<p><img src="./images/Snip20150722_10.png" alt="" /><br>
-通过以下方式可以使按钮向左边靠：
-<img src="./images/Snip20150722_11.png" alt="" /><br>
-- 采用customView，<code>添加自己定义的UIButton</code><br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="c1">// 返回按钮内容左靠</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentHorizontalAlignment</span> <span class="o">=</span> <span class="n">UIControlContentHorizontalAlignmentLeft</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 让返回按钮内容继续向左边偏移10</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentEdgeInsets</span> <span class="o">=</span> <span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-</span><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithCustomView</span><span class="p">:</span><span class="n">button</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
       <h1 class="entry-title"><a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a></h1>
     
     
@@ -1344,7 +1320,613 @@
 
     </article>
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-15-unixxi-tong-xin-hao/">UNIX系统信号</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-15T11:46:30+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>15</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:46 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag233</h3>
+
+<p>信号都被定义为正整数。<br>
+不存在编号为0的信号。<br>
+不能捕捉SIGKILL和SIGSTOP信号。<br>
+信号的处理：</p>
+
+<ul>
+<li>1，忽略信号</li>
+<li>2，捕捉信号</li>
+<li>3，执行系统默认动作（大多数信号默认动作时终止进程）</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">signal</span> <span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">fun</span><span class="p">)(</span><span class="kt">int</span><span class="p">)))(</span><span class="kt">int</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>fun：</p>
+
+<ul>
+<li>1、SIG_IGN  忽略信号</li>
+<li>2、SIG_DFL 默认（通常时关闭）</li>
+<li>3、调用函数地址</li>
+<li>缺点：不改变信号的处理方式就不能确定信号的当前处理方式。</li>
+</ul>
+
+
+<p>exec将原先设置为<code>要捕捉的信号</code>都更改为他们的<code>默认动作</code>，<code>其他信号</code>的状态则<code>不变</code>（对于一个进程原先要捕捉的信号，当其执行一个新程序后，就自然不能捕捉他了，因为信号捕捉函数的地址很可能在所执行的新程序文件中已无意义）</p>
+
+<h3>pag244</h3>
+
+<p>当捕捉到某个信号时被中断的是内核中执行的系统调用。
+不可重入函数特征：</p>
+
+<ul>
+<li>1，使用静态数据结构</li>
+<li>2，调用malloc或free</li>
+<li>3，标准IO函数</li>
+</ul>
+
+
+<p>信号的阻塞就是让系统暂时保留信号留待以后发送</p>
+
+<p><code>sigaction可设置SA_NOCLDWAIT标志以避免子进程僵死</code>（这样就不用执行信号处理函数再waitpid了）</p>
+
+<h3>pag250</h3>
+
+<h6>信号未决：</h6>
+
+<p>在信号产生和递送之间的时间间隔内，称信号是未决的。</p>
+
+<p>若同一种信号多次发生，通常并不将他们排队，所以如果在某种信号被阻塞时他发生了五次，那么对这种信号解除阻塞后，其信号处理函数通常只会被调用一次。</p>
+
+<p><code>当执行信号处理程序时，若新信号（相同信号）抵达，signal默认将该信号加入进程的信号队列中，直至信号处理程序执行结束。（多次抵达只取第一次）（现在在ubuntu上实测signal是这样的，APUE上面是不自动阻塞,执行信号默认操作）</code></p>
+
+<h6>发送信号：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">kill</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">raise</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span> <span class="c1">//给自身发送信号</span>
+</span><span class='line'><span class="err">调用</span><span class="n">kill</span><span class="err">为调用进程产生信号，而且此信号是不被阻塞的，那么在</span><span class="n">kill</span><span class="err">返回之前，就会将</span><span class="n">signo</span><span class="err">或者某个其他未决的非阻塞信号传送至该进程。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">alarm</span><span class="p">(</span> <span class="kt">unsigned</span> <span class="n">intseconds</span> <span class="p">)</span> <span class="c1">//每个进程只能有一个闹钟时钟</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pause</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span><span class="c1">//使调用进程挂起直至捕捉到一个信号并从信号处理程序返回</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag256</h3>
+
+<p><code>所有应用程序在使用信号集前，要对该信号集调用sigemptyset或sigfillset一次.(因c编译器把未赋初值的外部和静态变量都初始化为0)</code></p>
+
+<h6>信号集：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigemptyset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">)</span>  <span class="c1">//清除信号集所有信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigfillset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">)</span>     <span class="c1">//设置所有信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigaddset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span> <span class="n">intsigno</span> <span class="p">)</span> <span class="c1">//向信号集中添加信号（要阻塞的）</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigdelset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span> <span class="n">intsigno</span> <span class="p">)</span>   <span class="c1">//从信号集中移除信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigismember</span><span class="p">(</span> <span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span><span class="kt">int</span> <span class="n">signo</span> <span class="p">)</span>  <span class="c1">//测试信号是否在信号集中</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigprocmask</span><span class="p">(</span> <span class="kt">int</span> <span class="n">how</span><span class="p">,</span> <span class="kt">constsigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oset</span><span class="p">)</span><span class="c1">//oset返回当前屏蔽字（处理单线程）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>how：</p>
+
+<ul>
+<li>1、SIG_BLOCK 将当前信号屏蔽字和set指向信号集的相并</li>
+<li>2、SIG_UNBLOCK 将当前信号屏蔽字和set指向信号集补集的相交</li>
+<li>3、SIG_SETMASK 进程新的信号屏蔽字被set指向的信号集代替
+sigprocmask仅为<code>单线程的进程</code>定义。pthread_sigmask为多线程进程定义</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">sigpending</span> <span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span> <span class="p">)</span>
+</span><span class='line'><span class="err">返回信号集，其中各个信号对于调用进程时阻塞的而不能递送，因而也一定是当前未决的。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigaction</span><span class="p">(</span> <span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="k">const</span> <span class="n">structsigaction</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">act</span><span class="p">,</span> <span class="k">struct</span> <span class="n">sigaction</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oact</span> <span class="p">)</span>
+</span><span class='line'><span class="n">oact</span> <span class="err">非空时返回该信号的上一次动作（包括信号屏蔽字）</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">sigaction</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">sa_handler</span><span class="p">)(</span><span class="kt">int</span><span class="p">);</span>  <span class="c1">//信号捕捉函数地址</span>
+</span><span class='line'>    <span class="n">sigset_tsa_mask</span><span class="p">;</span>       <span class="c1">//信号集。调用信号捕捉函数之前，此信号集加到进程信号集中，捕捉函数返回时恢复为原值（这里的捕捉信号函数之前这个说法要注意，下说明）</span>
+</span><span class='line'>   <span class="kt">int</span>         <span class="n">sa_flags</span><span class="p">;</span>   <span class="c1">//指定对信号处理的各个选项</span>
+</span><span class='line'>    <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">sa_sigaction</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">siginfo_t</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span><span class="p">);</span>   <span class="c1">//替代的信号处理程序（2个处理函数只能选其一）</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在信号处理程序被调用时，操作系统建立的新信号屏蔽字包括正在被递送的信号，因此保证了在处理一个给定信号时，如果这种信号再次发生，那么他会被阻塞到对前一个信号的处理结束为止。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">sigset_t</span>    <span class="n">sigmask</span><span class="p">;</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">sigaction</span>    <span class="n">act</span><span class="p">,</span> <span class="n">oact</span><span class="p">;</span>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sigmask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigprocmask error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">SIGALRM have been masked in handle function</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGINT has been masked in handle function</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;handle signal</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_handler</span> <span class="o">=</span> <span class="n">sig_handler</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigaction</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">act</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">oact</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigaction error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">oact</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGALRM has already been masked</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sigmask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigprocmask error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGALRM has been masked in main process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGINT has been masked in main process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">pause</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;done</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>程序输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">^</span><span class="n">C</span>
+</span><span class='line'><span class="n">SIGALRM</span> <span class="n">have</span> <span class="n">been</span> <span class="n">masked</span> <span class="k">in</span> <span class="n">handle</span> <span class="n">function</span>    <span class="c1">//1</span>
+</span><span class='line'><span class="n">SIGINT</span> <span class="n">has</span> <span class="n">been</span> <span class="n">masked</span> <span class="k">in</span> <span class="n">handle</span> <span class="n">function</span>           <span class="c1">//2</span>
+</span><span class='line'><span class="n">done</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><code>1：（说明sigaction在处理信号时才将sa_mask信号集添加进进程信号屏蔽字，书上的在“调用捕捉函数之前加入”这句让我理解错误了，以为调用sigaction以后就加入信号屏蔽字，捕捉信号，并从信号处理函数返回以前都是阻塞sa_mask中的信号的，实际上只有在信号处理函数中才阻塞sa_mask中的信号，和2中的差不多，只不过一个是系统自动添加，一个是人为设定信号集通过sigaction添加到进程信号屏蔽字），可能书中“在调用该信号的捕捉函数之前”的意思是：已经捕捉到信号了，但是还没且将要执行信号处理函数，这样就和输出结果一致了。。</code></li>
+<li>2：<code>（说明系统在处理信号时会将正在处理的信号加入进程信号屏蔽字）</code></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigsuspend</span><span class="p">(</span><span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">sigmask</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>原子操作：</h6>
+
+<p>先恢复成sigmask指定的信号屏蔽字，再使进程休眠<br>
+在捕捉到一个信号或发生了一个会终止该进程的信号之前，该进程被挂起。如果捕捉到一个信号而且从该信号处理程序返回，则sigsuspend返回，并将信号屏蔽字设置为调用sigsuspend之前的值（<code>设定----捕捉----处理----恢复</code>）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">sleep</span><span class="err">（</span><span class="kt">unsigned</span> <span class="n">intseconds</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>挂起恢复条件：</p>
+
+<ul>
+<li>1、过了seconds</li>
+<li>2、调用进程捕捉到信号并从信号处理程序返回</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">psignal</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span><span class="n">msg</span><span class="p">);</span><span class="c1">//；类似perror</span>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">strsignal</span><span class="p">(</span><span class="n">intsigno</span><span class="p">);</span><span class="c1">//类似strerror</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">sig2str</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span><span class="n">str</span><span class="p">);</span><span class="c1">//将信号编号翻译成字符串</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">str2sig</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span><span class="n">signop</span><span class="p">);</span><span class="c1">//将给出的名字翻译为字符串</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>例子：</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_print</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>   <span class="n">printf</span><span class="p">(</span><span class="s">&quot;signal is %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpid</span><span class="p">());</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>   <span class="kt">pid_t</span>      <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>   <span class="n">signal</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">sig_print</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>       <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'>       <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>   <span class="p">}</span>
+</span><span class='line'>   <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'>   <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">signal</span> <span class="n">is</span> <span class="mi">3489</span>
+</span><span class='line'><span class="n">signal</span> <span class="n">is</span> <span class="mi">3490</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>SIGINT信号传送给前台进程组里的所有进程</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-12-unixxi-tong-xin-hao-de-zi-wo-li-jie-(bu-zhi-dui-cuo-)/">UNIX系统信号的自我理解（不知对错）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-12T11:33:23+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:33 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;string.h&gt;   </span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span> <span class="kt">int</span> <span class="n">signo</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;getsignal</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">sigset_t</span>    <span class="n">newmask</span><span class="p">,</span><span class="n">zeromask</span><span class="p">;</span>
+</span><span class='line'>   <span class="kt">pid_t</span>      <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span><span class="p">,</span> <span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigprocmask</span><span class="p">(</span><span class="n">SIG_BLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">newmask</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>      <span class="c1">//1  </span>
+</span><span class='line'>    <span class="n">signal</span><span class="p">(</span><span class="n">SIGUSR1</span><span class="p">,</span> <span class="n">sig_handler</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>      <span class="n">sleep</span><span class="p">(</span> <span class="mi">2</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;child</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">sigsuspend</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;child done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">pid</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">kill</span><span class="p">(</span> <span class="n">pid</span><span class="p">,</span><span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果省略1，则输出中子进程无child done。<br>
+添加上则有。<br>
+进程间的信号传递要用sigprocmask来阻塞（保留）信号，不然可能在sigsuspend之前传递的信号就已捕获，sigsuspend就无法返回。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span> <span class="kt">int</span> <span class="n">signo</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;getsignal</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">sigset_t</span>    <span class="n">newmask</span><span class="p">,</span><span class="n">zeromask</span><span class="p">;</span>
+</span><span class='line'>   <span class="kt">pid_t</span>       <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span><span class="p">,</span> <span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">signal</span><span class="p">(</span><span class="n">SIGUSR1</span><span class="p">,</span> <span class="n">sig_handler</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>       <span class="n">printf</span><span class="p">(</span><span class="s">&quot;child</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>       <span class="n">sigsuspend</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>       <span class="n">printf</span><span class="p">(</span><span class="s">&quot;child done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>       <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">sleep</span><span class="p">(</span> <span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">kill</span><span class="p">(</span> <span class="n">pid</span><span class="p">,</span><span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sleep</span><span class="p">(</span> <span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>虽然用sleep可能不太适合（负载重时可能超过sleep2的时间），但忽略子进程被阻塞等延迟情况。</p>
+
+<p>以上程序的输出为</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">child</span>
+</span><span class='line'><span class="n">father</span>
+</span><span class='line'><span class="n">get</span> <span class="n">signal</span>
+</span><span class='line'><span class="n">child</span> <span class="n">done</span>
+</span><span class='line'><span class="n">father</span> <span class="n">done</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>1、程序执行，因主进程中sleep（2），执行进程切换至子进程</li>
+<li>2、子进程输出child，并挂起，从而执行进程恢复为主进程</li>
+<li>3、主进程如sleep(2)执行结束则输出father，并向子进程发送信号，然后子进程sleep(2)，执行切换至子进程</li>
+<li>4、一进入子进程即捕获主进程发送的信号，输出getsignal，并从挂起退出输出 child done，子进程执行完毕</li>
+<li>5、执行切换至主进程，sleep(2)执行结束后，输出father done，主进程执行结束。</li>
+</ul>
+
+
+<p>主进程未调用kill发送信号时，执行子进程过程时没有获取到信号。<br>
+主进程在调用kill向子进程发送信号后，<code>相对于主进程kill发送后，执行第一条子进程中的某一语句时</code>，子进程<code>即</code>获取到信号。此时如子进程处在挂起状态，则退出挂起。<br>
+如果主进程的kill执行前，子进程已经进入pause状态，则在下一次切换到子进程时，子进程捕捉到信号并退出pause状态。<br>
+如果主进程的kill执行时，子进程还未进入pause状态，则在下一次切换到子进程时，子进程同样捕捉到信号，但是当执行到pause时，子进程便被挂起，如无信号再次传入，则无法退出挂起状态。</p>
+
+<p>如果把上面程序的第一个sleep(2)去除，则程序可能会发生多种情况：<br>
+其中一种：主进程的kill发送信号后，切换至子进程时，子进程可能还没执行到sigsuspend。但此时信号已被捕获，并且sigsuspend没有能捕捉的信号，程序无childdone。</p>
+
+<p>所以进程间的信号传输一般用屏蔽字阻塞，这样只有当执行sigsuspend时，此函数去除相应屏蔽字才能捕捉相应信号！（函数捕捉到信号从挂起返回时，恢复屏蔽字原值）</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
+    
+      <a class="prev" href="/posts/3">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -1367,6 +1949,10 @@
 </section><section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">runtime应用之关联对象和MethodSwizzling</a>
@@ -1393,11 +1979,35 @@
       </li>
     
       <li class="post">
-        <a href="/blog/2014-02-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+        <a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a>
+        <a href="/blog/2013-05-15-unixxi-tong-xin-hao/">UNIX系统信号</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-05-12-unixxi-tong-xin-hao-de-zi-wo-li-jie-(bu-zhi-dui-cuo-)/">UNIX系统信号的自我理解（不知对错）</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-05-09-unixxi-tong-jin-cheng-guan-xi/">UNIX系统进程关系</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-05-06-unixxi-tong-jin-cheng-kong-zhi/">UNIX系统进程控制</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-05-05-unixjin-cheng-huan-jing/">UNIX进程环境</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-05-01-unixxi-tong-biao-zhun-io/">UNIX系统标准IO</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-04-28-unixxi-tong-wen-jian-he-mu-lu/">UNIX系统文件和目录</a>
       </li>
     
   </ul>
