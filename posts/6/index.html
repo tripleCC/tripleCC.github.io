@@ -9,7 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="一组并发线程运行在一个进程的上下文中。每个线程都有他自己独立的线程上下文，包括线程ID，栈，栈指针，程序计数器，条件码和通用的目地寄存器。每个线程和其他线程一起共享进程上下文的剩余部分。这包括整个用户虚拟地址（由只读文本，读写数据，堆，以及所有共享库代码和数据区域组成），线程同样共享打开的文件集合 &hellip;">
+  <meta name="description" content="地址空间： 线程：无单独地址空间，共享内存，一个线程死掉等于整个进程死掉。线程只是一个进程中的不同执行路路径。线程有自己的堆栈和局部变量（寄存器集、信号屏蔽字）。
+进程：有独立的地址空间（调用fork时就创建子进程的地址空间副本）（现在：写时拷贝，共享正文）， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +66,49 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-17-jin-cheng-he-xian-cheng-de-qu-bie/">进程和线程的区别</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-17T21:52:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:52 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h4>地址空间：</h4>
+
+<ul>
+<li>线程：无单独地址空间，共享内存，一个线程死掉等于整个进程死掉。线程只是一个进程中的不同执行路路径。线程有自己的堆栈和局部变量（寄存器集、信号屏蔽字）。</li>
+<li>进程：有独立的地址空间（调用fork时就创建子进程的地址空间副本）（现在：写时拷贝，共享正文），一个进程崩溃后在保护模式下不会对其他进程产生影响。</li>
+</ul>
+
+
+<h4>系统开销：</h4>
+
+<ul>
+<li>线程：占用资源少，所以切换时对资源的处理也少，耗费资源少。并发性高。</li>
+<li>进程：占用资源多，切换时资源耗费大。</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -977,187 +1021,6 @@ sigprocmask仅为<code>单线程的进程</code>定义。pthread_sigmask为多�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-05-09-unixxi-tong-jin-cheng-guan-xi/">UNIX系统进程关系</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-05-09T11:25:53+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:25 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>pag214</h3>
-
-<h6>登录简易流程：</h6>
-
-<ul>
-<li>init进程fork子进程exec执行getty</li>
-<li>getty开启终端设备以便输入，显示Login：</li>
-<li>用户输入用户名</li>
-<li>getty程序exec执行login程序</li>
-<li>login由用户名（getpwnam）获取pw结构，显示Password:</li>
-<li>用户输入密码</li>
-<li>login程序比对pw结构中pw_passwd</li>
-</ul>
-
-
-<h3>pag218</h3>
-
-<p>进程组使一个或多个进程的集合，通常他们与同一作业相关联，可以接收来自统一终端的各种信号。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getpgrp</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//返回调用进程的进程组ID</span>
-</span><span class='line'><span class="kt">pid_t</span> <span class="nf">getpgid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">);</span><span class="c1">//返回pid进程的进程组ID（getpgid(0) = getpgrp()）</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">setpgid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">pid_t</span> <span class="n">pgid</span><span class="p">);</span><span class="c1">//加入现有组或创建一个新进程组</span>
-</span><span class='line'><span class="n">pid</span><span class="o">=</span><span class="n">pgid</span><span class="p">,</span> <span class="n">pid</span><span class="err">指定进程变成进程组组长</span>
-</span><span class='line'><span class="n">pid</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="err">使用调用者进程</span><span class="n">PID</span>
-</span><span class='line'><span class="n">pgid</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pid</span><span class="err">指定进程</span><span class="n">ID</span><span class="err">作为进程组</span><span class="n">ID</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>进程组：</h6>
-
-<p>每个进程组都可以有一个组长进程。<code>组长进程</code>的标识是，其<code>进程组ID等于其进程ID</code>。<br>
-组长进程可以创建一个进程组，创建该组中的进程，然后终止。只要在<code>某个进程组中有一个进程</code>存在，则该<code>进程组就存在</code>，这<code>与其组长进程是否终止无关</code>。<br>
-<code>一个进程只能为他自己或他的子进程设置进程组ID</code>。在他的<code>子进程调用了exec函数之一后，他就不能改变该子进程的进程组ID</code>。</p>
-
-<h3>pag219</h3>
-
-<p>会话是一个或多个进程组的集合。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">setsid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//建立新会话</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>调用进程不是一个进程组的组长，此函数创建一个新会话：</h6>
-
-<ul>
-<li>该进程变成新会话首进程，并且是此时新会话中的唯一进程</li>
-<li>该进程成为一个新进程组的组长进程。新进程组ID是该调用进程的进程ID</li>
-<li>该进程没有控制终端。如在调用之前有，则联系中断</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getsid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">);</span> <span class="c1">//返回会话首进程的进程组ID</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>一个会话可以有一个控制终端。</p>
-
-<p>建立与控制终端连接的会话首进程被称为控制进程。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">tcgetpgrp</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//返回前台进程组的进程组ID，该前台进程组与在filedes上打开的终端相关联</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">tcsetpgrp</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">pid_t</span> <span class="n">pgrpid</span><span class="p">);</span><span class="c1">//将前台进程组ID设置为pgrpid（同一会话中的进程组ID），filedes必须引用会话的控制终端</span>
-</span><span class='line'><span class="kt">pid_t</span> <span class="nf">tcgetsid</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//获得会话首进程的进程组ID</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>pag229</h3>
-
-<h6>孤儿进程组：</h6>
-
-<p>一个进程组不是孤儿进程组的条件是，该<code>组中有一个进程</code>，其<code>父进程在属于同一会话中的另一组</code>中。</p>
-
-<p><code>父进程终止时，子进程被置入后台进程组中，shell所在进程组成为前台进程组</code>（程序9-1）</p>
-
-<h3>习题9-2</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span>
-</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">pid_t</span>   <span class="n">pid</span><span class="p">,</span> <span class="n">sid</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;gid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpgid</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;session fgid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">tcgetpgrp</span><span class="p">(</span><span class="n">STDOUT_FILENO</span><span class="p">));</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">sid</span> <span class="o">=</span> <span class="n">setsid</span><span class="p">();</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">child</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;gid:%d sid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpgid</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">sid</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;session fgid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">tcgetsid</span><span class="p">(</span><span class="n">STDOUT_FILENO</span><span class="p">));</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>输出：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">father</span>
-</span><span class='line'><span class="nl">gid</span><span class="p">:</span><span class="mi">5761</span>
-</span><span class='line'><span class="n">session</span> <span class="nl">fgid</span><span class="p">:</span><span class="mi">5761</span>
-</span><span class='line'><span class="n">root</span><span class="p">@</span><span class="nl">ubuntu</span><span class="p">:</span><span class="o">~/</span><span class="n">other</span><span class="err">#</span>
-</span><span class='line'><span class="n">child</span>
-</span><span class='line'><span class="nl">gid</span><span class="p">:</span><span class="mi">5762</span> <span class="nl">sid</span><span class="p">:</span><span class="mi">5762</span>
-</span><span class='line'><span class="n">session</span> <span class="nl">fgid</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span>        <span class="err">（可知新会话无控制终端）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/7">&larr; Older</a>
@@ -1213,6 +1076,10 @@ sigprocmask仅为<code>单线程的进程</code>定义。pthread_sigmask为多�
       </li>
     
       <li class="post">
+        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">wubiUbuntu崩溃，卸载后获取ubuntu根目录下的文件</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
       </li>
     
@@ -1258,10 +1125,6 @@ sigprocmask仅为<code>单线程的进程</code>定义。pthread_sigmask为多�
     
       <li class="post">
         <a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-01-unixxi-tong-jin-cheng-jian-tong-xin/">UNIX系统进程间通信</a>
       </li>
     
   </ul>

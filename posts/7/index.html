@@ -9,10 +9,12 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="pag171 1
-2
-ID-----0 通常为调度进程，常常被称为交换进程，不执行任何磁盘上的程序，也被称为系统进程。
-ID-----1 通常为init进程，通常读与系统有关的初始化文件，并将系统引导到一个状态，init进程绝不会终止。(普通用户进程（与交换进程不同，不是内核中的系统进程）， &hellip;">
+  <meta name="description" content="pag214 登录简易流程： init进程fork子进程exec执行getty
+getty开启终端设备以便输入，显示Login：
+用户输入用户名
+getty程序exec执行login程序
+login由用户名（getpwnam）获取pw结构，显示Password:
+用户输入密码 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -68,6 +70,187 @@ ID-----1 通常为init进程，通常读与系统有关的初始化文件，并�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-09-unixxi-tong-jin-cheng-guan-xi/">UNIX系统进程关系</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-09T11:25:53+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:25 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag214</h3>
+
+<h6>登录简易流程：</h6>
+
+<ul>
+<li>init进程fork子进程exec执行getty</li>
+<li>getty开启终端设备以便输入，显示Login：</li>
+<li>用户输入用户名</li>
+<li>getty程序exec执行login程序</li>
+<li>login由用户名（getpwnam）获取pw结构，显示Password:</li>
+<li>用户输入密码</li>
+<li>login程序比对pw结构中pw_passwd</li>
+</ul>
+
+
+<h3>pag218</h3>
+
+<p>进程组使一个或多个进程的集合，通常他们与同一作业相关联，可以接收来自统一终端的各种信号。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getpgrp</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//返回调用进程的进程组ID</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">getpgid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">);</span><span class="c1">//返回pid进程的进程组ID（getpgid(0) = getpgrp()）</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setpgid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">pid_t</span> <span class="n">pgid</span><span class="p">);</span><span class="c1">//加入现有组或创建一个新进程组</span>
+</span><span class='line'><span class="n">pid</span><span class="o">=</span><span class="n">pgid</span><span class="p">,</span> <span class="n">pid</span><span class="err">指定进程变成进程组组长</span>
+</span><span class='line'><span class="n">pid</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="err">使用调用者进程</span><span class="n">PID</span>
+</span><span class='line'><span class="n">pgid</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pid</span><span class="err">指定进程</span><span class="n">ID</span><span class="err">作为进程组</span><span class="n">ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>进程组：</h6>
+
+<p>每个进程组都可以有一个组长进程。<code>组长进程</code>的标识是，其<code>进程组ID等于其进程ID</code>。<br>
+组长进程可以创建一个进程组，创建该组中的进程，然后终止。只要在<code>某个进程组中有一个进程</code>存在，则该<code>进程组就存在</code>，这<code>与其组长进程是否终止无关</code>。<br>
+<code>一个进程只能为他自己或他的子进程设置进程组ID</code>。在他的<code>子进程调用了exec函数之一后，他就不能改变该子进程的进程组ID</code>。</p>
+
+<h3>pag219</h3>
+
+<p>会话是一个或多个进程组的集合。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">setsid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//建立新会话</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>调用进程不是一个进程组的组长，此函数创建一个新会话：</h6>
+
+<ul>
+<li>该进程变成新会话首进程，并且是此时新会话中的唯一进程</li>
+<li>该进程成为一个新进程组的组长进程。新进程组ID是该调用进程的进程ID</li>
+<li>该进程没有控制终端。如在调用之前有，则联系中断</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getsid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">);</span> <span class="c1">//返回会话首进程的进程组ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>一个会话可以有一个控制终端。</p>
+
+<p>建立与控制终端连接的会话首进程被称为控制进程。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">tcgetpgrp</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//返回前台进程组的进程组ID，该前台进程组与在filedes上打开的终端相关联</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">tcsetpgrp</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">pid_t</span> <span class="n">pgrpid</span><span class="p">);</span><span class="c1">//将前台进程组ID设置为pgrpid（同一会话中的进程组ID），filedes必须引用会话的控制终端</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">tcgetsid</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//获得会话首进程的进程组ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag229</h3>
+
+<h6>孤儿进程组：</h6>
+
+<p>一个进程组不是孤儿进程组的条件是，该<code>组中有一个进程</code>，其<code>父进程在属于同一会话中的另一组</code>中。</p>
+
+<p><code>父进程终止时，子进程被置入后台进程组中，shell所在进程组成为前台进程组</code>（程序9-1）</p>
+
+<h3>习题9-2</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">pid_t</span>   <span class="n">pid</span><span class="p">,</span> <span class="n">sid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;gid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpgid</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;session fgid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">tcgetpgrp</span><span class="p">(</span><span class="n">STDOUT_FILENO</span><span class="p">));</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">sid</span> <span class="o">=</span> <span class="n">setsid</span><span class="p">();</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">child</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;gid:%d sid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpgid</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">sid</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;session fgid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">tcgetsid</span><span class="p">(</span><span class="n">STDOUT_FILENO</span><span class="p">));</span>
+</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">father</span>
+</span><span class='line'><span class="nl">gid</span><span class="p">:</span><span class="mi">5761</span>
+</span><span class='line'><span class="n">session</span> <span class="nl">fgid</span><span class="p">:</span><span class="mi">5761</span>
+</span><span class='line'><span class="n">root</span><span class="p">@</span><span class="nl">ubuntu</span><span class="p">:</span><span class="o">~/</span><span class="n">other</span><span class="err">#</span>
+</span><span class='line'><span class="n">child</span>
+</span><span class='line'><span class="nl">gid</span><span class="p">:</span><span class="mi">5762</span> <span class="nl">sid</span><span class="p">:</span><span class="mi">5762</span>
+</span><span class='line'><span class="n">session</span> <span class="nl">fgid</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span>        <span class="err">（可知新会话无控制终端）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1124,196 +1307,6 @@ ID-----1 通常为init进程，通常读与系统有关的初始化文件，并�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-04-05-vimchang-yong-ming-ling/">Vim常用命令</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-04-05T21:53:49+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:53 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>光标移动：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>Ctrl+f 向文件尾翻一屏             Ctrl+b 向文件首翻一屏
-</span><span class='line'>n+     光标下移n行                 n-    光标上移n行
-</span><span class='line'>0（零）光标移至行首              $  光标移至行尾
-</span><span class='line'>^       光标移至行首第一个单词
-</span><span class='line'>nG     光标移至n行行首           :n 光标移至n行行首
-</span><span class='line'>gg    跳至文件开头                 G   跳至文件末尾
-</span><span class='line'>【
-</span><span class='line'>w    向后跳一个单词至词首     e  向后跳一个单词至词首尾  
-</span><span class='line'>b    向前跳一个单词至词首                    （+shift（大写） 忽略非单词字符）
-</span><span class='line'>】
-</span><span class='line'>:''             跳至刚才位置                          crtl+o   跳到一个older的地方（跳回到G过来的地方）
-</span><span class='line'>ctrl+i        跳到较新的地方</span></code></pre></td></tr></table></div></figure>
-
-
-<p>文本插入：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>i 在光标前开始插入文本              I在行首开始插入文本 
-</span><span class='line'>a在光标后开始插入文本              A  在行尾开始插入文本
-</span><span class='line'>o 在当前行之下新开一行            O 在当前行之上新开一行
-</span><span class='line'>s删除当前字符并插入                 S 删除当前行并插入</span></code></pre></td></tr></table></div></figure>
-
-
-<p>文本删除复制：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>d0 删除至行首                    d$\D删除至行尾
-</span><span class='line'>x 删除光标后的一个字符            X 删除光标前的一个字符
-</span><span class='line'>ndd删除当前行向后的n行         ndw 删除从光标开始的n个单词（dw 删除一个）
-</span><span class='line'>nyy复制当前行向后的n行          nyw 复制从光标开始的n个单词（yw 复制一个）</span></code></pre></td></tr></table></div></figure>
-
-
-<p>复制：<br>
-方法2：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>命令行模式下输入
-</span><span class='line'>6,9 co 12
-</span><span class='line'>复制第6行到第9行之间的内容到第12行后面。</span></code></pre></td></tr></table></div></figure>
-
-
-<p>方法3：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>有时候不想费劲看多少行或复制大量行时，可以使用标签来替代
-</span><span class='line'>光标移到起始行，输入ma
-</span><span class='line'>光标移到结束行，输入mb
-</span><span class='line'>光标移到粘贴行，输入mc
-</span><span class='line'>然后 :'a,'b co 'c      （用marks查看所有标记）
-</span><span class='line'>  把co 改成 m 就成剪切了
-</span><span class='line'>要删除多行的话，可以用 ：5, 9de</span></code></pre></td></tr></table></div></figure>
-
-
-<p>搜索替换：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>/pattern 从光标开始处向文件尾搜索   ?pattern 文件首搜索
-</span><span class='line'>n 在同一方向上重复上一次搜索        N 在反方向上重复上次搜索
-</span><span class='line'>:s/p1/p2/g  在当前行中所有p1均用p2替代  :n1,n2s/p1/p2/g 将第n1至n2行中的所有p1均用p2替代
-</span><span class='line'>:%s/p1/p2/g  将文件中所有p1均用p2替换</span></code></pre></td></tr></table></div></figure>
-
-
-<p>退出保存：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>:w 保存文件               :wq保存退出
-</span><span class='line'>:q 退出                  :q! 强制退出不保存</span></code></pre></td></tr></table></div></figure>
-
-
-<p>进入头文件：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>gf 进入头文件                   :bd      退出头文件</span></code></pre></td></tr></table></div></figure>
-
-
-<p>切换窗口：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ctrl+w+w</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>u   撤销
-</span><span class='line'>Ctrl+r 恢复</span></code></pre></td></tr></table></div></figure>
-
-
-<p>批量缩进：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>1、v
-</span><span class='line'>2、j、k选择行
-</span><span class='line'>3、键入&lt;、&gt;</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>:sp              将屏幕横向分成两屏（同个文件复制方便）</span></code></pre></td></tr></table></div></figure>
-
-
-<p>字符界面下不同文件复制：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>1、ctrl+w+n     新开个窗口
-</span><span class='line'>2、:edit file      编辑新文件(可做字符界面下复制)（不同文件复制方便）
-</span><span class='line'>3、ctrl+w+w    切换窗口</span></code></pre></td></tr></table></div></figure>
-
-
-<p>图形界面下不同文件复制：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>1、*y或+y
-</span><span class='line'>2、*p或+p</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>ctrl + t 返回上一层
-</span><span class='line'>ctrl + ] 查找函数</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/8">&larr; Older</a>
@@ -1369,6 +1362,10 @@ ID-----1 通常为init进程，通常读与系统有关的初始化文件，并�
       </li>
     
       <li class="post">
+        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">wubiUbuntu崩溃，卸载后获取ubuntu根目录下的文件</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
       </li>
     
@@ -1414,10 +1411,6 @@ ID-----1 通常为init进程，通常读与系统有关的初始化文件，并�
     
       <li class="post">
         <a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-01-unixxi-tong-jin-cheng-jian-tong-xin/">UNIX系统进程间通信</a>
       </li>
     
   </ul>
