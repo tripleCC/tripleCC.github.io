@@ -9,8 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="每个进程只属于一个进程组，进程组由一个正整数进程组ID来标识。 1
-int kill(pid_t pid, int sig); kill函数用于向进程发送信号，当pid>0，kill发送sig给进程pid;当pid&lt;0kill发送sig给进程组abs(pid)中的每个进程。 1 &hellip;">
+  <meta name="description" content="当fork函数被当前进程调用时，内核为新进程创建各种数据结构，并分配它一个唯一的PID，为了给这个新进程创建虚拟存储器，它创建了当前进程的mm_struct、区域结构和页表的原样拷贝。它将两个进程中的每个页面都标记为只读，并将两个进程中的每个区域结构都标记为私有的写时拷贝。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +65,44 @@ int kill(pid_t pid, int sig); kill函数用于向进程发送信号，当pid>0�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-03-07-forkxie-shi-kao-bei/">Fork写时拷贝</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-03-07T22:21:31+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:21 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>当fork函数被当前进程调用时，内核为新进程创建各种数据结构，并分配它一个唯一的PID，为了给这个新进程创建虚拟存储器，它创建了当前进程的mm_struct、区域结构和页表的<code>原样拷贝</code>。它将两个进程中的每个页面都标记为只读，并将两个进程中的每个区域结构都标记为<code>私有的写时拷贝</code>。</p>
+
+<p>当fork在新进程中返回时，新进程现在的虚拟存储器刚好和调用fork时存在的虚拟存储器相同（就是父进程<code>运行到fork时</code>的虚拟存储器，所以子进程运行的地方是从fork返回时开始的，并不是从头开始）。当这两个进程的任一个后来进行写操作时，写时拷贝机制就会创建新的<code>物理页面</code>。（深入理解计算机系统二 558页）</p>
+
+<p>通俗一点说，就是在exec之前两个进程用的是相同的物理空间（内存区）（所谓用是只读，不能写的），子进程的代码段、数据段、堆栈都是指向父进程的物理空间。当父子进程中有更改相应段的行为发生时，再为子进程相应的段分配物理空间（这时创建拷贝的进程的页表条目会指向这个新的物理页面（拷贝），然后恢复这个页面的可写权限），如果不是因为exec，内核会给子进程的数据段、堆栈段分配相应的物理空间（至此两者有各自的进程空间，互不影响），而代码段继续共享父进程的物理空间（两者的代码完全相同）。而如果是因为exec，由于两者执行的代码不同，子进程的代码段也会分配单独的物理空间。</p>
+
+<p>通常来说，fork函数的代码段基本是只读类型的，而且在运行阶段也只是复制，并不会对内容进行修改，因此父子进程是共享代码段，而数据段、Bss段、堆栈段等会在运行的过程中发生写过程，这样就导致了不同的段发生相应的写时拷贝过程，实现了不同进程的独立空间。</p>
+
+<p>相应网页：
+<a href="http://blog.chinaunix.net/uid-20937170-id-3012588.html">http://blog.chinaunix.net/uid-20937170-id-3012588.html</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -768,103 +805,6 @@ signal函数用于接收信号：
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-02-10-constyu-number-define/">Const与#define</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-02-10T21:12:40+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:12 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>ELF文件通常拥有的段：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">.</span><span class="n">text</span><span class="o">--------------</span><span class="err">已编译程序的机器代码</span>
-</span><span class='line'><span class="p">.</span><span class="n">rodata</span><span class="o">-----------</span><span class="err">只读数据</span>
-</span><span class='line'><span class="p">.</span><span class="n">data</span><span class="o">--------------</span><span class="err">已初始化的全局变量、局部静态变量。局部变量在运行时分配在相应栈帧中</span>
-</span><span class='line'><span class="p">.</span><span class="n">bss</span><span class="o">--------------</span><span class="err">未初始化的全局</span><span class="n">c</span><span class="err">变量、局部静态变量（不占据实际文件空间，记录大小信息，内存运行时分配）</span>
-</span><span class='line'><span class="p">.</span><span class="n">symtab</span><span class="o">----------</span><span class="err">一个符号表，存放定义和引用的函数和全局变量信息</span>
-</span><span class='line'><span class="p">.</span><span class="n">rel</span><span class="p">.</span><span class="n">text</span>
-</span><span class='line'><span class="p">.</span><span class="n">rel</span><span class="p">.</span><span class="n">tata</span><span class="o">-----------</span><span class="err">被模块引用或定义的任何全局变量的重定位信息</span>
-</span><span class='line'><span class="p">.</span><span class="n">debug</span>
-</span><span class='line'><span class="p">.</span><span class="n">line</span><span class="o">---------------</span><span class="n">c</span><span class="err">源程序与</span><span class="p">.</span><span class="n">text</span><span class="err">中机器指令之间行号映射</span>
-</span><span class='line'><span class="p">.</span><span class="n">strtab</span><span class="o">------------</span><span class="err">字符串表</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>首先静态数据存储空间：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：编译完，空间分配在</span><span class="p">.</span><span class="n">rodata</span><span class="err">段，占存储空间。可获取地址。</span>
-</span><span class='line'><span class="cp">#define：预编译完，替换代码中的宏定义（这说明直接就在代码段里面了）。如果时字符串字面常量，则占用一个字符串大小的.rodata空间；如果时整形字面常量，不会分配静态数据存储空间。不可获取地址。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>类型：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：拥有数据类型，编译器可对其进行安全检查。</span>
-</span><span class='line'><span class="cp">#define：无数据类型，只进行字符替换，没有类型安全检查。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>作用局限：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：常变量，虽然时不变的变量，但是本质还是变量，所以不能用以定义数组。</span>
-</span><span class='line'><span class="cp">#define：可以用来定义数组，一般不用来获取地址</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>ps：<br>
-const修饰的常变量必须在定义时初始化：
-`</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">int</span> <span class="n">temp</span><span class="err">；</span><span class="c1">//错误</span>
-</span><span class='line'><span class="kt">int</span> <span class="o">*</span><span class="k">const</span> <span class="n">temp</span><span class="err">；</span><span class="c1">//错误</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>需不需要在定义时初始化看该变量在以后能不能被改变（当左值），如果不能必须初始化；如果可以则可不初始化。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">temp</span><span class="err">；</span><span class="c1">//正确，因为temp可作为左值，只是*temp不能作为左值</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/10">&larr; Older</a>
@@ -920,6 +860,10 @@ const修饰的常变量必须在定义时初始化：
       </li>
     
       <li class="post">
+        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
       </li>
     
@@ -965,10 +909,6 @@ const修饰的常变量必须在定义时初始化：
     
       <li class="post">
         <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a>
       </li>
     
   </ul>

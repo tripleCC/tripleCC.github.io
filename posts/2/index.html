@@ -1218,6 +1218,146 @@ key : value</p>
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-04-29T13:47:36+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>1:47 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>同事用了最近刚出的GitBook又崩溃了。。。他近一个星期的笔记都没了。。。还好只是一个星期的。。。还是我大Mou好。。。答应给他写个简单的备份脚本。。。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#!/bin/bash</span>
+</span><span class='line'><span class="cp"># Create by tripleCC</span>
+</span><span class='line'><span class="cp"># Date 13/06/07</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#  1.进入终端</span>
+</span><span class='line'><span class="cp">#  crontab -e</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#  2.添加以下信息：6点－23点，每1小时检测一次SUMMARYTEMP.md有没有被修改，有就会备份</span>
+</span><span class='line'><span class="cp">#  * 6-23/1 * * * 此脚本全绝对路径</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#  3.根据自己的GitBook文件夹修改以下目录名</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#GitBook源目录/备份目录的上层路径</span>
+</span><span class='line'><span class="n">rootPath</span><span class="o">=</span><span class="s">&quot;/Users/tripleCC/Documents&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#GitBook源目录名</span>
+</span><span class='line'><span class="n">dirName</span><span class="o">=</span><span class="s">&quot;GitBook&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#备份目录名</span>
+</span><span class='line'><span class="n">dirBackUpName</span><span class="o">=</span><span class="s">&quot;GitBookBackUp&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">cd</span> <span class="err">$</span><span class="n">rootPath</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#如果备份文件夹不存在，直接创建</span>
+</span><span class='line'><span class="k">if</span> <span class="p">[</span> <span class="o">!</span> <span class="o">-</span><span class="n">r</span> <span class="err">$</span><span class="n">dirBackUpName</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>    <span class="n">mkdir</span> <span class="err">$</span><span class="n">dirBackUpName</span> <span class="o">&amp;</span>
+</span><span class='line'><span class="k">else</span>
+</span><span class='line'>    <span class="n">echo</span> <span class="n">backup</span> <span class="n">dictory</span> <span class="n">is</span> <span class="n">already</span> <span class="n">exist</span>
+</span><span class='line'><span class="n">fi</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="p">[</span> <span class="o">!</span> <span class="o">-</span><span class="n">r</span> <span class="p">.</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="o">/</span><span class="n">autocp</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>    <span class="n">mkdir</span> <span class="p">.</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="o">/</span><span class="n">autocp</span>
+</span><span class='line'>   <span class="n">echo</span> <span class="n">create</span> <span class="n">autocp</span>
+</span><span class='line'><span class="n">fi</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#进入备份SUMMARYTEMP.md所在目录</span>
+</span><span class='line'><span class="n">cd</span> <span class="p">.</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="o">/</span><span class="n">autocp</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="p">[</span> <span class="o">!</span> <span class="o">-</span><span class="n">f</span> <span class="s">&quot;SUMMARYTEMP.md&quot;</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>  <span class="n">echo</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span> <span class="n">is</span> <span class="n">not</span> <span class="n">exist</span><span class="p">,</span> <span class="n">create</span> <span class="n">it</span> <span class="n">now</span>
+</span><span class='line'>  <span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirBackUpName</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="err">`</span><span class="n">date</span> <span class="o">+%</span><span class="n">Y</span><span class="o">%</span><span class="n">m</span><span class="o">%</span><span class="n">d</span><span class="o">%</span><span class="n">H</span><span class="err">`</span> <span class="o">&amp;</span>
+</span><span class='line'>  <span class="n">cp</span> <span class="p">..</span><span class="o">/</span><span class="n">SUMMARY</span><span class="p">.</span><span class="n">md</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span> <span class="o">&amp;</span>
+</span><span class='line'><span class="k">else</span>
+</span><span class='line'>  <span class="n">diff</span> <span class="p">..</span><span class="o">/</span><span class="n">SUMMARY</span><span class="p">.</span><span class="n">md</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">[</span> <span class="err">$</span><span class="o">?</span> <span class="o">-</span><span class="n">ne</span> <span class="mi">0</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>        <span class="n">echo</span> <span class="n">file</span> <span class="n">has</span> <span class="n">been</span> <span class="n">changed</span><span class="p">,</span> <span class="k">copy</span> <span class="n">it</span> <span class="n">now</span>
+</span><span class='line'>        <span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirBackUpName</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="err">`</span><span class="n">date</span> <span class="o">+%</span><span class="n">Y</span><span class="o">%</span><span class="n">m</span><span class="o">%</span><span class="n">d</span><span class="o">%</span><span class="n">H</span><span class="err">`</span> <span class="o">&amp;</span>
+</span><span class='line'>        <span class="n">cp</span> <span class="p">..</span><span class="o">/</span><span class="n">SUMMARY</span><span class="p">.</span><span class="n">md</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span> <span class="o">&amp;</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>        <span class="n">echo</span> <span class="n">file</span> <span class="n">is</span> <span class="n">the</span> <span class="n">same</span>
+</span><span class='line'>    <span class="n">fi</span>
+</span><span class='line'><span class="n">fi</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个备份文件夹只会在新增或删除GitBook章节时才会进行备份</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a></h1>
     
     
@@ -1343,113 +1483,6 @@ ibus卸载时会将system setting中的一些使用程序附带删除（但是�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-08-04T21:34:02+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:34 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Autoresizing的使用［前提是关闭Autolayout功能］</h2>
-
-<ol>
-<li><p>在xib/storyboard中使用：</p></li>
-</ol>
-
-
-<p><img src="../../images/Snip20150531_2.png" alt="" /></p>
-
-<p>如图，在左边剪头中表示控件的左边和上边相对父控件固定，并且长度和高度可变，在右边箭头中可以实时查看具体的效果。</p>
-
-<p>原图：
-<img src="../../images/Snip20150531_8.png" alt="" /></p>
-
-<p>在Preview界面中的效果如图：</p>
-
-<p><img src="../../images/Snip20150531_3.png" alt="" /></p>
-
-<p>可以看出对于不同屏幕大小或者横竖屏情况，控件始终在右下角，不会被覆盖。</p>
-
-<ol>
-<li><p>Autoresizing代码使用：</p></li>
-</ol>
-
-
-<p>UIViewAutoresizing提供以下枚举类型来对视图进行限制：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'> <span class="n">UIViewAutoresizingNone</span>                 <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 这里主要注意如左边可伸缩，则表示右边为固定值</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleLeftMargin</span>   <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="err">距离父控件左边的间距是伸缩的（不固定的）</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleRightMargin</span>  <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">,</span> <span class="err">距离父控件右边的间距是伸缩的（不固定的）</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleTopMargin</span>    <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span><span class="p">,</span> <span class="err">距离父控件顶部的间距是伸缩的（不固定的）</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleBottomMargin</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span><span class="p">,</span> <span class="err">距离父控件底部的间距是伸缩的（不固定的）</span>
-</span><span class='line'>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleWidth</span>        <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">,</span> <span class="err">宽度跟随父控件的宽度进行自动伸缩</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleHeight</span>       <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span><span class="p">,</span> <span class="err">高度跟随父控件的高度进行自动伸缩</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>将对应的autoresizingMask属性赋上面值即可：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 固定与父控件的flet、top间距，并让宽度可变</span>
-</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">myView</span><span class="p">.</span><span class="n">autoresizingMask</span> <span class="o">=</span> <span class="n">UIViewAutoresizingFlexibleRightMargin</span> <span class="o">|</span> <span class="n">UIViewAutoresizingFlexibleBottomMargin</span> <span class="o">|</span> <span class="n">UIViewAutoresizingFlexibleWidth</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>原图：
-<img src="../../images/Snip20150531_5.png" alt="" /></p>
-
-<p>翻转图：
-<img src="../../images/Snip20150531_6.png" alt="" /></p>
-
-<h2>Autoresizing的特点：</h2>
-
-<ul>
-<li>子控件可以跟随父控件的行为自动发生相应的变化</li>
-<li>前提是：<strong>关闭Autolaout功能</strong></li>
-<li>局限性
-
-<ul>
-<li><strong>只能</strong>解决<strong>子控件跟父控件</strong>的相对关系问题</li>
-<li><strong>不能</strong>解决<strong>兄弟控</strong>件的相对关系</li>
-</ul>
-</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -1505,6 +1538,10 @@ ibus卸载时会将system setting中的一些使用程序附带删除（但是�
       </li>
     
       <li class="post">
+        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
       </li>
     
@@ -1550,10 +1587,6 @@ ibus卸载时会将system setting中的一些使用程序附带删除（但是�
     
       <li class="post">
         <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a>
       </li>
     
   </ul>

@@ -9,9 +9,20 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1
-shutdown -h now 没有-h会卡在关闭界面：Ubuntu 下面5个白点
-">
+  <meta name="description" content="ELF文件通常拥有的段： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+.text--------------已编译程序的机器代码
+.rodata-----------只读数据
+.data--------------已初始化的全局变量、局部静态变量。局部变量在运行时分配在相应栈帧中
+.bss &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +78,103 @@ shutdown -h now 没有-h会卡在关闭界面：Ubuntu 下面5个白点
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-02-10-constyu-number-define/">Const与#define</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-02-10T21:12:40+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:12 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>ELF文件通常拥有的段：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">.</span><span class="n">text</span><span class="o">--------------</span><span class="err">已编译程序的机器代码</span>
+</span><span class='line'><span class="p">.</span><span class="n">rodata</span><span class="o">-----------</span><span class="err">只读数据</span>
+</span><span class='line'><span class="p">.</span><span class="n">data</span><span class="o">--------------</span><span class="err">已初始化的全局变量、局部静态变量。局部变量在运行时分配在相应栈帧中</span>
+</span><span class='line'><span class="p">.</span><span class="n">bss</span><span class="o">--------------</span><span class="err">未初始化的全局</span><span class="n">c</span><span class="err">变量、局部静态变量（不占据实际文件空间，记录大小信息，内存运行时分配）</span>
+</span><span class='line'><span class="p">.</span><span class="n">symtab</span><span class="o">----------</span><span class="err">一个符号表，存放定义和引用的函数和全局变量信息</span>
+</span><span class='line'><span class="p">.</span><span class="n">rel</span><span class="p">.</span><span class="n">text</span>
+</span><span class='line'><span class="p">.</span><span class="n">rel</span><span class="p">.</span><span class="n">tata</span><span class="o">-----------</span><span class="err">被模块引用或定义的任何全局变量的重定位信息</span>
+</span><span class='line'><span class="p">.</span><span class="n">debug</span>
+</span><span class='line'><span class="p">.</span><span class="n">line</span><span class="o">---------------</span><span class="n">c</span><span class="err">源程序与</span><span class="p">.</span><span class="n">text</span><span class="err">中机器指令之间行号映射</span>
+</span><span class='line'><span class="p">.</span><span class="n">strtab</span><span class="o">------------</span><span class="err">字符串表</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>首先静态数据存储空间：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：编译完，空间分配在</span><span class="p">.</span><span class="n">rodata</span><span class="err">段，占存储空间。可获取地址。</span>
+</span><span class='line'><span class="cp">#define：预编译完，替换代码中的宏定义（这说明直接就在代码段里面了）。如果时字符串字面常量，则占用一个字符串大小的.rodata空间；如果时整形字面常量，不会分配静态数据存储空间。不可获取地址。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>类型：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：拥有数据类型，编译器可对其进行安全检查。</span>
+</span><span class='line'><span class="cp">#define：无数据类型，只进行字符替换，没有类型安全检查。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>作用局限：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：常变量，虽然时不变的变量，但是本质还是变量，所以不能用以定义数组。</span>
+</span><span class='line'><span class="cp">#define：可以用来定义数组，一般不用来获取地址</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ps：<br>
+const修饰的常变量必须在定义时初始化：
+`</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">int</span> <span class="n">temp</span><span class="err">；</span><span class="c1">//错误</span>
+</span><span class='line'><span class="kt">int</span> <span class="o">*</span><span class="k">const</span> <span class="n">temp</span><span class="err">；</span><span class="c1">//错误</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需不需要在定义时初始化看该变量在以后能不能被改变（当左值），如果不能必须初始化；如果可以则可不初始化。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">temp</span><span class="err">；</span><span class="c1">//正确，因为temp可作为左值，只是*temp不能作为左值</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -211,6 +319,10 @@ shutdown -h now 没有-h会卡在关闭界面：Ubuntu 下面5个白点
       </li>
     
       <li class="post">
+        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
       </li>
     
@@ -256,10 +368,6 @@ shutdown -h now 没有-h会卡在关闭界面：Ubuntu 下面5个白点
     
       <li class="post">
         <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a>
       </li>
     
   </ul>
