@@ -9,47 +9,13 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-#include &lt;signal.h&gt; #include &lt &hellip;">
+  <meta name="description" content="pag233 信号都被定义为正整数。
+不存在编号为0的信号。
+不能捕捉SIGKILL和SIGSTOP信号。
+信号的处理： 1，忽略信号
+2，捕捉信号
+3，执行系统默认动作（大多数信号默认动作时终止进程） 1
+void (*signal (int signo, void(*fun)(int)))( &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -105,6 +71,381 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-15-unixxi-tong-xin-hao/">UNIX系统信号</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-15T11:46:30+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>15</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:46 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag233</h3>
+
+<p>信号都被定义为正整数。<br>
+不存在编号为0的信号。<br>
+不能捕捉SIGKILL和SIGSTOP信号。<br>
+信号的处理：</p>
+
+<ul>
+<li>1，忽略信号</li>
+<li>2，捕捉信号</li>
+<li>3，执行系统默认动作（大多数信号默认动作时终止进程）</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">signal</span> <span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">fun</span><span class="p">)(</span><span class="kt">int</span><span class="p">)))(</span><span class="kt">int</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>fun：</p>
+
+<ul>
+<li>1、SIG_IGN  忽略信号</li>
+<li>2、SIG_DFL 默认（通常时关闭）</li>
+<li>3、调用函数地址</li>
+<li>缺点：不改变信号的处理方式就不能确定信号的当前处理方式。</li>
+</ul>
+
+
+<p>exec将原先设置为<code>要捕捉的信号</code>都更改为他们的<code>默认动作</code>，<code>其他信号</code>的状态则<code>不变</code>（对于一个进程原先要捕捉的信号，当其执行一个新程序后，就自然不能捕捉他了，因为信号捕捉函数的地址很可能在所执行的新程序文件中已无意义）</p>
+
+<h3>pag244</h3>
+
+<p>当捕捉到某个信号时被中断的是内核中执行的系统调用。
+不可重入函数特征：</p>
+
+<ul>
+<li>1，使用静态数据结构</li>
+<li>2，调用malloc或free</li>
+<li>3，标准IO函数</li>
+</ul>
+
+
+<p>信号的阻塞就是让系统暂时保留信号留待以后发送</p>
+
+<p><code>sigaction可设置SA_NOCLDWAIT标志以避免子进程僵死</code>（这样就不用执行信号处理函数再waitpid了）</p>
+
+<h3>pag250</h3>
+
+<h6>信号未决：</h6>
+
+<p>在信号产生和递送之间的时间间隔内，称信号是未决的。</p>
+
+<p>若同一种信号多次发生，通常并不将他们排队，所以如果在某种信号被阻塞时他发生了五次，那么对这种信号解除阻塞后，其信号处理函数通常只会被调用一次。</p>
+
+<p><code>当执行信号处理程序时，若新信号（相同信号）抵达，signal默认将该信号加入进程的信号队列中，直至信号处理程序执行结束。（多次抵达只取第一次）（现在在ubuntu上实测signal是这样的，APUE上面是不自动阻塞,执行信号默认操作）</code></p>
+
+<h6>发送信号：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">kill</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">raise</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span> <span class="c1">//给自身发送信号</span>
+</span><span class='line'><span class="err">调用</span><span class="n">kill</span><span class="err">为调用进程产生信号，而且此信号是不被阻塞的，那么在</span><span class="n">kill</span><span class="err">返回之前，就会将</span><span class="n">signo</span><span class="err">或者某个其他未决的非阻塞信号传送至该进程。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">alarm</span><span class="p">(</span> <span class="kt">unsigned</span> <span class="n">intseconds</span> <span class="p">)</span> <span class="c1">//每个进程只能有一个闹钟时钟</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pause</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span><span class="c1">//使调用进程挂起直至捕捉到一个信号并从信号处理程序返回</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag256</h3>
+
+<p><code>所有应用程序在使用信号集前，要对该信号集调用sigemptyset或sigfillset一次.(因c编译器把未赋初值的外部和静态变量都初始化为0)</code></p>
+
+<h6>信号集：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigemptyset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">)</span>  <span class="c1">//清除信号集所有信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigfillset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">)</span>     <span class="c1">//设置所有信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigaddset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span> <span class="n">intsigno</span> <span class="p">)</span> <span class="c1">//向信号集中添加信号（要阻塞的）</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigdelset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span> <span class="n">intsigno</span> <span class="p">)</span>   <span class="c1">//从信号集中移除信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigismember</span><span class="p">(</span> <span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span><span class="kt">int</span> <span class="n">signo</span> <span class="p">)</span>  <span class="c1">//测试信号是否在信号集中</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigprocmask</span><span class="p">(</span> <span class="kt">int</span> <span class="n">how</span><span class="p">,</span> <span class="kt">constsigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oset</span><span class="p">)</span><span class="c1">//oset返回当前屏蔽字（处理单线程）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>how：</p>
+
+<ul>
+<li>1、SIG_BLOCK 将当前信号屏蔽字和set指向信号集的相并</li>
+<li>2、SIG_UNBLOCK 将当前信号屏蔽字和set指向信号集补集的相交</li>
+<li>3、SIG_SETMASK 进程新的信号屏蔽字被set指向的信号集代替
+sigprocmask仅为<code>单线程的进程</code>定义。pthread_sigmask为多线程进程定义</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">sigpending</span> <span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span> <span class="p">)</span>
+</span><span class='line'><span class="err">返回信号集，其中各个信号对于调用进程时阻塞的而不能递送，因而也一定是当前未决的。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigaction</span><span class="p">(</span> <span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="k">const</span> <span class="n">structsigaction</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">act</span><span class="p">,</span> <span class="k">struct</span> <span class="n">sigaction</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oact</span> <span class="p">)</span>
+</span><span class='line'><span class="n">oact</span> <span class="err">非空时返回该信号的上一次动作（包括信号屏蔽字）</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">sigaction</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">sa_handler</span><span class="p">)(</span><span class="kt">int</span><span class="p">);</span>  <span class="c1">//信号捕捉函数地址</span>
+</span><span class='line'>    <span class="n">sigset_tsa_mask</span><span class="p">;</span>       <span class="c1">//信号集。调用信号捕捉函数之前，此信号集加到进程信号集中，捕捉函数返回时恢复为原值（这里的捕捉信号函数之前这个说法要注意，下说明）</span>
+</span><span class='line'>   <span class="kt">int</span>         <span class="n">sa_flags</span><span class="p">;</span>   <span class="c1">//指定对信号处理的各个选项</span>
+</span><span class='line'>    <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">sa_sigaction</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">siginfo_t</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span><span class="p">);</span>   <span class="c1">//替代的信号处理程序（2个处理函数只能选其一）</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在信号处理程序被调用时，操作系统建立的新信号屏蔽字包括正在被递送的信号，因此保证了在处理一个给定信号时，如果这种信号再次发生，那么他会被阻塞到对前一个信号的处理结束为止。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">sigset_t</span>    <span class="n">sigmask</span><span class="p">;</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">sigaction</span>    <span class="n">act</span><span class="p">,</span> <span class="n">oact</span><span class="p">;</span>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sigmask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigprocmask error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">SIGALRM have been masked in handle function</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGINT has been masked in handle function</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;handle signal</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_handler</span> <span class="o">=</span> <span class="n">sig_handler</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigaction</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">act</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">oact</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigaction error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">oact</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGALRM has already been masked</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sigmask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigprocmask error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGALRM has been masked in main process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGINT has been masked in main process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">pause</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;done</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>程序输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">^</span><span class="n">C</span>
+</span><span class='line'><span class="n">SIGALRM</span> <span class="n">have</span> <span class="n">been</span> <span class="n">masked</span> <span class="k">in</span> <span class="n">handle</span> <span class="n">function</span>    <span class="c1">//1</span>
+</span><span class='line'><span class="n">SIGINT</span> <span class="n">has</span> <span class="n">been</span> <span class="n">masked</span> <span class="k">in</span> <span class="n">handle</span> <span class="n">function</span>           <span class="c1">//2</span>
+</span><span class='line'><span class="n">done</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>1：<code>（说明sigaction在处理信号时才将sa_mask信号集添加进进程信号屏蔽字，书上的在“调用捕捉函数之前加入”这句让我理解错误了，以为调用sigaction以后就加入信号屏蔽字，捕捉信号，并从信号处理函数返回以前都是阻塞sa_mask中的信号的，实际上只有在信号处理函数中才阻塞sa_mask中的信号，和2中的差不多，只不过一个是系统自动添加，一个是人为设定信号集通过sigaction添加到进程信号屏蔽字），可能书中“在调用该信号的捕捉函数之前”的意思是：已经捕捉到信号了，但是还没且将要执行信号处理函数，这样就和输出结果一致了。。</code></li>
+<li>2：<code>（说明系统在处理信号时会将正在处理的信号加入进程信号屏蔽字）</code></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigsuspend</span><span class="p">(</span><span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">sigmask</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>原子操作：</h6>
+
+<p>先恢复成sigmask指定的信号屏蔽字，再使进程休眠<br>
+在捕捉到一个信号或发生了一个会终止该进程的信号之前，该进程被挂起。如果捕捉到一个信号而且从该信号处理程序返回，则sigsuspend返回，并将信号屏蔽字设置为调用sigsuspend之前的值（<code>设定----捕捉----处理----恢复</code>）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">sleep</span><span class="err">（</span><span class="kt">unsigned</span> <span class="n">intseconds</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>挂起恢复条件：</p>
+
+<ul>
+<li>1、过了seconds</li>
+<li>2、调用进程捕捉到信号并从信号处理程序返回</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">psignal</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span><span class="n">msg</span><span class="p">);</span><span class="c1">//；类似perror</span>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">strsignal</span><span class="p">(</span><span class="n">intsigno</span><span class="p">);</span><span class="c1">//类似strerror</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">sig2str</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span><span class="n">str</span><span class="p">);</span><span class="c1">//将信号编号翻译成字符串</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">str2sig</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span><span class="n">signop</span><span class="p">);</span><span class="c1">//将给出的名字翻译为字符串</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>例子：</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_print</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>   <span class="n">printf</span><span class="p">(</span><span class="s">&quot;signal is %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpid</span><span class="p">());</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>   <span class="kt">pid_t</span>      <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>   <span class="n">signal</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">sig_print</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>       <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'>       <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>   <span class="p">}</span>
+</span><span class='line'>   <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'>   <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">signal</span> <span class="n">is</span> <span class="mi">3489</span>
+</span><span class='line'><span class="n">signal</span> <span class="n">is</span> <span class="mi">3490</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>SIGINT信号传送给前台进程组里的所有进程</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -969,284 +1310,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-05-01-unixxi-tong-biao-zhun-io/">UNIX系统标准IO</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-05-01T10:42:32+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>10:42 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>pag111</h3>
-
-<p>流定向决定了所读、写的字符是单字节还是多字节的。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">fwide</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mode</span><span class="p">);</span><span class="c1">//设置流定向</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>文件描述符</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">STDIN_FILENO</span><span class="err">、</span><span class="n">STDOUT_FILENO</span><span class="err">、</span><span class="n">STDERR_FILENO</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>文件指针</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">stdin</span><span class="err">、</span><span class="n">stdout</span><span class="err">、</span><span class="n">stderr</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>默认缓冲机制</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">标准出错</span><span class="o">---------------------</span><span class="err">不带缓冲</span>
-</span><span class='line'><span class="err">终端设备流</span><span class="o">------------------</span><span class="err">行缓冲</span>
-</span><span class='line'><span class="err">其他流</span><span class="o">-----------------------</span><span class="err">全缓冲</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>行缓冲限制</h6>
-
-<ul>
-<li>1、只要填满了缓冲区，即使没有写一换行符，也进行IO操作。</li>
-<li>2、任何时候只要通过标准IO库要求从（a）一个不带缓冲的流，或者（b）一个行缓冲的流（要求从内核得到数据）的到输入数据，那么会造成冲洗所有行缓冲输出流（fgets，gets等循环调用会冲洗输出流）</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">setbuf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">);</span><span class="c1">//更改缓冲类型</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">setvbuf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">);</span><span class="c1">//_IOFBF/_IOLBF/_IONBF</span>
-</span><span class='line'><span class="err">如果要使用改变缓冲类型函数，则要在打开流后并且在对该流执行任何操作之前</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">fflush</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//强制冲洗一个流（fd=NULL，冲洗所有输出流）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">fopen</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">type</span><span class="p">);</span><span class="c1">//打开标准IO流，指定文件</span>
-</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">freopen</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">type</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fd</span><span class="p">);</span><span class="c1">//在指定流上打开指定文件，此函数一般用于将一个指定的文件打开为一个预定义的流：标准输入、标准输出、标准出错</span>
-</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">fdopen</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">type</span><span class="p">);</span><span class="c1">//获取现有描述符与一个标准IO流结合（与fileno相对）（open,dup,dup2,fcntl,pipe,socket,socketpair,ept获得描述符），不能截断他为写而打开的任一文件</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>当以读和写类型打开一文件时（+）具有以下限制：（此限制不是很理解）</h6>
-
-<ul>
-<li>1、如果中间没有fflush、fseek、fsetpos、rewind，则在输出的后面不能直接跟随输入</li>
-<li>2、如果中间没有fseek、fsetpos、rewind，或者一个输出操作没有到达文件尾端，则在输入操作之后不能直接跟随输出</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">fclose</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//关闭一个打开的流</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">getc</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//getchar 等价于getc(stdin)</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fgetc</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">getchar</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">ferror</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span> <span class="c1">//出错检查</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">feof</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span> <span class="c1">//文件结束检查</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">ungetc</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span><span class="c1">//将字符压送回流中</span>
-</span><span class='line'><span class="err">压送回流中的字符以后可以从流中读出，但读出字符的顺序与压送回的顺序相反。不能回送</span><span class="n">EOF</span><span class="err">。一次成功的</span><span class="n">ungetc</span><span class="err">调用会清除该流的文件结束标志。</span><span class="p">(</span><span class="err">有时需要先看下一个字符，以决定如何处理当前字符时有用</span><span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">putc</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fputc</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">putchar</span><span class="p">(</span><span class="kt">int</span> <span class="n">c</span><span class="p">);</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">fgets</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span><span class="c1">//读取n-1个字符，自行添加NUL</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">gets</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fputs</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">str</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">puts</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">gets</span><span class="o">----------</span><span class="err">不保留换行符</span>                            <span class="n">puts</span><span class="o">----------------</span><span class="err">添加换行符</span>
-</span><span class='line'><span class="n">fgets</span><span class="o">----------</span><span class="err">保留换行符</span>                             <span class="n">fputs</span><span class="o">---------------</span><span class="err">不添加换行符</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">getc</span><span class="o">---------</span><span class="err">可实现为宏</span>
-</span><span class='line'><span class="n">so</span><span class="err">：</span><span class="n">getc</span><span class="err">的参数不应当时具有副作用的表达式。</span>
-</span><span class='line'><span class="n">fgetc</span><span class="o">--------</span><span class="err">一定时个函数</span>
-</span><span class='line'><span class="n">so</span><span class="err">：可得到其地址，</span><span class="n">fgetc</span><span class="err">的地址可做为参数。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>EOF类型为int，所以单字符获取函数的返回值为int型，定义变量时要注意定义为int型，否则可能无法检测出EOF错误。</p>
-
-<h6>二进制IO（前提）</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">size_t</span> <span class="nf">fread</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">ptr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nobj</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">size_t</span> <span class="nf">fwrite</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">ptr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nobj</span><span class="p">,</span> <span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>定位流</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">long</span> <span class="nf">ftell</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fseek</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">,</span> <span class="kt">long</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">int</span> <span class="n">whence</span><span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">rewind</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fgetpos</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="kt">fpos_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pos</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fsetpos</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">fpos_t</span> <span class="o">*</span><span class="n">pos</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>pag121</h3>
-
-<h6>格式化IO</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">printf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fprintf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">sprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span><span class="c1">//在尾端自动添加NUL，该字节不包括在返回值中</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">snprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>转换说明：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">%</span><span class="p">[</span><span class="n">flags</span><span class="p">][</span><span class="n">fldwidth</span><span class="p">][</span><span class="n">precision</span><span class="p">][</span><span class="n">lenmodifier</span><span class="p">]</span><span class="n">convtype</span>
-</span><span class='line'><span class="n">fldwidth</span><span class="err">：转换的最小字段宽度。如少则用空格填充。</span>
-</span><span class='line'><span class="nl">precision</span><span class="p">:</span><span class="err">说明整形转换后最少输出数字位数、浮点数转换后小数点后的最少位数、字符串转换后的最大字符数。精度是一个句点（</span><span class="p">.</span><span class="err">），后接一个可选非负十进制整数或一个星号。</span><span class="p">(</span><span class="err">字符是限制，其他类型是规定最小标准</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">vprintf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">vfprintf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">vsprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">vsnprintf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">n</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">scanf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">fscanf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">sscanf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="p">...);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>转换说明：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">%</span><span class="p">[</span><span class="o">*</span><span class="p">][</span><span class="n">fldwidth</span><span class="p">][</span><span class="n">lenmodifier</span><span class="p">]</span><span class="n">convtype</span>
-</span><span class='line'><span class="n">fldwidth</span><span class="err">：最大宽度（最大字符数）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">scanf</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">vfscanf</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">fp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">vsscanf</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="kt">va_list</span> <span class="n">arg</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>pag125</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">fileno</span><span class="p">(</span><span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span><span class="p">);</span> <span class="c1">//获取与流相关连的文件描述符</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>临时文件</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">tmpnam</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">ptr</span><span class="p">);</span><span class="c1">//产生一个与现有文件名不同的一个有效路径名字符串</span>
-</span><span class='line'><span class="kt">FILE</span> <span class="o">*</span><span class="nf">tmpfile</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//创建临时二进制文件，在关闭文件或程序结束时自动删除该文件</span>
-</span><span class='line'><span class="err">常用标准技术：先调用</span><span class="n">tmpnam</span><span class="err">产生一个唯一的路径名，然后用该路径名创建一个文件，并立即</span><span class="n">unlink</span><span class="err">它（链接计数为</span><span class="mi">0</span><span class="err">）（关闭时引用计数为</span><span class="mi">0</span><span class="err">，此时才删除其内容）</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="n">tempnam</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">directory</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">prefix</span><span class="p">);</span><span class="c1">//为产生的路径名指定目录和前缀，prefix最多包含5个字符的字符串</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>按序判断：</p>
-
-<ul>
-<li>1、如果定义了环境变量TMPDIR,则用其作为目录</li>
-<li>2、如果参数directory非NULL，则用其作为目录</li>
-<li>3、将中的字符串P_tmpdir用作目录</li>
-<li>4、将本地目录（通常是/tmp）用作目录</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">mkstemp</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">template</span><span class="p">);</span><span class="c1">//创建临时文件，返回打开的文件描述符（不会自动删除，要调用unlink）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/8">&larr; Older</a>
@@ -1302,6 +1365,10 @@
       </li>
     
       <li class="post">
+        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
       </li>
     
@@ -1347,10 +1414,6 @@
     
       <li class="post">
         <a href="/blog/2013-06-10-unixxi-tong-wen-jian-he-xin-xi/">UNIX系统文件和信息</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
       </li>
     
   </ul>

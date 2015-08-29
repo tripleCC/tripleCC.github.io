@@ -9,7 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="服务端： 1
+  <meta name="description" content="看APUE时对里面的多种终端概念不是很理解，百度了下 自己写的程序： 1
 2
 3
 4
@@ -17,49 +17,10 @@
 6
 7
 8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51 &hellip;">
+#include #include int
+main (void)
+{ printf (&quot;%s\n&quot;, ttyname (0)); //输出控制终端
+} 1、用Ctrl+Alt &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -115,6 +76,97 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-06-21T14:41:51+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>2:41 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>看APUE时对里面的多种终端概念不是很理解，百度了下</p>
+
+<p>自己写的程序：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include                                                              </span>
+</span><span class='line'><span class="cp">#include</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">printf</span> <span class="p">(</span><span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">ttyname</span> <span class="p">(</span><span class="mi">0</span><span class="p">));</span> <span class="c1">//输出控制终端</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>                                                    <br/>
+1、用Ctrl+Alt +F1～F6切换至字符终端运行此程序，输出为：</p>
+
+<ul>
+<li>/dev/tty1~6 （控制终端为相应的虚拟终端）</li>
+</ul>
+
+
+<p>2、在图形界面下打开终端运行此程序，输出为：</p>
+
+<ul>
+<li>/dev/pts/数字  （控制终端为相应的伪终端）</li>
+</ul>
+
+
+<p>每当在图形界面下打开一个新的终端，/dev/pts中都会增加一个数字，此即新打开伪终端对应的设备文件。</p>
+
+<p>终端：输入和输出设备（键盘 + 显示器）。</p>
+
+<p>串行终端：与机器的串口对应，每一个串口对应一个串行终端，串口对应的是物理终端。</p>
+
+<p>虚拟终端：一台PC只有一套键盘和显示器，也就只有一套终端设备，但是可以通过Ctrl + Alt + F1 ~ Ctrl + Alt + F6切换到字符终端，相当于有6套虚拟的终端设备，它们共用同一套物理终端设备/dev/tty1 ~ /dev/tty6。</p>
+
+<p>伪终端：虚拟终端和串行终端的数目是有限的，然而，网络终端和图形终端窗口的数目确实不受限制的，这是通过伪终端实现的。</p>
+
+<p>控制终端：这是一个逻辑概念，即用户正在控制的终端，可以为串行终端，虚拟终端和伪终端。（面对进程，不面对设备！）</p>
+
+<p>控制台终端：控制台终端可认为是一个PC对应的一套键盘和显示器，所有虚拟终端是对应的都是同一控制台终端。</p>
+
+<p>原文：</p>
+
+<p><a href="http://blog.csdn.net/wangsifu2009/article/details/6766298">http://blog.csdn.net/wangsifu2009/article/details/6766298</a></p>
+
+<p><a href="http://bbs.chinaunix.net/thread-2084721-1-1.html">http://bbs.chinaunix.net/thread-2084721-1-1.html</a></p>
+
+<p>在UNIX系统中，用户通过终端登录系统后得到一个Shell进程，这个终端成为Shell进程的控制终端（Controlling Terminal），控制终端是保存在PCB中的信息，而我们知道fork会复制PCB中的信息，因此由Shell进程启动的其它进程的控制终端也是这个终端。 默认情况下（没有重定向），每个进程的标准输入、标准输出和标准错误输出都指向控制终端，进程从标准输入读也就是读用户的键盘输入，进程往标准输出或标准 错误输出写也就是输出到显示器上。在控制终端输入一些特殊的控制键可以给前台进程发信号，例如Ctrl-C表示SIGINT，Ctrl-\表示SIGQUIT。
+每个进程都可以通过一个特殊的设备文件/dev/tty访问它的控制终端。事实上每个终端设备都对应一个不同的设备文件，/dev /tty提供了一个通用的接口，一个进程要访问它的控制终端既可以通过/dev/tty也可以通过该终端设备所对应的设备文件来访问。ttyname函数 可以由文件描述符查出对应的文件名，该文件描述符必须指向一个终端设备而不能是任意文件。</p>
+
+<p>原文：
+<a href="http://www.eefocus.com/article/09-11/87011s.html?clear=1">http://www.eefocus.com/article/09-11/87011s.html?clear=1</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1125,145 +1177,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-06-06T14:45:46+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>2:45 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>文件描述符</h3>
-
-<ul>
-<li>0                      标准输入（STDIN_FILENO）</li>
-<li>1                      标准输出（STDOUT_FILENO）</li>
-<li>2                      标准出错（STDERR_FILENO）</li>
-</ul>
-
-
-<h3>pag48</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">open</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span><span class="p">,</span> <span class="p">...);</span> <span class="c1">//打开或创建一个文件</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>仅当创建一个文件时才使用第三个参数<br>
-需要注意的是：
-- O_RDONLY、O_WRONLY、O_RDWR 三者之中必须指定且只能指定一个
-- open返回的一定是<code>最小的未用</code>描述符数值。（每次调用open都会创建一个新的文件表项，dup，dup2不会）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">creat</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span><span class="p">);</span><span class="err">（以只写方式打开创建文件）</span>
-</span><span class='line'><span class="c1">// 等效于</span>
-</span><span class='line'><span class="n">open</span> <span class="p">(</span><span class="n">pathname</span><span class="p">,</span> <span class="n">O_WRONLY</span> <span class="o">|</span> <span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">O_TRUNC</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span><span class="err">；（首选）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="n">close</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//关闭打开文件</span>
-</span><span class='line'><span class="c1">// 关闭文件时会释放该进程加在该文件上的所有记录锁。（pag358）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">off_t</span> <span class="nf">lseek</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">int</span> <span class="n">whence</span><span class="p">);</span><span class="c1">//显示地为打开文件设置偏移量</span>
-</span><span class='line'><span class="c1">// 文件描述符不能是：管道、FIFO、网络套接字（否则返回-1）</span>
-</span><span class='line'><span class="c1">// 对于普通文件，其偏移量必须是非负值（某些设备可能允许负偏移量），应测试返回值是否等于-1而不是测试是否小于0</span>
-</span><span class='line'><span class="c1">// 文件偏移量可以大于文件当前长度，加长部分形成空洞。空洞不占磁盘空间，但是文件长度和无空洞加长的文件一样。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">ssize_t</span> <span class="nf">read</span> <span class="p">(</span><span class="n">inf</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">);</span><span class="c1">//从打开文件中读取数据,如成功返回读取字节数。</span>
-</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">write</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">);</span><span class="c1">//向打开文件写数据返回，回值与nbytes相同，否则表示出错。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>常见错误原因：</p>
-
-<ul>
-<li>1、磁盘已满</li>
-<li>2、超过给定进程的文件长度限制</li>
-</ul>
-
-
-<p>pag56
-内核用三种数据结构表示打开的文件：
-1、进程表项
-文件描述符标识
-指向一个文件表项的指针
-2、文件表项
-文件状态标识
-当前文件偏移量
-指向文件v节点表项的指针
-3、v节点结构
-i节点
-当前文件长度
-v节点信息</p>
-
-<p>linux没有将相关数据结构分为i节点和v节点，而是采用了一个独立于文件系统的i节点和一个依赖于文件系统的i节点。</p>
-
-<p>原子操作读写函数：
-ssize_t pread (int filedes, void <em>buf, size_t nbytes, off_t offset);
-ssize_t pwrite(int filedes, const void </em>buf, size_t nbytes, off_t offset);</p>
-
-<p>int dup (int filedes); //复制filedes文件描述符，返回当前可用文件描述符的最小值
-int dup2 (int filedes, int filedes2); //filedes2指定新描述符的数值，如果filedes2已经打开则先将其关闭
-新描述符的执行时关闭（close-on-exec）标识总是由dup函数清除。</p>
-
-<p>pag61
-延迟写：
-当将数据写入文件时，内核通常先将该数据复制到其中一个缓冲区中，如果该缓冲区尚未写满，则并不将其排入输出队列，而是等待其写满或者当内核需要重用该缓冲区以便存放其他磁盘块数据时，再将该缓冲区输出队列，然后待其到达队首时，才进行实际的IO操作。
-int fsync (int filedes);//对filedes指定的单一文件起作用，并等待写磁盘操作结束
-int fdatasync (int filedes);//类似fsync，但只影响文件数据部分，fsync还更新文件属性
-void sync (void);//将所有修改过的块缓冲区排入写队列，并不等待实际写磁盘操作结束</p>
-
-<p>int fcntl (int filedes, int cmd, &hellip;);//改变已打开文件属性
-5种功能：
-1、复制一个现有的描述符（cmd = F_DUPFD）
-2、获得/设置文件描述符标记（cmd = F_GETFD或F_SETFD）
-3、获得/设置文件状态标志（cmd = F_GETFL或F_SETFL）O_ACCMODE
-4、获得/设置异步IO所有权（cmd = F_GETOWN或F_SETOWN）
-5、获得/设置记录锁（cmd = F_GETLK、F_SETLK或F_SETLKW）</p>
-
-<p>修改文件描述符标识或文件状态标志步骤：
-1、取得现有的标志值
-2、根据需要修改它（并）
-3、设置新标志值</p>
-
-<p>pag67
-int ioctl (int filedes, int request, &hellip;);//IO操作</p>
-
-<p>打开文件/dev/fd/n等效于复制描述符n</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/5">&larr; Older</a>
@@ -1319,6 +1232,10 @@ int ioctl (int filedes, int request, &hellip;);//IO操作</p>
       </li>
     
       <li class="post">
+        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
       </li>
     
@@ -1364,10 +1281,6 @@ int ioctl (int filedes, int request, &hellip;);//IO操作</p>
     
       <li class="post">
         <a href="/blog/2013-06-10-unixxi-tong-wen-jian-he-xin-xi/">UNIX系统文件和信息</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
       </li>
     
   </ul>

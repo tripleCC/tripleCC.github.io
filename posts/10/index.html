@@ -9,20 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="ELF文件通常拥有的段： 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-.text--------------已编译程序的机器代码
-.rodata-----------只读数据
-.data--------------已初始化的全局变量、局部静态变量。局部变量在运行时分配在相应栈帧中
-.bss &hellip;">
+  <meta name="description" content="sizeof是运算符，strlen是函数，后者可以取地址 sizeof在编译时计算，strlen运行时计算 sizeof参数可以是类型，strlen只能用'\0'结尾的char *作参数 sizeof不退化数组参数为指针，strlen退化数组参数为指针 sizeof不关心空间里的内容， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -78,6 +65,95 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-02-28-strlenhe-sizeofde-qu-bie/">Strlen和sizeof的区别</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-02-28T21:10:20+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:10 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>sizeof是<code>运算符</code>，strlen是函数，后者可以取地址</p>
+
+<p>sizeof在编译时计算，strlen运行时计算</p>
+
+<p>sizeof参数可以是类型，strlen只能用'\0'结尾的char *作参数</p>
+
+<p>sizeof不退化数组参数为指针，strlen退化数组参数为指针</p>
+
+<p>sizeof不关心空间里的内容，只关心空间本身大小，strlen关心空间里的内容（'\0'结尾），不关心空间本身</p>
+
+<p>如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">char</span>    <span class="o">*</span><span class="n">ptr</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">char</span>    <span class="n">buf</span><span class="p">[</span><span class="mi">20</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;123456&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">ptr</span> <span class="o">=</span> <span class="n">buf</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;strlen: ptr %ld buf %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">ptr</span><span class="p">),</span> <span class="n">strlen</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;sizeof: ptr %ld buf %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ptr</span><span class="p">),</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">strlen</span><span class="p">:</span> <span class="n">ptr</span> <span class="mi">6</span> <span class="n">buf</span> <span class="mi">6</span>        <span class="c1">//strlen是以&#39;\0&#39;为终止信号，所以他只关心&#39;\0&#39;之前目标的数据量大小，  </span>
+</span><span class='line'>                           <span class="c1">//不管定义时我给的空间到底多大；strlen返回大小不将&#39;\0&#39;计入  </span>
+</span><span class='line'><span class="k">sizeof</span><span class="o">:</span> <span class="n">ptr</span> <span class="mi">8</span> <span class="n">buf</span> <span class="mi">20</span>      <span class="c1">//sizeof是我定义时所给的空间大小，不关心所给空间里面的数据量大小；  </span>
+</span><span class='line'>                          <span class="c1">//64位系统，指针大小为8字节 </span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -364,43 +440,6 @@ const修饰的常变量必须在定义时初始化：
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012-08-29-armdui-zhan/">ARM堆栈</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2012-08-29T16:38:59+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>4:38 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>递增堆栈：</p>
-
-<p>递减堆栈：</p>
-
-<p>满堆栈：堆栈指针指向最后压入堆栈的有效数据项</p>
-
-<p>空堆栈：堆栈指针指向下一个要放入数据的空位置</p>
-
-<p>（刚好不久上课前疑惑一个问题，以前数据结构构造的堆栈是空堆栈，而讲到51时看到的又是满堆栈，当时就很困惑，（为了写一个仿ucos的操作系统）不知道原来有两种概念的堆栈）（stm32也是属于满堆栈）</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/11">&larr; Older</a>
@@ -456,6 +495,10 @@ const修饰的常变量必须在定义时初始化：
       </li>
     
       <li class="post">
+        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
       </li>
     
@@ -501,10 +544,6 @@ const修饰的常变量必须在定义时初始化：
     
       <li class="post">
         <a href="/blog/2013-06-10-unixxi-tong-wen-jian-he-xin-xi/">UNIX系统文件和信息</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a>
       </li>
     
   </ul>
