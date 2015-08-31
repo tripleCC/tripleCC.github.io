@@ -9,8 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="近期的需求里面，有需要下载海报大图的情况，但是使用SDWebImage进行下载时老是会出现内存泄漏的情况，然后APP就莫名地秒退了，感觉SDWebImage会对内存溢出进行处理，然后清楚掉一些缓存，所以就有点疑惑。
-于是我就尝试不采用UIImageView分类的方法进行设置，而进行了以下处理： 1 &hellip;">
+  <meta name="description" content="近期的需求里面，有需要下载海报大图的情况，但是使用SDWebImage进行下载时老是会出现内存泄漏的情况，然后APP就莫名地秒退了，感觉SDWebImage会对内存溢出进行处理，然后清除掉一些缓存，所以就有点疑惑。
+于是我就尝试不采用UIImageView分类的方法进行设置，而进行了以下处理： &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,8 +85,10 @@
   </header>
 
 
-<div class="entry-content"><p>近期的需求里面，有需要下载海报大图的情况，但是使用SDWebImage进行下载时老是会出现内存泄漏的情况，然后APP就莫名地秒退了，感觉SDWebImage会对内存溢出进行处理，然后清楚掉一些缓存，所以就有点疑惑。<br>
+<div class="entry-content"><p>近期的需求里面，有需要下载海报大图的情况，但是使用SDWebImage进行下载时老是会出现内存泄漏的情况，然后APP就莫名地秒退了，感觉SDWebImage会对内存溢出进行处理，然后清除掉一些缓存，所以就有点疑惑。<br>
 于是我就尝试不采用UIImageView分类的方法进行设置，而进行了以下处理：</p>
+
+<h4>通过清除内存缓存</h4>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -110,6 +112,224 @@
 
 
 <p>先对图片进行下载，下载完成后再看是否执行清除缓存处理，没想到还真是可以了。<br></p>
+
+<h4>通过压缩</h4>
+
+<p>上网找了找，发现还有另外一种处理方式：将图片进行压缩，再缓存。不过这需要修改SDWebImage的源码，比较蛋疼。详细如下<br></p>
+
+<p>SDWebImage针对图片设置，有这么一段代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">sd_imageWithData:</span><span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span><span class="p">)</span><span class="nv">data</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span><span class="p">;</span>
+</span><span class='line'>    <span class="bp">NSString</span> <span class="o">*</span><span class="n">imageContentType</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSData</span> <span class="nl">sd_contentTypeForImageData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">imageContentType</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;image/gif&quot;</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">sd_animatedGIFWithData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cp">#ifdef SD_WEBP</span>
+</span><span class='line'>    <span class="k">else</span> <span class="k">if</span> <span class="p">([</span><span class="n">imageContentType</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;image/webp&quot;</span><span class="p">])</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">sd_imageWithWebPData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'>    <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">image</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImage</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>        <span class="n">UIImageOrientation</span> <span class="n">orientation</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">sd_imageOrientationFromImageData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">orientation</span> <span class="o">!=</span> <span class="n">UIImageOrientationUp</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithCGImage</span><span class="p">:</span><span class="n">image</span><span class="p">.</span><span class="bp">CGImage</span>
+</span><span class='line'>                                        <span class="nl">scale</span><span class="p">:</span><span class="n">image</span><span class="p">.</span><span class="n">scale</span>
+</span><span class='line'>                                  <span class="nl">orientation</span><span class="p">:</span><span class="n">orientation</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">image</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从上面可以看出，SDWebImage直接把下载的data转换成了image，即使data很大。所以需要在这里进行一些处理之后，再设置传出image。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">compressImageWith:</span><span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nv">image</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="kt">float</span> <span class="n">imageWidth</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>  <span class="kt">float</span> <span class="n">imageHeight</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>  <span class="kt">float</span> <span class="n">width</span> <span class="o">=</span> <span class="mi">640</span><span class="p">;</span>
+</span><span class='line'>  <span class="kt">float</span> <span class="n">height</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="o">/</span><span class="p">(</span><span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="o">/</span><span class="n">width</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">float</span> <span class="n">widthScale</span> <span class="o">=</span> <span class="n">imageWidth</span> <span class="o">/</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>  <span class="kt">float</span> <span class="n">heightScale</span> <span class="o">=</span> <span class="n">imageHeight</span> <span class="o">/</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 创建一个bitmap的context</span>
+</span><span class='line'>  <span class="c1">// 并把它设置成为当前正在使用的context</span>
+</span><span class='line'>  <span class="n">UIGraphicsBeginImageContext</span><span class="p">(</span><span class="n">CGSizeMake</span><span class="p">(</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">widthScale</span> <span class="o">&gt;</span> <span class="n">heightScale</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">image</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">imageWidth</span> <span class="o">/</span><span class="n">heightScale</span> <span class="p">,</span> <span class="n">height</span><span class="p">)];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>      <span class="p">[</span><span class="n">image</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">width</span> <span class="p">,</span> <span class="n">imageHeight</span> <span class="o">/</span><span class="n">widthScale</span><span class="p">)];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 从当前context中创建一个改变大小后的图片</span>
+</span><span class='line'>  <span class="bp">UIImage</span> <span class="o">*</span><span class="n">newImage</span> <span class="o">=</span> <span class="n">UIGraphicsGetImageFromCurrentImageContext</span><span class="p">();</span>
+</span><span class='line'>  <span class="c1">// 使当前的context出堆栈</span>
+</span><span class='line'>  <span class="n">UIGraphicsEndImageContext</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">newImage</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后再更改最初代码为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">sd_imageWithData:</span><span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span><span class="p">)</span><span class="nv">data</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span><span class="p">;</span>
+</span><span class='line'>    <span class="bp">NSString</span> <span class="o">*</span><span class="n">imageContentType</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSData</span> <span class="nl">sd_contentTypeForImageData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">imageContentType</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;image/gif&quot;</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">sd_animatedGIFWithData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cp">#ifdef SD_WEBP</span>
+</span><span class='line'>    <span class="k">else</span> <span class="k">if</span> <span class="p">([</span><span class="n">imageContentType</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;image/webp&quot;</span><span class="p">])</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">sd_imageWithWebPData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'>    <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">image</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImage</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 大于1M时才进行压缩处理</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">length</span><span class="o">/</span><span class="mi">1024</span> <span class="o">&gt;</span> <span class="mi">1024</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>          <span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">compressImageWith</span><span class="p">:</span><span class="n">image</span><span class="p">];</span>
+</span><span class='line'>      <span class="p">}</span>
+</span><span class='line'>        <span class="n">UIImageOrientation</span> <span class="n">orientation</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">sd_imageOrientationFromImageData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">orientation</span> <span class="o">!=</span> <span class="n">UIImageOrientationUp</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithCGImage</span><span class="p">:</span><span class="n">image</span><span class="p">.</span><span class="bp">CGImage</span>
+</span><span class='line'>                                        <span class="nl">scale</span><span class="p">:</span><span class="n">image</span><span class="p">.</span><span class="n">scale</span>
+</span><span class='line'>                                  <span class="nl">orientation</span><span class="p">:</span><span class="n">orientation</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">image</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最后，还需要对imageData进行处理，在SDWebImageDownloaderOperation的connectionDidFinishLoading方法里面，添加以下代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">sd_imageWithData</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">imageData</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//将等比压缩过的image在赋在转成data赋给self.imageData</span>
+</span><span class='line'><span class="bp">NSData</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="n">UIImageJPEGRepresentation</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">imageData</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableData</span> <span class="nl">dataWithData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过更改了SDWebImage的源码，使用cocoapods就比较蛋疼了，所以最后还是选择了第一种。</p>
 </div>
 
 
