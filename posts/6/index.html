@@ -9,8 +9,10 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="read函数只是一个通用的读文件设备的接口。是否阻塞需要由设备的属性和设定所决定。一般来说: 读字符终端、网络的socket描述字，管道文件等，这 些文件的缺省read都是阻塞的方式。
-如果是读磁盘上的文件，一般不会是阻塞方式的。但使用锁和fcntl设置取消文件O_NOBLOCK状态，也会产生 &hellip;">
+  <meta name="description" content="pag355 低速系统调用： 1、某些文件类型（管道、终端设备、网络设备）的数据并不存在，则读操作可能会使调用者永远阻塞。
+2、数据不能立即被上诉同样类型的文件接受（由于在管道中无空间、网络流控制等），则写操作也会使调用者永远阻塞
+3、在某种条件发生之前，打开某些类型的文件会被阻塞
+4、 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +68,404 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-24-unixxi-tong-gao-ji-io/">UNIX系统高级IO</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-24T20:25:24+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>8:25 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag355</h3>
+
+<h3>低速系统调用：</h3>
+
+<ul>
+<li>1、某些文件类型（<code>管道、终端设备、网络设备</code>）的数据并不存在，则<code>读操作</code>可能会使调用者永远阻塞。</li>
+<li>2、数据不能立即被上诉同样类型的文件接受（由于在<code>管道中无空间、网络流控制</code>等），则<code>写操作</code>也会使调用者永远阻塞</li>
+<li>3、在某种条件发生之前，打开某些类型的文件会被阻塞</li>
+<li>4、对已加上强制性记录锁的文件进行读写</li>
+<li>5、某些ioctl操作</li>
+<li>6、某些进程间通信函数</li>
+</ul>
+
+
+<p>虽然读写磁盘文件会使调用者在短暂时间内阻塞，但并不能将与磁盘IO有关的系统调用视为低速。</p>
+
+<h6>指定一个给定描述符为非阻塞IO：</h6>
+
+<ul>
+<li>1、open获得描述符，并指定O_NONBLOCK</li>
+<li>2、调用fcntl，打开O_NONBLOCK，先获取，在或，再改变</li>
+</ul>
+
+
+<h6>记录锁（字节范围锁）：</h6>
+
+<p>当一个进程正在读或修改文件的某个部分时，他可以阻止其他进程修改同一文件区。（锁定的只是文件中的一个区域）</p>
+
+<h6>不同进程提出锁请求：</h6>
+
+<p><code>多进程</code>在一个给定的字节上可以有一把<code>共享的读锁</code>，但是在<code>一个给定字节</code>上只能有一个进程<code>独用的一把写锁</code>。<br>
+如果在一个给定的字节上已有一把或多把读锁，则不能在该字节上再加写锁。如在一个字节上已经有一把独占性的写锁，则不能再对他加任何读锁。</p>
+
+<h6>单个进程提出多个锁请求情况：</h6>
+
+<p>如果一个进程对一个文件区间已经有了一把锁，后来该进程又企图在同一文件区间再加一把锁，那么新锁将替换老锁。（调用进程绝不会阻塞在自己持有的锁上）<br>
+加读锁时，该描述符必须时读打开；加写锁时，该描述符必须时写打开。</p>
+
+<p><code>应先用F_GETLK测试能否建立一把锁，然后用F_SETLK和F_SETLKW试图建立一把锁。
+F_GETLK是检测其他进程是否有现存锁，不能报告调用进程自己的锁。</code></p>
+
+<h3>pag363</h3>
+
+<h6>锁的隐含继承和释放：</h6>
+
+<ul>
+<li>1、当一个进程终止时，他所建立的锁全部释放；任何时候关闭一个描述符时，则该进程（<code>仅限于调用进程</code>）通过<code>这一描述符可以引用的文件上的任何一把锁</code>都被释放。（也就是说作用<code>对象变成了文件i节点</code>，而<code>不是文件描述符，或者文件表项</code>）
+如：</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fd1</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span> <span class="n">pathname</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
+</span><span class='line'><span class="n">read_lock</span><span class="p">(</span> <span class="n">fd1</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
+</span><span class='line'><span class="n">fd2</span> <span class="o">=</span> <span class="n">dup</span><span class="p">(</span> <span class="n">fd1</span> <span class="p">);</span> <span class="p">(</span><span class="err">指向同一文件表项</span><span class="p">)</span>  <span class="c1">//fd2 = open(pathname, ... );（指向新建文件表项）</span>
+</span><span class='line'><span class="n">close</span><span class="p">(</span> <span class="n">fd2</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在close（fd2）后，fd1上设置的锁被释放</p>
+
+<ul>
+<li>2、由fork产生的子进程不继承父进程所设置的锁。(记录锁本身就是为了进程间能独立写文件)</li>
+<li>3、在执行exec后，新进程可以继承原执行程序的锁（没有设置close-on-exec标志）</li>
+</ul>
+
+
+<h6>锁的释放：</h6>
+
+<p>关闭进程中的相应描述符，内核会从该描述符所关联的i节点开始，逐个检查lockf链表中各项，并释放由<code>调用进程</code>持有的各把锁。（<code>文件i节点会为每个进程维护一个锁结构</code>）</p>
+
+<p>对一个特定文件打开其设置组ID位并关闭其组执行位，则对该文件开启了强制性锁机制。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fstat</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">statbuf</span> <span class="p">);</span>
+</span><span class='line'><span class="n">fchmod</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="p">(</span><span class="n">statbuf</span><span class="p">.</span><span class="n">st_mode</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">S_IXGRP</span><span class="p">)</span> <span class="o">|</span> <span class="n">S_ISGID</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag376</h3>
+
+<h6>处理文件描述符和文件状态标志：</h6>
+
+<p>先取当前写模式值，然后修改他（与或并），而不只是将写模式设置为某个绝对值。</p>
+
+<h3>pag382</h3>
+
+<h6>IO多路转换：</h6>
+
+<p>先构造一张有关描述符的列表，然后调用一个函数，直到这些描述符中的一个已准备好进行IO时，该函数才返回。在返回时，它告诉进程哪些描述符已准备好进行IO。<br>
+传向select的参数告诉内核：</p>
+
+<ul>
+<li>1、我们所关心的描述符</li>
+<li>2、对于每个描述符我们所关心的状态（是否读一个给定的描述符?是否想写一个给定的描述符？是否关心一个描述符的异常状态？）</li>
+<li>3、愿意等待多长时间（可以永远等待，等待一个固定量时间，或完全不等待）</li>
+</ul>
+
+
+<p>从select返回告诉我们：</p>
+
+<ul>
+<li>1、已准备好的描述符的数量</li>
+<li>2、对于读写或异常这三个状态中的每一个，哪些描述符已准备好</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">selet</span><span class="p">(</span> <span class="kt">int</span> <span class="n">maxfdp1</span><span class="p">,</span> <span class="n">fd_set</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">readfds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">writefds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">restrictexceptfds</span><span class="p">,</span> <span class="k">struct</span> <span class="n">timeval</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tvptr</span> <span class="p">);(</span><span class="n">maxfdp1</span><span class="err">为最大描述符</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pselet</span><span class="p">(</span> <span class="kt">int</span> <span class="n">maxfdp1</span><span class="p">,</span> <span class="n">fd_set</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">readfds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">writefds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">restrictexceptfds</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">timespec</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tvptr</span><span class="p">,</span> <span class="k">const</span> <span class="kt">sigset_t</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">sigmask</span> <span class="p">);</span> <span class="c1">//多了信号屏蔽这以块功能</span>
+</span><span class='line'><span class="err">对</span><span class="n">fd_set</span><span class="err">处理函数：</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">FD_ISSET</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//测试指定位是否设置</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">FD_CLR</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//清除指定位</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">FD_SET</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//设置指定位</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">FD_ZERO</span><span class="p">(</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//所有位清零</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>常用方式：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fd_set</span> <span class="n">rset</span><span class="p">;</span>
+</span><span class='line'><span class="kt">int</span>        <span class="n">fd</span><span class="p">;</span>
+</span><span class='line'><span class="n">FD_ZERO</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
+</span><span class='line'><span class="n">FD_SET</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
+</span><span class='line'><span class="n">FD_SET</span><span class="p">(</span><span class="n">STDIN_FILENO</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
+</span><span class='line'><span class="err">从</span><span class="n">select</span><span class="err">返回后：</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">FD_ISSET</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">poll</span><span class="p">(</span> <span class="k">struct</span> <span class="n">pollfd</span> <span class="n">fdarray</span><span class="p">[],</span><span class="kt">nfds_t</span> <span class="n">nfds</span><span class="p">,</span> <span class="kt">int</span> <span class="n">timeout</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>函数构造一个pollfd结构数组，每个数组元素指定一个描述符编号以及对其所关心的状态。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">pollfd</span> <span class="p">{</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">fd</span><span class="p">;</span>
+</span><span class='line'><span class="kt">short</span> <span class="n">events</span><span class="p">;</span>
+</span><span class='line'><span class="kt">short</span> <span class="n">revents</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>通过events告诉内核我们对该描述符关心的是什么。返回时，内核设置revents成员，以说明对于该描述符已经发生了什么事件。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">ssize_t</span> <span class="nf">readv</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="n">conststruct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iov</span><span class="p">,</span> <span class="kt">int</span> <span class="n">iovcnt</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">writev</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="n">conststruct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iov</span><span class="p">,</span> <span class="kt">int</span> <span class="n">iovcnt</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在一次函数调用中读写多个非连续缓冲区。</p>
+
+<p>管道、FIFO以及某些设备，特别时终端、网络和STREAMS设备有下列两种性质：</p>
+
+<ul>
+<li>1、一次read操作所返回的数据可能少于所要求的数据，即使还没达到文件尾端也可能是这样的。这不是一个错误，应当继续该设备。</li>
+<li>2、一次write操作的返回值也可能少于指定输出的字节数。这不是一个错误，应当继续该设备。</li>
+</ul>
+
+
+<h3>pag390</h3>
+
+<h6>存储映射IO：</h6>
+
+<p>使一个磁盘文件与存储空间中的一个缓冲区相映射。于是当从缓冲区取数据，就相当于读文件中的相应字节。将数据存入缓冲区，则相应字节就自动写入文件。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">mmap</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span><span class="kt">int</span> <span class="n">prot</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fileds</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">off</span> <span class="p">);</span> <span class="c1">//将给定文件映射到存储区域</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>通常将addr设置为0，表示由系统选择该映射区的起始地址。<br>
+off和addr通常指定为0.</p>
+
+<p>不能用其在网络设备或终端设备等一些设备之间进行复制。</p>
+
+<p>在调用fork之后，子进程继承存储映射区（<code>存储映射区是父进程地址空间的一部分，子进程将复制</code>），同样，因为<code>exec之后子进程采用全新的地址空间，所以不继承存储空间</code>。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">mprotect</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span><span class="kt">int</span> <span class="n">prot</span> <span class="p">);</span><span class="c1">//更改一个现存映射存储区</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">msync</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span> <span class="n">intflags</span> <span class="p">);</span><span class="c1">//将修改的页冲洗到被映射的文件中</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">munmap</span><span class="p">(</span> <span class="kt">caddr_t</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">);</span> <span class="c1">//解除存储区映射（关闭文件描述符并不解除映射区）调用munmap不会使映射区的内容写到磁盘文件上。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/mman.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#define NLOOPS      1000  </span>
+</span><span class='line'><span class="cp">#define SIZE        sizeof(long)  </span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="kt">int</span>
+</span><span class='line'><span class="nf">updata</span><span class="p">(</span> <span class="kt">long</span> <span class="o">*</span><span class="n">ptr</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span><span class="p">(</span> <span class="p">(</span><span class="o">*</span><span class="n">ptr</span><span class="p">)</span><span class="o">++</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="n">fd</span><span class="p">,</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">counter</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">pid_t</span>   <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">void</span>    <span class="o">*</span><span class="n">area</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">fd</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span><span class="s">&quot;/dev/zero&quot;</span><span class="p">,</span> <span class="n">O_RDWR</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;open&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">area</span> <span class="o">=</span> <span class="n">mmap</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SIZE</span><span class="p">,</span> <span class="n">PROT_READ</span> <span class="o">|</span> <span class="n">PROT_WRITE</span><span class="p">,</span> <span class="n">MAP_SHARED</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">==</span> <span class="n">MAP_FAILED</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;mmap error&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">close</span><span class="p">(</span> <span class="n">fd</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">TELL_WAIT</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;fork&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="k">else</span> <span class="k">if</span><span class="p">(</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">NLOOPS</span><span class="p">;</span> <span class="n">i</span><span class="o">+=</span><span class="mi">2</span> <span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">counter</span> <span class="o">=</span> <span class="n">updata</span><span class="p">((</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">))</span> <span class="o">!=</span> <span class="n">i</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;p: e %d, g %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">counter</span> <span class="p">);</span>
+</span><span class='line'>                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="n">printf</span><span class="p">(</span><span class="s">&quot;p area: %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">TELL_CHILD</span><span class="p">(</span> <span class="n">pid</span> <span class="p">);</span>
+</span><span class='line'>            <span class="n">WAIT_CHILD</span><span class="p">();</span>
+</span><span class='line'>            <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">NLOOPS</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="mi">2</span> <span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">WAIT_PARENT</span><span class="p">();</span>
+</span><span class='line'>            <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">counter</span> <span class="o">=</span> <span class="n">updata</span><span class="p">((</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">))</span> <span class="o">!=</span> <span class="n">i</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;c: e %d, g %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">counter</span> <span class="p">);</span>
+</span><span class='line'>                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="n">printf</span><span class="p">(</span><span class="s">&quot;c area: %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">TELL_PARENT</span><span class="p">(</span> <span class="n">getppid</span><span class="p">()</span> <span class="p">);</span>
+</span><span class='line'>            <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">1</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">2</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">3</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">4</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">5</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">6</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">7</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">8</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">9</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">10</span>
+</span><span class='line'><span class="p">...</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -485,220 +885,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-05-16-unixxi-tong-xian-cheng/">UNIX系统线程</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-05-16T19:48:56+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>7:48 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>pag288</h3>
-
-<p>进程的所有信息对<code>该进程的所有线程都是共享的</code>，包括可执行的<code>程序文本</code>、程序的<code>全局内存</code>和<code>堆内存</code>、<code>栈</code>以及<code>文件描述符</code>。</p>
-
-<p>进程ID在整个系统中是唯一的，线程ID只在他所属的进程环境中有效。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_equal</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="n">tid1</span><span class="p">,</span> <span class="kt">pthread_t</span> <span class="n">tid2</span><span class="p">);</span><span class="c1">//比较线程ID</span>
-</span><span class='line'><span class="kt">pthread_t</span> <span class="nf">pthread_self</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//获得自身线程ID</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_create</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tidp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">start_rtn</span><span class="p">)(</span><span class="kt">void</span><span class="p">),</span> <span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">arg</span><span class="p">);</span><span class="c1">//创建线程（由restrict修饰的指针是最初唯一对指针所指向的对象进行存取的方法，仅当第二个指针基于第一个时，才能对对象进行存取）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>进程和线程都会<code>清除</code>其父进程或调用线程的<code>未决信号集</code>。</p>
-
-<h3>pag291</h3>
-
-<p>如果进程中的<code>任一线程</code>调用了exit，<em>exit或者</em>Exit，那么<code>整个进程</code>就会终止。</p>
-
-<p>单线程三种不终止整个进程的退出方式：</p>
-
-<ul>
-<li>1、线程只是从启动例程中返回，返回值时线程的退出码。</li>
-<li>2、线程可以被同一进程的其他线程取消。</li>
-<li>3、线程调用pthread_exit。</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_exit</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">rval_ptr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_join</span><span class="p">(</span> <span class="kt">pthread_t</span> <span class="kr">thread</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">rval_ptr</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>调用pthread_join后，调用进程将<code>一直阻塞</code>，直到<code>指定线程调用pthread_exit</code>、从启动例程中返回或者被取消。<br>
-<code>注意：</code>pthread_join无法对分离状态的线程进行操作。（pthread_detach使其分离）</p>
-
-<p>pthread_create和pthread_exit中的无类型指针参数所使用的内存在调用者完成调用后必须仍然有效，否则会出现无效或非法内存访问。（<code>可以使用全局变量或者在堆上分配动态内存</code>）<br>
-如：在调用线程的栈上分配该结构，或者在自己的栈上分配了一个结构然后把指向这个结构够的指针传给pthread_exit，那么当调用pthread_join的线程试图使用该结构时，这个栈有可能已被撤销。</p>
-
-<h3>pag295</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_cancel</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">);</span><span class="c1">//请求取消同一 进程中的其他线程</span>
-</span><span class='line'><span class="err">不等待线程终止，仅仅提出请求</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>线程清理函数（进程：atexit）：</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="n">pthread_cleanup_push</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">rtn</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">),</span> <span class="kt">void</span> <span class="o">*</span><span class="n">arg</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">void</span> <span class="n">pthread_cleanup_pop</span><span class="p">(</span> <span class="kt">int</span> <span class="n">execute</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>执行以下动作时调用：</p>
-
-<ul>
-<li>1、调用pthread_exit时。</li>
-<li>2、响应取消请求时。</li>
-<li>3、用非零execute参数调用pthread_cleanup_pop时</li>
-<li>（不包括return！）</li>
-</ul>
-
-
-<p>因可实现为宏，所以必须在与线程相同的作用域中以匹配对的形式使用。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">进程</span><span class="o">-------------------</span><span class="err">线程</span>
-</span><span class='line'><span class="n">fork</span><span class="o">-------------------</span><span class="n">pthread_create</span><span class="o">-------------------</span><span class="err">创建新的控制流</span>
-</span><span class='line'><span class="n">exit</span><span class="o">-------------------</span><span class="n">pthread_exit</span><span class="o">-------------------</span><span class="err">从现有的控制流中退出</span>
-</span><span class='line'><span class="n">waitpid</span><span class="o">---------------</span><span class="n">pthread_join</span><span class="o">-------------------</span><span class="err">等待控制流退出并得到退出状态</span>
-</span><span class='line'><span class="n">atexit</span><span class="o">-----------------</span><span class="n">pthread_cleanup_push</span><span class="o">-----------</span><span class="err">注册在退出控制流时调用的函数</span>
-</span><span class='line'><span class="n">getpid</span><span class="o">----------------</span><span class="n">pthread_self</span><span class="o">-------------------</span><span class="err">获取控制流的</span><span class="n">ID</span>
-</span><span class='line'><span class="n">abort</span><span class="o">-------------------</span><span class="n">pthread_cancel</span><span class="o">-------------------</span><span class="err">请求控制流的非正常退出</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>分离线程</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_detach</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">);</span><span class="c1">//使线程进入分离状态</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在默认情况下，线程终止状态会保存到对该线程调用phtread_join，如果线程已经处于分离状态，线程的底层存储资源可以<code>在线程终止时立即被收回</code>。</p>
-
-<h3>pag330</h3>
-
-<h4>线程同步机制：</h4>
-
-<h6>互斥锁：</h6>
-
-<p><code>使用之前必须初始化（pthread_mutex_init），释放底层内存之前必须销毁(pthread mutex_destroy)</code></p>
-
-<h6>互斥量：</h6>
-
-<p>常量PTHREAD_MUTEX_INITIALIZER（只对静态分配的互斥量）<br>
-一次只有一个线程可以对其加锁</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutex_init</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">mutex</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_nutex_destroy</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>    <span class="p">(</span><span class="err">释放动态分配的互斥量</span><span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_lock</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>     <span class="p">(</span><span class="err">如已锁，调用线程将阻塞到互斥量被解锁</span><span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_trylock</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>   <span class="p">(</span><span class="err">尝试加锁，已加则返回</span><span class="n">EBUSY</span><span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_unlock</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>读写锁：</h6>
-
-<p>三种状态：
-- 1、写模式加锁状态（一次只有一个线程可以占有写模式的读写锁）
-在这个锁被解锁之前，所有试图对这个锁加锁的线程都会被阻塞。
-- 2、读模式加锁状态（多个线程可以同时占有读模式的读写锁）
-所有已读模式对他进行加锁的线程都可以得到访问权，但是如果线程希望以写模式对此锁进行加锁，他必须阻塞到所有的线程释放读锁。
-- 3、不加锁状态</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlock_init</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">rwlock</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_destroy</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_rdlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_wrlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_unlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_tryrdlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_trywrlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>条件变量：</h6>
-
-<p>静态分配的条件变量：PTHREAD_COND_INITIALIZER<br>
-条件变量本身是由互斥量保护的。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_cond_init</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">cond</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_destroy</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_wait</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">cond</span><span class="p">,</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">mutex</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>调用后把调用线程放到<code>等待条件的线程列表</code>上，然后<code>对互斥量解锁（以便其他线程可以获取资源）</code>；<code>返回时，互斥量再次被锁住</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_timedwait</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">cond</span><span class="p">,</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">mutex</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">timespec</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">timeout</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_signal</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_broadcast</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>注意：要<code>在改变条件以后再给线程发送信号（唤醒线程必须重新检查条件，不能仅仅因为pthread_cond_wait 返回就假定条件为真）</code>
-条件变量是利用线程间共享的全局变量进行同步的一种机制，主要包括两个动作：</p>
-
-<ul>
-<li>1、<code>一个线程等待"条件变量的条件成立"而挂起</code>；</li>
-<li>2、<code>另一个线程使"条件成立"（给出条件成立信号)</code>；</li>
-</ul>
-
-
-<p>为了防止竞争，条件变量的使用总是和一个互斥锁结合在一起。</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/7">&larr; Older</a>
@@ -726,11 +912,15 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-08-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">runtime应用之关联对象和MethodSwizzling</a>
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
       </li>
     
       <li class="post">
@@ -742,11 +932,11 @@
       </li>
     
       <li class="post">
-        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用runtime函数</a>
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用Runtime函数</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">runtime应用之KVC</a>
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
       </li>
     
       <li class="post">
@@ -799,10 +989,6 @@
     
       <li class="post">
         <a href="/blog/2013-06-13-unixxi-tong-xi-ti-10-6/">UNIX系统习题10-6</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-10-unixxi-tong-wen-jian-he-xin-xi/">UNIX系统文件和信息</a>
       </li>
     
   </ul>
