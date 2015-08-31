@@ -9,33 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="同事用了最近刚出的GitBook又崩溃了。。。他近一个星期的笔记都没了。。。还好只是一个星期的。。。还是我大Mou好。。。答应给他写个简单的备份脚本。。。 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27 &hellip;">
+  <meta name="description" content="和师兄一起接了一个外包项目，项目里面有如下效果的需求。刚好这个模块是我负责的，想了一个比较有意思的实现方法。 效果图 需求 需求点大意是在tableView的右侧实现一个类似标签索引的东西，标签索引显示对应cell的时间。 解决方法 想到的方法一： 刚开始打算自己创建一个UILabel索引标签， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -91,6 +65,215 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-05-29T20:30:39+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:30 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>和师兄一起接了一个外包项目，项目里面有如下效果的需求。刚好这个模块是我负责的，想了一个比较有意思的实现方法。</p>
+
+<h4>效果图</h4>
+
+<p><img src="/images/2015-08-29%2021_16_47.gif" alt="" /><br></p>
+
+<h4>需求</h4>
+
+<p>需求点大意是在tableView的右侧实现一个类似标签索引的东西，标签索引显示对应cell的时间。</p>
+
+<h4>解决方法</h4>
+
+<p>想到的方法一：</p>
+
+<ul>
+<li>刚开始打算自己创建一个UILabel索引标签，然后监听tableView的contentOffset来实现索引标签的移动：</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// 在这里根据scrollView.contentOffset.y来改变标签索引的坐标</span>
+</span><span class='line'>  <span class="c1">// contentSize的高度，和屏幕高度是成固定比例的，所以可以计算出来</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>后来感觉这样太麻烦，于是就打算监听scrollview内部的导航view决定索引标签的移动。由于是scrollView的内部控件，所以就通过断点的方式获取控件的成员变量名:<br>
+<img src="/images/Snip20150829_4.png" alt="" /></p>
+
+<p>看出成员变量名如下：<br>
+<img src="/images/Snip20150829_3.png" alt="" /></p>
+
+<p>由此可以引出方法二和三。</p>
+
+<p>方法二：</p>
+
+<ul>
+<li>还是采用创建UILabel，不过是加到控制器的view上，然后根据其中的_verticalScrollIndicator的左边，来进行相应的移动。</li>
+</ul>
+
+
+<p>由于此标签索引不需要交互，所以我采用了方法三。<br>
+方法三：</p>
+
+<ul>
+<li>将创建的UILabel添加到<em>verticalScrollIndicator上，成为它的子控件。然后通过indexPathForRowAtPoint:获取对应的cell的行号。因为</em>verticalScrollIndicator本身是和tableView在同一个坐标系，所以也不需要做转换。</li>
+</ul>
+
+
+<p>主要代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">ViewController</span> <span class="p">()</span> <span class="o">&lt;</span><span class="bp">UITableViewDataSource</span><span class="p">,</span> <span class="bp">UITableViewDelegate</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIView</span> <span class="o">*</span><span class="n">scrollIndicator</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="bp">NSString</span> <span class="o">*</span><span class="k">const</span> <span class="n">reuseIndentifier</span> <span class="o">=</span> <span class="s">@&quot;testCell&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">ViewController</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">tableView</span><span class="p">.</span><span class="n">rowHeight</span> <span class="o">=</span> <span class="mi">150</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">numberOfRowsInSection:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">section</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">200</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="bp">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">dequeueReusableCellWithIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">cell</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">cell</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableViewCell</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithStyle</span><span class="p">:</span><span class="n">UITableViewCellStyleDefault</span> <span class="nl">reuseIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">backgroundColor</span>  <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="nl">colorWithRed</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">green</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">blue</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">alpha</span><span class="p">:</span><span class="mf">0.5</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;just a function test--%ld!&quot;</span><span class="p">,</span> <span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span> <span class="o">=</span> <span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">scrollView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 在这里根据_verticalScrollIndicator的中点，来获取对应的cell行号，从而可以获取对应行的数据来进行显示</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">indexPathForRowAtPoint</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">center</span><span class="p">].</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewWillBeginDragging:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// 这里注意要在点击时获取，如果在view加载完成时设置标签索引的中点，那么获取的_verticalScrollIndicator的frame是不对的</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">valueForKey</span><span class="p">:</span><span class="s">@&quot;verticalScrollIndicator&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UILabel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">)];</span>
+</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="bp">CGPoint</span> <span class="n">center</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">center</span><span class="p">.</span><span class="n">y</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">center</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">indicatorView</span><span class="p">];</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -469,1837 +652,6 @@ ibus卸载时会将system setting中的一些使用程序附带删除（但是�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-07-05T22:49:57+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:49 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>OC类的定义与对象的创建</h3>
-
-<p>OC类的描述：类声明、类定义。<br></p>
-
-<p>类声明：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="bp">NSObject</span> <span class="p">{</span>
-</span><span class='line'><span class="k">@public</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_score</span><span class="p">;</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>    <span class="n">NSStrng</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework</span><span class="p">;</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span><span class="p">;</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeClass</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>objc
-@interface中私有变量默认初始化为0，@end表示类声明结束，@private表示这些属性为此类私有。<br>
-NSObject使声明的类具备创建对象的能力。<br>
-与C++不同的是OS类声明的{}中不能有方法（C++为成员函数等），只声明类属性。<br>
-只要是OC对象的方法，必须以‘-’符号开头。</p>
-
-<h3>类实现：</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework</span> <span class="p">{...}</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span> <span class="p">{...}</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeClass</span><span class="p">{...}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>@implementation为类定义关键字，@end表示类定义结束。</p>
-
-<p>即使没有@interface，@implementation也能成功定一个类：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span> : <span class="bp">NSObject</span> <span class="p">{</span>
-</span><span class='line'><span class="k">@public</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_score</span><span class="p">;</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>    <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework</span> <span class="p">{...}</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span> <span class="p">{...}</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeClass</span><span class="p">{...}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>但是在两者都有的情况下，@implementation中不能声明和@interface一样的成员变量。</p>
-
-<p>创建对象：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">Student</span> <span class="o">*</span><span class="n">S</span> <span class="o">=</span> <span class="p">[</span><span class="n">Student</span> <span class="n">new</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">S</span><span class="o">-&gt;</span><span class="n">_score</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">S</span><span class="o">-&gt;</span><span class="n">age</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span> <span class="c1">//错误  </span>
-</span><span class='line'>    <span class="p">[</span><span class="n">S</span> <span class="n">doHomework</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>OC中只能<code>通过指针</code>操作对象。<br></p>
-
-<p>[Student new]表示创建对象并返回对象的地址。[S doHomework]表示调用doHomework函数，在OC中想执行一些方法，必须有[]。</p>
-
-<p>网上有种说法“OC对象实际上就是指针”这句是错误的！</p>
-
-<p><em>score为公有成员，可以直接赋值，</em>name、<em>age、</em>id为私有成员，不能这样操作。
-方法：</p>
-
-<ul>
-<li>无参：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework</span><span class="p">;</span>
-</span><span class='line'><span class="o">-</span>                           <span class="err">方法类型</span>
-</span><span class='line'><span class="p">(</span><span class="kt">void</span><span class="p">)</span>                   <span class="err">返回值类型</span>
-</span><span class='line'><span class="n">doHomework</span>        <span class="err">方法名</span>
-</span><span class='line'>     <span class="p">[</span><span class="n">S</span> <span class="n">doHomework</span><span class="p">]</span>
-</span><span class='line'><span class="n">S</span>                          <span class="err">指针变量名</span>
-</span><span class='line'><span class="n">doHomework</span>        <span class="err">方法名</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>有一个参数：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">Type</span><span class="p">;</span>
-</span><span class='line'><span class="p">(</span><span class="kt">int</span><span class="p">)</span>                       <span class="err">参数类型</span>
-</span><span class='line'><span class="n">Type</span>                     <span class="err">参数名</span>
-</span><span class='line'>         <span class="p">[</span><span class="n">S</span> <span class="nl">doHomework</span><span class="p">:</span><span class="n">Type</span><span class="p">]</span>
-</span><span class='line'><span class="err">方法名：</span><span class="nl">doHomework</span><span class="p">:</span>                                                                      <span class="err">（冒号也是方法名的一部分）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>有多个参数：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">方法</span><span class="mi">1</span><span class="err">：</span><span class="o">-</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">doHomework</span><span class="p">:(</span><span class="kt">int</span><span class="p">)</span><span class="nl">Type</span> <span class="p">:(</span><span class="kt">int</span><span class="p">)</span><span class="n">Time</span><span class="p">;</span>                          <span class="err">（</span><span class="n">Type</span><span class="err">后面要加空格）</span>
-</span><span class='line'>                     <span class="p">[</span><span class="n">S</span> <span class="nl">doHomework</span><span class="p">:</span><span class="nl">Type</span> <span class="p">:</span><span class="n">Time</span><span class="p">]</span>                                    <span class="err">（</span><span class="n">Type</span><span class="err">后面要加空格）</span>
-</span><span class='line'><span class="err">方法</span><span class="mi">2</span><span class="err">：</span><span class="o">-</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">doHomework</span><span class="p">:(</span><span class="kt">int</span><span class="p">)</span><span class="n">Type</span> <span class="nl">withLimitedTime</span><span class="p">:(</span><span class="kt">int</span><span class="p">)</span><span class="n">Time</span><span class="p">;</span> <span class="err">（</span><span class="n">Type</span><span class="err">后面要加空格）</span>
-</span><span class='line'>                      <span class="p">[</span><span class="n">S</span> <span class="nl">doHomework</span><span class="p">:</span><span class="n">Type</span> <span class="nl">withLimitedTime</span><span class="p">:</span><span class="n">Time</span><span class="p">]</span>          <span class="err">（</span><span class="n">Type</span><span class="err">后面要加空格）</span>
-</span><span class='line'><span class="err">方法名：</span><span class="nl">doHomework</span><span class="p">:</span><span class="nl">withLimitedTime</span><span class="p">:</span>                                            <span class="err">（冒号也是方法名的一部分）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>方法2更可取</p>
-
-<p><code>重点：OC方法中，一个参数对应一个冒号</code></p>
-
-<p>在使用类创建对象之前，会将类加载进内存，且只加载一次，即第一次创建时加载。<br>
-每个对象都有一个isa指针，isa指向内存中对应的类，类中有方法。每个对象都有各自的属性，但是方法是类独有的（类似c++中的静态成员函数），当对象调用方法时，会根据isa指向的类调用对应的方法。</p>
-
-<h6>方法和函数的区别：</h6>
-
-<p>OC方法只能声明在@interface和@end之间，只能实现在@implementation和@end之间。也就是说OC方法不能独立于类存在</p>
-
-<p>C函数不属于类，跟类没有联系，C函数只归定义函数的文件所有，在合法的情况下可以写在任何地方（可以写在@interface和@end或者@implementation和@end之间）</p>
-
-<p>函数内部不能直接通过成员变量名访问某个对象的成员变量</p>
-
-<p>匿名对象：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="n">Student</span> <span class="n">new</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">score</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span>
-</span><span class='line'><span class="p">[[</span><span class="n">Student</span> <span class="n">new</span><span class="p">]</span> <span class="n">doHomework</span><span class="p">];</span>    <span class="err">（由于每次执行</span><span class="n">new</span><span class="err">都会重新创建一个类，所以</span><span class="n">score</span><span class="err">为</span><span class="mi">0</span><span class="err">默认值）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>3、例子汇总代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">@public</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_sorce</span><span class="p">;</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">type</span> <span class="nf">withLimitedTime:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">time</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">Student</span> <span class="o">*</span><span class="n">S</span> <span class="o">=</span> <span class="p">[</span><span class="n">Student</span> <span class="n">new</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">S</span><span class="o">-&gt;</span><span class="n">_sorce</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">S</span> <span class="nl">doHomework</span><span class="p">:</span><span class="mi">1</span> <span class="nl">withLimitedTime</span><span class="p">:</span><span class="mi">30</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span>
-</span><span class='line'><span class="p">-(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">type</span> <span class="nf">withLimitedTime:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">time</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Finish project %d in %d&quot;</span><span class="p">,</span> <span class="n">type</span><span class="p">,</span> <span class="n">time</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;score is %d&quot;</span><span class="p">,</span> <span class="n">_sorce</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>getter方法和setter方法</h3>
-
-<h6>set方法：</h6>
-
-<ul>
-<li>作用：提供一个限定的方法给外界设置成员变量值，保证数据安全性通常为设置私有成员变量）</li>
-</ul>
-
-
-<p>命名规范：</p>
-
-<ul>
-<li>方法名必须以set开头<br></li>
-<li>set后面跟上成员变量的名称，成员变量的首字母必须大写<br></li>
-<li>返回值一定是void<br></li>
-<li>一定要接收一个参数，而且参数类型跟成员类型一致<br></li>
-<li>形参的名称不能和成员变量名一样<br></li>
-</ul>
-
-
-<h6>get方法：</h6>
-
-<ul>
-<li>作用：返回对象内部的成员变量</li>
-</ul>
-
-
-<p>命名规范：</p>
-
-<ul>
-<li>肯定有返回值，返回值类型肯定与成员变量类型一致</li>
-<li>方法名和成员变量名一样</li>
-<li>没有输入参数</li>
-</ul>
-
-
-<h6>get方法和set方法代码：</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="k">@public</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_sorce</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">@private</span>
-</span><span class='line'>                <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>   <span class="c1">//成员变量名需要以_符号开头  </span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span><span class="p">;</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">_age</span> <span class="o">=</span> <span class="p">(</span><span class="n">age</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="n">age</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>类成员命名规范：</p>
-
-<ul>
-<li>成员变量命名以下划线开头。</li>
-</ul>
-
-
-<p>好处：避免与get方法名与其他一些局部变量重名；可以直观看出以下划线开头的变量通常都是类的成员变量。</p>
-
-<h6>弱语法：</h6>
-
-<p>OC是在运行过程中才会检测对象有没有实现相应的方法，所以删除上面代码类声明中的语句：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span><span class="p">;</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>也可以运行成功。</p>
-
-<p>OC中可以实现两种方法：对象方法（实例方法）和类方法。</p>
-
-<p>上面几节都是实现的对象方法，对象方法依赖于一个对象，在调用对象方法前，必须先创建类的一个对象。</p>
-
-<h3>类方法:</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="k">@public</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_sorce</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">@private</span>
-</span><span class='line'>                <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span><span class="p">;</span> <span class="c1">//类方法声明  </span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span> <span class="c1">//类方法实现  </span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Take Exercise&quot;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">Student</span> <span class="n">takeExercise</span><span class="p">];</span><span class="c1">//调用类方法  </span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><code>+</code> 表示声明为类方法</li>
-<li><code>-</code> 表示声明为对象方法<br></li>
-</ul>
-
-
-<p>类方法不需要创建对象，直接采用类名调用，能提高程序性能。</p>
-
-<p>OC允许在同一个类中的类方法和对象方法同名，如以上程序添加</p>
-
-<p>声明：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>实现：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Take Exercise&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>也可正确执行，并且可以在对象方法中调用类方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Take Exercise&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">[</span><span class="n">Student</span> <span class="n">takeExercise</span><span class="p">];</span> <span class="c1">//调用类方法  </span>
-</span><span class='line'>    <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>但由于调用类方法时没有定义对象，而成员变量（实例变量）是依赖对象存在的，所以在类方法中不能访问类的成员变量（实例变量）也不能通过self调用对象方法（实例方法）。</p>
-
-<p>下面代码是错误的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="k">@public</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_sorce</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">@private</span>
-</span><span class='line'>                <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'>                <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span><span class="p">;</span> <span class="c1">//类方法声明  </span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">type</span> <span class="nf">withLimitedTime:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">time</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span> <span class="c1">//类方法实现  </span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%s Take Exercise&quot;</span><span class="p">,</span> <span class="n">_name</span><span class="p">);</span> <span class="c1">//类方法不能访问成员变量  </span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">doHomework</span><span class="p">:</span><span class="mi">1</span> <span class="nl">withLimitedTime</span><span class="p">:</span><span class="mi">30</span><span class="p">];</span><span class="c1">//类方法不能通过self调用对象方法，它会查找命名为doHomework:withLimitedTime:的类方法  </span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">type</span> <span class="nf">withLimitedTime:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">time</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Project %d in %d&quot;</span><span class="p">,</span> <span class="n">type</span><span class="p">,</span> <span class="n">time</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>但类方法中不使用self，可以调用对象方法：（在后面点的设计一章发现自己原先理解错误）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Human</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">printInformation</span><span class="p">;</span> <span class="c1">// 对象方法  </span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">test:</span><span class="p">(</span><span class="n">Human</span> <span class="o">*</span><span class="p">)</span><span class="nv">p1</span><span class="p">;</span> <span class="c1">// 参数是Human对象指针的类方法  </span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Human</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">printInformation</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Human&#39;s age is %d&quot;</span><span class="p">,</span> <span class="n">_age</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">test:</span><span class="p">(</span><span class="n">Human</span> <span class="o">*</span><span class="p">)</span><span class="nv">p1</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">p1</span> <span class="n">printInformation</span><span class="p">];</span>   <span class="c1">//类方法调用对象方法。  </span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">Human</span> <span class="nl">test</span><span class="p">:[</span><span class="n">Human</span> <span class="n">new</span><span class="p">]];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>输出：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="mi">2013</span><span class="o">-</span><span class="mo">07</span><span class="o">-</span><span class="mo">04</span> <span class="mo">04</span><span class="o">:</span><span class="mi">09</span><span class="o">:</span><span class="mf">25.679</span> <span class="n">a</span><span class="p">.</span><span class="k">out</span><span class="p">[</span><span class="mi">812</span><span class="o">:</span><span class="mi">507</span><span class="p">]</span> <span class="n">Human</span><span class="err">&#39;</span><span class="n">s</span> <span class="n">age</span> <span class="n">is</span> <span class="mi">0</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>综上，当方法中不需要访问成员变量时，可以定义为类方法。</p>
-
-<h3>单例</h3>
-
-<p>Singleton即单例，单例是在程序声明周期里有且仅有被实例化过一次的类。为了确保实例化的唯一，利用类方法来生成和访问对象。典型代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">Singleton</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">static</span> <span class="n">Singleton</span> <span class="o">*</span><span class="n">st</span><span class="p">;</span>   <span class="c1">//静态变量,生命周期是整个程序，在下一次该函数调用时仍可使用 。默认@private  </span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="n">Singleton</span><span class="o">*</span><span class="p">)</span> <span class="nf">instance</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span><span class="n">st</span><span class="o">==</span><span class="nb">nil</span> <span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">st</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Singleton</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">st</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>此单例可以通过[Singleton instance]得到。</p>
-
-<h3>self指针：</h3>
-
-<p>类都有一个self指针指向自己（类似C++中的this指针），可以通过self指针访问类的成员变量，或者调用对象方法。</p>
-
-<p>参照上一节的doHomework方法定义：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">takeExercise</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">doHomework</span><span class="p">:</span><span class="mi">1</span> <span class="nl">withLimitedTime</span><span class="p">:</span><span class="mi">30</span><span class="p">];</span>   <span class="c1">//self调用类的对象方法  </span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%s Take Exercise&quot;</span><span class="p">,</span> <span class="nb">self</span><span class="o">-&gt;</span><span class="n">_name</span><span class="p">);</span>  <span class="c1">//self引用成员变量  </span>
-</span><span class='line'>    <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在类方法中使用self调用方法时，self只会查找对应的类方法。同理，在对象方法中使用self调用方法时，self只会查找对应的对象方法。所以不能在类方法中用self调用对象方法，对象方法中用self调用类方法。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">takeExercise</span><span class="p">];</span> <span class="c1">//假设有命名为takeExercise的对象方法和类方法，这里调用的是+takeExercise，即类方法  </span>
-</span><span class='line'>    <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>重点：谁调用了类方法，self就代表谁</p>
-
-<ul>
-<li>self出现在对象方法中，self就代表对象</li>
-<li>self出现在类方法中，self就代表类</li>
-</ul>
-
-
-<h3>OC类的继承</h3>
-
-<p>OC的成员访问类型：</p>
-
-<ul>
-<li>@private：私有成员，不能被外部函数访问，也不能被子类直接访问，需要通过父类提供的函数接口访问</li>
-<li>@protected：保护成员，不能被外部函数访问，可以被子类直接访问</li>
-<li>@public：公有成员，可以被外部函数访问，也可以被子类直接访问</li>
-</ul>
-
-
-<p>OC中的所有方法（消息），都是公有的。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Human</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span><span class="p">;</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Human</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">_age</span> <span class="o">=</span> <span class="p">(</span><span class="n">age</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="n">age</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="nc">Human</span>   <span class="c1">//继承Human类  </span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">@public</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_score</span><span class="p">;</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">doHomework</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Do homework!&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">Student</span> <span class="o">*</span><span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="n">Student</span> <span class="n">new</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="p">[</span><span class="n">s</span> <span class="nl">setAge</span><span class="p">:</span><span class="mi">20</span><span class="p">];</span>      <span class="c1">//调用继承的对象方法  </span>
-</span><span class='line'>        <span class="p">[</span><span class="n">s</span> <span class="n">doHomework</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以上代码中：</p>
-
-<ul>
-<li><p>Human类为父类</p></li>
-<li><p>Student类为子类</p></li>
-</ul>
-
-
-<h6>继承的写法：</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">@</span><span class="n">interface</span><span class="o">/</span><span class="k">@implementation</span>  <span class="err">子类名 : 父类名</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>创建Student对象时的语句[Student new]中的new方法，就是继承自Human，而Human又从NSObject继承。</p>
-
-<h6>继承特点：</h6>
-
-<p>子类和父类的不能拥有相同的成员变量。即在Student定义_age成员是不被允许的。但子类可以重新实现父类中的某个方法，覆盖父类以前的方法，这种方式叫重写。<br></p>
-
-<p>Student类继承自Human父类，并且拥有父类中的所有成员变量和方法。<br>
-调用某个对象的方法时，优先去当前类中找，如果找不到，就去父类中找。（对象有isa指针，指向对应的类，而类有superclass指针指向它的父类）<br></p>
-
-<p>以下代码是错误的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doHomework</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">_age</span> <span class="o">=</span> <span class="mi">100</span><span class="p">;</span> <span class="c1">//错误，_age是父类的私有成员，子类不能直接访问，需要通过父类提供的函数  </span>
-</span><span class='line'>   <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>super关键字：</h6>
-
-<p>与self为隐藏的参数并指向当前调用方法的类不同，super并不是隐藏参数，它只是一个“编译指示符”，与self指向同一个消息接收者。不同的是super告诉编译器，当调用类的方法时，要去调用父类的方法，而不是在本类里。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Human</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">_name</span><span class="p">;</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">printInformation</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Human</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">printInformation</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;Human&#39;s age is %d&quot;</span><span class="p">,</span> <span class="n">_age</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="nc">Human</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">@public</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_score</span><span class="p">;</span>
-</span><span class='line'><span class="k">@private</span>
-</span><span class='line'>        <span class="kt">int</span> <span class="n">_id</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">printInformation</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Student</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">printInformation</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">super</span> <span class="n">printInformation</span><span class="p">];</span> <span class="c1">//super表示调用父类的方法；如果这里换成self，则会产生死循环  </span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;The student&#39;s id is %d and score is %d&quot;</span><span class="p">,</span>
-</span><span class='line'>                <span class="n">_id</span><span class="p">,</span> <span class="n">_score</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>        <span class="n">Student</span> <span class="o">*</span><span class="n">s</span> <span class="o">=</span> <span class="p">[</span><span class="n">Student</span> <span class="n">new</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="p">[</span><span class="n">s</span> <span class="n">printInformation</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>输出：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="mi">2013</span><span class="o">-</span><span class="mo">07</span><span class="o">-</span><span class="mo">04</span> <span class="mi">23</span><span class="o">:</span><span class="mi">26</span><span class="o">:</span><span class="mf">14.682</span> <span class="n">a</span><span class="p">.</span><span class="k">out</span><span class="p">[</span><span class="mi">647</span><span class="o">:</span><span class="mi">507</span><span class="p">]</span> <span class="n">Human</span><span class="err">&#39;</span><span class="n">s</span> <span class="n">age</span> <span class="n">is</span> <span class="mi">0</span>
-</span><span class='line'><span class="mi">2013</span><span class="o">-</span><span class="mo">07</span><span class="o">-</span><span class="mo">04</span> <span class="mi">23</span><span class="o">:</span><span class="mi">26</span><span class="o">:</span><span class="mf">14.686</span> <span class="n">a</span><span class="p">.</span><span class="k">out</span><span class="p">[</span><span class="mi">647</span><span class="o">:</span><span class="mi">507</span><span class="p">]</span> <span class="n">The</span> <span class="n">student</span><span class="err">&#39;</span><span class="n">s</span> <span class="kt">id</span> <span class="n">is</span> <span class="mi">0</span> <span class="n">and</span> <span class="n">score</span> <span class="n">is</span> <span class="mi">0</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>super特点：</h6>
-
-<ul>
-<li>当使用self调用方法时，会从当前类的方法列表中开始找，如果没有，就从父类中再找；而当使用super时，则从父类的方法列表中开始找，然后调用父类的这个方法。</li>
-<li>super调用的父类的方法类型却决于调用super的当前方法的类型。如果调用super是类方法，则会调用父类的类方法；如果调用super是对象方法，则会调用父类的对象方法。</li>
-</ul>
-
-
-<h3>点语法</h3>
-
-<p>点语法与get方法和set方法相关</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//Person.h  </span>
-</span><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Person</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_no</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">_height</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span><span class="p">;</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//Person.m  </span>
-</span><span class='line'><span class="cp">#import &quot;Person.h&quot;  </span>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">Person</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">_age</span> <span class="o">=</span> <span class="n">age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">_age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//main.m  </span>
-</span><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
-</span><span class='line'><span class="cp">#import &quot;Person.h&quot;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="n">charchar</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">Person</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="n">Person</span> <span class="n">new</span><span class="p">];</span>
-</span><span class='line'>    <span class="c1">// 一般写法  </span>
-</span><span class='line'>    <span class="c1">// [p setAge:10];  </span>
-</span><span class='line'>    <span class="c1">// 点写法  </span>
-</span><span class='line'>    <span class="n">p</span><span class="p">.</span><span class="n">age</span> <span class="o">=</span> <span class="mi">10</span> <span class="c1">// 当编译器遇到点语法时，会把此行转成一般写法  </span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 一般写法  </span>
-</span><span class='line'>    <span class="c1">// int a = [p age];  </span>
-</span><span class='line'>    <span class="c1">//点写法  </span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">age</span><span class="p">;</span> <span class="c1">// 同上面点写法  </span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>编译器根据p.age是否被赋值来确定转成setAge或者age。</li>
-<li>如果值赋给p.age，则转成set方法</li>
-<li>如果p.age赋给其他变量，则转成get方法</li>
-</ul>
-
-
-<p>在用self实现点语法时，要注意死循环：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nf">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">age</span><span class="p">;</span> <span class="c1">// 转换成[self age]，死循环  </span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>自动生成set方法get方法：</h3>
-
-<p>生成声明：自动生成a的set和get声明</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="err">变量类型</span> <span class="n">a</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>生成实现：自动生成a（和@property中的a一致）的set和get实现，并且会访问成员变量_a</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@synthesize</span> <span class="n">a</span> <span class="o">=</span> <span class="n">_a</span><span class="p">;</span> <span class="c1">// 情况1  </span>
-</span><span class='line'><span class="c1">//@synthesize如果没有添加“= _a”，则默认生成成员变量a的实现，即语句:  </span>
-</span><span class='line'><span class="k">@synthesize</span> <span class="n">a</span><span class="p">;</span> <span class="c1">// 情况2  </span>
-</span><span class='line'><span class="c1">//生成的是成员变量a的set和get实现，并且会访问成员变量a。  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果情况1的<em>a或者情况2的a不存在，就会分别自动生成@private的成员变量</em>a或者a。</p>
-
-<h3>id类型</h3>
-
-<p>d是万能指针，可以指向任何OC对象：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">a</span><span class="p">;</span> <span class="c1">//不需要写*a，因为id本身包含了*  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>构造方法</h3>
-
-<p>构造方法是用来初始化对象的方法（及以下的-init），是个对象方法，-开头。</p>
-
-<h6>完整地创建一个可用的对象：</h6>
-
-<ul>
-<li>分配存储空间   +alloc</li>
-<li>初始化 -init</li>
-</ul>
-
-
-<p>以下语句可以实现和new方法一样的功能：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">Person</span> <span class="o">*</span><span class="n">p1</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Person</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>init把所有的成员都初始化为0，要想自定义初始化，必须重写-init方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">init</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">])</span> <span class="c1">// init返回当前对象self  </span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="c1">//成员变量初始化  </span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>重写-init步骤：</h6>
-
-<ul>
-<li>一定要调用回super的init方法（用来初始化从父类中继承的成员变量和其他属性）</li>
-<li>如果对象初始化成功，才有必要进行接下来子类的初始化</li>
-<li>返回一个已经初始化的对象
-
-<h6>自定义构造方法的规范：</h6></li>
-<li>一定是对象方法，一定以-开头</li>
-<li>返回值一般是id类型</li>
-<li>方法名一般以init开头
-
-<h6>编写方法原则：</h6></li>
-<li>父类属性由服类方法处理，子类属性由子类方法处理。子类方法最好不要处理父类属性</li>
-</ul>
-
-
-<h3>分类</h3>
-
-<p>分类可以给某一个类扩充一些方法（不修改原来类的代码）<br>
-声明：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="err">类名 (分类名称)  </span>
-</span><span class='line'><span class="c1">//方法  </span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>实现：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="err">类名 (分类名称)  </span>
-</span><span class='line'><span class="c1">//方法  </span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>分类能够让庞大的类分模块开发，并且使其由多个人来编写，更利于团队合作。</p>
-
-<h6>分类注意：</h6>
-
-<ul>
-<li>分类只能增加方法，不能增加成员变量</li>
-<li>分类方法实现中可以访问原来类中的成员变量</li>
-<li>分类可以重新实现原来类中的方法，但是会覆盖掉原来的方法，会导致原来的方法没法再使用</li>
-<li>方法调用的优先级：分类（最后参与编译的分类优先）&ndash;>原来类&ndash;>父类</li>
-</ul>
-
-
-<h3>+load方法和+initialize方法</h3>
-
-<p>在类被加载完成的时候调用的类方法（只会被加载一次）【类所在文件被引用】：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">load</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="p">...;</span> <span class="c1">// 由于系统会先加载父类，所以会先调用父类的+load方法，再调用子类的+load方法；先调用原来类的+load方法，再调用分类的+load方法  </span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在类第一次被使用的时候调用的类方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="n">objc</span><span class="p">]</span> <span class="n">view</span> <span class="n">plaincopy</span><span class="err">在</span><span class="n">CODE</span><span class="err">上查看代码片派生到我的代码片</span>
-</span><span class='line'><span class="o">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">initialize</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="p">...;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>
-在有分类也有+load和+initialize的情况下：</p>
-
-<ul>
-<li>+load：会调用两次，因为原来类和分类是分开加载的;系统会先加载原来类，再加载分类，所以会先调用原来类的+load，再调用分类的+load</li>
-<li>+initialize：调用一次，因为调用方法时首先考虑最后编译的分类有没有这个方法，有则调用，所以会优先调用分类的+initialize
-
-<h6>调用顺序：</h6></li>
-<li>先加载父类，再加载子类（先调用父类的+load方法，再调用子类的+load方法）</li>
-<li>先初始化父类，再初始化子类（先调用父类的+initialize：方法，再调用子类的+initialize：方法）</li>
-</ul>
-
-
-<h3>description方法：</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span><span class="nf">description</span><span class="err">方法</span><span class="o">:</span><span class="p">(</span><span class="err">决定实例对象的输出结果</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>默认情况下，利用NSLog和%@输出对象时，输出结果是&lt;类名: 内存地址>，这是因为-description方法默认返回的NNString就是&lt;类名: 内存地址></p>
-
-<p>NSLog执行过程：</p>
-
-<ul>
-<li>调用对象的-description方法</li>
-<li>获取-description的返回值（NSString *）显示到终端</li>
-</ul>
-
-
-<p>重写-description，返回自己想输出的格式：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">description</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;My name is %@&quot;</span><span class="p">,</span> <span class="n">_name</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>由于NSLog会嗲用-description，所以不要在-description中调用NSLog输出self即：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span> <span class="nb">self</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>+description方法:（决定了类对象的输出方法）<br>
-除了方法类型不一样，其他性质和-description方法相似</p>
-
-<p>注意：NSLog输出C语言字符串的时候不能有中文：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%s&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">);</span><span class="c1">//name中不能有中文</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>
-几个有用的宏定义（增强NSLog日志）：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">__LINE__</span>    <span class="err">行号</span>
-</span><span class='line'><span class="n">__FILE__</span>    <span class="err">源文件名称</span>
-</span><span class='line'><span class="n">__func__</span>    <span class="err">函数名</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>内存管理</h3>
-
-<p>OC内存管理只针对任何继承了NSObject的对象<br></p>
-
-<h6>管理方式：</h6>
-
-<ul>
-<li>每个OC对象都有自己的引用计数器，是一个整数；每个OC对象内部专门有4个字节的存储空间来存储引用计数器
-当使用alloc、new或者copy创建一个新对象时，新对象的引用计数器默认为1；系统根据对象引用计数器值是否为决定是否为0回收对象占用的内存。
-
-<h6>引用计数器操作：</h6></li>
-<li>retain     引用计数器值+1（返回对象本身；已经是0时不能调用retain方法进行计数加1）</li>
-<li>release    引用计数器值-1(当值为0时不能再调用release方法)</li>
-<li>retainCount 获取当前引用计数值
-
-<h6>对象销毁：</h6></li>
-<li>对象被销毁时，会向对象发送一条dealloc消息（类似c++里面的析构函数）</li>
-</ul>
-
-
-<p>-dealloc方法的编写：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="p">...;</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span> <span class="c1">// 一定要调用这一句，并且要放在最后面  </span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>OC不存在空指针错误，即给空指针发送消息不报错</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="nb">nil</span> <span class="k">release</span><span class="p">];</span> <span class="c1">// 不会报错  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>概念解析：</h6>
-
-<ul>
-<li>僵尸对象：占用内存已被系统收回，不能再使用</li>
-<li>野指针：指向僵尸对象的指针，给野指针发送消息会报错</li>
-<li>空指针：没有指向任何东西的指针，给空指针发送消息不会报错
-
-<h6>注意：</h6></li>
-<li>retain和release一定要成对出现，有加1就有减1</li>
-<li>通过alloc、new或[mutable]copy来创建一个对象，就必须调用release或autorelease</li>
-</ul>
-
-
-<h3>内存管理代码规范：</h3>
-
-<ul>
-<li>只要调用了alloc ，必须有release（autorelease）</li>
-<li>相反的，如果对象不是通过alloc产生的就不需要release，如：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">s</span> <span class="o">=</span> <span class="s">@&quot;name&quot;</span><span class="p">;</span> <span class="c1">// 不是alloc产生的对象，不需要release  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>set方法的代码规范</h6>
-
-<p>基本数据类型：直接复制</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setAge:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">age</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">_age</span> <span class="o">=</span> <span class="n">age</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>OC对象类型：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setSeat:</span><span class="p">(</span><span class="n">Seat</span> <span class="o">*</span><span class="p">)</span><span class="nv">seat</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">seat</span> <span class="o">!=</span> <span class="n">_seat</span><span class="p">)</span> <span class="c1">// 判断新传进来的对象和原对象是否相同  </span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="n">_seat</span> <span class="k">release</span><span class="p">];</span> <span class="c1">// 对旧对象做一次release  </span>
-</span><span class='line'>        <span class="n">_seat</span> <span class="o">=</span> <span class="p">[</span><span class="n">seat</span> <span class="k">retain</span><span class="p">]</span> <span class="c1">// 对新对象做一次retain  </span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>dealloc代码规范：</p>
-
-<ul>
-<li>一定要[super dealloc],而且放在方法最后面</li>
-<li>对self(当前)所拥有的其他对象做一次release</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="n">_car</span> <span class="k">release</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">dealloc</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>@property的内存管理</h3>
-
-<p>以下括号中的retain告诉编译器：生成的set方法里面，release旧值，retain新值</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">retain</span><span class="p">)</span> <span class="n">Seat</span> <span class="o">*</span><span class="n">seat</span><span class="p">;</span> <span class="c1">// 以上的Student的_seat成员就不需要手动设置set和get方法  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>@property的参数：</h6>
-
-<p>1、内存管理相关参数</p>
-
-<ul>
-<li>retain：release旧值，retain新值（适用于OC对象类型）</li>
-<li>assign：直接赋值（默认，适用于非OC对象类型）</li>
-<li>copy：release旧值，copy新值</li>
-</ul>
-
-
-<p>2、是否要生成set方法</p>
-
-<ul>
-<li>readwrite：同时生成set和get的声明实现（默认）</li>
-<li>readonly：只会生成get的声明实现</li>
-</ul>
-
-
-<p>3、多线程管理</p>
-
-<ul>
-<li>nonatomic：性能高（一般用这个）</li>
-<li>atomic：性能低（默认）</li>
-</ul>
-
-
-<p>4、set和get方法名称</p>
-
-<ul>
-<li>getter = get方法名(一般用在BOOL类型)如：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">getter</span> <span class="o">=</span> <span class="n">isRich</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">rich</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>setter = set方法名（一定有冒号:）</li>
-</ul>
-
-
-<h3>循环引用</h3>
-
-<p>循环引用时需要在声明类前加：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@class</span> <span class="err">声明需要用到的其他类名;  </span>
-</span><span class='line'><span class="c1">//@class作用：仅仅告诉编译器，某个名称是一个类  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>开发中引用一个类的规范：</p>
-
-<ul>
-<li>在.h文件中用@class来声明类</li>
-<li>在.m文件中@import来包含类的所有东西</li>
-</ul>
-
-
-<p>类两端循环引用的解决方案：</p>
-
-<ul>
-<li>一端用retain</li>
-<li>一端用assign</li>
-</ul>
-
-
-<h3>ARC</h3>
-
-<h6>ARC判断准则：只要没有强指针指向对象，就会释放对象</h6>
-
-<ul>
-<li>强指针：默认情况下，所有指针都是强指针 __strong</li>
-<li>弱指针：__weak</li>
-</ul>
-
-
-<p>所以以下语句是不合法的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">__weak</span> <span class="n">Student</span> <span class="o">*</span><span class="n">s</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Student</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>
-ARC模式下，需要把以前的@property参数retain替换成strong：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="n">Student</span> <span class="o">*</span><span class="n">student</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>ARC特点：</h6>
-
-<ul>
-<li>不允许调用release、retain、autorelease、retainCount</li>
-<li>可以重写dealloc，但是不能调用[super dealloc]</li>
-<li>@property参数
-
-<ul>
-<li>strong ：成员变量是强指针（适用于OC对象）</li>
-<li>weak ：成员变量是弱指针（适用于OC对象）</li>
-<li>assign ：适用于非OC对象类型</li>
-</ul>
-</li>
-<li>以前的retain改为strong</li>
-</ul>
-
-
-<h6>针对个别文件ARC开关：</h6>
-
-<p>取消特定文件的ARC：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>    <span class="o">-</span><span class="n">fno</span><span class="o">-</span><span class="n">objc</span><span class="o">-</span><span class="n">arc</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>开启特定文件ARC：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>    <span class="o">-</span><span class="n">f</span><span class="o">-</span><span class="n">objc</span><span class="o">-</span><span class="n">arc</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>当两端循环引用的时候，解决方案：</h6>
-
-<p>1、ARC情况；<br>
-一端使用weak，一端使用strong （weak指针的通常用法）</p>
-
-<p>2、非ARC情况：<br>
-一端用assign，一端用retain</p>
-
-<h3>block变量：</h3>
-
-<p>block封装了一段代码，可以在任何时候执行<br>
-block的标志：^<br>
-block和函数相似的性质：</p>
-
-<ul>
-<li>可以保存代码</li>
-<li>有返回值</li>
-<li>有形参</li>
-</ul>
-
-
-<p>定义block变量：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="p">(</span><span class="o">^</span><span class="n">sumBlock</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">)</span> <span class="o">=</span> <span class="o">^</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">,</span> <span class="n">intb</span><span class="p">){</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">;</span>
-</span><span class='line'><span class="p">};</span> <span class="c1">// 和函数指针很像一个是*，一个是^  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>block调用：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">c</span> <span class="o">=</span> <span class="n">sumBlock</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果block没有形参，可以省略中括号前面的()：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="n">myBlock</span><span class="p">)()</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>总结：<br>
-block变量定义：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="p">(</span><span class="o">^</span><span class="n">myBlock</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="n">myBlock</span><span class="p">)();</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>block封装代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">^</span><span class="p">(</span><span class="kt">int</span> <span class="n">a</span><span class="p">,</span> <span class="kt">int</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">a</span> <span class="o">-</span> <span class="n">b</span><span class="p">;</span>
-</span><span class='line'><span class="p">};</span>
-</span><span class='line'><span class="o">^</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block&quot;</span><span class="p">);</span>
-</span><span class='line'><span class="p">};</span>
-</span><span class='line'><span class="o">^</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;block&quot;</span><span class="p">);</span>
-</span><span class='line'><span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>block访问权限：<br></p>
-
-<ul>
-<li>block内部可以访问外面的变量</li>
-<li>默认情况下，block内部不能修改外面的局部变量</li>
-<li>给局部变量加上__block关键字，这个局部变量就可以在block内部修改</li>
-</ul>
-
-
-<p>利用typedef定义block类型：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="nf">int</span> <span class="p">(</span><span class="o">^</span><span class="n">MyBlock</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span>
-</span><span class='line'><span class="n">MyBlock</span> <span class="n">block</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>protocol关键字：</h3>
-
-<p>作用：</p>
-
-<ul>
-<li>声明一大堆方法，不能声明实例变量（容易把合成存储器误认为实例变量声明，即在协议中用@property，但是实现了get和set方法，所以就不会定义实例变量了）</li>
-<li>只要某个类遵守了某个协议，就拥有这个协议中的所有方法声明</li>
-<li>只要父类遵守了某个协议，就相当与子类也遵守了</li>
-</ul>
-
-
-<p>协议的声明：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="err">协议名;  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>协议的实现：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">MyProtocol</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span> <span class="c1">// 定义MyProtocol协议,遵守基协议NSObject  </span>
-</span><span class='line'><span class="k">@required</span> <span class="c1">// 要求实现，不然会有警告（默认要求）  </span>
-</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">test1</span><span class="p">;</span>
-</span><span class='line'><span class="k">@optional</span> <span class="c1">// 不要求一定实现  </span>
-</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">test2</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>声明成员变量：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">MyProtocol</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@required</span>
-</span><span class='line'><span class="c1">// 只是声明，遵守此协议的类必须要实现，否则访问此成员变量会发生错误  </span>
-</span><span class='line'><span class="c1">// 编译器不会自动对协议里面声明的@property变量进行自动定义，即遵守此协议的类中只有a的声明，没有a的定义  </span>
-</span><span class='line'><span class="c1">// 如果遵守协议的类没有对a进行定义，则会出现如下警告  </span>
-</span><span class='line'><span class="c1">// Auto property synthesis will not synthesize property&#39;a&#39; declared in protocol &#39;MyProtocol  </span>
-</span><span class='line'><span class="k">@property</span> <span class="kt">int</span> <span class="n">a</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>遵守协议符号：&lt;></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="bp">NSObject</span> <span class="o">&lt;</span><span class="n">MyProtocol</span><span class="o">&gt;</span>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">Student</span> : <span class="bp">NSObject</span> <span class="o">&lt;</span><span class="n">MyProtocol</span><span class="p">,</span> <span class="n">MyProtocol2</span><span class="o">&gt;</span> <span class="c1">// 遵守两个协议  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>基协议：（类似基类）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 只要一个类遵守了某一份协议，就能拥有这份协议中的所有方法声明  </span>
-</span><span class='line'><span class="k">@protocol</span> <span class="nc">MyProtocol</span> <span class="o">&lt;</span><span class="n">MyProtocol2</span><span class="o">&gt;</span> <span class="c1">// MyProtocol遵守MyProtocol2协议  </span>
-</span><span class='line'><span class="p">...;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>最基本的基协议：NSObject（也是最基本的基类），手写的基协议需要遵守NSObject协议</p>
-
-<p>限制对象类型遵守协议：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//类名&lt;协议名称&gt; *变量名;  </span>
-</span><span class='line'><span class="c1">//id&lt;协议名称&gt; 变量名;  </span>
-</span><span class='line'><span class="bp">NSObject</span><span class="o">&lt;</span><span class="n">MyProtocol</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">a</span> <span class="o">=</span> <span class="p">[[</span><span class="n">Student</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span> <span class="c1">// Student遵守了MyProtocol才不会有警告  </span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="kt">id</span><span class="o">&lt;</span><span class="n">MyProtocol</span><span class="o">&gt;</span> <span class="n">obj</span><span class="p">;</span> <span class="c1">// 限定对对象obj的操作必须遵守MyProtocol协议  </span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>协议书写是否独立：</p>
-
-<ul>
-<li>当协议只给一个文件的类使用时，则和这个文件写一起</li>
-<li>当协议给的多个文件的类使用时，则独立写一个文件</li>
-<li>分类也可以定义在单独.h和.m文件中，也可以定义在原来类中，一般情况下都是定义在单独文件中</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/4">&larr; Older</a>
@@ -2340,6 +692,10 @@ block变量定义：</p>
     
       <li class="post">
         <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图</a>
       </li>
     
       <li class="post">
@@ -2400,10 +756,6 @@ block变量定义：</p>
     
       <li class="post">
         <a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-15-shi-yong-iofu-yong-he-duo-xian-cheng-wen-ti/">使用IO复用和多线程问题</a>
       </li>
     
   </ul>

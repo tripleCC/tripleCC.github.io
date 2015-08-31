@@ -9,14 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="这里主要纪录一些常用的函数： 类 1
-2
-3
-4
-5
-// 根据类，获取类名
-const char *class_getName(Class cls) // 根据类名获取类
-Class objc_getClass(const char *name) 注意， &hellip;">
+  <meta name="description" content="最终设置UITextField的placeholder效果： 有需求1如下： 未点击时UITextField的placeholder为浅灰色
+点击后，还未进行输入时，UITextField的placeholder变为深灰色 这个实现并不难： 通过通知或者重写UITextField的响应者处理方法， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -72,6 +66,263 @@ Class objc_getClass(const char *name) 注意， &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-01-27T20:17:49+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:17 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最终设置UITextField的placeholder效果：<br></p>
+
+<p><img src="/images/2015-07-28%2016_46_41.gif" alt="" /><br></p>
+
+<p>有需求1如下：</p>
+
+<ul>
+<li>未点击时UITextField的placeholder为浅灰色</li>
+<li>点击后，还未进行输入时，UITextField的placeholder变为深灰色</li>
+</ul>
+
+
+<p>这个实现并不难：</p>
+
+<ul>
+<li>通过通知或者重写UITextField的响应者处理方法，都可以实现捕获点击时间</li>
+<li>UITextField设置placeholder可以使用以下属性：
+
+<ul>
+<li>通过设置这个富文本属性，可以得到丰富多彩的placeholder<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">@</span><span class="bp">NSCopying</span> <span class="k">var</span> <span class="nl">attributedPlaceholder</span><span class="p">:</span> <span class="bp">NSAttributedString</span><span class="o">?</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 附带光标颜色属性</span>
+</span><span class='line'><span class="k">var</span> <span class="nl">tintColor</span><span class="p">:</span> <span class="bp">UIColor</span><span class="o">!</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是需求2加了点东西：</p>
+
+<ul>
+<li>点击后，还未进行输入时，UITextField的placeholder文字左右进行小幅度抖动<br></li>
+</ul>
+
+
+<p>可以看到通过设置attributedPlaceholder，可以改变一些静态的属性，如颜色和文字大小。<br>
+但是如果需要里面的文字做一些简单的抖动效果貌似就不行了，UITextField没有提供相关属性，我们也不知道placeholder是在何种控件中显示的。<br>
+既然不知道laceholder是在何种控件中显示，那就通过以下代码打印出UITextField中所有的成员变量（函数参考<a href="http://triplecc.github.io/blog/2015-01-10-runtimeji-chu/">runtime基础元素解析</a>），看看是否会有什么发现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">([</span><span class="bp">UITextField</span> <span class="k">class</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">outCount</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">Ivar</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivars</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%s&quot;</span><span class="p">,</span> <span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">free</span><span class="p">(</span><span class="n">ivars</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>截取关键部分如下：<br></p>
+
+<p><img src="/images/Snip20150728_2.png" alt="" /><br></p>
+
+<p>从字面上看，上面的<code>_placeholderLabel</code>是否就是显示placeholder的控件？<br>
+测试实际结果的确是显示placeholder的控件。<br>
+只要有了这个控件，那要做一些小抖动的动画那就没什么问题了，先获取这个UILabel:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">var</span> <span class="nl">tpcPlaceholderLabel</span><span class="p">:</span><span class="bp">UILabel</span><span class="o">?</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kr">get</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">valueForKey</span><span class="p">(</span><span class="s">&quot;_placeholderLabel&quot;</span><span class="p">)</span> <span class="kt">as</span><span class="o">?</span> <span class="bp">UILabel</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后重写UITextField的响应者处理函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 成为第一响应者</span>
+</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">becomeFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 存储正常颜色</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">normalColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">normalColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="c1">// 存储选中颜色</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">selectedColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">selectedColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">selectedColor</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 执行placeholder动画函数</span>
+</span><span class='line'>    <span class="n">placeholderLabelDoAnimationWithType</span><span class="p">(</span><span class="n">animationType</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">becomeFirstResponder</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 放弃第一响应者</span>
+</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">resignFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">switch</span> <span class="n">animationType</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeUpDown</span> <span class="p">:</span>
+</span><span class='line'>        <span class="k">fallthrough</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeBlowUp</span> <span class="p">:</span>
+</span><span class='line'>        <span class="k">fallthrough</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeLeftRight</span> <span class="p">:</span>
+</span><span class='line'>        <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">CGAffineTransformIdentity</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeEasyInOut</span> <span class="p">:</span>
+</span><span class='line'>        <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>            <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span><span class='line'>        <span class="p">})</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeNone</span> <span class="p">:</span>
+</span><span class='line'>        <span class="k">break</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">operate</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置为初始颜色</span>
+</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">normalColor</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">resignFirstResponder</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后通过以下函数，传入相应的动作就可以得到抖动的效果了</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">func</span> <span class="nf">doAnimation</span><span class="p">(</span><span class="nl">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>    <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">delay</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nl">usingSpringWithDamping</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nl">initialSpringVelocity</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">UIViewAnimationOptions</span><span class="p">.</span><span class="n">CurveEaseInOut</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>        <span class="n">action</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">},</span> <span class="nl">completion</span><span class="p">:</span> <span class="nb">nil</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>还有一点，根据上面打印的UITextField成员变量，看到了<code>_displayLabel</code>，这个就是在键盘输入后显示文字的UILabel了。这个属性可以用来干嘛？<br>
+我想，<code>可能会有这么一种需求（不过可能没有），就是用户输入错误时，UITextField中已经输入的文字做左右抖动，以间接的形式，辅助提醒用户，这一栏输错了，而不是弹出一个HUB</code>。<br>
+由于UITextField内部做了某些处理，所以无法在成为第一响应者时做一些动作，那么，就在放弃第一响应者函数中。<br></p>
+
+<p>相关代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 设置一个在放弃第一响应者的闭包属性</span>
+</span><span class='line'><span class="k">var</span> <span class="nl">operateWhenResignFirstResponder</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="p">())</span><span class="o">?</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 在func resignFirstResponder() -&gt; Bool函数中调用</span>
+</span><span class='line'><span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">operate</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>代码地址</h4>
+
+<p><a href="https://github.com/tripleCC/TPCDynamicTextFiled/blob/master/README.md">UITextFiled文字抖动效果</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1749,215 +2000,6 @@ key : value</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-05-29T20:30:39+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>8:30 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>和师兄一起接了一个外包项目，项目里面有如下效果的需求。刚好这个模块是我负责的，想了一个比较有意思的实现方法。</p>
-
-<h4>效果图</h4>
-
-<p><img src="/images/2015-08-29%2021_16_47.gif" alt="" /><br></p>
-
-<h4>需求</h4>
-
-<p>需求点大意是在tableView的右侧实现一个类似标签索引的东西，标签索引显示对应cell的时间。</p>
-
-<h4>解决方法</h4>
-
-<p>想到的方法一：</p>
-
-<ul>
-<li>刚开始打算自己创建一个UILabel索引标签，然后监听tableView的contentOffset来实现索引标签的移动：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 在这里根据scrollView.contentOffset.y来改变标签索引的坐标</span>
-</span><span class='line'>  <span class="c1">// contentSize的高度，和屏幕高度是成固定比例的，所以可以计算出来</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>后来感觉这样太麻烦，于是就打算监听scrollview内部的导航view决定索引标签的移动。由于是scrollView的内部控件，所以就通过断点的方式获取控件的成员变量名:<br>
-<img src="/images/Snip20150829_4.png" alt="" /></p>
-
-<p>看出成员变量名如下：<br>
-<img src="/images/Snip20150829_3.png" alt="" /></p>
-
-<p>由此可以引出方法二和三。</p>
-
-<p>方法二：</p>
-
-<ul>
-<li>还是采用创建UILabel，不过是加到控制器的view上，然后根据其中的_verticalScrollIndicator的左边，来进行相应的移动。</li>
-</ul>
-
-
-<p>由于此标签索引不需要交互，所以我采用了方法三。<br>
-方法三：</p>
-
-<ul>
-<li>将创建的UILabel添加到<em>verticalScrollIndicator上，成为它的子控件。然后通过indexPathForRowAtPoint:获取对应的cell的行号。因为</em>verticalScrollIndicator本身是和tableView在同一个坐标系，所以也不需要做转换。</li>
-</ul>
-
-
-<p>主要代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">ViewController</span> <span class="p">()</span> <span class="o">&lt;</span><span class="bp">UITableViewDataSource</span><span class="p">,</span> <span class="bp">UITableViewDelegate</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIView</span> <span class="o">*</span><span class="n">scrollIndicator</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="bp">NSString</span> <span class="o">*</span><span class="k">const</span> <span class="n">reuseIndentifier</span> <span class="o">=</span> <span class="s">@&quot;testCell&quot;</span><span class="p">;</span>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">ViewController</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">tableView</span><span class="p">.</span><span class="n">rowHeight</span> <span class="o">=</span> <span class="mi">150</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">numberOfRowsInSection:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">section</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">200</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="bp">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">dequeueReusableCellWithIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">cell</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">cell</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableViewCell</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithStyle</span><span class="p">:</span><span class="n">UITableViewCellStyleDefault</span> <span class="nl">reuseIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">backgroundColor</span>  <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="nl">colorWithRed</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">green</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">blue</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">alpha</span><span class="p">:</span><span class="mf">0.5</span><span class="p">];</span>
-</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;just a function test--%ld!&quot;</span><span class="p">,</span> <span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span> <span class="o">=</span> <span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">scrollView</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 在这里根据_verticalScrollIndicator的中点，来获取对应的cell行号，从而可以获取对应行的数据来进行显示</span>
-</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">indexPathForRowAtPoint</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">center</span><span class="p">].</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewWillBeginDragging:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 这里注意要在点击时获取，如果在view加载完成时设置标签索引的中点，那么获取的_verticalScrollIndicator的frame是不对的</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">valueForKey</span><span class="p">:</span><span class="s">@&quot;verticalScrollIndicator&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UILabel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">)];</span>
-</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="bp">CGPoint</span> <span class="n">center</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span><span class="p">;</span>
-</span><span class='line'>        <span class="n">center</span><span class="p">.</span><span class="n">y</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">;</span>
-</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">center</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">indicatorView</span><span class="p">];</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -1998,6 +2040,10 @@ key : value</p>
     
       <li class="post">
         <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图</a>
       </li>
     
       <li class="post">
@@ -2058,10 +2104,6 @@ key : value</p>
     
       <li class="post">
         <a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-15-shi-yong-iofu-yong-he-duo-xian-cheng-wen-ti/">使用IO复用和多线程问题</a>
       </li>
     
   </ul>
