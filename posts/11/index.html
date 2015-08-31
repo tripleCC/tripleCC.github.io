@@ -9,21 +9,9 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="显示光标的一般顺序 显示光标 1
-GUI_CURSOR_Show(); 选择光标风格 1
-void GUI_CURSOR_Select(const GUI_CURSOR * pCursor); 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-GUI_CursorArrowS Small &hellip;">
+  <meta name="description" content="data段在编译时就已分配空间；栈中的数据在运行时才分配空间。 首先类型： 静态变量：都不再栈中管理，编译时在静态存储区分配空间。
+非静态变量：除全局变量外，都在栈中管理，运行时分配内存。 作用域： 全局变量：都不再栈中管理，编译时在静态存储区分配空间。在程序运行结束前都有效。
+局部变量： &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -79,6 +67,63 @@ GUI_CursorArrowS Small &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-01-20-cyu-yan-yi-xiang-quan-ju-ju-bu-bian-liang/">C语言臆想全局-局部变量</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-01-20T21:15:56+08:00'><span class='date'><span class='date-month'>Jan</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:15 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>data段在编译时就已分配空间；栈中的数据在运行时才分配空间。</p>
+
+<p>首先类型：</p>
+
+<ul>
+<li>静态变量：都不再栈中管理，编译时在静态存储区分配空间。</li>
+<li>非静态变量：除全局变量外，都在栈中管理，运行时分配内存。</li>
+</ul>
+
+
+<p>作用域：</p>
+
+<ul>
+<li>全局变量：都不再栈中管理，编译时在静态存储区分配空间。在程序运行结束前都有效。</li>
+<li>局部变量：除静态局部变量外，都在栈中管理，运行时分配内存。在相应函数中有效。除静态局部变量，其他局部变量在函数结束随着相应栈帧消失而消失。</li>
+</ul>
+
+
+<p>在不在栈中管理的变量：</p>
+
+<ul>
+<li>有初始化：存储在.data段中。</li>
+<li>无初始化：存储在.bss段中。</li>
+</ul>
+
+
+<p>也就是说，初始化的&mdash;全局变量（自动，静态）、静态局部变量，这些分配在data段里的数据在编译时就获得存储空间了。<br>
+未初始化的全局变量（自动，静态）、静态局部变量编译时分配在bss段（占位符，bss段大小），编译器自动赋0。（编译器并不分配空间，只是记录数据所需空间大小）（此段占用内存空间（执行时），不占用可执行文件空间即磁盘上空间）<br>
+而局部变量（非静态）在运行时才在栈里分配空间。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -183,6 +228,83 @@ GUI_CursorArrowS Small &hellip;">
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2012-09-05-ucosju-bu-bian-liang-he-ren-wu-dui-zhan/">UCOS局部变量和任务堆栈</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2012-09-05T22:05:05+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>10:05 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>UCOS中局部变量的生命周期：<br>
+任务一直存在，所以在任务中（非子函数）定义的局部变量不会死亡，在任务间的信息传递因局部变量未死亡而可行。在子函数中定义的局部变量在退出该函数时才死亡，在子函数中调用任务切换时局部变量保留，在任务切换所至任务执行完成并回到子函数正常退出时才死亡。<br>
+UCOS任务堆栈：<br>
+【函数嵌套、所调用函数局部变量分配内存、中断服务子程序嵌套】<br>
+1、当任务运行时保存一些局部变量（CPU寄存器有限）。<br>
+2、当任务挂起时，负责保存运行现场，即CPU寄存器的值。<br></p>
+
+<p>当任务挂起时，任务堆栈中保存任务挂起前CPU寄存器的这一连续的区域肯定在整个堆栈的最上面。<br>
+任务每次挂起前用来保存当前CPU寄存器这一连续区域在整个任务堆栈空间是浮动的。<br></p>
+
+<p>初始化堆栈：<br>
+1，任务是第一次运行，而任务从本质上讲就是一段代码，所以PC指针应该定位到这段代码的第一行处，即所谓的入口地址，这个地址由任务指针保存着，所以把该指针值赋给PC即可。<br>
+2，这段代码还未被执行过，所以代码中变量与CPU的其他寄存器一点关系也没有，因此R0-R12，R14可随意给值，或者不赋值，让这些寄存器保存原来的值。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012-08-31-osunmaptb1-de-you-lai/">OSUnMapTb1[]的由来</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2012-08-31T14:57:46+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2012</span></span> <span class='time'>2:57 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>OSUnMapTb1[]共0xff个元素，0x00~0xff为索引，OSUnMap1[]里的值由分析索引得到（索引转换为二进制，从右边数，首先为1的位数即索引元素的值）<br>
+如0x50,二进制为0x1010000，从右边数，第四位首先为一，则OSUnMapTb1[0x50]=4<br>
+从右数起的原因：<br>
+优先级数：优先级值越小，优先级越高<br>
+从右至左，从上至下越来越低<br>
+y=OSUnMapTb1[OSRdyGrp] (找优先级最高的组)<br>
+x=OSUnMapTb1[OSRdyTb1[y]] (组里找最右的)<br>
+prio = (y&lt;&lt;b) + x</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2012-08-29-armdui-zhan/">ARM堆栈</a></h1>
     
     
@@ -215,48 +337,9 @@ GUI_CursorArrowS Small &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012-08-29-cyu-yan-de-bssduan-wen-ti/">C语言的BSS段问题</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2012-08-29T16:36:13+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>4:36 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>今天看UNP，发现头文件里面定义了没有初始化的变量。</p>
-
-<p>直觉是头文件定义变量是危险的会造成重复定义，但是试了试又没有错，记起了定义的变量有强符号和弱符号之分。</p>
-
-<p>又区查了查资料，又牵涉到定义变量的存储位置问题了，BSS，DATA。</p>
-
-<p>虽然看了一些资料说是BSS不占用磁盘空间，在程序执行前由系统（exec调用的启动例程初始为0），但是对于BSS段到低什么时候分配空间，</p>
-
-<p>系统的根据哪个标准来分配BSS空间的还不清楚。</p>
-
-<p>《程序员的自我修养》这本书什么时候再看下。。。</p>
-
-<p>关于BSS段可在《C专家编程》pag117段一节查看</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/posts/12">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -313,6 +396,10 @@ GUI_CursorArrowS Small &hellip;">
       </li>
     
       <li class="post">
+        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
       </li>
     
@@ -354,10 +441,6 @@ GUI_CursorArrowS Small &hellip;">
     
       <li class="post">
         <a href="/blog/2013-06-15-shi-yong-iofu-yong-he-duo-xian-cheng-wen-ti/">使用IO复用和多线程问题</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-13-unixxi-tong-xi-ti-10-6/">UNIX系统习题10-6</a>
       </li>
     
   </ul>

@@ -9,14 +9,10 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="pag147 main执行前： 调用一个特殊的启动例程
-可执行程序文件将此启动例程指定为程序的起始地址
-启动例程从内核取得命令行参数和环境变量值 1
+  <meta name="description" content="pag171 1
 2
-3
-4
-5
-void exit(int status); void _Exit(int status); void _exit(int &hellip;">
+ID-----0 通常为调度进程，常常被称为交换进程，不执行任何磁盘上的程序，也被称为系统进程。
+ID-----1 通常为init进程，通常读与系统有关的初始化文件，并将系统引导到一个状态，init进程绝不会终止。(普通用户进程（与交换进程不同，不是内核中的系统进程）， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -72,6 +68,292 @@ void exit(int status); void _Exit(int status); void _exit(int &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-06-unixxi-tong-jin-cheng-kong-zhi/">UNIX系统进程控制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-06T17:12:21+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>5:12 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag171</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">ID</span><span class="o">-----</span><span class="mi">0</span>        <span class="err">通常为调度进程，常常被称为交换进程，不执行任何磁盘上的程序，也被称为系统进程。</span>
+</span><span class='line'><span class="n">ID</span><span class="o">-----</span><span class="mi">1</span>        <span class="err">通常为</span><span class="n">init</span><span class="err">进程，通常读与系统有关的初始化文件，并将系统引导到一个状态，</span><span class="n">init</span><span class="err">进程绝不会终止。</span><span class="p">(</span><span class="err">普通用户进程（与交换进程不同，不是内核中的系统进程），但以超级用户特权运行</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getpid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程ID</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">getppid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//父进程ID</span>
+</span><span class='line'><span class="kt">uid_t</span> <span class="nf">getuid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程实际用户ID</span>
+</span><span class='line'><span class="kt">uid_t</span> <span class="nf">geteuid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程有效用户ID</span>
+</span><span class='line'><span class="kt">gid_t</span> <span class="nf">getgid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程实际组ID</span>
+</span><span class='line'><span class="kt">gid_t</span> <span class="nf">getegid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//进程有效组ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag172</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="n">fork</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span><span class='line'><span class="err">子进程返回</span><span class="mi">0</span>               <span class="err">（一个进程只有一个父进程，总可以调用</span><span class="n">getppid</span><span class="err">获得父进程</span><span class="n">ID</span><span class="err">）</span>
+</span><span class='line'><span class="err">父进程返回新子进程</span><span class="n">ID</span><span class="err">（可能有多个子进程，且没有一个函数使一个进程获得其所有子进程的进程</span><span class="n">ID</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>子进程是父进程的副本：</h6>
+
+<ul>
+<li>子进程获得父进程的<code>数据空间</code>，<code>堆</code>和<code>栈</code>的副本。父子进程并<code>不共享这些存储空间</code>部分，他们<code>共享正文段</code>（非存储空间）。
+
+<h6>写时拷贝：</h6></li>
+<li>并不执行父进程数据段，栈和堆的完全拷贝，这些区域由父子进程共享，内核将他们的访问权限改变为只读。当父子进程中任何一个<code>试图改变这些区域</code>时，<code>内核只为修改区域的那块内存制作一个副本</code>。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">strlen</span><span class="err">：包含终止</span><span class="n">null</span><span class="err">字节</span>
+</span><span class='line'><span class="k">sizeof</span><span class="err">：不包含</span><span class="n">null</span><span class="err">字节</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag174</h3>
+
+<p>在重定向父进程的标准输出时，子进程的标准输出也被重定向。（fork：父进程所有打开文件描述符都被复制到子进程中）</p>
+
+<h6>子进程继承的属性</h6>
+
+<ul>
+<li>实际用户ID、实际组ID、有效用户ID、有效组ID（进程和用户）（关系到权限）</li>
+<li>附加组ID</li>
+<li>进程组ID（进程和进程）（不关系到权限）</li>
+<li>会话ID</li>
+<li>控制终端</li>
+<li>设置用户ID标识和设置组ID标识</li>
+<li>当前工作目录</li>
+<li>根目录</li>
+<li>文件模式创建屏蔽字（umask）</li>
+<li>信号屏蔽和安排</li>
+<li>针对任一文件描述符的在执行时关闭（close on exec）标识</li>
+<li>环境</li>
+<li>连接的共享存储段</li>
+<li>存储映射</li>
+<li>资源限制</li>
+<li>文件描述符</li>
+</ul>
+
+
+<h6>父子进程间区别</h6>
+
+<ul>
+<li>fork返回值</li>
+<li>进程ID</li>
+<li>父进程ID</li>
+<li>子进程tms_*部分设置为0</li>
+<li>父进程设置的文件锁不会被子进程继承</li>
+<li>子进程的未处理闹钟被清除</li>
+<li>子进程的未处理信号集设置为空集</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">vfork</span> <span class="p">:</span><span class="err">不将父进程地址空间完全复制到子进程中，在子进程调用</span><span class="n">exec</span><span class="err">或</span><span class="n">exit</span><span class="err">之前，他在父进程的空间中运行。</span>
+</span><span class='line'><span class="n">vfork</span><span class="err">保证子进程先运行，在子进程调用</span><span class="n">exec</span><span class="err">或</span><span class="n">exit</span><span class="err">之前，内核会使父进程处于休眠状态。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag178</h3>
+
+<p>对于父进程已经终止的所有进程，他们的<code>父进程都改变为init</code>进程。<br>
+一个已经终止，但是其<code>父进程尚未对其进行善后处理</code>（获取终止进程的有关信息，释放他仍占用的资源）的进程称为<code>僵尸进程</code>(调用wait、waitpid获取状态)<br>
+<code>init</code>只要有一个子进程终止就会调用一个wait函数取得终止状态，所以<code>不会产生僵尸进程</code>。</p>
+
+<h3>pag182</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">wait</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="n">statloc</span><span class="p">);</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">waitpid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">statloc</span><span class="p">,</span> <span class="kt">int</span> <span class="n">options</span><span class="p">);</span><span class="c1">//WNOHANG可使调用者不阻塞</span>
+</span><span class='line'><span class="nl">pid</span><span class="p">:</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="o">-------</span><span class="err">等待任意子进程</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span>   <span class="o">-------</span><span class="err">等待其进程</span><span class="n">ID</span><span class="err">与</span><span class="n">pid</span><span class="err">相等的子进程</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">==</span> <span class="mi">0</span><span class="o">--------</span><span class="err">等待其组</span><span class="n">ID</span><span class="err">与等于调用进程组</span><span class="n">ID</span><span class="err">的任一子进程</span>
+</span><span class='line'><span class="o">-----</span><span class="n">pid</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">1</span> <span class="o">--------</span><span class="err">等待其组</span><span class="n">ID</span><span class="err">等于</span><span class="n">pid</span><span class="err">绝对值的任一子进程</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">waitid</span><span class="p">(</span><span class="kt">idtype_t</span> <span class="n">idtype</span><span class="p">,</span> <span class="kt">id_t</span> <span class="kt">id</span><span class="p">,</span> <span class="kt">siginfo_t</span> <span class="o">*</span><span class="n">infop</span><span class="p">,</span> <span class="kt">int</span> <span class="n">options</span><span class="p">);</span>
+</span><span class='line'><span class="n">idtype</span><span class="err">：</span>
+</span><span class='line'><span class="nl">P_PID</span><span class="p">:</span><span class="err">等待特定进程</span>
+</span><span class='line'><span class="nl">P_PGID</span><span class="p">:</span><span class="err">等待特定进程组中任一子进程</span>
+</span><span class='line'><span class="nl">P_ALL</span><span class="p">:</span><span class="err">等待任一子进程</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果一个进程fork一个子进程，但不要他等待子进程终止，也不希望子进程处于僵死状态知道父进程终止，可以调用fork两次，先让父进程wait第一个子进程终止，使第二个子进程被init领养。（init子进程不会成为僵死进程）</p>
+
+<h3>pag188</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">execl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execv</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[]);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execle</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execve</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">envp</span><span class="p">[]);</span><span class="c1">//内核系统调用</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execlp</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arg0</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">execvp</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[]);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>exec函数：</h6>
+
+<ul>
+<li>进程调用此函数时，该进程执行的程序完全替换为新程序，而新程序则从其main函数开始执行。</li>
+<li>exec并不创建新进程，所以前后进程ID未改变。</li>
+<li>exec函数用一个全新的程序替换了当前进程的正文、数据、堆、栈段。
+
+<h6>6个exec函数中字符寓意：</h6></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">----</span><span class="n">p</span><span class="err">：该函数取</span><span class="n">filename</span><span class="err">作为参数，并且用</span><span class="n">PATH</span><span class="err">环境变量寻找可执行文件。</span>
+</span><span class='line'><span class="o">----</span><span class="n">l</span><span class="err">：该函数取一个参数表，他与字母</span><span class="n">v</span><span class="err">互斥</span><span class="c1">//参数表以NULL指针结尾</span>
+</span><span class='line'><span class="o">----</span><span class="n">v</span><span class="err">：该函数取一个</span><span class="n">argv</span><span class="p">[]</span><span class="err">矢量。</span>
+</span><span class='line'><span class="o">----</span><span class="n">e</span><span class="err">：该函数取</span><span class="n">envp</span><span class="p">[]</span><span class="err">数组，而不使用当前环境</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>执行exec后保持的属性：</h6>
+
+<ul>
+<li>进程ID和父进程ID</li>
+<li>实际用户ID和实际组ID</li>
+<li>附加组ID</li>
+<li>进程组ID</li>
+<li>会话ID</li>
+<li>控制终端</li>
+<li>闹钟尚余留时间</li>
+<li>当前工作目录</li>
+<li>根文件</li>
+<li>文件模式创建屏蔽子</li>
+<li>文件锁</li>
+<li>进程信号屏蔽字</li>
+<li>未处理信号</li>
+<li>资源限制</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">tms_</span><span class="o">*</span>
+</span><span class='line'><span class="nl">FD_CLOEXEC</span><span class="p">:</span><span class="err">进程中每个打开的描述符都有一个执行时关闭标志。若此标志设置则在执行</span><span class="n">exec</span><span class="err">时关闭该描述符，否则该描述符打开。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag193</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">setuid</span><span class="p">(</span><span class="kt">uid_t</span> <span class="n">uid</span><span class="p">);</span><span class="c1">//设置实际用户ID和有效用户ID</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setgid</span><span class="p">(</span><span class="kt">gid_t</span> <span class="n">gid</span><span class="p">);</span><span class="c1">//设置实际组ID和有效组ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>关于内核维护的三个用户ID，注意：
+- 只有<code>超级用户进程</code>可以更改<code>实际用户ID</code>。（setuid设置全部三个用户ID）
+- 仅当对程序文件设置了设置用户ID位时，exec函数才会设置有效用户ID。任何时候都可以调用setuid，将有效用户ID设置为实际用户ID或保存的设置用户ID。
+- 保存的设置用户ID是由复制有效用户ID而得来的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">setreuid</span><span class="p">(</span><span class="kt">uid_t</span> <span class="n">ruid</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">euid</span><span class="p">);</span><span class="c1">//交换实际用户ID和有效用户ID</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setregid</span><span class="p">(</span><span class="kt">gid_t</span> <span class="n">rgid</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">egid</span><span class="p">);</span><span class="c1">//交换实际组ID和有效组ID</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">seteuid</span><span class="p">(</span><span class="kt">uid_t</span> <span class="n">uid</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setegid</span><span class="p">(</span><span class="kt">gid_t</span> <span class="n">gid</span><span class="p">);</span> <span class="c1">//pag196设置不同用户ID的各函数</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag200</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">system</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">cmdstring</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>在其实现中调用了fork、exec和waitpid。</li>
+<li>如果一个进程正以<code>特殊权限</code>（设置用户ID或设置组ID）运行，他又想<code>生成另一个进程执行另一个程序</code>，则他应当直接使用fork和exec，而且在fork之后，exec之前要改回到普通权限（exec会复制有效ID-》保存设置ID）。设置用户ID或设置组ID程序决不应调用system函数。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">getlogin</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//获取登录名</span>
+</span><span class='line'><span class="kt">clock_t</span> <span class="nf">time</span><span class="p">(</span><span class="k">struct</span> <span class="n">tms</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>不提供返回保存的设置用户ID（只是供setuid时做为一个参考，看要设置的有效id和保存的设置用户id相不相等）的函数，我们必须在进程开始时保存有效用户ID。</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1032,180 +1314,6 @@ void exit(int status); void _Exit(int status); void _exit(int &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-03-28-mkfifohan-shu-chuang-jian-you-ming-guan-dao/">Mkfifo函数创建有名管道</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-03-28T22:13:17+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:13 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>pipe创建的管道只能在具有共同祖先的进程间通信，而mkfifo能在不相关的进程间交换数据。通俗举例来说，一个在一个c文件中通信，一个可在多个c文件中通信。<br>
-命名管道打开的规则：<br>
-为读打开FIFO：</p>
-
-<ul>
-<li>O_NONBLOCK disable:阻塞直到有相应进程为写而打开FIFO</li>
-<li>O_NONBLOCK enable:立刻返回成功<br></li>
-</ul>
-
-
-<p>为写打开FIFO：</p>
-
-<ul>
-<li>O_NONBLOCK disable:阻塞直到有相应进程为读而打开FIFO</li>
-<li>O_NONBLOCK enable:立刻返回失败，错误码为ENXIO<br>
-打开文件描述符默认为阻塞。</li>
-</ul>
-
-
-<p>管道创建与写管道程序：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include&lt;stdio.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;sys/stat.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;unistd.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;errno.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;fcntl.h&gt;</span>
-</span><span class='line'><span class="cp">#define SIZE 20</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span> <span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">fd</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">mkfifo</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mo">0666</span><span class="p">)</span><span class="o">==-</span><span class="mi">1</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">errno</span><span class="o">!=</span><span class="n">EEXIST</span><span class="p">)</span> <span class="p">)</span><span class="c1">//加后一半可令创建管道后的再次读取不输出错误提示！</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;create fifo error!&quot;</span> <span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span> <span class="o">-</span><span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">fd</span><span class="o">=</span><span class="n">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_WRONLY</span><span class="p">))</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;open file error!&quot;</span> <span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span> <span class="o">-</span><span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">write</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">SIZE</span> <span class="p">);</span>
-</span><span class='line'>    <span class="n">close</span><span class="p">(</span> <span class="n">fd</span> <span class="p">);</span>
-</span><span class='line'>    <span class="n">puts</span><span class="p">(</span> <span class="s">&quot;write success!&quot;</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>管道接收程序：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include&lt;stdio.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;sys/stat.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;unistd.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;errno.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;fcntl.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;stdlib.h&gt;</span>
-</span><span class='line'><span class="cp">#define SIZE 20</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span> <span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">fd</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">char</span> <span class="n">buffer</span><span class="p">[</span><span class="n">SIZE</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">fd</span><span class="o">=</span><span class="n">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_RDONLY</span> <span class="o">|</span> <span class="n">O_NONBLOCK</span><span class="p">))</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;open file error!&quot;</span> <span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span> <span class="o">-</span><span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">while</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">memset</span><span class="p">(</span> <span class="n">buffer</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">SIZE</span> <span class="p">);</span>
-</span><span class='line'>        <span class="k">if</span><span class="p">(</span> <span class="n">read</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">buffer</span><span class="p">,</span> <span class="n">SIZE</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
-</span><span class='line'>        <span class="p">{</span>
-</span><span class='line'>            <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;please input something!&quot;</span> <span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">else</span>
-</span><span class='line'>        <span class="p">{</span>
-</span><span class='line'>            <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;receieve %s!&quot;</span><span class="p">,</span> <span class="n">buffer</span> <span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span> <span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/9">&larr; Older</a>
@@ -1265,6 +1373,10 @@ void exit(int status); void _Exit(int status); void _exit(int &hellip;">
       </li>
     
       <li class="post">
+        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
       </li>
     
@@ -1306,10 +1418,6 @@ void exit(int status); void _Exit(int status); void _exit(int &hellip;">
     
       <li class="post">
         <a href="/blog/2013-06-15-shi-yong-iofu-yong-he-duo-xian-cheng-wen-ti/">使用IO复用和多线程问题</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-13-unixxi-tong-xi-ti-10-6/">UNIX系统习题10-6</a>
       </li>
     
   </ul>
