@@ -9,24 +9,11 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="光标移动： 1
+  <meta name="description" content="pag72 目录文件：包含其他文件的名字以及指向与这些文件有关信息的指针。（知道目录也时文件） 1
 2
 3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-Ctrl+f 向文件尾翻一屏 Ctrl+b 向文件首翻一屏
-n+ 光标下移n行 n- 光标上移n行
-0（零）光标移至行首 $ 光标移至行尾
-^ 光标移至行首第一个单词
-nG 光标移至n行行首 :n 光标移至n行行首
-gg &hellip;">
+int stat (const char *restrict pathname, struct stat *restrict buf);
+int fstat (int filedes, &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -82,6 +69,330 @@ gg &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-04-28-unixxi-tong-wen-jian-he-mu-lu/">UNIX系统文件和目录</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-04-28T10:20:09+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:20 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag72</h3>
+
+<h5>目录文件：包含其他文件的名字以及指向与这些文件有关信息的指针。（知道目录也时文件）</h5>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">stat</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fstat</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="n">buf</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">lstat</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">);</span> <span class="err">（</span><span class="n">link</span> <span class="n">stat</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>lstat与stat类似，但是当命名的文件是一个符号链接时，lstat返回该符号链接的有关信息，而不是该符号链接引用文件的信息(stat)。</p>
+
+<h5>文件类型：<br></h5>
+
+<ul>
+<li>1.普通文件<br>                                                                                                                                S_ISREG</li>
+<li>2、目录文件。包含其他文件的名字以及指向这些文件有关信息的指针。<br>                                  S_ISDIR</li>
+<li>3、块特殊文件。提供对设备带缓冲的访问。 <br>                                                                                 S_ISBLK</li>
+<li>4、字符特殊文件。提供设备不带缓冲访问(系统中设备要么是 字符特殊文件，要么是块特殊文件)<br>  S_ISCHR</li>
+<li>5、 FIFO。命名管 道   <br>                                                                                                                     S_ISFIFO</li>
+<li>6、套接字  <br>                                                                                                                                   S_ISSOCK</li>
+<li>7、符号链接。这种文件指向另一个文件   <br>                                                                                       S_ISLNK<br><br/>
+所有类型文件都有访问权限</li>
+</ul>
+
+
+<h3>pag75</h3>
+
+<ul>
+<li><strong>主要先辨别ID针对的对象：进程还是文件（这个对理解各ID的差异与概念很重要）</strong><br></li>
+<li><p><strong>两个所有者ID是文件的性质，两个有效ID和附加组ID是进程的性质。</strong></p></li>
+<li><p>进程相关联ID：（执行文件时才说明这些ID）</p></li>
+<li>实际用户ID、实际组ID：进程执行者，当前所在的用户。</li>
+</ul>
+
+
+<h6>有效用户ID、有效组ID、附加组ID</h6>
+
+<p>决定访问权限。大多数情况下为实际用户ID、实际组ID（除了设置了设置用户ID位及设置组ID位这种情况）。当<code>设置-用户-ID（SUID）位</code>设置，则有效用户ID等于文件的所有者的uid(struct stat中的st_uid,st_gid)，而不是实际用户ID；<br>
+同样，如果设置了<code>设置-用户组-ID（SGID）位</code>，则有效用户组ID等于文件所有者的gid，而不是实际用户组ID。（实际用户是root时可能有点不同）设置用户ID位及设置组ID位都包含在st_mode值中，可用常量S_ISUID和S_ISGID测试。</p>
+
+<h6>保存的设置用户ID、保存的设置组ID</h6>
+
+<p>有效用户ID、有效组ID的副本。<br>
+例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">ls</span>
+</span><span class='line'><span class="o">-</span><span class="n">rw</span><span class="o">-</span><span class="n">r</span><span class="o">--</span><span class="n">r</span><span class="o">--</span> <span class="mi">1</span> <span class="n">root</span>  <span class="n">ad</span> <span class="p">..................(</span><span class="err">这个</span><span class="n">root</span><span class="err">表示的是文件所有者，即最初创建此文件的进程的有效用户</span><span class="n">ID</span><span class="err">；</span><span class="n">ad</span><span class="err">表示当所属用户组</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">whoami</span>
+</span><span class='line'><span class="n">ad</span>                                         <span class="p">(</span><span class="err">这个</span><span class="n">ad</span><span class="err">表示的是实际用户</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag76</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">st_mode</span><span class="err">屏蔽</span><span class="o">---------------------------------</span><span class="err">意义</span>
+</span><span class='line'><span class="n">S_IRUSR</span>     <span class="o">---------------------------------</span><span class="err">用户</span><span class="o">-</span><span class="err">读</span>
+</span><span class='line'><span class="n">S_IWUSR</span>    <span class="o">---------------------------------</span><span class="err">用户</span><span class="o">-</span><span class="err">写</span>
+</span><span class='line'><span class="n">S_IXUSR</span>     <span class="o">---------------------------------</span><span class="err">用户</span><span class="o">-</span><span class="err">执行</span>
+</span><span class='line'><span class="n">S_IRGRP</span>    <span class="o">---------------------------------</span><span class="err">组</span><span class="o">-</span><span class="err">读</span>
+</span><span class='line'><span class="n">S_IWGRP</span>    <span class="o">---------------------------------</span><span class="err">组</span><span class="o">-</span><span class="err">写</span>
+</span><span class='line'><span class="n">S_IXGRP</span>     <span class="o">---------------------------------</span><span class="err">组</span><span class="o">-</span><span class="err">执行</span>
+</span><span class='line'><span class="n">S_IROTH</span>     <span class="o">---------------------------------</span><span class="err">其他</span><span class="o">-</span><span class="err">读</span>
+</span><span class='line'><span class="n">S_IWOTH</span>    <span class="o">---------------------------------</span><span class="err">其他</span><span class="o">-</span><span class="err">写</span>
+</span><span class='line'><span class="n">S_IXOTH</span>     <span class="o">---------------------------------</span><span class="err">其他</span><span class="o">-</span><span class="err">执行</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>目录读权限与执行权限的差异</h6>
+
+<ul>
+<li>读权限：允许我们读目录获得在该目录中所有文件名的列表。</li>
+<li>执行权限：允许我们通过该目录，即搜索该目录，寻找一个特定的名字。</li>
+</ul>
+
+
+<p>为了<strong>删除</strong>一个现有文件，必须对<strong>包含该文件的目录</strong>具有写权限和<strong>执行权限</strong>，<strong>对该文件本身则不需要有读写权限</strong>。
+在目录中创建文件也一样。对于目录通常至少要设置一个执行权限位，以允许访问该目录中的文件名。</p>
+
+<h3>pag77</h3>
+
+<p>新文件的用户ID（所有者ID）设置为进程的有效用户ID。<br>
+新文件组ID：<br></p>
+
+<ul>
+<li>1、进程的有效组ID。</li>
+<li>2、所在目录的组ID。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">access</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">int</span> <span class="n">mode</span><span class="p">);</span><span class="c1">//按实际用户ID和实际组ID进行访问权限测试</span>
+</span><span class='line'><span class="n">mode</span><span class="err">：</span>
+</span><span class='line'><span class="n">R_OK</span>          <span class="err">读权限</span>
+</span><span class='line'><span class="n">W_OK</span>          <span class="err">写权限</span>
+</span><span class='line'><span class="n">X_OK</span>          <span class="err">执行权限</span>
+</span><span class='line'><span class="n">F_OK</span>          <span class="err">文件是否存在</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag79</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">mode_t</span> <span class="n">umask</span><span class="p">(</span> <span class="kt">mode_t</span> <span class="n">cmask</span> <span class="p">)</span>
+</span><span class='line'><span class="c1">// umask函数为进程设置文件模式创建屏蔽字并返回以前的值。当调用umask后，在此函数以下创建的文件都受umask屏蔽字的影响(设置1时关闭)，在函数以上的则保持原先的访问权限。pag80中例子必须不在root用户下执行才能得到与书中一致的结果。更改进程的文件模式创建屏蔽字并不影响其父进程（常常是shell）的屏蔽字。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">chmod</span><span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">fchmod</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span> <span class="p">)</span>
+</span><span class='line'><span class="c1">// chmod函数在指定的文件上进行操作，fchmod对已打开的文件进行操作。</span>
+</span><span class='line'><span class="err">为改变一个文件的权限位，进程的有效用户</span><span class="n">ID</span><span class="err">必须等于文件的所有者</span><span class="n">ID</span><span class="err">，或者该进程必须具有超级用户权限。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">chown</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">owner</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">group</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fchown</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">owner</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">group</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">lchown</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">uid_t</span> <span class="n">owner</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">group</span><span class="p">);</span>
+</span><span class='line'><span class="c1">// 更改文件的用户ID（文件所有者ID）和组ID。lchown更改符号链接本身的所有者，而不是该符号链接所指向的文件。如两个参数owner或group中的任意一个是-1，则对应的ID不变。</span>
+</span><span class='line'><span class="err">如果这些函数由非超级用户进程调用，则在成功返回时，该文件的设置用户</span><span class="n">ID</span><span class="err">位和设置组</span><span class="n">ID</span><span class="err">位都会被清除。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">truncate</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">length</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">ftruncate</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">length</span><span class="p">);</span>
+</span><span class='line'><span class="c1">// 把文件长度截断为length字节。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag87</h3>
+
+<p>一个磁盘可以分成多个分区，每个分区可以包含一个文件系统。</p>
+
+<ul>
+<li>i节点是固定长度的记录项，他包含有关文件的大部分信息。
+
+<h6>关于i节点的理解</h6></li>
+<li>i节点包含了大多数与文件有关的信息：文件类型、文件访问权限位、文件长度、指向该文件所占用的数据块指针等。
+<strong>要注意引用计数（进程）与链接计数（目录项）</strong></li>
+</ul>
+
+
+<h6>硬链接与符号链接</h6>
+
+<ul>
+<li><code>硬链接</code>：文件中为所指向文件的内容（直接指向文件的i节点）（多个文件名可指向同一索引节点）
+
+<ul>
+<li>每个i节点都有一个链接计数，其值是指向该i节点的目录项数，只有当链接计数减少至0时，才可删除文件。</li>
+</ul>
+</li>
+<li><code>符号链接</code>：文件中包含所指向文件的名字（指向一个文件的间接指针）
+
+<ul>
+<li>ln -s () ()创建符号链接，ls -l 可看出符号链接所指向的文件</li>
+<li>ln -P () ()创建硬链接，打开创建的硬链接，内容即为硬链接指向文件<br></li>
+</ul>
+</li>
+</ul>
+
+
+<p>硬链接限制：<br></p>
+
+<ul>
+<li>1.通常要求链接和文件位于同一文件系统中。</li>
+<li>2.只有超级用户才能创建指向目录的硬链接。</li>
+</ul>
+
+
+<p>任何一个叶目录（不包含任何其他目录的目录）的链接计数<strong>总是2</strong>，数值2来自于命名该目录的目录项..和该目录中的.项。父目录中的每一个子目录都会使该父目录的链接计数增1.</p>
+
+<h3>pag89</h3>
+
+<p>任何一个文件可以有多个目录项指向其i节点。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">link</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">existingpath</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">newpath</span><span class="p">);</span><span class="c1">//创建一个指向现有文件的链接（硬链接)</span>
+</span><span class='line'><span class="err">只创建</span><span class="n">newpath</span><span class="err">中最后一个分量，路径中的其他部分应当已经存在。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">unlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//删除现有目录项</span>
+</span><span class='line'><span class="err">删除目录项，并将由</span><span class="n">pathname</span><span class="err">所引用文件的链接计数减</span><span class="mf">1.</span><span class="err">（当文件还是打开的时候，不会将其内容删除，只有当进程关闭该文件或终止时该文件内容才会被删除）</span><span class="n">open</span><span class="err">或</span><span class="n">create</span><span class="err">创建文件时，文件有</span><span class="mi">1</span><span class="err">个引用计数（进程指向</span><span class="n">i</span><span class="err">节点的文件描述符），一个链接计数（所创建文件名所在的目录项），当两者都为</span><span class="mi">0</span><span class="err">时才释放空间。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">remove</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//解除对一个文件或目录的链接</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">rename</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">oldname</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">newname</span><span class="p">);</span><span class="c1">//文件或目录用rename函数更名（如为符号链接，则处理的是符号链接本身）</span>
+</span><span class='line'><span class="err">给出符号链接名的情况下，没有一个函数能删除由该链接所引用的文件。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">symlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">actualpath</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">sympath</span><span class="p">);</span><span class="c1">//创建一个符号链接</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">readlink</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pathname</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">bufsize</span><span class="p">);</span><span class="c1">//打开链接本身，并读链接中的名字（open跟随符号链接）</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">目录是包含目录项（文件名和相关的</span><span class="n">i</span><span class="err">节点编号）的文件。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">utime</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">utimbuf</span> <span class="o">*</span><span class="n">times</span><span class="p">);</span><span class="c1">//修改文件访问和修改时间</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">mkdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span><span class="p">);</span><span class="c1">//创建空目录（.和..目录自动创建）（对目录通常至少要设置1个文件执行权限位，以允许访问该目录中的文件名）</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">rmdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//删除空目录（空目录是只包含.和..目录的目录）</span>
+</span><span class='line'><span class="err">如果调用此函数后目录链接计数为</span><span class="mi">0</span><span class="err">，并且没有其他进程打开此目录，则释放此目录占用空间。（链接计数为</span><span class="mi">0</span><span class="err">不一定释放空间，还要看有无被进程打开（引用计数是否变为</span><span class="mi">0</span><span class="err">））</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>pag98</h4>
+
+<p>为了防止文件系统产生混乱，只有内核才能写目录（一个目录的写、执行权限位决定了在该目录中能否创建新文件以及删除文件，并不表示能否写目录本身）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">DIR</span> <span class="o">*</span><span class="nf">opendir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//返回DIR指针由以下5个函数使用</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">dirent</span> <span class="o">*</span><span class="nf">readdir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">rewinddir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">closedir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">long</span> <span class="nf">telldir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">seekdir</span><span class="p">(</span><span class="kt">DIR</span> <span class="o">*</span><span class="n">dp</span><span class="p">,</span> <span class="kt">long</span> <span class="n">loc</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当前工作目录是进程的属性，起始目录是登录名的属性。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">chdir</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">);</span><span class="c1">//更改当前目录（影响进程本身）</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">fchdir</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="n">getcwd</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span><span class="err">（</span><span class="n">get</span> <span class="n">current</span> <span class="n">working</span> <span class="n">directory</span><span class="err">）</span><span class="p">;</span><span class="c1">//从当前目录（.目录）开始，用..目录找到上一级目录，然后读其目录项，直到该目录项中的i节点编号和工作目录i节点编号相同，这样就找到了其对应的文件名。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -839,44 +1150,6 @@ gg &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-03-07-forkxie-shi-kao-bei/">Fork写时拷贝</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-03-07T22:21:31+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:21 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>当fork函数被当前进程调用时，内核为新进程创建各种数据结构，并分配它一个唯一的PID，为了给这个新进程创建虚拟存储器，它创建了当前进程的mm_struct、区域结构和页表的<code>原样拷贝</code>。它将两个进程中的每个页面都标记为只读，并将两个进程中的每个区域结构都标记为<code>私有的写时拷贝</code>。</p>
-
-<p>当fork在新进程中返回时，新进程现在的虚拟存储器刚好和调用fork时存在的虚拟存储器相同（就是父进程<code>运行到fork时</code>的虚拟存储器，所以子进程运行的地方是从fork返回时开始的，并不是从头开始）。当这两个进程的任一个后来进行写操作时，写时拷贝机制就会创建新的<code>物理页面</code>。（深入理解计算机系统二 558页）</p>
-
-<p>通俗一点说，就是在exec之前两个进程用的是相同的物理空间（内存区）（所谓用是只读，不能写的），子进程的代码段、数据段、堆栈都是指向父进程的物理空间。当父子进程中有更改相应段的行为发生时，再为子进程相应的段分配物理空间（这时创建拷贝的进程的页表条目会指向这个新的物理页面（拷贝），然后恢复这个页面的可写权限），如果不是因为exec，内核会给子进程的数据段、堆栈段分配相应的物理空间（至此两者有各自的进程空间，互不影响），而代码段继续共享父进程的物理空间（两者的代码完全相同）。而如果是因为exec，由于两者执行的代码不同，子进程的代码段也会分配单独的物理空间。</p>
-
-<p>通常来说，fork函数的代码段基本是只读类型的，而且在运行阶段也只是复制，并不会对内容进行修改，因此父子进程是共享代码段，而数据段、Bss段、堆栈段等会在运行的过程中发生写过程，这样就导致了不同的段发生相应的写时拷贝过程，实现了不同进程的独立空间。</p>
-
-<p>相应网页：
-<a href="http://blog.chinaunix.net/uid-20937170-id-3012588.html">http://blog.chinaunix.net/uid-20937170-id-3012588.html</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/10">&larr; Older</a>
@@ -964,6 +1237,10 @@ gg &hellip;">
       </li>
     
       <li class="post">
+        <a href="/blog/2013-07-10-chu-bu-ren-shi-uiscrollview/">初步认识UIScrollView</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
       </li>
     
@@ -977,10 +1254,6 @@ gg &hellip;">
     
       <li class="post">
         <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a>
       </li>
     
   </ul>

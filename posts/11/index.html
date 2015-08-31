@@ -9,9 +9,20 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1
-shutdown -h now 没有-h会卡在关闭界面：Ubuntu 下面5个白点
-">
+  <meta name="description" content="ELF文件通常拥有的段： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+.text--------------已编译程序的机器代码
+.rodata-----------只读数据
+.data--------------已初始化的全局变量、局部静态变量。局部变量在运行时分配在相应栈帧中
+.bss &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +78,103 @@ shutdown -h now 没有-h会卡在关闭界面：Ubuntu 下面5个白点
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-02-10-constyu-number-define/">Const与#define</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-02-10T21:12:40+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:12 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>ELF文件通常拥有的段：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">.</span><span class="n">text</span><span class="o">--------------</span><span class="err">已编译程序的机器代码</span>
+</span><span class='line'><span class="p">.</span><span class="n">rodata</span><span class="o">-----------</span><span class="err">只读数据</span>
+</span><span class='line'><span class="p">.</span><span class="n">data</span><span class="o">--------------</span><span class="err">已初始化的全局变量、局部静态变量。局部变量在运行时分配在相应栈帧中</span>
+</span><span class='line'><span class="p">.</span><span class="n">bss</span><span class="o">--------------</span><span class="err">未初始化的全局</span><span class="n">c</span><span class="err">变量、局部静态变量（不占据实际文件空间，记录大小信息，内存运行时分配）</span>
+</span><span class='line'><span class="p">.</span><span class="n">symtab</span><span class="o">----------</span><span class="err">一个符号表，存放定义和引用的函数和全局变量信息</span>
+</span><span class='line'><span class="p">.</span><span class="n">rel</span><span class="p">.</span><span class="n">text</span>
+</span><span class='line'><span class="p">.</span><span class="n">rel</span><span class="p">.</span><span class="n">tata</span><span class="o">-----------</span><span class="err">被模块引用或定义的任何全局变量的重定位信息</span>
+</span><span class='line'><span class="p">.</span><span class="n">debug</span>
+</span><span class='line'><span class="p">.</span><span class="n">line</span><span class="o">---------------</span><span class="n">c</span><span class="err">源程序与</span><span class="p">.</span><span class="n">text</span><span class="err">中机器指令之间行号映射</span>
+</span><span class='line'><span class="p">.</span><span class="n">strtab</span><span class="o">------------</span><span class="err">字符串表</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>首先静态数据存储空间：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：编译完，空间分配在</span><span class="p">.</span><span class="n">rodata</span><span class="err">段，占存储空间。可获取地址。</span>
+</span><span class='line'><span class="cp">#define：预编译完，替换代码中的宏定义（这说明直接就在代码段里面了）。如果时字符串字面常量，则占用一个字符串大小的.rodata空间；如果时整形字面常量，不会分配静态数据存储空间。不可获取地址。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>类型：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：拥有数据类型，编译器可对其进行安全检查。</span>
+</span><span class='line'><span class="cp">#define：无数据类型，只进行字符替换，没有类型安全检查。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>作用局限：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span><span class="err">：常变量，虽然时不变的变量，但是本质还是变量，所以不能用以定义数组。</span>
+</span><span class='line'><span class="cp">#define：可以用来定义数组，一般不用来获取地址</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ps：<br>
+const修饰的常变量必须在定义时初始化：
+`</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">int</span> <span class="n">temp</span><span class="err">；</span><span class="c1">//错误</span>
+</span><span class='line'><span class="kt">int</span> <span class="o">*</span><span class="k">const</span> <span class="n">temp</span><span class="err">；</span><span class="c1">//错误</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需不需要在定义时初始化看该变量在以后能不能被改变（当左值），如果不能必须初始化；如果可以则可不初始化。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">temp</span><span class="err">；</span><span class="c1">//正确，因为temp可作为左值，只是*temp不能作为左值</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -297,42 +405,6 @@ UCOS任务堆栈：<br>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012-08-31-osunmaptb1-de-you-lai/">OSUnMapTb1[]的由来</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2012-08-31T14:57:46+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2012</span></span> <span class='time'>2:57 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>OSUnMapTb1[]共0xff个元素，0x00~0xff为索引，OSUnMap1[]里的值由分析索引得到（索引转换为二进制，从右边数，首先为1的位数即索引元素的值）<br>
-如0x50,二进制为0x1010000，从右边数，第四位首先为一，则OSUnMapTb1[0x50]=4<br>
-从右数起的原因：<br>
-优先级数：优先级值越小，优先级越高<br>
-从右至左，从上至下越来越低<br>
-y=OSUnMapTb1[OSRdyGrp] (找优先级最高的组)<br>
-x=OSUnMapTb1[OSRdyTb1[y]] (组里找最右的)<br>
-prio = (y&lt;&lt;b) + x</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/12">&larr; Older</a>
@@ -420,6 +492,10 @@ prio = (y&lt;&lt;b) + x</p>
       </li>
     
       <li class="post">
+        <a href="/blog/2013-07-10-chu-bu-ren-shi-uiscrollview/">初步认识UIScrollView</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
       </li>
     
@@ -433,10 +509,6 @@ prio = (y&lt;&lt;b) + x</p>
     
       <li class="post">
         <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a>
       </li>
     
   </ul>

@@ -9,8 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="pag398 管道： 局限：只能在具有公共祖先的进程之间使用。通常由一个进程创建然后该进程调用fork，此后父子进程之间就可应用该管道。 1
-int pipe( int filedes[2] ); 经由参数返回两个文件描述符：filedes[0]为读而打开，filedes[1]为写打开。 &hellip;">
+  <meta name="description" content="pag437 套接字描述符在unix系统是用文件描述符实现的。 1
+int socket( int domain, int type, intprotocol );//创建套接字 通信方式 数据报（SOCK_DGRAM）接口，与对方通信时是不需要逻辑连接的（UDP）。只需要送出一个报文， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +66,555 @@ int pipe( int filedes[2] ); 经由参数返回两个文件描述符：filedes[0]
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-06-05-unixxi-tong-tao-jie-zi/">UNIX系统套接字</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-06-05T13:57:06+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>1:57 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag437</h3>
+
+<p>套接字描述符在unix系统是用<code>文件描述符</code>实现的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">socket</span><span class="p">(</span> <span class="kt">int</span> <span class="n">domain</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span> <span class="n">intprotocol</span> <span class="p">);</span><span class="c1">//创建套接字</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>通信方式</h6>
+
+<ul>
+<li>数据报（SOCK_DGRAM）接口，与对方通信时是不需要逻辑连接的（UDP）。只需要送出一个报文，其地址是一个对方进程所使用的套接字。（无连接）</li>
+<li>字节流（SOCK_STREAM）要求在交换数据之前（TCP），在本地套接字和与之通信的远程套接字之间建立一个逻辑连接。（面向连接）</li>
+</ul>
+
+
+<p><code>数据报</code>是一种自包含报文。发送数据报近似于<code>给某人邮寄信件</code>。<code>每封信件包含接收者地址</code>，使这封信件独立于所有其他信件。
+<code>面向连接</code>的协议通信就像<code>与对方打电话</code>。<code>会话中不包含地址信息</code>。就像呼叫两端存在一个点对点虚拟连接，并且<code>连接本身暗含特定的源和地址</code>。</p>
+
+<p>套接字通信是双向的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">shutdown</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">how</span><span class="p">);</span><span class="c1">//禁止套接字上的输入、输出，只操作本端套接字</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>close和shutdown：</h6>
+
+<ul>
+<li>1、close只有在最后一个活动引用被关闭时才释放网络端点，套接字直到关闭了最后一个引用他的文件描述符之后才会被释放。</li>
+<li>2、shutdown允许使一个套接字处于不活动状态，无论引用他的文件描述符数目多少。</li>
+</ul>
+
+
+<p>进程的标识有两个部分：计算机的网络地址可以帮助标识网络上想与之通信的计算机，而服务可以帮助标识计算机上特定的进程。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">大端字节序：最大字节地址对应于数字最低有效字节上；</span>
+</span><span class='line'><span class="o">-----------------------</span>
+</span><span class='line'><span class="o">|</span> <span class="n">n</span>  <span class="o">|</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="o">|</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="o">|</span><span class="n">n</span><span class="o">+</span><span class="mi">3</span><span class="o">|</span>
+</span><span class='line'><span class="o">------------------------</span>
+</span><span class='line'><span class="n">MSB</span>                  <span class="n">LSB</span>
+</span><span class='line'><span class="err">小端字节序：数字最低字节对应于最小字节地址。</span>
+</span><span class='line'><span class="o">------------------------</span>
+</span><span class='line'><span class="o">|</span><span class="n">n</span><span class="o">+</span><span class="mi">3</span><span class="o">|</span><span class="n">n</span><span class="o">+</span><span class="mi">2</span><span class="o">|</span><span class="n">n</span><span class="o">+</span><span class="mi">1</span><span class="o">|</span> <span class="n">n</span>  <span class="o">|</span>
+</span><span class='line'><span class="o">-----------------------</span>
+</span><span class='line'><span class="n">MSB</span>                  <span class="n">LSB</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不管字节如何排序，数字最高位总是在左边，最低位总是在右边。<br>
+TCP/IP协议采用大端字节序。</p>
+
+<p>套接字实现可以自由地添加额外的成员，并且定义sa_data成员的大小。</p>
+
+<p>通用地址结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">sockaddr</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">sa_family_t</span> <span class="n">sa_family</span><span class="p">;</span> <span class="c1">//sa取自(s)ock(a)ddr  </span>
+</span><span class='line'>    <span class="kt">char</span>        <span class="n">sa_data</span><span class="p">[]</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>IPV4地址结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">sockaddr_in</span> <span class="p">{</span>                <span class="c1">//in取自(in)et    </span>
+</span><span class='line'>    <span class="kt">sa_family_t</span> <span class="n">sin_family</span><span class="p">;</span> <span class="c1">//sin取自(s)ockaddr_(in)  </span>
+</span><span class='line'>    <span class="kt">in_port_t</span>   <span class="n">sin_port</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">in_addr</span>  <span class="n">sin_addr</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">in_addr</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">in_addr_t</span>   <span class="n">s_addr</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>IPV6地址结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">sockaddr_in6</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">sa_family_t</span> <span class="n">sin6_family</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">in_port_t</span>   <span class="n">sin6_port</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">uint32_t</span>    <span class="n">sin6_flowinfo</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">in6_addr</span> <span class="n">sin6_addr</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">uint32_t</span>    <span class="n">sin6_scope_id</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">in6_addr</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">uint8_t</span>     <span class="n">s6_addr</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>转换端口时常用：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">uint32_t</span> <span class="nf">htonl</span><span class="p">(</span> <span class="kt">uint32_t</span> <span class="n">hostint32</span><span class="p">);</span><span class="c1">//以网络字节序表示32位整形数</span>
+</span><span class='line'><span class="kt">uint16_t</span> <span class="nf">htons</span><span class="p">(</span> <span class="kt">uint16_t</span> <span class="n">hostint16</span><span class="p">);</span><span class="c1">//以网络字节序表示16位整形数</span>
+</span><span class='line'><span class="kt">uint32_t</span> <span class="nf">ntohl</span><span class="p">(</span> <span class="kt">uint32_t</span> <span class="n">netint32</span><span class="p">);</span><span class="c1">//以主机字节序表示32位整形数</span>
+</span><span class='line'><span class="kt">uint16_t</span> <span class="nf">ntohs</span><span class="p">(</span> <span class="kt">uint16_t</span> <span class="n">netint16</span><span class="p">);</span><span class="c1">//以主机字节序表示16位整形数</span>
+</span><span class='line'><span class="n">h</span><span class="err">（</span><span class="n">host</span><span class="err">）主机字节序</span>
+</span><span class='line'><span class="n">n</span><span class="err">（</span><span class="n">network</span><span class="err">）网络字节序</span>
+</span><span class='line'><span class="n">l</span><span class="err">（</span><span class="kt">long</span><span class="err">）长整数</span>
+</span><span class='line'><span class="n">s</span><span class="err">（</span><span class="kt">short</span><span class="err">）短整数</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>转换地址常用：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="nf">inet_ntop</span><span class="p">(</span> <span class="kt">int</span> <span class="n">domain</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">str</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">size</span> <span class="p">);</span><span class="c1">//将网络字节序的二进制地址转换成文本字符串格式</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">inet_pton</span><span class="p">(</span> <span class="kt">int</span> <span class="n">domain</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">str</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">restrictaddr</span> <span class="p">);</span><span class="c1">//将文本字符串格式转换成网络字节序的二进制地址</span>
+</span><span class='line'><span class="nl">p</span><span class="p">:</span><span class="n">presentation</span>
+</span><span class='line'><span class="nl">n</span><span class="p">:</span><span class="n">net</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">struct</span> <span class="n">hostent</span> <span class="o">*</span><span class="n">gethostent</span> <span class="p">(</span> <span class="kt">void</span><span class="p">);</span><span class="c1">//打开主机数据文件返回下一条目</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">sethostent</span><span class="p">(</span> <span class="kt">int</span> <span class="n">stayopen</span><span class="p">);</span><span class="c1">//打开文件，如已打开，将其回绕</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">endhostent</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span><span class="c1">//关闭文件</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>获取网络名字和网络号：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">netent</span> <span class="o">*</span><span class="nf">getnetbyaddr</span><span class="p">(</span> <span class="n">uint32_tnet</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span> <span class="p">);</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">netent</span> <span class="o">*</span><span class="nf">getnetbyname</span><span class="p">(</span> <span class="n">constchar</span> <span class="o">*</span><span class="n">name</span> <span class="p">);</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">netent</span> <span class="o">*</span><span class="nf">getnetent</span><span class="p">(</span> <span class="kt">void</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">setnetent</span><span class="p">(</span> <span class="kt">int</span> <span class="n">stayopen</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">endnetent</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>映射协议名字和协议号：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">protoent</span> <span class="o">*</span><span class="nf">getprotobyname</span><span class="p">(</span> <span class="n">constchar</span> <span class="o">*</span><span class="n">name</span> <span class="p">);</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">protoent</span> <span class="o">*</span><span class="nf">getprotobynumber</span><span class="p">(</span> <span class="n">intproto</span> <span class="p">);</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">protoent</span> <span class="o">*</span><span class="nf">getprotoent</span><span class="p">(</span> <span class="kt">void</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">setprotoent</span><span class="p">(</span> <span class="kt">int</span> <span class="n">stayopen</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">endprotoent</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>服务是由地址的端口号部分表示的。每个服务由一个唯一的、熟知的端口号来提供。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">servent</span> <span class="o">*</span><span class="nf">getservbyname</span><span class="p">(</span> <span class="n">constchar</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">proto</span> <span class="p">);</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">servent</span> <span class="o">*</span><span class="nf">getservbyport</span><span class="p">(</span> <span class="n">intport</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">proto</span> <span class="p">);</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">servent</span> <span class="o">*</span><span class="nf">getservent</span><span class="p">(</span> <span class="kt">void</span><span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">setservent</span><span class="p">(</span> <span class="kt">int</span> <span class="n">stayopen</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">endservent</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>将主机名字和服务名字映射到一个地址：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">getaddrinfo</span><span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">restricthost</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">service</span><span class="p">,</span>
+</span><span class='line'>                            <span class="k">const</span> <span class="k">struct</span> <span class="n">addrinfo</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">hint</span><span class="p">,</span> <span class="k">struct</span> <span class="n">addrinfo</span> <span class="o">**</span><span class="kr">restrict</span> <span class="n">res</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需提供主机名字、服务名字，或者两者都提供。如果仅仅提供一个名字，另外一个必须是一个空指针。</p>
+
+<p>addrinfo结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">addrinfo</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="n">ai_flag</span><span class="p">;</span>   <span class="c1">//ai取自(a)ddr(i)nfo  </span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="n">ai_family</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="n">ai_socktype</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="n">ai_protocol</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">socklen_t</span>   <span class="n">ai_addrlen</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="n">ai_addr</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">char</span>        <span class="o">*</span><span class="n">ai_canonname</span><span class="p">;</span>   <span class="c1">//canonname :标准名  </span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">addrinfo</span> <span class="o">*</span><span class="n">ai_next</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>hint是一个用于过滤地址的模板，仅使用ai_family、ai_flags、ai_protocol和ai_socktype字段。剩余字段必须为0或NULL。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">freeaddrinfo</span><span class="p">(</span> <span class="k">struct</span> <span class="n">addrinfo</span> <span class="o">*</span><span class="n">ai</span><span class="p">);</span>
+</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="nf">gai_strerror</span><span class="p">(</span> <span class="kt">int</span> <span class="n">error</span><span class="p">);</span><span class="c1">//将返回错误码转换成消息</span>
+</span><span class='line'><span class="err">将地址转换成主机名或服务名：</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">getnameinfo</span><span class="p">(</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">sockaddr</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">alen</span><span class="p">,</span>
+</span><span class='line'>                              <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">host</span><span class="p">,</span> <span class="n">socklen_thostlen</span><span class="p">,</span>
+</span><span class='line'>                              <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">service</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">servlen</span><span class="p">,</span>
+</span><span class='line'>                              <span class="kt">unsigned</span> <span class="n">intflags</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag449</h3>
+
+<ul>
+<li>socket：   手机</li>
+<li>bind:          手机+SIM卡</li>
+<li>listen：     将卡的号码告诉其他人</li>
+<li>accept：   拿着手机等对方电话</li>
+<li>connect：主动打电话给对方</li>
+</ul>
+
+
+<p>客户端应有一种方法来发现用以连接服务器的地址，最简单的方法就是为服务器保留一个地址并且在/etc/services或某个名字服务中注册</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">bind</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="k">const</span> <span class="n">structsockaddr</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">len</span> <span class="p">);</span><span class="c1">//将地址绑定到一个套接字</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>限制：</p>
+
+<ul>
+<li>1、在进程所运行的机器上，指定的地址必须有效，不能指定一个其他机器的地址。</li>
+<li>2、地址必须和创建套接字时的地址族所支持的格式相匹配</li>
+<li>3、端口号必须不小于1024，除非该进程具有超级用户特权</li>
+<li>4、一般只有套接字端点能够与地址绑定，尽管有些协议允许多重绑定</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">getsockname</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">structsockaddr</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">alenp</span><span class="p">);</span><span class="c1">//发现绑定到一个套接字的地址</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">getpeername</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">structsockaddr</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">alenp</span><span class="p">);</span><span class="c1">//套接字已连接，可用此函数找到对方地址</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>面向连接的服务网络（SOCK_STREAM、SOCK_SEQPACKET）,在开始交换数据以前，需要在请求服务的进程套接字（客户端）和提供服务的进程套接字（服务器）之间建立一个连接。（三路握手）<br>
+在SOCK_DGRAM套接字上调用connect，所有发送报文的目标地址设为connect调用中所指定的地址，这样每次传送报文时就不需要再提供地址。仅能接收来自指定地址的报文。（没有三路握手，内核只是检查是否有立即可知的错误，记录对端的IP地址和端口号，然后立即返回到调用进程）<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">connect</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="k">const</span> <span class="n">structsockaddr</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">len</span> <span class="p">);</span><span class="c1">//主动发起三路握手</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">listen</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">backlog</span><span class="p">);</span><span class="c1">//宣告可以调用的连接请求，backlog表示该进程所要入队（已完成连接队列+未完成连接队列）的连接请求数量。</span>
+</span><span class='line'>                                                          <span class="c1">//一旦服务器调用了listen，套接字就能接收连接请求。</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">accept</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">structsockaddr</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">len</span><span class="p">);</span><span class="c1">//获得连接请求并建立连接，一个监听套接字，多个已连接套接字</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>六个数据传送函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">ssize_t</span> <span class="nf">send</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span> <span class="p">);</span><span class="c1">//使用时套接字必须已建立连接</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">sendto</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span><span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">,</span>
+</span><span class='line'>                            <span class="k">const</span> <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="n">destaddr</span><span class="p">,</span><span class="kt">socklen_t</span> <span class="n">destlen</span> <span class="p">);</span><span class="c1">//允许在无连接的套接字上指定一个目标地址</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">sendmsg</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">conststruct</span> <span class="n">msghdr</span> <span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span> <span class="p">);</span><span class="err">指定多重缓冲区传输数据（类似</span><span class="n">writev</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>msghdr结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">msghdr</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">void</span>        <span class="o">*</span><span class="n">msg_name</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">socklen_t</span>   <span class="n">msg_namelen</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">iovec</span>    <span class="o">*</span><span class="n">msg_iov</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="o">*</span><span class="n">msg_iovlen</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">void</span>        <span class="o">*</span><span class="n">msg_control</span><span class="p">;</span>  <span class="c1">//辅助数据（传送描述符时可用）  </span>
+</span><span class='line'>    <span class="kt">socklen_t</span>   <span class="n">msg_controllen</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="n">msg_flags</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">recv</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span><span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span> <span class="p">);</span><span class="c1">//接收数据</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">recvfrom</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">,</span>
+</span><span class='line'>                               <span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">addrlen</span> <span class="p">);</span><span class="c1">//得到数据发送者的源地址（通常用于无连接套接字）</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">recvmsg</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="n">structmsghdr</span> <span class="o">*</span><span class="n">msg</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flags</span> <span class="p">);</span><span class="c1">//将接收到的数据送入多个缓冲区（类似readv）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag464</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">setsockopt</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">level</span><span class="p">,</span><span class="kt">int</span> <span class="n">option</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">val</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="n">len</span> <span class="p">);</span><span class="c1">//设置套接字选项（SO_REUSERADDR最好在每个bind前指定，重用bind中的地址）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>通用选项，工作在所有套接字类型上</li>
+<li>在套接字层次管理的选项，但是依赖于下层协议的支持</li>
+<li>特定与某协议的选项，为每个协议所独有</li>
+</ul>
+
+
+<p>如果选项是通用的套接字选项，level设置成SOL_SOCKET。否则，level设置成控制这个选项的协议号。例如，TCP（IPPROTO_TCP），IP（IPPROTO_IP）。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">getsockopt</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">,</span> <span class="kt">int</span> <span class="n">level</span><span class="p">,</span><span class="kt">int</span> <span class="n">option</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">val</span><span class="p">,</span> <span class="kt">socklen_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">lenp</span><span class="p">);</span><span class="c1">//获取当前设置选项</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>带外数据：</p>
+
+<ul>
+<li>TCP支持，UDP不支持。TCP仅支持一个字节的紧急数据（带外数据），多个取最后一个。</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fcntl</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="n">F_SETOWN</span><span class="p">,</span> <span class="n">pid</span><span class="p">);</span><span class="c1">//安排进程接收一个套接字信号。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>通过两个步骤使用异步IO：</h6>
+
+<ul>
+<li>建立套接字拥有者关系，信号可以被传送到合适的进程。（fcntl,F_SETOWN）</li>
+<li>通知套接字当IO操作不会阻塞时发信号告知。(fcntl,F_SETFL,O_ASYNC)</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">sockatmark</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">);</span><span class="c1">//判断是否接收到紧急标记</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">客户端</span><span class="o">--------------------------------------------------</span><span class="err">服务器</span>
+</span><span class='line'><span class="n">gethostname</span><span class="o">-----------------------------------------</span><span class="n">gethostname</span>
+</span><span class='line'><span class="n">getaddeinfo</span><span class="o">-------------------------------------------</span><span class="n">getaddrinfo</span>
+</span><span class='line'><span class="n">socket</span><span class="o">--------------------------------------------------</span><span class="n">socket</span>
+</span><span class='line'>          <span class="o">--------------------------------------------------</span><span class="n">bind</span>
+</span><span class='line'>          <span class="o">--------------------------------------------------</span><span class="n">listen</span>
+</span><span class='line'><span class="n">connect</span><span class="o">------------------------------------------------</span><span class="n">accept</span>
+</span><span class='line'><span class="n">recv</span><span class="o">-----------------------------------------------------</span><span class="n">send</span>
+</span><span class='line'><span class="n">close</span><span class="o">----------------------------------------------------</span><span class="n">close</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>getaddrinfo出现错误：<br>
+<a href="http://blog.csdn.net/andyxie407/article/details/1672325">http://blog.csdn.net/andyxie407/article/details/1672325</a></p>
+
+<h3>pag476</h3>
+
+<h6>unix域套接字：（仅仅复制数据）</h6>
+
+<h6>非命名unix域套接字：（没有名字意味着无关进程不能使用他们）</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">socketpair</span> <span class="p">(</span><span class="kt">int</span> <span class="n">domain</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span> <span class="kt">int</span> <span class="n">protocol</span><span class="p">,</span> <span class="kt">int</span> <span class="n">sockfd</span><span class="p">[</span><span class="mi">2</span><span class="p">]);</span><span class="c1">//创建非命名互联的unix域套接字，进程端：0输入，1输出</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>命名unix域套接字：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">sockaddr_un</span> <span class="p">{</span>  <span class="c1">//sun取自(s)ockaddr_(un)  </span>
+</span><span class='line'>    <span class="kt">sa_family_t</span> <span class="n">sun_family</span><span class="p">;</span>  <span class="c1">//AF_UNIX(AF_LOCAL)  </span>
+</span><span class='line'>    <span class="kt">char</span>        <span class="n">sun_path</span><span class="p">[</span><span class="mi">108</span><span class="p">];</span><span class="c1">//pathname  </span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>系统用sun_path中的路径名创建一类型为S_IFSOCK的文件。<br>
+该文件仅用于向<code>客户进程告知套接字名字</code>。该文件不能打开，也不能由应用程序用于通信。</p>
+
+<p>关闭套接字时并不自动删除文件，所以要由我们来删除。<br>
+（一般在程序结束前调用unlink，如果有open的话在open后就可以调用unlink，不然会导致文件已存在无法bind）</p>
+
+<p>确定绑定地址长度的方法，先确定sun_path成员在sockaddr_un结构中的<code>偏移量</code>（offsetof），然后将此与<code>路径名长度</code>（不包括终止null字符）相加。</p>
+
+<h6>unix域套接字传送文件描述符</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">msghdr</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">void</span>        <span class="o">*</span><span class="n">msg_name</span><span class="p">;</span> <span class="c1">//发送数据报文目的地址  </span>
+</span><span class='line'>    <span class="kt">socklen_t</span>  <span class="n">msg_namelen</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">iovec</span>    <span class="o">*</span><span class="n">msg_iov</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span>         <span class="o">*</span><span class="n">msg_iovlen</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">void</span>        <span class="o">*</span><span class="n">msg_control</span><span class="p">;</span>    <span class="c1">//辅助数据  </span>
+</span><span class='line'>    <span class="kt">socklen_t</span>   <span class="n">msg_controllen</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span>          <span class="n">msg_flags</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">cmsghdr</span> <span class="p">{</span>         <span class="c1">//控制信息首部  </span>
+</span><span class='line'>    <span class="kt">socklen_t</span>   <span class="n">cmsg_len</span><span class="p">;</span>  <span class="c1">//辅助数据长度  </span>
+</span><span class='line'>    <span class="kt">int</span>          <span class="n">cmsg_level</span><span class="p">;</span>  <span class="c1">//SOL_SOCKET  </span>
+</span><span class='line'>    <span class="kt">int</span>         <span class="n">cmsg_type</span><span class="p">;</span>  <span class="c1">//SCM_RIGHT  </span>
+</span><span class='line'>    <span class="cm">/* data */</span>         <span class="c1">//这里为（int）描述符  </span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="nf">CMSG_DATA</span><span class="p">(</span><span class="k">struct</span> <span class="n">cmsghdr</span> <span class="o">*</span><span class="n">cp</span><span class="p">);</span>                                          <span class="c1">//获取cmsghdr结构数据部分指针</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">cmsghdr</span> <span class="o">*</span><span class="nf">CMSG_FIRSTHDR</span><span class="p">(</span><span class="k">struct</span> <span class="n">msghdr</span> <span class="o">*</span><span class="n">mp</span><span class="p">);</span>                                <span class="c1">//获取与msghdr结构相关联的第一个cmshdr结构指针</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">cmsghdr</span> <span class="o">*</span><span class="nf">CMSG_NXTHDR</span><span class="p">(</span><span class="k">struct</span> <span class="n">msghdr</span> <span class="o">*</span><span class="n">mp</span><span class="p">,</span> <span class="k">struct</span> <span class="n">cmsghdr</span> <span class="o">*</span><span class="n">cp</span><span class="p">);</span><span class="c1">//获取与msghdr结构关联的下一个cmsghdr结构指针</span>
+</span><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">CMSG_LEN</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">nbytes</span><span class="p">);</span>                                                <span class="c1">//不计填充，返回为cmsg_len中的值。nbytes为上述结构中data的大小</span>
+</span><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">CMSG_SPACE</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">length</span><span class="p">);</span>                                           <span class="c1">//计填充，返回为辅助对象动态分配空间的大小值。length同上</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1508,253 +2057,6 @@ off和addr通常指定为0.</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-05-19-unixxi-tong-xian-cheng-kong-zhi/">UNIX系统线程控制</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-05-19T13:00:08+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>1:00 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>pag314</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_init</span><span class="p">(</span> <span class="kt">pthread_attr_t</span><span class="o">*</span><span class="n">attr</span> <span class="p">)</span>  <span class="c1">//初始化pthread_attr_t结构</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_destroy</span><span class="p">(</span><span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">)</span><span class="c1">//去初始化；释放动态内存；用无效的值初始化属性对象（被误用会导致pthread_create函数返回错误）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>分离线程与不分离线程</h6>
-
-<p>分离线程：</p>
-
-<ul>
-<li><p>线程函数完成后，OS将其资源自动收回
-不分离线程：</p></li>
-<li><p>如果不调用pthread_join，或者不结束整个进程，OS不会回收其资源</p></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_getdetachstate</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">detachstate</span> <span class="p">)</span> <span class="c1">//获取当前线程属性</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_setdetachstate</span><span class="p">(</span><span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">detachstate</span> <span class="p">)</span> <span class="c1">//设置线程属性：</span>
-</span><span class='line'><span class="c1">// PTHREAD_CREATE_DETACHED 分离状态启动线程</span>
-</span><span class='line'><span class="c1">// PTHREAD_CREATE_JOINABLE  正常状态启动线程</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getstack</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="kr">restrict</span> <span class="n">stackaddr</span><span class="p">,</span> <span class="kt">size_t</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">stacksize</span> <span class="p">);</span> <span class="c1">//获取线程栈属性</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setstack</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">stackaddr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="n">stacksize</span> <span class="p">);</span><span class="c1">//设置线程栈位置</span>
-</span><span class='line'><span class="c1">// 对进程来说，虚拟地址空间的大小是固定的，进程中只有一个栈</span>
-</span><span class='line'><span class="c1">// 如果用完了线程栈的虚拟地址空间，可以使用malloc或者mmap来为其他栈分配空间，并用pthread_attr_setstack函数改变新建线程的栈位置。</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getstacksize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">stacksize</span> <span class="p">);</span><span class="c1">//获取栈大小</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setstacksize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">stacksize</span> <span class="p">);</span> <span class="c1">//设置栈大小</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getguardsize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">guardsize</span> <span class="p">);</span><span class="c1">//获取线程栈末尾之后用以避免栈溢出的扩展内存的大小</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setguardsize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">stacksize</span> <span class="p">);</span><span class="c1">//设置线程栈末尾之后用以避免栈溢出的扩展内存的大小</span>
-</span><span class='line'><span class="c1">// guardsize控制线程栈末尾之后用以避免栈溢出的扩展内存的大小。属性默认为PAGESIZE个字节。</span>
-</span><span class='line'><span class="c1">// guardsize为0时不会提供警戒缓冲区</span>
-</span><span class='line'><span class="c1">// 如果对线程属性stackaddr做的修改，系统会使警戒栈缓冲区机制无效，等同为guardsize为0</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>并发度控制着用户级线程可以映射的内核线程或进程的数目。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_getconcurrency</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span><span class="c1">//返回当前并发度</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setconcurrency</span><span class="p">(</span> <span class="kt">int</span> <span class="n">level</span><span class="p">);</span><span class="c1">//设置系统并发度</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>pag318</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_init</span><span class="p">(</span><span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_destroy</span><span class="p">(</span><span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在进程中，默认行为时<code>多个线程可以访问同一个同步对象</code>。在这种情况下进程<code>共享互斥量</code>属性需设置为<code>PTHREAD_PROCESS_PRIVATE</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_getpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span><span class="p">);</span><span class="c1">//获取进程共享属性</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_setpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pshared</span> <span class="p">);</span><span class="c1">//设置进程共享属性</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>互斥量类型属性</h6>
-
-<ul>
-<li>1、PTHREAD_MUTEX_NORMAL  标准，不做错误检测、死锁检测</li>
-<li>2、PTHREAD_MUTEX_RECURSIVE  允许同一线程在互斥量解锁之前对该互斥量进行多次加锁</li>
-<li>3、PTHREAD_MUTEX_ERRORCHECK  提供错误检查</li>
-<li>4、PTHREAD_MUTEX_DEFAULT 请求默认语义（linux映射到NORMAL）</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_gettype</span><span class="p">(</span> <span class="kt">constpthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">type</span><span class="p">);</span><span class="c1">//获取互斥量类型属性</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_settype</span><span class="p">(</span> <span class="kt">constpthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span> <span class="p">);</span><span class="c1">//设置互斥量类型属性</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>互斥量用于保护与条件变量关联的条件时，在阻塞线程<code>之前</code>，pthread_cond_wait和pthread_cond_timedwait函数<code>释放与条件相关的互斥量</code>，这就<code>允许其他线程获取互斥量、改变条件、释放互斥量并向条件变量发送信号</code>。（因此使用递归互斥量时要特别小心，wait，timedwait只解锁一层）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_init</span><span class="p">(</span><span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_destroy</span><span class="p">(</span><span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_getpshared</span><span class="p">(</span> <span class="kt">constpthread_rwlockattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_setpshared</span><span class="p">(</span> <span class="kt">constpthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="n">intpshared</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_init</span><span class="p">(</span><span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_destroy</span><span class="p">(</span><span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_getpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">restrictattr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_setpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="n">intpshared</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>线程安全与异步信号安全</h6>
-
-<p>如果一个函数对多个线程来说时可重入的，则说这个函数是线程安全的。
-如果函数对异步信号处理程序的重入是安全的，那么就可以说函数时异步信号安全的。</p>
-
-<h6>FILE对象相关锁操作</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">ftrylockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">flockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">funlockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>进程中的<code>所有线程</code>都可以访问<code>进程的整个地址空间</code>。<code>除了使用寄存器</code>以外，线程<code>没有办法阻止其他线程访问他的数据</code>，线程私有数据也不例外。</p>
-
-<p>在分配线程私有数据之前，需要创建一个与该数据关联的键，这个键将用于获取对线程私有数据的访问权。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_key_create</span><span class="p">(</span> <span class="kt">pthread_key_t</span><span class="o">*</span><span class="n">keyp</span><span class="p">,</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">destructor</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span> <span class="p">);</span><span class="c1">//创建一个键和与键关联的析构函数</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_key_delete</span><span class="p">(</span> <span class="kt">pthread_key_t</span><span class="o">*</span><span class="n">key</span> <span class="p">);</span> <span class="c1">//删除键（不会激活与键相关联的析构函数）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">pthread_once_t</span> <span class="n">initflag</span> <span class="o">=</span> <span class="n">PTHREAD_ONCE_INIT</span><span class="p">;</span><span class="c1">//initflag必须时一个非本地变量（是全局或静态变量），必须初始化为PTHREAD_ONCE_INIT</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_once</span><span class="p">(</span> <span class="kt">pthread_once_t</span><span class="o">*</span><span class="n">initflag</span><span class="p">,</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">initfn</span><span class="p">)(</span><span class="kt">void</span><span class="p">)</span> <span class="p">);</span> <span class="c1">//保证初始化initfn只被调用一次。</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">pthread_getspecific</span><span class="p">(</span><span class="kt">pthread_key_t</span> <span class="n">key</span> <span class="p">);</span> <span class="c1">//获得线程私有数据地址</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setspecific</span><span class="p">(</span> <span class="n">pthread_key_tkey</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span> <span class="n">value</span><span class="p">);</span> <span class="c1">//把键和线程私有数据关联起来</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>取消点：线程检查是否被取消并按照请求进行动作的一个位置</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">pthread_cancel</span><span class="err">调用并不等待线程终止，在默认情况下，线程在取消请求发出以后还是继续运行，直到线程到达某个取消点。</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_setcancelstate</span><span class="p">(</span> <span class="kt">int</span> <span class="n">state</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="n">oldstate</span><span class="p">);</span><span class="c1">//修改可取消状态（PTHREAD_CANCEL_ENABLE、PTHREAD_CANCEL_DISABLE）</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">pthread_testcancel</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span><span class="c1">//自己添加取消点（如果某个取消请求处于未决状态，而且取消没有置为无效，那么线程就会被取消。但是如果取消设置被置为无效，此函数没有任何效果）（取消点需要和未决信号相结合才能取消一个进程）</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setcanceltype</span><span class="p">(</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="n">oldtype</span> <span class="p">);</span> <span class="c1">//修改取消类型（异步取消(可在任意时间取消)，延迟取消（默认状态））</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>pag334</h6>
-
-<p>每个线程都有自己的<code>信号屏蔽字</code>，但是<code>信号的处理是进程中所有线程共享</code>的。<br>
-<code>进程中的信号是递送到单个线程的。</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_sigmask</span><span class="p">(</span> <span class="kt">int</span> <span class="n">how</span><span class="p">,</span> <span class="kt">constsigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oset</span><span class="p">);</span><span class="c1">//信号屏蔽（单线程中的sigprocmask）</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">sigwait</span><span class="p">(</span> <span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">signop</span> <span class="p">);</span> <span class="c1">//等待信号发生</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>为了避免错误，线程在调用sigwait之前，<code>必须阻塞那些他正在等待的信号</code>（sigsuspend一样）。sigwait会自动取消信号集的阻塞状态（和sigsuspend有所区别，sigwait是取消set中屏蔽的信号阻塞，而sigsuspend是需要在传入的信号屏蔽字sigmask中取消对相应信号的屏蔽,且sigsuspend需要和信号处理函数相配合），直到有新的信号被递送。在返回之前将恢复线程的信号屏蔽字。<br>
-<code>为了防止信号中断线程，可以把信号加到每个线程的信号屏蔽字中，然后安排专用线程作信号处理
-新建线程继承了现有的信号屏蔽字（子进程也有继承）</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_kill</span><span class="p">(</span> <span class="kt">pthread_t</span> <span class="kr">thread</span><span class="p">,</span><span class="kt">int</span> <span class="n">signo</span> <span class="p">);</span><span class="c1">// 发送信号到线程</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>闹钟定时器时进程资源，并且所有的线程共享相同的alarm，所以进程中的多个线程<code>不可能互不干扰</code></p>
-
-<h6>pag337</h6>
-
-<p>子进程通过继承整个地址空间的副本（<code>内存是fork时就分配的，但是里面的内容是写时才复制</code>），也从父进程那里继承了所有<code>互斥量、读写锁和条件变量的状态</code>。如果父进程包含多个线程、子进程在fork返回以后，如果紧接着不是马上调用exec的话，就需要清理锁状态。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_atfork</span><span class="p">(</span><span class="kt">void</span><span class="p">(</span><span class="o">*</span> <span class="n">prepare</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">),</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">parent</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">),</span> <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">child</span><span class="p">)(</span><span class="kt">void</span> <span class="p">));</span><span class="c1">//清除锁状态建立fork处理程序prepare fork处理程序在调用fork以后运行，childfork处理程序在fork调用返回到子进程之前运行，parentfork处理程序在fork调用返回给父进程前运行。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/7">&larr; Older</a>
@@ -1842,6 +2144,10 @@ off和addr通常指定为0.</p>
       </li>
     
       <li class="post">
+        <a href="/blog/2013-07-10-chu-bu-ren-shi-uiscrollview/">初步认识UIScrollView</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
       </li>
     
@@ -1855,10 +2161,6 @@ off和addr通常指定为0.</p>
     
       <li class="post">
         <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a>
       </li>
     
   </ul>
