@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>UIButton自定义调整内部结构 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="原则：一张图片和一条文字的组合，就可以用按钮 调整图片和文字的显示位置 方式1.重写imageRectForContentRect:和titleRectForContentRect:方法 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+// &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2013-08-31-uibuttonzi-ding-yi-diao-zheng-nei-bu-jie-gou/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">UIButton自定义调整内部结构</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-08-31T23:57:39+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>11:57 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><ul>
+<li>原则：一张图片和一条文字的组合，就可以用按钮</li>
+</ul>
+
+
+<h2>调整图片和文字的显示位置</h2>
+
+<ul>
+<li>方式1.重写imageRectForContentRect:和titleRectForContentRect:方法<br></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 以下两个方法的传入参数contentRect会减去edgesInsert边距长度</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nf">imageRectForContentRect:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">contentRect</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">CGRect</span> <span class="n">imageRect</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span>  <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">imageRect</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nf">titleRectForContentRect:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">contentRect</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">CGRect</span> <span class="n">titleRect</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">titleRect</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>方式2.重写layoutSubviews方法<br></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">titleH</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">imageView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="n">titleH</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">titleLabel</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>取消点击高亮</h2>
+
+<ul>
+<li>重写setHighlighted:方法<br></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setHighlighted:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">highlighted</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>通过取消IB中的HighlightedAdjustsImage也可以</li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-08-31T23:57:39+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>11:57 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013-08-20-uiimagetu-pian-la-shen-chu-li/" title="Previous Post: UIImage图片拉伸处理">&laquo; UIImage图片拉伸处理</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013-09-01-dai-li-she-ji/" title="Next Post: 代理设计">代理设计 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图崩溃</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用Runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

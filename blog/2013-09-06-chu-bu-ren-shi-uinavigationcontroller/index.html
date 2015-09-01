@@ -1,0 +1,393 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>初步认识UINavigationController - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="设置导航栏上的标题 可以用self.title
+也可以用self.navigationItem.title
+titleView的优先级高于文字 UINavigationController以栈的形式保存自控制器： 如果要使用pop跳转到特定的控制器，一般是遍历以下数组， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2013-09-06-chu-bu-ren-shi-uinavigationcontroller/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">初步认识UINavigationController</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-09-06T00:15:16+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>12:15 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><ul>
+<li>设置导航栏上的标题
+
+<ul>
+<li>可以用self.title</li>
+<li>也可以用self.navigationItem.title</li>
+<li>titleView的优先级高于文字</li>
+</ul>
+</li>
+<li>UINavigationController以栈的形式保存自控制器：<br>
+
+<ul>
+<li>如果要使用pop<code>跳转到特定的控制器</code>，一般是遍历以下数组，然后用isKindOfClass判断是否和跳转控制器是同一个类，是则跳转<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">viewControllers</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="bp">NSArray</span>  <span class="o">*</span><span class="n">childViewControllers</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>控制器跳转方法<br></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 将控制器压栈</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">pushViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 跳转到上一个控制器</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nf">popViewControllerAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 跳转到指定控制器</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="nf">popToViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 跳转到根控制器</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="nf">popToRootViewControllerAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>导航条的内容由<code>栈顶控制器的navigationItem</code>决定
+
+<ul>
+<li>一些常用的模型属性<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 设置左边多个或一个导航栏按钮</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">leftBarButtonItems</span>
+</span><span class='line'><span class="c1">// 就是设置上面数组的第一个元素</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIBarButtonItem</span> <span class="o">*</span><span class="n">leftBarButtonItem</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 设置右边多个或一个导航栏按钮</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">rightBarButtonItems</span>
+</span><span class='line'><span class="c1">// 就是设置上面数组的第一个元素</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIBarButtonItem</span> <span class="o">*</span><span class="n">rightBarButtonItem</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 下一个控制器左上角返回按钮</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIBarButtonItem</span> <span class="o">*</span><span class="n">backBarButtonItem</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>导航栏中的MVC
+
+<ul>
+<li>UIBarButtonItem、UINavigationItem都是<code>苹果提供的模型类</code>［带有Item的一般都是模型］</li>
+<li>UINavigationItem：控制导航条上的内容[title,titleView等]</li>
+<li>UIBarButtonItem：控制导航条上<code>按钮</code>的内容[leftBarButtonItem等]</li>
+<li>NavigationBar：控制导航条上的<code>全局</code>属性
+
+<ul>
+<li>tintColor控制返回按钮颜色</li>
+<li>barTintColor控制导航条的背景颜色</li>
+<li>setBackgroundWithImage:控制导航条背景图片</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>导航栏限制
+
+<ul>
+<li>iOS7之后，系统默认会将导航条上面的<code>按钮内容</code>渲染成<code>蓝色</code>
+
+<ul>
+<li>可以用以下两种方式使图片不进行渲染，保持图片原色［用第二种方式］
+
+<ul>
+<li>1.进入对应图片的设置界面,对render进行设置<br><img src="/images/Snip20150612_1.png" alt="" /></li>
+<li>2.使用<code>-imageWithRenderingMode:</code>方法，返回UIImageRenderingModeAlwaysOriginal不渲染图片</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>导航条上的<code>自带按钮没有高亮模式</code>，需要高亮要<code>自己定义按钮</code>
+
+<ul>
+<li>设置左右按钮时，使用方法<code>-initWithCustomView:</code>，传入创建好的UIButton</li>
+<li>设置的UIButton<code>只需要设置size</code>，无法控制具体位置
+
+<ul>
+<li>可以使用<code>-sizeToFit</code>根据内容自己计算</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>导航条上的<code>内容详细位置</code>不能由开发者决定，只能<code>控制其尺寸</code></li>
+</ul>
+</li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-09-06T00:15:16+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>12:15 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013-09-01-dai-li-she-ji/" title="Previous Post: 代理设计">&laquo; 代理设计</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013-09-09-kong-zhi-qi-tiao-zhuan-he-chuan-zhi/" title="Next Post: 控制器跳转和传值">控制器跳转和传值 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图崩溃</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用Runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

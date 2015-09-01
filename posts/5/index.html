@@ -9,57 +9,10 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="服务端： 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51 &hellip;">
+  <meta name="description" content="核心步骤 在图片显示完全（endDecelerating）时，重新设置三个UIImageView的图片内容
+调整UIScrollView的偏移量，始终显示中间的UIImageView 如有图片1、2、3、4、5，默认存放图片5、1、2，显示中间图片1:
+1. 向后滚动，显示图片2
+2. &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -121,7 +74,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-06-16-unixxi-tong-xi-ti-16-dot-4/">UNIX系统习题16.4</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-10-29-uiscrollview3ge-uiimageviewwu-xian-xun-huan/">UIScrollView3个UIImageView无限循环</a></h1>
     
     
       <p class="meta">
@@ -130,14 +83,227 @@
 
 
 
-<time class='entry-date' datetime='2013-06-16T21:07:34+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:07 pm</span></time>
+<time class='entry-date' datetime='2013-10-29T19:56:17+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>7:56 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>服务端：</p>
+  <div class="entry-content"><h2>核心步骤</h2>
+
+<ul>
+<li>在图片显示完全（endDecelerating）时，重新设置三个UIImageView的图片内容</li>
+<li>调整UIScrollView的偏移量，始终显示中间的UIImageView</li>
+</ul>
+
+
+<p>如有图片1、2、3、4、5，默认存放图片5、1、2，显示中间图片1:<br>
+1. 向后滚动，显示图片2<br>
+2. 图片显示完全时，重新设置UIImageView中的图片为图片1、2、3<br>
+3. 设置UIScrollView的偏移量，使其显示中间的UIImageView，即图片2<br>
+4. 向后滚动，显示图片3<br>
+5. 图片显示完全时，重新设置UIImageView中的图片为图片2、3、4<br>
+6. 设置UIScrollView的偏移量，使其显示中间的UIImageView，即图片3</p>
+
+<p>向前滚动同理。</p>
+
+<p>如下图所示：</p>
+
+<ul>
+<li>初始时显示图片1，然后向左滑动</li>
+</ul>
+
+
+<p><img src="/images/Snip20150531_26.png" alt="" /></p>
+
+<ul>
+<li>滑动完成时显示的是图片2</li>
+</ul>
+
+
+<p><img src="/images/Snip20150531_27.png" alt="" /></p>
+
+<ul>
+<li>在滑动完成时，修改UIImageView显示的内容如下图所示</li>
+</ul>
+
+
+<p><img src="/images/Snip20150531_28.png" alt="" /></p>
+
+<ul>
+<li>接着上一步，立即修改UIScrollView的偏移量，使其显示中间的UIImageView，即图片2</li>
+</ul>
+
+
+<p><img src="/images/Snip20150531_29.png" alt="" /></p>
+
+<p>如上，最终结果显示的都是最中间的UIImageView，看起来像是无限个UIImageView一样</p>
+
+<h2>核心代码</h2>
+
+<h3>核心1</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 初始化UIScrollView</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">initScrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">showsHorizontalScrollIndicator</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">showsVerticalScrollIndicator</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">frame</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">pagingEnabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 这里需要设置为NO，不然滑动会出现问题</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounces</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 创建3个UIImageView</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">createImageView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageViewW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageViewH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 创建3个UIImageView</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">imageView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImageView</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="n">imageViewW</span> <span class="o">*</span> <span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">imageViewW</span><span class="p">,</span> <span class="n">imageViewH</span><span class="p">)];</span>
+</span><span class='line'>        <span class="n">imageView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 默认图片为图片kPageNumber - 1、0、1</span>
+</span><span class='line'>        <span class="kt">int</span> <span class="n">indexTemp</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="mi">0</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">indexTemp</span> <span class="o">=</span> <span class="n">kPageNumber</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">indexTemp</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">imageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="n">indexTemp</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">imageView</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置默认显示为图片0</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">setContentOffset</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置图片索引为0</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 滑动停止处理</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidEndDecelerating:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 根据UIScrollView滚动方向，修改当前图片索引</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span> <span class="o">&lt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">kPageNumber</span><span class="p">)</span> <span class="o">%</span> <span class="n">kPageNumber</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span> <span class="o">&gt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">kPageNumber</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 停止减速，即图片显示完全</span>
+</span><span class='line'>    <span class="c1">// 修改并刷新imageView的图片，设置当前图片的左右图片</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">imageView</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">subviews</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span class='line'>        <span class="kt">int</span> <span class="n">pageTemp</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="mi">0</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">pageTemp</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">kPageNumber</span><span class="p">)</span> <span class="o">%</span> <span class="n">kPageNumber</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="mi">2</span> <span class="o">==</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">pageTemp</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">pageIndex</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">kPageNumber</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">imageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="n">pageTemp</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 更改scrollView偏移量，显示中间的imageView</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">setContentOffset</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>核心2</h3>
+
+<p>另一种写法［更加简洁］：</p>
+
+<p>.m</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -320,191 +486,433 @@
 <span class='line-number'>179</span>
 <span class='line-number'>180</span>
 <span class='line-number'>181</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;pthread.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;sys/socket.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;netdb.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;errno.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;dirent.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;unistd.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;limits.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+<span class='line-number'>216</span>
+<span class='line-number'>217</span>
+<span class='line-number'>218</span>
+<span class='line-number'>219</span>
+<span class='line-number'>220</span>
+<span class='line-number'>221</span>
+<span class='line-number'>222</span>
+<span class='line-number'>223</span>
+<span class='line-number'>224</span>
+<span class='line-number'>225</span>
+<span class='line-number'>226</span>
+<span class='line-number'>227</span>
+<span class='line-number'>228</span>
+<span class='line-number'>229</span>
+<span class='line-number'>230</span>
+<span class='line-number'>231</span>
+<span class='line-number'>232</span>
+<span class='line-number'>233</span>
+<span class='line-number'>234</span>
+<span class='line-number'>235</span>
+<span class='line-number'>236</span>
+<span class='line-number'>237</span>
+<span class='line-number'>238</span>
+<span class='line-number'>239</span>
+<span class='line-number'>240</span>
+<span class='line-number'>241</span>
+<span class='line-number'>242</span>
+<span class='line-number'>243</span>
+<span class='line-number'>244</span>
+<span class='line-number'>245</span>
+<span class='line-number'>246</span>
+<span class='line-number'>247</span>
+<span class='line-number'>248</span>
+<span class='line-number'>249</span>
+<span class='line-number'>250</span>
+<span class='line-number'>251</span>
+<span class='line-number'>252</span>
+<span class='line-number'>253</span>
+<span class='line-number'>254</span>
+<span class='line-number'>255</span>
+<span class='line-number'>256</span>
+<span class='line-number'>257</span>
+<span class='line-number'>258</span>
+<span class='line-number'>259</span>
+<span class='line-number'>260</span>
+<span class='line-number'>261</span>
+<span class='line-number'>262</span>
+<span class='line-number'>263</span>
+<span class='line-number'>264</span>
+<span class='line-number'>265</span>
+<span class='line-number'>266</span>
+<span class='line-number'>267</span>
+<span class='line-number'>268</span>
+<span class='line-number'>269</span>
+<span class='line-number'>270</span>
+<span class='line-number'>271</span>
+<span class='line-number'>272</span>
+<span class='line-number'>273</span>
+<span class='line-number'>274</span>
+<span class='line-number'>275</span>
+<span class='line-number'>276</span>
+<span class='line-number'>277</span>
+<span class='line-number'>278</span>
+<span class='line-number'>279</span>
+<span class='line-number'>280</span>
+<span class='line-number'>281</span>
+<span class='line-number'>282</span>
+<span class='line-number'>283</span>
+<span class='line-number'>284</span>
+<span class='line-number'>285</span>
+<span class='line-number'>286</span>
+<span class='line-number'>287</span>
+<span class='line-number'>288</span>
+<span class='line-number'>289</span>
+<span class='line-number'>290</span>
+<span class='line-number'>291</span>
+<span class='line-number'>292</span>
+<span class='line-number'>293</span>
+<span class='line-number'>294</span>
+<span class='line-number'>295</span>
+<span class='line-number'>296</span>
+<span class='line-number'>297</span>
+<span class='line-number'>298</span>
+<span class='line-number'>299</span>
+<span class='line-number'>300</span>
+<span class='line-number'>301</span>
+<span class='line-number'>302</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#define kPageControlHeight 37</span>
+</span><span class='line'><span class="cp">#define kDefaultDuration 2.0</span>
 </span><span class='line'>
-</span><span class='line'><span class="cp">#define DIRNAME &quot;/proc&quot;  </span>
-</span><span class='line'><span class="cp">#define QUENUM  8  </span>
-</span><span class='line'><span class="cp">#define MAXSIZE 16    </span>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">TPCPageScrollView</span><span class="p">()</span> <span class="o">&lt;</span><span class="bp">UIScrollViewDelegate</span><span class="o">&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">struct</span> <span class="n">s_pronum</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span>     <span class="n">pronum</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">char</span>    <span class="n">pronumbuf</span><span class="p">[</span><span class="n">MAXSIZE</span><span class="p">];</span>
-</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIScrollView</span> <span class="o">*</span><span class="n">scrollView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIPageControl</span> <span class="o">*</span><span class="n">pageControl</span><span class="p">;</span>
 </span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">leftImageView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">currentImageView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">rightImageView</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="kt">pthread_key_t</span>    <span class="n">get_pronum_key</span><span class="p">;</span>
-</span><span class='line'><span class="k">static</span> <span class="kt">pthread_once_t</span>   <span class="n">once</span> <span class="o">=</span> <span class="n">PTHREAD_ONCE_INIT</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSTimer</span> <span class="o">*</span><span class="n">timer</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
-</span><span class='line'><span class="nf">free_alloc_space</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span><span class="p">)</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">getter</span><span class="o">=</span><span class="n">isAutoPaging</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">autoPaging</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TPCPageScrollView</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 代码创建</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithFrame:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">frame</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">free</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">frame</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// 创建控件并初始化</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="n">setup</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="n">createImageView</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span>  <span class="nb">self</span><span class="p">;</span>
 </span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
-</span><span class='line'><span class="nf">get_pronum_key_once</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 从storyboard或者xib加载</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">awakeFromNib</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">pthread_key_create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">get_pronum_key</span><span class="p">,</span> <span class="n">free_alloc_space</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// 创建控件并初始化</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">setup</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">createImageView</span><span class="p">];</span>
 </span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="kt">char</span> <span class="o">*</span>
-</span><span class='line'><span class="nf">get_pronum</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="c1">//get process number  </span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 创建控件并初始化</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setup</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span>     <span class="n">temp</span><span class="p">,</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">DIR</span>     <span class="o">*</span><span class="n">dp</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">dirent</span>   <span class="o">*</span><span class="n">dirp</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">s_pronum</span> <span class="o">*</span><span class="n">ptr</span><span class="p">;</span>
+</span><span class='line'>    <span class="bp">UIScrollView</span> <span class="o">*</span><span class="n">scrollView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIScrollView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">pthread_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">once</span><span class="p">,</span> <span class="n">get_pronum_key_once</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">showsHorizontalScrollIndicator</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">showsVerticalScrollIndicator</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">pagingEnabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">scrollEnabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">ptr</span> <span class="o">=</span> <span class="n">pthread_getspecific</span><span class="p">(</span><span class="n">get_pronum_key</span><span class="p">))</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">((</span><span class="n">ptr</span> <span class="o">=</span> <span class="p">(</span><span class="k">struct</span> <span class="n">s_pronum</span> <span class="o">*</span><span class="p">)</span><span class="n">calloc</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">s_pronum</span><span class="p">)))</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>   <span class="c1">//calloc is not signal safe  </span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;no available memery</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="k">return</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="n">pthread_setspecific</span><span class="p">(</span><span class="n">get_pronum_key</span><span class="p">,</span> <span class="n">ptr</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">ptr</span><span class="o">-&gt;</span><span class="n">pronum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 取消弹簧效果，不然拖动会出现问题</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">bounces</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">dp</span> <span class="o">=</span> <span class="n">opendir</span><span class="p">(</span><span class="n">DIRNAME</span><span class="p">))</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>   <span class="c1">//open &quot;/proc&quot; to get process number  </span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;opendir failure: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>   <span class="c1">//errno is not reenterable, it&#39;s static variable  </span>
-</span><span class='line'>        <span class="k">return</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">while</span><span class="p">((</span><span class="n">dirp</span> <span class="o">=</span> <span class="n">readdir</span><span class="p">(</span><span class="n">dp</span><span class="p">))</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">//get next struct dirent  </span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">sscanf</span><span class="p">(</span><span class="n">dirp</span><span class="o">-&gt;</span><span class="n">d_name</span><span class="p">,</span> <span class="s">&quot;%d&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">temp</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>   <span class="c1">//if the file name is numeric ,there is a process  </span>
-</span><span class='line'>            <span class="n">ptr</span><span class="o">-&gt;</span><span class="n">pronum</span><span class="o">++</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;process number is %d now</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">ptr</span><span class="o">-&gt;</span><span class="n">pronum</span><span class="p">);</span>
-</span><span class='line'>    <span class="n">snprintf</span><span class="p">(</span><span class="n">ptr</span><span class="o">-&gt;</span><span class="n">pronumbuf</span><span class="p">,</span> <span class="n">MAXSIZE</span><span class="p">,</span> <span class="s">&quot;%d&quot;</span><span class="p">,</span> <span class="n">ptr</span><span class="o">-&gt;</span><span class="n">pronum</span><span class="p">);</span>
+</span><span class='line'>    <span class="bp">UIPageControl</span> <span class="o">*</span><span class="n">pageControl</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIPageControl</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">return</span><span class="p">(</span><span class="n">ptr</span><span class="o">-&gt;</span><span class="n">pronumbuf</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// 对于单个图片隐藏</span>
+</span><span class='line'>    <span class="n">pageControl</span><span class="p">.</span><span class="n">hidesForSinglePage</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">scrollView</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">pageControl</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span> <span class="o">=</span> <span class="n">pageControl</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="o">=</span> <span class="n">scrollView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 默认不开启自动切换图片</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">autoPaging</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置默认切图间隔</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pagingInterval</span> <span class="o">=</span> <span class="n">kDefaultDuration</span><span class="p">;</span>
 </span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="kt">void</span> <span class="o">*</span>
-</span><span class='line'><span class="nf">send_pronum</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">data</span><span class="p">)</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 创建循环UIImageView</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">createImageView</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span>     <span class="n">err</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span>     <span class="n">connfd</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">char</span>    <span class="o">*</span><span class="n">pronumbuf</span><span class="p">;</span>
+</span><span class='line'>    <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">leftImageView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImageView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">currentImageView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImageView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">rightImageView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImageView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">connfd</span> <span class="o">=</span> <span class="o">*</span><span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">data</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">free</span><span class="p">(</span><span class="n">data</span><span class="p">);</span> <span class="c1">//free connfd memery  </span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">leftImageView</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">currentImageView</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">rightImageView</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(;</span> <span class="p">;)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">((</span><span class="n">pronumbuf</span> <span class="o">=</span> <span class="n">get_pronum</span><span class="p">())</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;get_pronum error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="n">pthread_exit</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">write</span><span class="p">(</span><span class="n">connfd</span> <span class="p">,</span> <span class="n">pronumbuf</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">pronumbuf</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="c1">//sizeof(pronumbuf) is wrong  </span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;write error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
-</span><span class='line'>            <span class="n">pthread_exit</span><span class="p">(</span><span class="nb">NULL</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;write done</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span> <span class="o">=</span> <span class="n">leftImageView</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span> <span class="o">=</span> <span class="n">currentImageView</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span> <span class="o">=</span> <span class="n">rightImageView</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setImages:</span><span class="p">(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="nv">images</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">_images</span> <span class="o">=</span> <span class="n">images</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置默认图片</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="n">images</span><span class="p">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="n">images</span><span class="p">.</span><span class="n">count</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//设置页数</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span><span class="p">.</span><span class="n">numberOfPages</span> <span class="o">=</span> <span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">setContentOffset</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="n">imageViewW</span><span class="p">,</span> <span class="mi">0</span><span class="p">)];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 因为外界可以动态改变frame，所以有关frame的设置都在layoutSubviews中设置</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置子控件的frame</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageViewW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageViewH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">imageViewW</span><span class="p">,</span> <span class="n">imageViewH</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="n">imageViewW</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">imageViewW</span><span class="p">,</span> <span class="n">imageViewH</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="n">imageViewW</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">imageViewW</span><span class="p">,</span> <span class="n">imageViewH</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置UIScrollView滚动内容大小</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">imageViewW</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置UIPageControl默认位置</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">pageControlCenterX</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">pageControlCenterY</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">-</span> <span class="n">kPageControlHeight</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span><span class="p">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">CGPointMake</span><span class="p">(</span><span class="n">pageControlCenterX</span><span class="p">,</span> <span class="n">pageControlCenterY</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 设置UIPageControl的页码</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span> <span class="o">&gt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span><span class="p">.</span><span class="n">currentPage</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span> <span class="o">&lt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span><span class="p">.</span><span class="n">currentPage</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span><span class="p">.</span><span class="n">currentPage</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
 </span><span class='line'>    <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">int</span>
-</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidEndDecelerating:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span>         <span class="n">listenfd</span><span class="p">,</span> <span class="o">*</span><span class="n">connfdp</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span>         <span class="n">err</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">socklen_t</span>   <span class="n">len</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">addrinfo</span>     <span class="n">hint</span><span class="p">,</span> <span class="o">*</span><span class="n">res</span><span class="p">,</span> <span class="o">*</span><span class="n">restemp</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">sockaddr_in</span>  <span class="n">cliaddr</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">pthread_t</span>   <span class="n">tid</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">char</span>        <span class="n">clihost</span><span class="p">[</span><span class="n">MAXSIZE</span><span class="p">],</span> <span class="n">cliport</span><span class="p">[</span><span class="n">MAXSIZE</span><span class="p">];</span>
-</span><span class='line'>    <span class="kt">pthread_attr_t</span>      <span class="n">attr</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;incorrect enter</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">err</span> <span class="o">=</span> <span class="n">pthread_attr_init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">attr</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;pthread_attr_init error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="n">err</span><span class="p">));</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">err</span> <span class="o">=</span> <span class="n">pthread_attr_setdetachstate</span><span class="p">(</span><span class="o">&amp;</span><span class="n">attr</span><span class="p">,</span> <span class="n">PTHREAD_CREATE_DETACHED</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span><span class="c1">//create detach pthread, also can use pthread_detach  </span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;pthread_attr_setdetachstat error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="n">err</span><span class="p">));</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">bzero</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hint</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">hint</span><span class="p">));</span>
-</span><span class='line'>    <span class="n">hint</span><span class="p">.</span><span class="n">ai_flags</span> <span class="o">=</span> <span class="n">AI_PASSIVE</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">hint</span><span class="p">.</span><span class="n">ai_family</span> <span class="o">=</span> <span class="n">AF_INET</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">hint</span><span class="p">.</span><span class="n">ai_socktype</span> <span class="o">=</span> <span class="n">SOCK_STREAM</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">hint</span><span class="p">.</span><span class="n">ai_protocol</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">err</span> <span class="o">=</span> <span class="n">getaddrinfo</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">hint</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">res</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;getaddrinfo error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">gai_strerror</span><span class="p">(</span><span class="n">err</span><span class="p">));</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="n">restemp</span> <span class="o">=</span> <span class="n">res</span><span class="p">;</span> <span class="n">res</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">;</span> <span class="n">res</span> <span class="o">=</span> <span class="n">res</span><span class="o">-&gt;</span><span class="n">ai_next</span><span class="p">)</span> <span class="p">{</span>      <span class="c1">//get listen socket  </span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">((</span><span class="n">listenfd</span> <span class="o">=</span> <span class="n">socket</span><span class="p">(</span><span class="n">res</span><span class="o">-&gt;</span><span class="n">ai_family</span><span class="p">,</span> <span class="n">res</span><span class="o">-&gt;</span><span class="n">ai_socktype</span><span class="p">,</span> <span class="n">res</span><span class="o">-&gt;</span><span class="n">ai_protocol</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>            <span class="k">continue</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">bind</span><span class="p">(</span><span class="n">listenfd</span><span class="p">,</span> <span class="n">res</span><span class="o">-&gt;</span><span class="n">ai_addr</span><span class="p">,</span> <span class="n">res</span><span class="o">-&gt;</span><span class="n">ai_addrlen</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>            <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>        <span class="n">close</span><span class="p">(</span><span class="n">listenfd</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">res</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;no available address</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">freeaddrinfo</span><span class="p">(</span><span class="n">restemp</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">listen</span><span class="p">(</span><span class="n">listenfd</span><span class="p">,</span> <span class="n">QUENUM</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;listen error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;start accept request!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(;</span> <span class="p">;)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">len</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">cliaddr</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">((</span><span class="n">connfdp</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)))</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>  <span class="c1">//just in case, make connfd to be private  </span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;no available memery</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="p">((</span><span class="o">*</span><span class="n">connfdp</span> <span class="o">=</span> <span class="n">accept</span><span class="p">(</span><span class="n">listenfd</span><span class="p">,</span> <span class="p">(</span><span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">cliaddr</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">len</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;accept error: %s&quot;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
-</span><span class='line'>            <span class="k">continue</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="p">((</span><span class="n">err</span> <span class="o">=</span> <span class="n">getnameinfo</span><span class="p">((</span><span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">cliaddr</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">cliaddr</span><span class="p">),</span> <span class="c1">//get client host and port  </span>
-</span><span class='line'>                                <span class="n">clihost</span><span class="p">,</span> <span class="n">MAXSIZE</span><span class="p">,</span> <span class="n">cliport</span><span class="p">,</span><span class="n">MAXSIZE</span><span class="p">,</span> <span class="n">NI_NUMERICSERV</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;getnameinfo error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">gai_strerror</span><span class="p">(</span><span class="n">err</span><span class="p">));</span>
-</span><span class='line'>            <span class="k">return</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">pthread_create</span><span class="p">(</span><span class="o">&amp;</span><span class="n">tid</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">attr</span><span class="p">,</span> <span class="n">send_pronum</span><span class="p">,</span> <span class="n">connfdp</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span> <span class="c1">//once get a connfd , create a pthread immediately  </span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;pthread_create error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="n">close</span><span class="p">(</span><span class="o">*</span><span class="n">connfdp</span><span class="p">);</span>  <span class="c1">//if failure, close connection and free the memery we requested  </span>
-</span><span class='line'>            <span class="n">free</span><span class="p">(</span><span class="n">connfdp</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;pthread %ld connect to client %s port %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">tid</span><span class="p">,</span> <span class="n">clihost</span><span class="p">,</span> <span class="n">cliport</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// 手动拖拽切换更改内容</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">updateContent</span><span class="p">];</span>
 </span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidEndScrollingAnimation:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 定时器切换更改内容</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">updateContent</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewWillBeginDragging:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">isAutoPaging</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="n">stopTimer</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidEndDragging:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span> <span class="nf">willDecelerate:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">decelerate</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">isAutoPaging</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="n">startTimer</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setCurrentPageColor:</span><span class="p">(</span><span class="bp">UIColor</span> <span class="o">*</span><span class="p">)</span><span class="nv">currentPageColor</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">_currentPageColor</span> <span class="o">=</span> <span class="n">currentPageColor</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span><span class="p">.</span><span class="n">currentPageIndicatorTintColor</span> <span class="o">=</span> <span class="n">currentPageColor</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setOtherPageColor:</span><span class="p">(</span><span class="bp">UIColor</span> <span class="o">*</span><span class="p">)</span><span class="nv">otherPageColor</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">_otherPageColor</span> <span class="o">=</span> <span class="n">otherPageColor</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pageControl</span><span class="p">.</span><span class="n">pageIndicatorTintColor</span> <span class="o">=</span> <span class="n">otherPageColor</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setPagingInterval:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">pagingInterval</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">_pagingInterval</span> <span class="o">=</span> <span class="n">pagingInterval</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">?</span> <span class="nl">pagingInterval</span> <span class="p">:</span> <span class="n">kDefaultDuration</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 在开启自动切图的情况下，修改时间间隔会实时生效</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">isAutoPaging</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="n">startAutoPaging</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 以duration时间间隔，开启定时切换图片</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">startAutoPagingWithDuration:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">pagingInterval</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 先停止正在执行的定时器</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">stopTimer</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">autoPaging</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">pagingInterval</span> <span class="o">=</span> <span class="n">pagingInterval</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">startTimer</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 开启自动切换图片</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">startAutoPaging</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 先停止正在执行的定时器</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">stopTimer</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">autoPaging</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">startTimer</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 停止自动切换图片</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">stopAutoPaging</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">autoPaging</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">stopTimer</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 开启定时器</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">startTimer</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 注册定时器</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">timer</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSTimer</span> <span class="nl">timerWithTimeInterval</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">pagingInterval</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">nextPage</span><span class="p">)</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">repeats</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">mainRunLoop</span><span class="p">]</span> <span class="nl">addTimer</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">timer</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">NSRunLoopCommonModes</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 关闭定时器</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">stopTimer</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">timer</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">timer</span> <span class="n">invalidate</span><span class="p">];</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">timer</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 下一张</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">nextPage</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 防止layoutSubviews中，第一次偏移量还没更改时就执行</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// 移动到第三个UIImageView</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">setContentOffset</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 更新图片和索引数据</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">updateContent</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">scrollViewW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">scrollViewW</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// 向前滚动，设置tag</span>
+</span><span class='line'>        <span class="c1">// 先设置左边的tag为当前图片tag后，才改变当前图片tag</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">scrollViewW</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// 向后滚动，设置tag</span>
+</span><span class='line'>        <span class="c1">// 先设置右边的tag为当前图片tag后，才改变当前图片tag</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">tag</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">)</span> <span class="o">%</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置图片</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">leftImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">currentImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">rightImageView</span><span class="p">.</span><span class="n">tag</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 移动至中间的UIImageView</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">setContentOffset</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="n">scrollViewW</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>客户端：</p>
+<p>.h</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -545,83 +953,49 @@
 <span class='line-number'>37</span>
 <span class='line-number'>38</span>
 <span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;errno.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;unistd.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;netdb.h&gt;  </span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TPCPageScrollView</span> : <span class="bp">UIView</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 图片</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">images</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'><span class="cp">#define MAXSIZE     20  </span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 当前页索引颜色</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">currentPageColor</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">int</span>
-</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">addrinfo</span>     <span class="n">hints</span><span class="p">,</span> <span class="o">*</span><span class="n">res</span><span class="p">,</span> <span class="o">*</span><span class="n">restemp</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span>     <span class="n">err</span><span class="p">,</span> <span class="n">sockfd</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">char</span>    <span class="n">buf</span><span class="p">[</span><span class="n">MAXSIZE</span><span class="p">];</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 非当前页索引颜色</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">otherPageColor</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;incorrect enter</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 切换图片间隔</span>
+</span><span class='line'><span class="cm"> * 在开启自动切图的情况下，修改时间间隔会实时生效</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="n">NSTimeInterval</span> <span class="n">pagingInterval</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">bzero</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hints</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">hints</span><span class="p">));</span>
-</span><span class='line'>    <span class="n">hints</span><span class="p">.</span><span class="n">ai_flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">hints</span><span class="p">.</span><span class="n">ai_family</span> <span class="o">=</span> <span class="n">AF_INET</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">hints</span><span class="p">.</span><span class="n">ai_socktype</span> <span class="o">=</span> <span class="n">SOCK_STREAM</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">hints</span><span class="p">.</span><span class="n">ai_protocol</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">err</span> <span class="o">=</span> <span class="n">getaddrinfo</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">hints</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">res</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>   <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;getaddrinfo error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">gai_strerror</span><span class="p">(</span><span class="n">err</span><span class="p">));</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 开启自动切换图片</span>
+</span><span class='line'><span class="cm"> * 会先停止上一次自动切图</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">startAutoPaging</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="n">restemp</span> <span class="o">=</span> <span class="n">res</span><span class="p">;</span> <span class="n">restemp</span> <span class="o">!=</span> <span class="nb">NULL</span><span class="p">;</span> <span class="n">restemp</span> <span class="o">=</span> <span class="n">restemp</span><span class="o">-&gt;</span><span class="n">ai_next</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">((</span><span class="n">sockfd</span> <span class="o">=</span> <span class="n">socket</span><span class="p">(</span><span class="n">restemp</span><span class="o">-&gt;</span><span class="n">ai_family</span><span class="p">,</span> <span class="n">restemp</span><span class="o">-&gt;</span><span class="n">ai_socktype</span><span class="p">,</span>
-</span><span class='line'>                                <span class="n">restemp</span><span class="o">-&gt;</span><span class="n">ai_protocol</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;socket error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="n">errno</span><span class="p">));</span>
-</span><span class='line'>            <span class="k">continue</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">connect</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="n">restemp</span><span class="o">-&gt;</span><span class="n">ai_addr</span><span class="p">,</span> <span class="n">restemp</span><span class="o">-&gt;</span><span class="n">ai_addrlen</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">printf</span><span class="p">(</span><span class="s">&quot;connect success</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>            <span class="k">break</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="n">close</span><span class="p">(</span><span class="n">sockfd</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 停止自动切换图片</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">stopAutoPaging</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">restemp</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;no available address</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">freeaddrinfo</span><span class="p">(</span><span class="n">res</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">while</span> <span class="p">(</span><span class="n">read</span><span class="p">(</span><span class="n">sockfd</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">MAXSIZE</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;process number on server is: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">buf</span><span class="p">);</span>
-</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> * 以duration时间间隔，开启定时切换图片</span>
+</span><span class='line'><span class="cm"> * 会先停止上一次自动切图</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">startAutoPagingWithDuration:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">pagingInterval</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
 </span></code></pre></td></tr></table></div></figure>
 
+
+
 </div>
   
   
@@ -634,7 +1008,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-06-15-shi-yong-iofu-yong-he-duo-xian-cheng-wen-ti/">使用IO复用和多线程问题</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-10-04-cheng-xu-qi-dong-guo-cheng/">程序启动过程</a></h1>
     
     
       <p class="meta">
@@ -643,24 +1017,32 @@
 
 
 
-<time class='entry-date' datetime='2013-06-15T21:04:47+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>15</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:04 pm</span></time>
+<time class='entry-date' datetime='2013-10-04T00:08:56+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>12:08 am</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>今天突然想到我什么情况下用IO复用什么情况下用多线程呢？于是上网搜浏了下，以下为答案：</p>
+  <div class="entry-content"><ul>
+<li>程序启动过程
 
-<p><code>多线程模型适用于处理短连接，且连接的打开关闭非常频繁的情形，但不适合处理长连接</code>。多线程模型默认情况下，（在Linux）每个线程会开8M的栈空间，再TCP长连接的情况下，2000/分钟的请求，几乎可以假定有上万甚至十几万的并发连接，假定有10000个连接，开这么多个线程需要10000*8M=80G的内存空间！即使调整每个线程的栈空间，也很难满足更多的需求。甚至攻击者可以利用这一点发动DDoS，只要一个连接连上服务器什么也不做，就能吃掉服务器几M的内存，这不同于多进程模型，线程间内存无法共享，因为所有线程处在同一个地址空间中。内存是多线程模型的软肋。</p>
+<ul>
+<li>main</li>
+<li>UIApplicationMain
 
-<p><code>在UNIX平台下多进程模型擅长处理并发长连接，但却不适用于连接频繁产生和关闭的情形</code>。Windows平台忽略此项。 同样的连接需要的内存数量并不比多线程模型少，但是得益于操作系统虚拟内存的Copy on Write机制，fork产生的进程和父进程共享了很大一部分物理内存。但是多进程模型在执行效率上太低，接受一个连接需要几百个时钟周期，产生一个进程 可能消耗几万个CPU时钟周期，两者的开销不成比例。而且由于每个进程的地址空间是独立的，如果需要进行进程间通信的话，只能使用IPC进行进程间通 信，而不能直接对内存进行访问。<code>在CPU能力不足的情况下同样容易遭受DDos，攻击者只需要连上服务器，然后立刻关闭连接，服务端则需要打开一个进程再关闭。</code></p>
+<ul>
+<li>根据principalClassName提供类名创建UIApplication对象</li>
+<li>创建UIApplicationDelegate，并且成为UIApplication对象代理</li>
+<li>开启主循环，处理事件，可以保持程序一直运行</li>
+<li>加载info.plist，并且判断有没有指定的main.stroyboard，如果指定，就去加载</li>
+<li><br><img src="/images/Snip20150610_9.png" alt="" /></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 
-<p><code>同时需要保持很多的长连接，而且连接的开关很频繁，最高效的模型是非阻塞、异步IO模型</code>。而且不要用select/poll，这两个API的有着O(N)的时间复杂度。在Linux用epoll，BSD用kqueue，Windows用IOCP，或者用libevent封装的统一接口（对于不同平台libevent实现时采用各个平台特有的API），这些平台特有的API时间复杂度为O(1)。 然而<code>在非阻塞，异步I/O模型下的编程是非常痛苦的</code>。由于I/O操作不再阻塞，报文的解析需要小心翼翼，并且需要亲自管理维护每个链接的状态。并且为了充分利用CPU，还应结合线程池，避免在轮询线程中处理业务逻辑。但这种模型的效率是极高的。以知名的http服务器nginx为例，可以轻松应付上千万的空连接+少量活动链接，每个连接连接仅需要几K的内核缓冲区，想要应付更多的空连接，只需简单的增加内存（数据来源为淘宝一位工程师的一次技术讲座，并未实测）。<code>这使得DDoS攻击者的成本大大增加，这种模型攻击者只能将服务器的带宽全部占用，才能达到目的，而两方的投入是不成比例的</code>。</p>
-
-<p>对于第一点有另一种观点：</p>
-
-<p>采用event loop + thread pool模式，linux下用epoll</p>
 </div>
   
   
@@ -673,7 +1055,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-06-13-unixxi-tong-xi-ti-10-6/">UNIX系统习题10-6</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-09-09-kong-zhi-qi-tiao-zhuan-he-chuan-zhi/">控制器跳转和传值</a></h1>
     
     
       <p class="meta">
@@ -682,16 +1064,353 @@
 
 
 
-<time class='entry-date' datetime='2013-06-13T21:00:36+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:00 pm</span></time>
+<time class='entry-date' datetime='2013-09-09T03:18:28+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>3:18 am</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>这题虽然看起来简单，但是做的时候还是遇到了些问题</p>
+  <div class="entry-content"><h1>控制器跳转</h1>
 
-<p>贴码：</p>
+<h2>通过segue进行跳转</h2>
+
+<ul>
+<li>segue是UIStoryboardSegue对象，都具有三个属性<br></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 唯一标识</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">identifier</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 来源控制器</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="kt">id</span> <span class="n">sourceViewController</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 目标控制器</span>
+</span><span class='line'><span class="c1">// 通常在跳转准备时，获取目标控制器，然后传递或设置目标控制器的属性</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="kt">id</span> <span class="n">destinationViewController</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>segue分类
+
+<ul>
+<li>自动型
+
+<ul>
+<li>对应控件拉到目标控制器</li>
+</ul>
+</li>
+<li>手动型
+
+<ul>
+<li>源控制器拉倒目标控制器</li>
+</ul>
+</li>
+<li>条件跳转使用手动型，无条件跳转使用自动型</li>
+</ul>
+</li>
+<li>执行segue
+
+<ul>
+<li>使用控制器的<code>-performSegueWithIdentifier:</code>方法根据对应的标识进行跳转
+
+<ul>
+<li>跳转方法完整执行过程<br>
+
+<ul>
+<li>1.根据identifier去sb中找到对应的线，新建UIStoryboardSegue对象
+
+<ul>
+<li>1.1.<code>设置</code>segue对象的sourceViewController</li>
+<li>1.2.<code>新建并设置</code>segue对象的destinationViewController</li>
+</ul>
+</li>
+<li>2.调用sourceViewController的跳转准备方法，传入创建好的segue对象以及想要的参数<br>
+
+<ul>
+<li>一般<code>重写这个方法</code>，在这里<code>获取目标控制器</code>，并<code>设置</code>目标控制器的一些属性</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="objc">  - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender;
+</code></pre>
+
+<ul>
+<li>3.调用segue对象的<code>-(void)perform</code>，执行界面跳转
+
+<ul>
+<li>3.1.push类型
+
+<ul>
+<li>调用sourceViewController所在<code>UINavigationController的push方法</code>，进行压栈</li>
+</ul>
+</li>
+<li>3.2.modal类型
+
+<ul>
+<li>调用sourceViewController的presentViewController方法展示</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>使用popViewControllerAnimated:返回对应界面</li>
+</ul>
+
+
+<h2>使用纯代码进行跳转</h2>
+
+<ul>
+<li>跳转前创建跳转目标控制器
+
+<ul>
+<li>设置目标控制器的属性
+
+<ul>
+<li>使用pushViewController跳转到目标控制器</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>使用popViewControllerAnimated:返回对应界面</li>
+</ul>
+
+
+<h1>控制器传值</h1>
+
+<ul>
+<li>控制器数据传递条件
+
+<ul>
+<li><code>接收方一定要有属性接收</code>（1）</li>
+<li><code>传递方必须拿到接收方</code>（2）</li>
+</ul>
+</li>
+<li>控制器数据传递注意
+
+<ul>
+<li>一定要注意控制器的子控件有没有加载，一定要在<code>子控件加载完成</code>的时候给控件赋值，一般在目标控制器的viewDidLoad中给子控件赋值[注意view的懒加载]
+
+<ul>
+<li>容易犯的一个<code>错误就是在源控制器中设置目标控制器相关属性时，在属性的set方法中就对子控件进行设置</code>，此时子控件没有加载</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<h2>数据顺传</h2>
+
+<ul>
+<li>直接在push或者prepareForSegue时，设置目的控制器的属性即可</li>
+</ul>
+
+
+<h2>数据逆传</h2>
+
+<ul>
+<li>两个控制器TPCContactTableViewController,TPCAddViewController之间进行跳转传值
+
+<ul>
+<li>跳转方向TPCContactTableViewController->TPCAddViewController</li>
+<li>传值方向TPCContactTableViewController&lt;-TPCAddViewController</li>
+<li>方式1.使用强耦合跳转[不推荐]
+
+<ul>
+<li>1.为满足传递条件，需要定义以下属性
+
+<ul>
+<li>TPCContactTableViewController定义contact属性，重写set方法执行数据<code>回传后要做的操作</code>，满足条件1</li>
+</ul>
+
+
+<pre><code class="objc">@property (strong, nonatomic) TPCContact *contact;
+</code></pre>
+
+<ul>
+<li>TPCAddViewController定义contactsVc属性，<code>存储数据接收方</code>，满足条件2</li>
+</ul>
+
+
+<pre><code class="objc">@property (weak, nonatomic) TPCContactTableViewController *contactsVc;
+</code></pre></li>
+<li>2.在<code>跳转之前</code>，设置目标控制器contactsVc属性为TPCContactTableViewController[即self]，以<code>拿到数据接收方</code></li>
+<li>3.在<code>回跳之前</code>，设置TPCAddViewController控制器保存的contactsVc的contact属性，并在TPCContactTableViewController中<code>设置contact属性的set方法</code>，执行数据<code>回传后要做的操作</code>(添加元素，刷新数据)</li>
+</ul>
+</li>
+<li>方式2.使用代理
+
+<ul>
+<li>1.在TPCAddViewController定义协议，以及delegate属性<br></li>
+</ul>
+
+
+<pre><code class="objc">@protocol TPCAddViewControllerDelegate &lt;NSObject&gt;
+// 传递
+- (void)addViewController:(TPCAddViewController *)addVc didClickAddButton:(TPCcontact *)contact;
+@end
+</code></pre>
+
+<ul>
+<li>2.在TPCContactTableViewController中遵守并实现以上协议,在方法中执行数据回传后的操作(添加元素，刷新数据)</li>
+<li>3.在<code>跳转到TPCAddViewController之前</code>，设置目标控制器delegate属性为TPCContactTableViewController[即self]</li>
+<li>4.在<code>回跳之前</code>，调用delegate属性对应的方法执行数据<code>回传后要做的操作</code></li>
+</ul>
+</li>
+<li>方式3.使用block</li>
+<li>block介绍
+
+<ul>
+<li>block作用：用来保存一段代码，等到恰当的时候再去使用</li>
+<li>什么时候使用：逆传数据、处理网络数据的时候常用到block封装的代码<br>
+
+<ul>
+<li>请求网络数据（延迟）先把<code>展示到控件</code>的代码先<code>保存到block</code>，等<code>请求到数据</code>的时候<code>直接调用block</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>利用block传值
+
+<ul>
+<li>需要<code>传递什么数据</code>，就<code>作为block参数</code>，通常不需要返回值</li>
+<li>block数据逆传的实现和delegate差不多</li>
+</ul>
+</li>
+<li>1.在TPCAddViewController定义block属性<br>
+
+<ul>
+<li>这里最好给自己的block取别名<br>
+
+<ul>
+<li>block别名通常以类名+Block</li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="objc">typedef void(^TPCAddViewControllerBlock)(TPCcontact *contact);
+</code></pre></li>
+<li>2.在<code>跳转到TPCAddViewController之前</code>，设置目标控制器block属性,在block中存储<code>回传后要执行的代码</code><br></li>
+</ul>
+
+
+<pre><code class="``objc">  addVc.block = ^(TPCcontact *contact) {
+      [self.contacts addObject:contact];
+
+      [self.tableView reloadData];
+
+      [self saveContacts];
+  };
+</code></pre>
+
+<ul>
+<li>3.在<code>回跳之前</code>，调用block属性，执行存储的代码，执行回传后要执行的操作</li>
+</ul>
+</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-09-06-chu-bu-ren-shi-uinavigationcontroller/">初步认识UINavigationController</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-09-06T00:15:16+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>12:15 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><ul>
+<li>设置导航栏上的标题
+
+<ul>
+<li>可以用self.title</li>
+<li>也可以用self.navigationItem.title</li>
+<li>titleView的优先级高于文字</li>
+</ul>
+</li>
+<li>UINavigationController以栈的形式保存自控制器：<br>
+
+<ul>
+<li>如果要使用pop<code>跳转到特定的控制器</code>，一般是遍历以下数组，然后用isKindOfClass判断是否和跳转控制器是同一个类，是则跳转<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">viewControllers</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="bp">NSArray</span>  <span class="o">*</span><span class="n">childViewControllers</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>控制器跳转方法<br></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 将控制器压栈</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">pushViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 跳转到上一个控制器</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nf">popViewControllerAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 跳转到指定控制器</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="nf">popToViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 跳转到根控制器</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="nf">popToRootViewControllerAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>导航条的内容由<code>栈顶控制器的navigationItem</code>决定
+
+<ul>
+<li>一些常用的模型属性<br></li>
+</ul>
+</li>
+</ul>
+
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -705,229 +1424,69 @@
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
 <span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 设置左边多个或一个导航栏按钮</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">leftBarButtonItems</span>
+</span><span class='line'><span class="c1">// 就是设置上面数组的第一个元素</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIBarButtonItem</span> <span class="o">*</span><span class="n">leftBarButtonItem</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'><span class="cp">#defineMAXSIZE   100  </span>
+</span><span class='line'><span class="c1">// 设置右边多个或一个导航栏按钮</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">rightBarButtonItems</span>
+</span><span class='line'><span class="c1">// 就是设置上面数组的第一个元素</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIBarButtonItem</span> <span class="o">*</span><span class="n">rightBarButtonItem</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">sigset_t</span>   <span class="n">zeromask</span><span class="p">,</span> <span class="n">maskset</span><span class="p">,</span> <span class="n">oldmask</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
-</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span>
-</span><span class='line'><span class="nf">SYNC_INIT</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">structsigaction</span>   <span class="n">act</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>   <span class="n">bzero</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">zeromask</span><span class="p">));</span>
-</span><span class='line'>   <span class="n">bzero</span><span class="p">(</span><span class="o">&amp;</span><span class="n">maskset</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">maskset</span><span class="p">));</span>
-</span><span class='line'>   <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">maskset</span><span class="p">,</span> <span class="n">SIGUSR1</span><span class="p">);</span>
-</span><span class='line'>   <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">maskset</span><span class="p">,</span> <span class="n">SIGUSR2</span><span class="p">);</span>
-</span><span class='line'>   <span class="n">act</span><span class="p">.</span><span class="n">sa_handler</span> <span class="o">=</span> <span class="n">sig_handler</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_flags</span><span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_flags</span><span class="o">|=</span> <span class="n">SA_RESTART</span><span class="p">;</span>
-</span><span class='line'>   <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">);</span>
-</span><span class='line'>   <span class="n">sigaction</span><span class="p">(</span><span class="n">SIGUSR1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">act</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
-</span><span class='line'>   <span class="n">sigaction</span><span class="p">(</span><span class="n">SIGUSR2</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">act</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="n">SIG_BLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">maskset</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">oldmask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>      <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigprocmask error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>      <span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span>
-</span><span class='line'><span class="nf">WAIT_PARENT</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>   <span class="n">sigsuspend</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span>
-</span><span class='line'><span class="nf">TELL_PARENT</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">kill</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span><span class="n">SIGUSR1</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span>
-</span><span class='line'><span class="nf">WAIT_CHILD</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>   <span class="n">sigsuspend</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span>
-</span><span class='line'><span class="nf">TELL_CHILD</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">kill</span><span class="p">(</span><span class="n">pid</span><span class="p">,</span><span class="n">SIGUSR2</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span>
-</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">[])</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>   <span class="kt">pid_t</span>   <span class="n">pid</span><span class="p">;</span>
-</span><span class='line'>   <span class="kt">char</span>   <span class="n">buf</span><span class="p">[</span><span class="n">MAXSIZE</span><span class="p">];</span>
-</span><span class='line'>   <span class="kt">FILE</span>   <span class="o">*</span><span class="n">fp</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">volatileint</span>    <span class="n">count</span> <span class="o">=</span><span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>   <span class="kt">int</span>       <span class="n">fd</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">fd</span> <span class="o">=</span><span class="n">open</span><span class="p">(</span><span class="s">&quot;a&quot;</span><span class="p">,</span> <span class="n">O_RDWR</span> <span class="o">|</span> <span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">O_EXCL</span><span class="p">,</span> <span class="mi">777</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>      <span class="n">perror</span><span class="p">(</span><span class="s">&quot;open&quot;</span><span class="p">);</span>
-</span><span class='line'>      <span class="n">exit</span><span class="p">(</span><span class="n">EXIT_FAILURE</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">fp</span> <span class="o">=</span><span class="n">fdopen</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span><span class="s">&quot;w+&quot;</span><span class="p">);</span><span class="c1">//改成文件流操作相对方便点，不过要注意缓冲问题  </span>
-</span><span class='line'>
-</span><span class='line'>   <span class="n">SYNC_INIT</span><span class="p">();</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>      <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;fork error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">pid</span><span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>       <span class="k">for</span> <span class="p">(;</span> <span class="p">;){</span>
-</span><span class='line'>          <span class="n">rewind</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span><span class="c1">//注意，在这里要把文件流指针重新指向文件的起点，下面读取也是一样的（因为读取时没有这句，所以纠结了一些时间，ps（这时读取返回总是EOF，提示到达文件尾部），所以检查错误真的很重要啊。。。）  </span>
-</span><span class='line'>         <span class="n">fwrite</span><span class="p">(</span><span class="o">&amp;</span><span class="n">count</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">count</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fp</span><span class="p">);</span>
-</span><span class='line'>   <span class="c1">//       fprintf(fp,&quot;%d\n&quot;, count);  </span>
-</span><span class='line'>          <span class="n">fflush</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span><span class="c1">//这句很重要，因为输出到文件时默认是全缓冲的，我们不能容忍全缓冲，所以当写完时要立刻冲洗缓冲，否则得不到正确结果（也可以用setvbuf或者setbuf，不过我没试）  </span>
-</span><span class='line'>         <span class="n">TELL_PARENT</span><span class="p">(</span><span class="n">getppid</span><span class="p">());</span>
-</span><span class='line'>         <span class="n">WAIT_PARENT</span><span class="p">();</span>
-</span><span class='line'>         <span class="n">rewind</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span><span class="c1">//读取前文件流指针指向文件起点  </span>
-</span><span class='line'>         <span class="n">fread</span><span class="p">(</span><span class="o">&amp;</span><span class="n">count</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">count</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fp</span><span class="p">);</span>
-</span><span class='line'>       <span class="cm">/*  if(fscanf(fp, &quot;%d&quot;, &amp;count) == EOF) </span>
-</span><span class='line'><span class="cm">            perror(&quot;fscanf&quot;);*/</span>
-</span><span class='line'>         <span class="n">printf</span><span class="p">(</span><span class="s">&quot;child: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">);</span>
-</span><span class='line'>         <span class="n">count</span><span class="o">++</span><span class="p">;</span>
-</span><span class='line'>         <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>       <span class="p">}</span>
-</span><span class='line'>      <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(;</span> <span class="p">;){</span>
-</span><span class='line'>      <span class="n">WAIT_CHILD</span><span class="p">();</span>
-</span><span class='line'>      <span class="n">rewind</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span><span class="c1">//父子进程有各自的文件表项，所以文件流指针指向文件的位置互不影响  </span>
-</span><span class='line'>      <span class="n">fread</span><span class="p">(</span><span class="o">&amp;</span><span class="n">count</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">count</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fp</span><span class="p">);</span>
-</span><span class='line'><span class="cm">/*      if(fscanf(fp, &quot;%d&quot;, &amp;count) == EOF) </span>
-</span><span class='line'><span class="cm">            perror(&quot;fscanf&quot;);*/</span>
-</span><span class='line'>      <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father: %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">);</span>
-</span><span class='line'>      <span class="n">count</span><span class="o">++</span><span class="p">;</span>
-</span><span class='line'>      <span class="n">rewind</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'>      <span class="n">fwrite</span><span class="p">(</span><span class="o">&amp;</span><span class="n">count</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">count</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fp</span><span class="p">);</span>
-</span><span class='line'>      <span class="c1">//fprintf(fp, &quot;%d\n&quot;, count);  </span>
-</span><span class='line'>      <span class="n">fflush</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
-</span><span class='line'>      <span class="n">TELL_CHILD</span><span class="p">(</span><span class="n">pid</span><span class="p">);</span>
-</span><span class='line'>      <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>   <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="c1">// 下一个控制器左上角返回按钮</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIBarButtonItem</span> <span class="o">*</span><span class="n">backBarButtonItem</span><span class="p">;</span>
 </span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>导航栏中的MVC
+
+<ul>
+<li>UIBarButtonItem、UINavigationItem都是<code>苹果提供的模型类</code>［带有Item的一般都是模型］</li>
+<li>UINavigationItem：控制导航条上的内容[title,titleView等]</li>
+<li>UIBarButtonItem：控制导航条上<code>按钮</code>的内容[leftBarButtonItem等]</li>
+<li>NavigationBar：控制导航条上的<code>全局</code>属性
+
+<ul>
+<li>tintColor控制返回按钮颜色</li>
+<li>barTintColor控制导航条的背景颜色</li>
+<li>setBackgroundWithImage:控制导航条背景图片</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>导航栏限制
+
+<ul>
+<li>iOS7之后，系统默认会将导航条上面的<code>按钮内容</code>渲染成<code>蓝色</code>
+
+<ul>
+<li>可以用以下两种方式使图片不进行渲染，保持图片原色［用第二种方式］
+
+<ul>
+<li>1.进入对应图片的设置界面,对render进行设置<br><img src="/images/Snip20150612_1.png" alt="" /></li>
+<li>2.使用<code>-imageWithRenderingMode:</code>方法，返回UIImageRenderingModeAlwaysOriginal不渲染图片</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>导航条上的<code>自带按钮没有高亮模式</code>，需要高亮要<code>自己定义按钮</code>
+
+<ul>
+<li>设置左右按钮时，使用方法<code>-initWithCustomView:</code>，传入创建好的UIButton</li>
+<li>设置的UIButton<code>只需要设置size</code>，无法控制具体位置
+
+<ul>
+<li>可以使用<code>-sizeToFit</code>根据内容自己计算</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>导航条上的<code>内容详细位置</code>不能由开发者决定，只能<code>控制其尺寸</code></li>
+</ul>
+</li>
+</ul>
 
 </div>
   
@@ -941,7 +1500,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-06-10-unixxi-tong-wen-jian-he-xin-xi/">UNIX系统文件和信息</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-09-01-dai-li-she-ji/">代理设计</a></h1>
     
     
       <p class="meta">
@@ -950,313 +1509,58 @@
 
 
 
-<time class='entry-date' datetime='2013-06-10T20:56:23+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>8:56 pm</span></time>
+<time class='entry-date' datetime='2013-09-01T00:01:28+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>12:01 am</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><h3>pag133</h3>
-
-<p><code>这里的各类ID都是针对用户的</code></p>
-
-<h6>口令文件：</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span><span class="err">文件中的字段（</span><span class="n">linux</span><span class="err">）（</span><span class="k">struct</span> <span class="n">passwd</span><span class="err">的成员）</span>
-</span><span class='line'><span class="err">用户名</span><span class="o">---------------------------</span><span class="kt">char</span> <span class="o">*</span><span class="n">pw_name</span>
-</span><span class='line'><span class="err">加密口令</span><span class="o">------------------------</span><span class="kt">char</span> <span class="o">*</span><span class="n">pw_passwd</span>
-</span><span class='line'><span class="err">数值用户</span><span class="n">ID</span><span class="o">---------------------</span><span class="kt">uid_t</span> <span class="n">pw_uid</span>
-</span><span class='line'><span class="err">数值组</span><span class="n">ID</span><span class="o">------------------------</span><span class="kt">gid_t</span> <span class="n">pw_gid</span>
-</span><span class='line'><span class="err">注释字段</span><span class="o">------------------------</span><span class="kt">char</span> <span class="o">*</span><span class="n">pw_gecos</span>
-</span><span class='line'><span class="err">初始工作目录</span><span class="o">-------------------</span><span class="kt">char</span> <span class="o">*</span><span class="n">pw_dir</span>
-</span><span class='line'><span class="err">初始</span><span class="n">shell</span><span class="o">------------------------</span><span class="kt">char</span> <span class="o">*</span><span class="n">pw_shell</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">root</span><span class="p">:</span><span class="nl">x</span><span class="p">:</span><span class="mi">0</span><span class="o">:</span><span class="mi">0</span><span class="o">:</span><span class="nl">root</span><span class="p">:</span><span class="o">/</span><span class="nl">root</span><span class="p">:</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">bash</span>
-</span><span class='line'><span class="nl">daemon</span><span class="p">:</span><span class="nl">x</span><span class="p">:</span><span class="mi">1</span><span class="o">:</span><span class="mi">1</span><span class="o">:</span><span class="nl">daemon</span><span class="p">:</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="nl">sbin</span><span class="p">:</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">sh</span>
-</span><span class='line'><span class="nl">bin</span><span class="p">:</span><span class="nl">x</span><span class="p">:</span><span class="mi">2</span><span class="o">:</span><span class="mi">2</span><span class="o">:</span><span class="nl">bin</span><span class="p">:</span><span class="o">/</span><span class="nl">bin</span><span class="p">:</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">sh</span>
-</span><span class='line'><span class="nl">sys</span><span class="p">:</span><span class="nl">x</span><span class="p">:</span><span class="mi">3</span><span class="o">:</span><span class="mi">3</span><span class="o">:</span><span class="nl">sys</span><span class="p">:</span><span class="o">/</span><span class="nl">dev</span><span class="p">:</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">sh</span>
-</span><span class='line'><span class="nl">sync</span><span class="p">:</span><span class="nl">x</span><span class="p">:</span><span class="mi">4</span><span class="o">:</span><span class="mi">65534</span><span class="o">:</span><span class="nl">sync</span><span class="p">:</span><span class="o">/</span><span class="nl">bin</span><span class="p">:</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">sync</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>shell字段包含了一个可执行程序名，他被用做该用户的登录shell（ubuntu下用adduser时，发现切换至创建的用户时登录shell不对（显示为只有一个$）这是因为新创建的用户默认登录shell为/bin/sh，进入/etc/passwd将/bin/sh改为/bin/bash即可）</p>
-
-<p>获取口令文件项：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">passwd</span> <span class="o">*</span><span class="nf">getpwuid</span><span class="p">(</span><span class="kt">uid_t</span> <span class="n">uid</span><span class="p">);</span> <span class="c1">//将i节点中的数值用户ID映射为用户登录名</span>
-</span><span class='line'><span class="k">struct</span> <span class="n">passwd</span> <span class="o">*</span><span class="nf">getpwnam</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">);</span><span class="c1">//用户登录名</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">struct</span> <span class="n">passwd</span> <span class="o">*</span><span class="nf">getpwent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//返回口令文件的下个记录项，返回由他填好的password结构指针（get password entry）</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">setpwent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//反绕文件，我的理解：从头开始</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">endpwent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//关闭文件（getpwent后调用）</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>阴影口令：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">spwd</span> <span class="o">*</span><span class="nf">getspnam</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">);</span>
-</span><span class='line'><span class="k">struct</span> <span class="n">spwd</span> <span class="o">*</span><span class="nf">getspent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">setspent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">endspent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>组文件：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">group</span><span class="err">中的</span><span class="n">gr_mem</span><span class="err">是一个指针数组，其中每个指针指向一个属于该组的用户名，该数组以空指针结尾。</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">struct</span> <span class="n">group</span> <span class="o">*</span><span class="n">getgrgid</span><span class="p">(</span><span class="kt">gid_t</span> <span class="n">gid</span><span class="p">);</span><span class="c1">//返回gid组的group结构</span>
-</span><span class='line'><span class="k">struct</span> <span class="n">group</span> <span class="o">*</span><span class="nf">getgrnam</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">);</span><span class="c1">//返回name组的group结构</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">struct</span> <span class="n">group</span> <span class="o">*</span><span class="nf">getgrent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">setgrent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">endgrent</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>附加组ID：</p>
+  <div class="entry-content"><h2>代理</h2>
 
 <ul>
-<li>一个用户可以参加多个项目，因此也就要同时属于多个组。</li>
+<li><p>代理设计模式的作用:</p>
+
+<ul>
+<li>1.A对象监听B对象的一些行为，A成为B的代理</li>
+<li>2.B对象想告诉A对象一些事情，A成为B的代理</li>
+</ul>
+</li>
+<li><p>代理设计模式的总结：</p>
+
+<ul>
+<li>如果你想监听别人的一些行为，那么你就要成为别人的代理</li>
+<li>如果你想告诉别人一些事情，那么就让别人成为你的代理</li>
+</ul>
+</li>
+<li><p>代理设计模式的开发步骤</p>
+
+<ul>
+<li>1.拟一份协议（协议名字的格式：控件名 + Delegate），在协议里面声明一些代理方法（一般代理方法都是@optional），代理方法都会返回发生事件的对象(如UIScrollView代理方法，返回对应的UIScrollView对象)</li>
+<li>2.声明一个代理属性：@property (nonatomic, weak) id&lt;代理协议> delegate;</li>
+<li>3.在内部发生某些行为时，调用代理对应的代理方法，通知代理内部发生什么事</li>
+<li>4.<code>设置代理：xxx.delegate = yyy</code>（这一步我很容易忘了。。。）;</li>
+<li>5.yyy对象遵守协议，实现代理方法</li>
+</ul>
+</li>
+<li>示例
+
+<ul>
+<li>UIScrollViewDelegate</li>
+<li>scrollViewDidScroll:</li>
+</ul>
+</li>
 </ul>
 
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">getgroup</span><span class="p">(</span><span class="kt">int</span> <span class="n">gidsetsize</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">grouplist</span><span class="p">[]);</span><span class="c1">//将各附加组ID填写到数组grouplist中</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">setgroup</span><span class="p">(</span><span class="kt">int</span> <span class="n">ngroups</span><span class="p">,</span> <span class="k">const</span> <span class="kt">gid_t</span> <span class="n">grouplist</span><span class="p">[]);</span><span class="c1">//设置附加组ID</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">initgroups</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">username</span><span class="p">,</span> <span class="kt">gid_t</span> <span class="n">basegid</span><span class="p">);</span><span class="c1">//在组文件中找到username是成员的所有组,，并将参数basegid组识别码加入此数据中。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>一般情况，对于每个数据文件至少有三个函数：
-- 1、get：读下一个记录，如果需要还可打开文件。通常返回一个指向一个结构的指针
-- 2、set：从相应文件的起始处处理
-- 3、end：关闭数据文件</p>
-
-<h6>对应目录</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">口令</span> <span class="o">-------------------------/</span><span class="n">etc</span><span class="o">/</span><span class="n">passwd</span>
-</span><span class='line'><span class="err">组</span>    <span class="o">-------------------------/</span><span class="n">etc</span><span class="o">/</span><span class="n">group</span>
-</span><span class='line'><span class="err">阴影</span> <span class="o">-------------------------/</span><span class="n">etc</span><span class="o">/</span><span class="n">shadow</span>
-</span><span class='line'><span class="err">主机</span> <span class="o">-------------------------/</span><span class="n">etc</span><span class="o">/</span><span class="n">hosts</span>
-</span><span class='line'><span class="err">网络</span> <span class="o">-------------------------/</span><span class="n">etc</span><span class="o">/</span><span class="n">networks</span>
-</span><span class='line'><span class="err">协议</span> <span class="o">-------------------------/</span><span class="n">etc</span><span class="o">/</span><span class="n">protocols</span>
-</span><span class='line'><span class="err">服务</span> <span class="o">-------------------------/</span><span class="n">etc</span><span class="o">/</span><span class="n">services</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">uname</span><span class="p">(</span><span class="k">struct</span> <span class="n">utsname</span> <span class="o">*</span><span class="n">name</span><span class="p">)</span><span class="err">；</span><span class="c1">//返回当前主机和操作系统有关的信息 （uname命令）</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">gethostname</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">int</span> <span class="n">namelen</span><span class="p">);</span><span class="c1">//获取主机名（TCP/IP网络上主机名）（hostname命令）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">time_t</span> <span class="nf">time</span><span class="p">(</span><span class="kt">time_t</span> <span class="o">*</span><span class="n">calptr</span><span class="p">);</span><span class="c1">//返回当前时间和日期</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">gettimeofday</span><span class="p">(</span><span class="k">struct</span> <span class="n">timeval</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tp</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tzp</span><span class="p">);</span><span class="c1">//tzp唯一合法值是NULL</span>
-</span><span class='line'><span class="k">struct</span> <span class="n">tm</span> <span class="o">*</span><span class="nf">gmtime</span><span class="p">(</span><span class="k">const</span> <span class="kt">time_t</span> <span class="o">*</span><span class="n">calptr</span><span class="p">);</span><span class="c1">//将日历转换成国际标准时间</span>
-</span><span class='line'><span class="k">struct</span> <span class="n">tm</span> <span class="o">*</span><span class="nf">localtime</span><span class="p">(</span><span class="k">const</span> <span class="kt">time_t</span> <span class="o">*</span><span class="n">calptr</span><span class="p">);</span><span class="c1">//将日历转换程本地时间</span>
-</span><span class='line'><span class="kt">time_t</span> <span class="nf">mktime</span><span class="p">(</span><span class="k">struct</span> <span class="n">tm</span> <span class="o">*</span><span class="n">tmptr</span><span class="p">);</span><span class="c1">//以本地时间的年月日等作为参数，将其转换成time_t值</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">asctime</span><span class="p">(</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">tm</span> <span class="o">*</span><span class="n">tmptr</span><span class="p">);</span><span class="c1">//返回指向年月日等字符串指针</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">ctime</span><span class="p">(</span><span class="k">const</span> <span class="kt">time_t</span> <span class="o">*</span><span class="n">calptr</span><span class="p">);</span><span class="c1">//返回指向日历时间的指针</span>
-</span><span class='line'><span class="kt">size_t</span> <span class="nf">strftime</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">maxsize</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">format</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">tm</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tmptr</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>`</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-06-06-unixxi-tong-wen-jian-io/">UNIX系统文件IO</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-06-06T14:45:46+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>2:45 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>文件描述符</h3>
+<h2>代理和通知的区别</h2>
 
 <ul>
-<li>0                      标准输入（STDIN_FILENO）</li>
-<li>1                      标准输出（STDOUT_FILENO）</li>
-<li>2                      标准出错（STDERR_FILENO）</li>
+<li>代理：1个对象只能告诉另1个对象发生了什么事，且需要知道代理是否实现了某些方法，需要反馈</li>
+<li>通知：1个对象可以告诉N个对象发生了什么事，不需要目标是否执行了某些操作，直接扔出去就行，不需要反馈</li>
+<li>通知需要关注的比代理多，需要知道通知名称等，代理比较直接，直接delegate</li>
 </ul>
 
-
-<h3>pag48</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">open</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span><span class="p">,</span> <span class="p">...);</span> <span class="c1">//打开或创建一个文件</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>仅当创建一个文件时才使用第三个参数<br>
-需要注意的是：
-- O_RDONLY、O_WRONLY、O_RDWR 三者之中必须指定且只能指定一个
-- open返回的一定是<code>最小的未用</code>描述符数值。（每次调用open都会创建一个新的文件表项，dup，dup2不会）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">creat</span> <span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">pathname</span><span class="p">,</span> <span class="kt">mode_t</span> <span class="n">mode</span><span class="p">);</span><span class="err">（以只写方式打开创建文件）</span>
-</span><span class='line'><span class="c1">// 等效于</span>
-</span><span class='line'><span class="n">open</span> <span class="p">(</span><span class="n">pathname</span><span class="p">,</span> <span class="n">O_WRONLY</span> <span class="o">|</span> <span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">O_TRUNC</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span><span class="err">；（首选）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="n">close</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//关闭打开文件</span>
-</span><span class='line'><span class="c1">// 关闭文件时会释放该进程加在该文件上的所有记录锁。（pag358）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">off_t</span> <span class="nf">lseek</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">offset</span><span class="p">,</span> <span class="kt">int</span> <span class="n">whence</span><span class="p">);</span><span class="c1">//显示地为打开文件设置偏移量</span>
-</span><span class='line'><span class="c1">// 文件描述符不能是：管道、FIFO、网络套接字（否则返回-1）</span>
-</span><span class='line'><span class="c1">// 对于普通文件，其偏移量必须是非负值（某些设备可能允许负偏移量），应测试返回值是否等于-1而不是测试是否小于0</span>
-</span><span class='line'><span class="c1">// 文件偏移量可以大于文件当前长度，加长部分形成空洞。空洞不占磁盘空间，但是文件长度和无空洞加长的文件一样。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">ssize_t</span> <span class="nf">read</span> <span class="p">(</span><span class="n">inf</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">);</span><span class="c1">//从打开文件中读取数据,如成功返回读取字节数。</span>
-</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">write</span> <span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">buf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">nbytes</span><span class="p">);</span><span class="c1">//向打开文件写数据返回，回值与nbytes相同，否则表示出错。</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>常见错误原因：</p>
-
-<ul>
-<li>1、磁盘已满</li>
-<li>2、超过给定进程的文件长度限制</li>
-</ul>
-
-
-<p>pag56
-内核用三种数据结构表示打开的文件：
-1、进程表项
-文件描述符标识
-指向一个文件表项的指针
-2、文件表项
-文件状态标识
-当前文件偏移量
-指向文件v节点表项的指针
-3、v节点结构
-i节点
-当前文件长度
-v节点信息</p>
-
-<p>linux没有将相关数据结构分为i节点和v节点，而是采用了一个独立于文件系统的i节点和一个依赖于文件系统的i节点。</p>
-
-<p>原子操作读写函数：
-ssize_t pread (int filedes, void <em>buf, size_t nbytes, off_t offset);
-ssize_t pwrite(int filedes, const void </em>buf, size_t nbytes, off_t offset);</p>
-
-<p>int dup (int filedes); //复制filedes文件描述符，返回当前可用文件描述符的最小值
-int dup2 (int filedes, int filedes2); //filedes2指定新描述符的数值，如果filedes2已经打开则先将其关闭
-新描述符的执行时关闭（close-on-exec）标识总是由dup函数清除。</p>
-
-<p>pag61
-延迟写：
-当将数据写入文件时，内核通常先将该数据复制到其中一个缓冲区中，如果该缓冲区尚未写满，则并不将其排入输出队列，而是等待其写满或者当内核需要重用该缓冲区以便存放其他磁盘块数据时，再将该缓冲区输出队列，然后待其到达队首时，才进行实际的IO操作。
-int fsync (int filedes);//对filedes指定的单一文件起作用，并等待写磁盘操作结束
-int fdatasync (int filedes);//类似fsync，但只影响文件数据部分，fsync还更新文件属性
-void sync (void);//将所有修改过的块缓冲区排入写队列，并不等待实际写磁盘操作结束</p>
-
-<p>int fcntl (int filedes, int cmd, &hellip;);//改变已打开文件属性
-5种功能：
-1、复制一个现有的描述符（cmd = F_DUPFD）
-2、获得/设置文件描述符标记（cmd = F_GETFD或F_SETFD）
-3、获得/设置文件状态标志（cmd = F_GETFL或F_SETFL）O_ACCMODE
-4、获得/设置异步IO所有权（cmd = F_GETOWN或F_SETOWN）
-5、获得/设置记录锁（cmd = F_GETLK、F_SETLK或F_SETLKW）</p>
-
-<p>修改文件描述符标识或文件状态标志步骤：
-1、取得现有的标志值
-2、根据需要修改它（并）
-3、设置新标志值</p>
-
-<p>pag67
-int ioctl (int filedes, int request, &hellip;);//IO操作</p>
-
-<p>打开文件/dev/fd/n等效于复制描述符n</p>
 </div>
   
   
@@ -1327,6 +1631,14 @@ int ioctl (int filedes, int request, &hellip;);//IO操作</p>
       </li>
     
       <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
       </li>
     
@@ -1347,27 +1659,19 @@ int ioctl (int filedes, int request, &hellip;);//IO操作</p>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a>
+        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-10-chu-bu-ren-shi-uiscrollview/">初步认识UIScrollView</a>
+        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
+        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-04-ocji-ben-yu-fa/">OC基本语法</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-28-2013nian-zhong-bei-cui-ji/">2013年中悲催记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
+        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
       </li>
     
   </ul>

@@ -1,0 +1,562 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>UIScrollView2个UIImageView无限循环 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="去年写了3个UIScrollView实现无限循环的思路，今天和别人讨论的时候，发现还可以用两个UIImageView实现无限循环。实现的大体思路如下： 假设使用UIV1表示始终显示的UIImageView，使用UIV2表示备份的UIImageView 首先，初始状态如下图所示，显示的是图片1（ &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">UIScrollView2个UIImageView无限循环</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-03-20T23:01:01+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>11:01 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>去年写了3个UIScrollView实现无限循环的思路，今天和别人讨论的时候，发现还可以用两个UIImageView实现无限循环。实现的大体思路如下：</p>
+
+<p>假设使用UIV1表示始终显示的UIImageView，使用UIV2表示备份的UIImageView</p>
+
+<ul>
+<li>首先，初始状态如下图所示，显示的是图片1（为了方便查看，我把UIImageView下移了，实际上和上面一排重合）<br>
+
+<ul>
+<li>初始状态 <br>
+<img src="/images/Snip20150630_26.png" alt="初始状态" /><br></li>
+</ul>
+</li>
+<li>这时候，向右边滚动（是滚，不是滑&hellip;），UIV2就立即显示图片2，这是，在屏幕可以看见图片1、2<br>
+
+<ul>
+<li>向右滚动<br>
+<img src="/images/Snip20150630_27.png" alt="向右滚动" /></li>
+</ul>
+</li>
+<li>当滚动完成时只能看见图片2，如下
+
+<ul>
+<li>滚动完成<br>
+<img src="/images/Snip20150630_28.png" alt="滚动完成" /></li>
+</ul>
+</li>
+<li>这是，将UIV1的图片换成图片2，同时将UIScrollView的偏移量设置到中间的位置（这个过程很快，实际看不出来有修改和移动）<br>
+
+<ul>
+<li>修改图片<br><br/>
+<img src="/images/Snip20150630_29.png" alt="修改图片" /><br></li>
+<li>修改偏移量<br><br/>
+<img src="/images/Snip20150630_30.png" alt="修改偏移量" /></li>
+</ul>
+</li>
+<li>向左滚动的情况<br>
+
+<ul>
+<li>左滚动<br><br/>
+<img src="/images/Snip20150630_31.png" alt="左滚动" /></li>
+</ul>
+</li>
+<li>立即将UIV2的frame修改至最左边的位置，并设置图片为0<br>
+
+<ul>
+<li>左滚动修改UIV2图片并移动<br><br/>
+<img src="/images/Snip20150630_32.png" alt="左滚动修改UIV2图片并移动" /></li>
+</ul>
+</li>
+<li>修改完成后情况<br>
+
+<ul>
+<li>移动完成<br>
+<img src="/images/Snip20150630_33.png" alt="移动完成" /></li>
+</ul>
+</li>
+<li>修改UIV1图片为图片0，并且设置UIScrollView偏移至中间位置<br>
+
+<ul>
+<li>修改UIV1图片<br>
+<img src="/images/Snip20150630_37.png" alt="修改UIV1图片" /><br></li>
+<li>最终显示结果<br>
+<img src="/images/Snip20150630_38.png" alt="最终显示结果" /></li>
+</ul>
+</li>
+</ul>
+
+
+<p>实现整体代码如下，有一个小技巧，使用tag标识对应的image，可以使代码更精简：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TPCScrollViewByTwoImageView</span><span class="p">()</span> <span class="o">&lt;</span><span class="bp">UIScrollViewDelegate</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIScrollView</span> <span class="o">*</span><span class="n">scrollView</span><span class="p">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> *  当前显示的view</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">currentView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> *  备份的view（左右滑动时，显示的view）</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">backupView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TPCScrollViewByTwoImageView</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithFrame:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">frame</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">frame</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="n">setUp</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">awakeFromNib</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">setUp</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setUp</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 创建需要的三个控件</span>
+</span><span class='line'>    <span class="bp">UIScrollView</span> <span class="o">*</span><span class="n">scrollView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIScrollView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">pagingEnabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">bounces</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">redColor</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">scrollView</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="o">=</span> <span class="n">scrollView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">currentView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImageView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">currentView</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentView</span> <span class="o">=</span> <span class="n">currentView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">backupView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImageView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">backupView</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span> <span class="o">=</span> <span class="n">backupView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">greenColor</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageViewW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageViewH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 设置scrollView的内容大小</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">imageViewW</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置imageView的frame</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="n">imageViewW</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">imageViewW</span><span class="p">,</span> <span class="n">imageViewH</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="n">imageViewW</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">imageViewW</span><span class="p">,</span> <span class="n">imageViewH</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setImages:</span><span class="p">(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="nv">images</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">_images</span> <span class="o">=</span> <span class="n">images</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置默认图片</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置tag为图片下标</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span> <span class="o">=</span> <span class="n">CGPointMake</span><span class="p">(</span><span class="n">imageViewW</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">offsetX</span> <span class="o">=</span> <span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 根据偏移量，设置backView的图片，并修改其图片下标</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">offsetX</span> <span class="o">&lt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">);</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">currentView</span><span class="p">.</span><span class="n">tag</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">)</span> <span class="o">%</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">;</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">tag</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">offsetX</span> <span class="o">&gt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">);</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">currentView</span><span class="p">.</span><span class="n">tag</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">;</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">tag</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidEndDecelerating:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">offsetX</span> <span class="o">=</span> <span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 停止时，设置偏移量为currentView所在位置</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span> <span class="o">=</span> <span class="n">CGPointMake</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 实际上没有换页，就返回</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">offsetX</span> <span class="o">&lt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">*</span> <span class="mf">1.5</span> <span class="o">&amp;&amp;</span> <span class="n">offsetX</span> <span class="o">&gt;</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 根据backView的image，来进行图片更换</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">image</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置当前图片下标</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">currentView</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">backupView</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-03-20T23:01:01+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>11:01 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/" title="Previous Post: 状态栏隐藏">&laquo; 状态栏隐藏</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/" title="Next Post: cell取消分割线及左滑出现多个按钮">cell取消分割线及左滑出现多个按钮 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图崩溃</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用Runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

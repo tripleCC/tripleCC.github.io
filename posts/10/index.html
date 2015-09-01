@@ -9,7 +9,10 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="当fork函数被当前进程调用时，内核为新进程创建各种数据结构，并分配它一个唯一的PID，为了给这个新进程创建虚拟存储器，它创建了当前进程的mm_struct、区域结构和页表的原样拷贝。它将两个进程中的每个页面都标记为只读，并将两个进程中的每个区域结构都标记为私有的写时拷贝。 &hellip;">
+  <meta name="description" content="pag355 低速系统调用： 1、某些文件类型（管道、终端设备、网络设备）的数据并不存在，则读操作可能会使调用者永远阻塞。
+2、数据不能立即被上诉同样类型的文件接受（由于在管道中无空间、网络流控制等），则写操作也会使调用者永远阻塞
+3、在某种条件发生之前，打开某些类型的文件会被阻塞
+4、 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -71,7 +74,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-03-07-forkxie-shi-kao-bei/">Fork写时拷贝</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-05-24-unixxi-tong-gao-ji-io/">UNIX系统高级IO</a></h1>
     
     
       <p class="meta">
@@ -80,73 +83,142 @@
 
 
 
-<time class='entry-date' datetime='2013-03-07T22:21:31+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:21 pm</span></time>
+<time class='entry-date' datetime='2013-05-24T20:25:24+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>8:25 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>当fork函数被当前进程调用时，内核为新进程创建各种数据结构，并分配它一个唯一的PID，为了给这个新进程创建虚拟存储器，它创建了当前进程的mm_struct、区域结构和页表的<code>原样拷贝</code>。它将两个进程中的每个页面都标记为只读，并将两个进程中的每个区域结构都标记为<code>私有的写时拷贝</code>。</p>
+  <div class="entry-content"><h3>pag355</h3>
 
-<p>当fork在新进程中返回时，新进程现在的虚拟存储器刚好和调用fork时存在的虚拟存储器相同（就是父进程<code>运行到fork时</code>的虚拟存储器，所以子进程运行的地方是从fork返回时开始的，并不是从头开始）。当这两个进程的任一个后来进行写操作时，写时拷贝机制就会创建新的<code>物理页面</code>。（深入理解计算机系统二 558页）</p>
+<h3>低速系统调用：</h3>
 
-<p>通俗一点说，就是在exec之前两个进程用的是相同的物理空间（内存区）（所谓用是只读，不能写的），子进程的代码段、数据段、堆栈都是指向父进程的物理空间。当父子进程中有更改相应段的行为发生时，再为子进程相应的段分配物理空间（这时创建拷贝的进程的页表条目会指向这个新的物理页面（拷贝），然后恢复这个页面的可写权限），如果不是因为exec，内核会给子进程的数据段、堆栈段分配相应的物理空间（至此两者有各自的进程空间，互不影响），而代码段继续共享父进程的物理空间（两者的代码完全相同）。而如果是因为exec，由于两者执行的代码不同，子进程的代码段也会分配单独的物理空间。</p>
-
-<p>通常来说，fork函数的代码段基本是只读类型的，而且在运行阶段也只是复制，并不会对内容进行修改，因此父子进程是共享代码段，而数据段、Bss段、堆栈段等会在运行的过程中发生写过程，这样就导致了不同的段发生相应的写时拷贝过程，实现了不同进程的独立空间。</p>
-
-<p>相应网页：
-<a href="http://blog.chinaunix.net/uid-20937170-id-3012588.html">http://blog.chinaunix.net/uid-20937170-id-3012588.html</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-03-02-signalxin-hao-tong-xin/">Signal信号通信</a></h1>
-    
-    
-      <p class="meta">
-        
+<ul>
+<li>1、某些文件类型（<code>管道、终端设备、网络设备</code>）的数据并不存在，则<code>读操作</code>可能会使调用者永远阻塞。</li>
+<li>2、数据不能立即被上诉同样类型的文件接受（由于在<code>管道中无空间、网络流控制</code>等），则<code>写操作</code>也会使调用者永远阻塞</li>
+<li>3、在某种条件发生之前，打开某些类型的文件会被阻塞</li>
+<li>4、对已加上强制性记录锁的文件进行读写</li>
+<li>5、某些ioctl操作</li>
+<li>6、某些进程间通信函数</li>
+</ul>
 
 
+<p>虽然读写磁盘文件会使调用者在短暂时间内阻塞，但并不能将与磁盘IO有关的系统调用视为低速。</p>
+
+<h6>指定一个给定描述符为非阻塞IO：</h6>
+
+<ul>
+<li>1、open获得描述符，并指定O_NONBLOCK</li>
+<li>2、调用fcntl，打开O_NONBLOCK，先获取，在或，再改变</li>
+</ul>
 
 
-<time class='entry-date' datetime='2013-03-02T22:10:01+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2013</span></span> <span class='time'>10:10 pm</span></time>
-        
-      </p>
-    
-  </header>
+<h6>记录锁（字节范围锁）：</h6>
 
+<p>当一个进程正在读或修改文件的某个部分时，他可以阻止其他进程修改同一文件区。（锁定的只是文件中的一个区域）</p>
 
-  <div class="entry-content"><p>每个进程只属于一个进程组，进程组由一个正整数进程组ID来标识。</p>
+<h6>不同进程提出锁请求：</h6>
+
+<p><code>多进程</code>在一个给定的字节上可以有一把<code>共享的读锁</code>，但是在<code>一个给定字节</code>上只能有一个进程<code>独用的一把写锁</code>。<br>
+如果在一个给定的字节上已有一把或多把读锁，则不能在该字节上再加写锁。如在一个字节上已经有一把独占性的写锁，则不能再对他加任何读锁。</p>
+
+<h6>单个进程提出多个锁请求情况：</h6>
+
+<p>如果一个进程对一个文件区间已经有了一把锁，后来该进程又企图在同一文件区间再加一把锁，那么新锁将替换老锁。（调用进程绝不会阻塞在自己持有的锁上）<br>
+加读锁时，该描述符必须时读打开；加写锁时，该描述符必须时写打开。</p>
+
+<p><code>应先用F_GETLK测试能否建立一把锁，然后用F_SETLK和F_SETLKW试图建立一把锁。
+F_GETLK是检测其他进程是否有现存锁，不能报告调用进程自己的锁。</code></p>
+
+<h3>pag363</h3>
+
+<h6>锁的隐含继承和释放：</h6>
+
+<ul>
+<li>1、当一个进程终止时，他所建立的锁全部释放；任何时候关闭一个描述符时，则该进程（<code>仅限于调用进程</code>）通过<code>这一描述符可以引用的文件上的任何一把锁</code>都被释放。（也就是说作用<code>对象变成了文件i节点</code>，而<code>不是文件描述符，或者文件表项</code>）
+如：</li>
+</ul>
+
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">kill</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">sig</span><span class="p">);</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fd1</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span> <span class="n">pathname</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
+</span><span class='line'><span class="n">read_lock</span><span class="p">(</span> <span class="n">fd1</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
+</span><span class='line'><span class="n">fd2</span> <span class="o">=</span> <span class="n">dup</span><span class="p">(</span> <span class="n">fd1</span> <span class="p">);</span> <span class="p">(</span><span class="err">指向同一文件表项</span><span class="p">)</span>  <span class="c1">//fd2 = open(pathname, ... );（指向新建文件表项）</span>
+</span><span class='line'><span class="n">close</span><span class="p">(</span> <span class="n">fd2</span> <span class="p">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>kill函数用于向进程发送信号，当pid>0，kill发送sig给进程pid;当pid&lt;0kill发送sig给进程组abs(pid)中的每个进程。</p>
+<p>在close（fd2）后，fd1上设置的锁被释放</p>
+
+<ul>
+<li>2、由fork产生的子进程不继承父进程所设置的锁。(记录锁本身就是为了进程间能独立写文件)</li>
+<li>3、在执行exec后，新进程可以继承原执行程序的锁（没有设置close-on-exec标志）</li>
+</ul>
+
+
+<h6>锁的释放：</h6>
+
+<p>关闭进程中的相应描述符，内核会从该描述符所关联的i节点开始，逐个检查lockf链表中各项，并释放由<code>调用进程</code>持有的各把锁。（<code>文件i节点会为每个进程维护一个锁结构</code>）</p>
+
+<p>对一个特定文件打开其设置组ID位并关闭其组执行位，则对该文件开启了强制性锁机制。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">alarm</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">secs</span><span class="p">);</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fstat</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">statbuf</span> <span class="p">);</span>
+</span><span class='line'><span class="n">fchmod</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="p">(</span><span class="n">statbuf</span><span class="p">.</span><span class="n">st_mode</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">S_IXGRP</span><span class="p">)</span> <span class="o">|</span> <span class="n">S_ISGID</span> <span class="p">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>alarm函数用于在secs妙内发送一个SIGALRM信号给调用进程。对alarm的调用将取消待处理闹钟，并发挥待处理闹钟发送前剩余妙数。
-SIGSTOP、SIGKILL的默认行为不能被修改。<br>
-signal函数用于接收信号：
-- 当其第二个形参为SIG_IGN时，忽略类型为第一形参的信号
-- 当其第二个形参为SIG_DFL时，类型为第一形参的信号恢复默认行为。
-- 否则第二形参为信号处理程序的地址。</p>
+<h3>pag376</h3>
 
-<p>例子：</p>
+<h6>处理文件描述符和文件状态标志：</h6>
+
+<p>先取当前写模式值，然后修改他（与或并），而不只是将写模式设置为某个绝对值。</p>
+
+<h3>pag382</h3>
+
+<h6>IO多路转换：</h6>
+
+<p>先构造一张有关描述符的列表，然后调用一个函数，直到这些描述符中的一个已准备好进行IO时，该函数才返回。在返回时，它告诉进程哪些描述符已准备好进行IO。<br>
+传向select的参数告诉内核：</p>
+
+<ul>
+<li>1、我们所关心的描述符</li>
+<li>2、对于每个描述符我们所关心的状态（是否读一个给定的描述符?是否想写一个给定的描述符？是否关心一个描述符的异常状态？）</li>
+<li>3、愿意等待多长时间（可以永远等待，等待一个固定量时间，或完全不等待）</li>
+</ul>
+
+
+<p>从select返回告诉我们：</p>
+
+<ul>
+<li>1、已准备好的描述符的数量</li>
+<li>2、对于读写或异常这三个状态中的每一个，哪些描述符已准备好</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">selet</span><span class="p">(</span> <span class="kt">int</span> <span class="n">maxfdp1</span><span class="p">,</span> <span class="n">fd_set</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">readfds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">writefds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">restrictexceptfds</span><span class="p">,</span> <span class="k">struct</span> <span class="n">timeval</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tvptr</span> <span class="p">);(</span><span class="n">maxfdp1</span><span class="err">为最大描述符</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pselet</span><span class="p">(</span> <span class="kt">int</span> <span class="n">maxfdp1</span><span class="p">,</span> <span class="n">fd_set</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">readfds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">writefds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">restrictexceptfds</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">timespec</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tvptr</span><span class="p">,</span> <span class="k">const</span> <span class="kt">sigset_t</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">sigmask</span> <span class="p">);</span> <span class="c1">//多了信号屏蔽这以块功能</span>
+</span><span class='line'><span class="err">对</span><span class="n">fd_set</span><span class="err">处理函数：</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">FD_ISSET</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//测试指定位是否设置</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">FD_CLR</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//清除指定位</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">FD_SET</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//设置指定位</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">FD_ZERO</span><span class="p">(</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//所有位清零</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>常用方式：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -156,86 +228,88 @@ signal函数用于接收信号：
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include&lt;stdio.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;errno.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;unistd.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;signal.h&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span> <span class="nf">handler</span><span class="p">(</span> <span class="kt">int</span> <span class="n">sig</span> <span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;catch signal</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
-</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span> <span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="n">signal</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">handler</span><span class="p">)</span> <span class="o">==</span> <span class="n">SIG_ERR</span> <span class="p">)</span>
-</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;signal error!&quot;</span> <span class="p">);</span>
-</span><span class='line'>    <span class="n">pause</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fd_set</span> <span class="n">rset</span><span class="p">;</span>
+</span><span class='line'><span class="kt">int</span>        <span class="n">fd</span><span class="p">;</span>
+</span><span class='line'><span class="n">FD_ZERO</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
+</span><span class='line'><span class="n">FD_SET</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
+</span><span class='line'><span class="n">FD_SET</span><span class="p">(</span><span class="n">STDIN_FILENO</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
+</span><span class='line'><span class="err">从</span><span class="n">select</span><span class="err">返回后：</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">FD_ISSET</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">))</span> <span class="p">{</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>当在键盘上输入ctrl-c时发送SIGINT信号，调用handler函数</p>
 
-<p>当处理多个信号时产生的问题（深入理解计算机系统二511页）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">poll</span><span class="p">(</span> <span class="k">struct</span> <span class="n">pollfd</span> <span class="n">fdarray</span><span class="p">[],</span><span class="kt">nfds_t</span> <span class="n">nfds</span><span class="p">,</span> <span class="kt">int</span> <span class="n">timeout</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>函数构造一个pollfd结构数组，每个数组元素指定一个描述符编号以及对其所关心的状态。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">pollfd</span> <span class="p">{</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">fd</span><span class="p">;</span>
+</span><span class='line'><span class="kt">short</span> <span class="n">events</span><span class="p">;</span>
+</span><span class='line'><span class="kt">short</span> <span class="n">revents</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>通过events告诉内核我们对该描述符关心的是什么。返回时，内核设置revents成员，以说明对于该描述符已经发生了什么事件。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">ssize_t</span> <span class="nf">readv</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="n">conststruct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iov</span><span class="p">,</span> <span class="kt">int</span> <span class="n">iovcnt</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">writev</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="n">conststruct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iov</span><span class="p">,</span> <span class="kt">int</span> <span class="n">iovcnt</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在一次函数调用中读写多个非连续缓冲区。</p>
+
+<p>管道、FIFO以及某些设备，特别时终端、网络和STREAMS设备有下列两种性质：</p>
 
 <ul>
-<li>1，待处理信号被阻塞</li>
-<li>2，待处理信号不会排队等待
-
-<ul>
-<li>任意类型至多只有一个待处理信号。如果两个信号类型一致，并且进程正在执行其中一个信号的信号处理函数，那么第二个传送的信号会被丢弃。</li>
-</ul>
-</li>
-<li>3，系统调用可以被中断
-
-<ul>
-<li>处理程序捕获到一个信号时，被中断的慢速系统调用（read\write\accept等）在信号处理程序返回时不再继续，而是返回一个错误条件，设置errno为EINTR。</li>
-</ul>
-</li>
+<li>1、一次read操作所返回的数据可能少于所要求的数据，即使还没达到文件尾端也可能是这样的。这不是一个错误，应当继续该设备。</li>
+<li>2、一次write操作的返回值也可能少于指定输出的字节数。这不是一个错误，应当继续该设备。</li>
 </ul>
 
-</div>
-  
-  
+
+<h3>pag390</h3>
+
+<h6>存储映射IO：</h6>
+
+<p>使一个磁盘文件与存储空间中的一个缓冲区相映射。于是当从缓冲区取数据，就相当于读文件中的相应字节。将数据存入缓冲区，则相应字节就自动写入文件。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">mmap</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span><span class="kt">int</span> <span class="n">prot</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fileds</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">off</span> <span class="p">);</span> <span class="c1">//将给定文件映射到存储区域</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-03-01-wo-de-vimpei-zhi/">我的vim配置</a></h1>
-    
-    
-      <p class="meta">
-        
+<p>通常将addr设置为0，表示由系统选择该映射区的起始地址。<br>
+off和addr通常指定为0.</p>
+
+<p>不能用其在网络设备或终端设备等一些设备之间进行复制。</p>
+
+<p>在调用fork之后，子进程继承存储映射区（<code>存储映射区是父进程地址空间的一部分，子进程将复制</code>），同样，因为<code>exec之后子进程采用全新的地址空间，所以不继承存储空间</code>。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">mprotect</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span><span class="kt">int</span> <span class="n">prot</span> <span class="p">);</span><span class="c1">//更改一个现存映射存储区</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">msync</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span> <span class="n">intflags</span> <span class="p">);</span><span class="c1">//将修改的页冲洗到被映射的文件中</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">munmap</span><span class="p">(</span> <span class="kt">caddr_t</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">);</span> <span class="c1">//解除存储区映射（关闭文件描述符并不解除映射区）调用munmap不会使映射区的内容写到磁盘文件上。</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 
 
-<time class='entry-date' datetime='2013-03-01T21:44:24+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>9:44 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -296,249 +370,94 @@ signal函数用于接收信号：
 <span class='line-number'>59</span>
 <span class='line-number'>60</span>
 <span class='line-number'>61</span>
-<span class='line-number'>62</span>
-<span class='line-number'>63</span>
-<span class='line-number'>64</span>
-<span class='line-number'>65</span>
-<span class='line-number'>66</span>
-<span class='line-number'>67</span>
-<span class='line-number'>68</span>
-<span class='line-number'>69</span>
-<span class='line-number'>70</span>
-<span class='line-number'>71</span>
-<span class='line-number'>72</span>
-<span class='line-number'>73</span>
-<span class='line-number'>74</span>
-<span class='line-number'>75</span>
-<span class='line-number'>76</span>
-<span class='line-number'>77</span>
-<span class='line-number'>78</span>
-<span class='line-number'>79</span>
-<span class='line-number'>80</span>
-<span class='line-number'>81</span>
-<span class='line-number'>82</span>
-<span class='line-number'>83</span>
-<span class='line-number'>84</span>
-<span class='line-number'>85</span>
-<span class='line-number'>86</span>
-<span class='line-number'>87</span>
-<span class='line-number'>88</span>
-<span class='line-number'>89</span>
-<span class='line-number'>90</span>
-<span class='line-number'>91</span>
-<span class='line-number'>92</span>
-<span class='line-number'>93</span>
-<span class='line-number'>94</span>
-<span class='line-number'>95</span>
-<span class='line-number'>96</span>
-<span class='line-number'>97</span>
-<span class='line-number'>98</span>
-<span class='line-number'>99</span>
-<span class='line-number'>100</span>
-<span class='line-number'>101</span>
-<span class='line-number'>102</span>
-<span class='line-number'>103</span>
-<span class='line-number'>104</span>
-<span class='line-number'>105</span>
-<span class='line-number'>106</span>
-<span class='line-number'>107</span>
-<span class='line-number'>108</span>
-<span class='line-number'>109</span>
-<span class='line-number'>110</span>
-<span class='line-number'>111</span>
-<span class='line-number'>112</span>
-<span class='line-number'>113</span>
-<span class='line-number'>114</span>
-<span class='line-number'>115</span>
-<span class='line-number'>116</span>
-<span class='line-number'>117</span>
-<span class='line-number'>118</span>
-<span class='line-number'>119</span>
-<span class='line-number'>120</span>
-<span class='line-number'>121</span>
-<span class='line-number'>122</span>
-<span class='line-number'>123</span>
-<span class='line-number'>124</span>
-<span class='line-number'>125</span>
-<span class='line-number'>126</span>
-<span class='line-number'>127</span>
-<span class='line-number'>128</span>
-<span class='line-number'>129</span>
-<span class='line-number'>130</span>
-<span class='line-number'>131</span>
-<span class='line-number'>132</span>
-<span class='line-number'>133</span>
-<span class='line-number'>134</span>
-<span class='line-number'>135</span>
-<span class='line-number'>136</span>
-<span class='line-number'>137</span>
-<span class='line-number'>138</span>
-<span class='line-number'>139</span>
-<span class='line-number'>140</span>
-<span class='line-number'>141</span>
-<span class='line-number'>142</span>
-<span class='line-number'>143</span>
-<span class='line-number'>144</span>
-<span class='line-number'>145</span>
-<span class='line-number'>146</span>
-<span class='line-number'>147</span>
-<span class='line-number'>148</span>
-<span class='line-number'>149</span>
-<span class='line-number'>150</span>
-<span class='line-number'>151</span>
-<span class='line-number'>152</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">&lt;</span><span class="n">pre</span> <span class="n">code_snippet_id</span><span class="o">=</span><span class="s">&quot;321505&quot;</span> <span class="n">snippet_file_name</span><span class="o">=</span><span class="s">&quot;blog_20140430_1_1397668&quot;</span> <span class="n">name</span><span class="o">=</span><span class="s">&quot;code&quot;</span> <span class="k">class</span><span class="o">=</span><span class="s">&quot;plain&quot;</span><span class="o">&gt;</span><span class="s">&quot; All system-wide defaults are set in $VIMRUNTIME/debian.vim (usually just  </span>
-</span><span class='line'><span class="s">&quot; /usr/share/vim/vimcurrent/debian.vim) and sourced by the call to :runtime  </span>
-</span><span class='line'><span class="s">&quot; you can find below.  If you wish to change any of those settings, you should  </span>
-</span><span class='line'><span class="s">&quot; do it in this file (/etc/vim/vimrc), since debian.vim will be overwritten  </span>
-</span><span class='line'><span class="s">&quot; everytime an upgrade of the vim packages is performed.  It is recommended to  </span>
-</span><span class='line'><span class="s">&quot; make changes after sourcing debian.vim since it alters the value of the  </span>
-</span><span class='line'><span class="s">&quot; &#39;compatible&#39; option.  </span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/mman.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
 </span><span class='line'>
-</span><span class='line'><span class="s">&quot; This line should not be removed as it ensures that various options are  </span>
-</span><span class='line'><span class="s">&quot; properly set to work with the Vim-related packages available in Debian.  </span>
-</span><span class='line'><span class="n">runtime</span><span class="o">!</span> <span class="n">debian</span><span class="p">.</span><span class="n">vim</span>
+</span><span class='line'><span class="cp">#define NLOOPS      1000  </span>
+</span><span class='line'><span class="cp">#define SIZE        sizeof(long)  </span>
 </span><span class='line'>
-</span><span class='line'><span class="s">&quot; Uncomment the next line to make Vim more Vi-compatible  </span>
-</span><span class='line'><span class="s">&quot; NOTE: debian.vim sets &#39;nocompatible&#39;.  Setting &#39;compatible&#39; changes numerous  </span>
-</span><span class='line'><span class="s">&quot; options, so any other options should be set AFTER setting &#39;compatible&#39;.  </span>
-</span><span class='line'><span class="s">&quot;set compatible  </span>
+</span><span class='line'><span class="k">static</span> <span class="kt">int</span>
+</span><span class='line'><span class="nf">updata</span><span class="p">(</span> <span class="kt">long</span> <span class="o">*</span><span class="n">ptr</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span><span class="p">(</span> <span class="p">(</span><span class="o">*</span><span class="n">ptr</span><span class="p">)</span><span class="o">++</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'><span class="s">&quot; Vim5 and later versions support syntax highlighting. Uncommenting the next  </span>
-</span><span class='line'><span class="s">&quot; line enables syntax highlighting by default.  </span>
-</span><span class='line'><span class="k">if</span> <span class="n">has</span><span class="p">(</span><span class="s">&quot;syntax&quot;</span><span class="p">)</span>
-</span><span class='line'>  <span class="n">syntax</span> <span class="n">on</span>
-</span><span class='line'><span class="n">endif</span>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">int</span>     <span class="n">fd</span><span class="p">,</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">counter</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">pid_t</span>   <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">void</span>    <span class="o">*</span><span class="n">area</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'><span class="s">&quot; If using a dark background within the editing area and syntax highlighting  </span>
-</span><span class='line'><span class="s">&quot; turn on this option as well  </span>
-</span><span class='line'><span class="s">&quot;set background=dark  </span>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">fd</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span><span class="s">&quot;/dev/zero&quot;</span><span class="p">,</span> <span class="n">O_RDWR</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;open&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">area</span> <span class="o">=</span> <span class="n">mmap</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SIZE</span><span class="p">,</span> <span class="n">PROT_READ</span> <span class="o">|</span> <span class="n">PROT_WRITE</span><span class="p">,</span> <span class="n">MAP_SHARED</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">==</span> <span class="n">MAP_FAILED</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;mmap error&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">close</span><span class="p">(</span> <span class="n">fd</span> <span class="p">);</span>
 </span><span class='line'>
-</span><span class='line'><span class="s">&quot; Uncomment the following to have Vim jump to the last position when  </span>
-</span><span class='line'><span class="s">&quot; reopening a file  </span>
-</span><span class='line'><span class="s">&quot;if has(&quot;</span><span class="n">autocmd</span><span class="s">&quot;)  </span>
-</span><span class='line'><span class="s">&quot;  au BufReadPost * if line(&quot;</span><span class="err">&#39;\</span><span class="s">&quot;&quot;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">line</span><span class="p">(</span><span class="s">&quot;&#39;</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">line</span><span class="p">(</span><span class="s">&quot;$&quot;</span><span class="p">)</span> <span class="o">|</span> <span class="n">exe</span> <span class="s">&quot;normal! g&#39;</span><span class="se">\&quot;</span><span class="s">&quot;</span> <span class="o">|</span> <span class="n">endif</span>
-</span><span class='line'><span class="s">&quot;endif  </span>
+</span><span class='line'>    <span class="n">TELL_WAIT</span><span class="p">();</span>
 </span><span class='line'>
-</span><span class='line'><span class="s">&quot; Uncomment the following to have Vim load indentation rules and plugins  </span>
-</span><span class='line'><span class="s">&quot; according to the detected filetype.  </span>
-</span><span class='line'><span class="s">&quot;if has(&quot;</span><span class="n">autocmd</span><span class="s">&quot;)  </span>
-</span><span class='line'><span class="s">&quot;  filetype plugin indent on  </span>
-</span><span class='line'><span class="s">&quot;endif  </span>
-</span><span class='line'>
-</span><span class='line'><span class="s">&quot; The following are commented out as they cause vim to behave a lot  </span>
-</span><span class='line'><span class="s">&quot; differently from regular Vi. They are highly recommended though.  </span>
-</span><span class='line'><span class="s">&quot;set showcmd        &quot;</span> <span class="n">Show</span> <span class="p">(</span><span class="n">partial</span><span class="p">)</span> <span class="n">command</span> <span class="k">in</span> <span class="n">status</span> <span class="n">line</span><span class="p">.</span>
-</span><span class='line'>    <span class="s">&quot;nset showmatch     &quot;</span> <span class="n">Show</span> <span class="n">matching</span> <span class="n">brackets</span><span class="p">.</span>
-</span><span class='line'><span class="s">&quot;set ignorecase     &quot;</span> <span class="n">Do</span> <span class="k">case</span> <span class="n">insensitive</span> <span class="n">matching</span>
-</span><span class='line'><span class="s">&quot;set smartcase      &quot;</span> <span class="n">Do</span> <span class="n">smart</span> <span class="k">case</span> <span class="n">matching</span>
-</span><span class='line'><span class="s">&quot;set incsearch      &quot;</span> <span class="n">Incremental</span> <span class="n">search</span>
-</span><span class='line'><span class="s">&quot;set autowrite      &quot;</span> <span class="n">Automatically</span> <span class="n">save</span> <span class="n">before</span> <span class="n">commands</span> <span class="nl">like</span> <span class="p">:</span><span class="n">next</span> <span class="nl">and</span> <span class="p">:</span><span class="n">make</span>
-</span><span class='line'><span class="s">&quot;set hidden             &quot;</span> <span class="n">Hide</span> <span class="n">buffers</span> <span class="n">when</span> <span class="n">they</span> <span class="n">are</span> <span class="n">abandoned</span>
-</span><span class='line'><span class="s">&quot;set mouse=a        &quot;</span> <span class="n">Enable</span> <span class="n">mouse</span> <span class="n">usage</span> <span class="p">(</span><span class="n">all</span> <span class="n">modes</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="s">&quot; Source a global configuration file if available  </span>
-</span><span class='line'><span class="s">&quot;按F5切换行号显示  </span>
-</span><span class='line'><span class="n">map</span> <span class="o">&lt;</span><span class="n">F5</span><span class="o">&gt;</span> <span class="o">:</span><span class="n">set</span> <span class="n">nu</span><span class="o">!&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="s">&quot;map &lt;S-F5&gt;:set nonu&lt;CR&gt;  </span>
-</span><span class='line'><span class="n">filetype</span> <span class="n">plugin</span> <span class="n">indent</span> <span class="n">on</span>
-</span><span class='line'><span class="n">set</span> <span class="n">completeopt</span><span class="o">=</span><span class="n">longest</span><span class="p">,</span><span class="n">menu</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">set</span> <span class="n">history</span><span class="o">=</span><span class="mi">1000</span>
-</span><span class='line'><span class="n">set</span> <span class="n">autoindent</span>
-</span><span class='line'><span class="n">set</span> <span class="n">smartindent</span>
-</span><span class='line'><span class="n">set</span> <span class="n">tabstop</span><span class="o">=</span><span class="mi">4</span>
-</span><span class='line'><span class="n">set</span> <span class="n">shiftwidth</span><span class="o">=</span><span class="mi">4</span>
-</span><span class='line'><span class="n">set</span> <span class="n">showmatch</span>
-</span><span class='line'><span class="n">set</span> <span class="n">ruler</span>
-</span><span class='line'><span class="n">set</span> <span class="n">cursorline</span>
-</span><span class='line'><span class="n">set</span> <span class="n">hlsearch</span>
-</span><span class='line'><span class="n">set</span> <span class="n">incsearch</span>
-</span><span class='line'><span class="n">set</span> <span class="n">nocompatible</span>
-</span><span class='line'><span class="n">set</span> <span class="n">cin</span>
-</span><span class='line'><span class="n">set</span> <span class="n">cino</span><span class="o">=:</span><span class="mi">4</span><span class="n">g4t4</span>
-</span><span class='line'><span class="n">set</span> <span class="n">nu</span>
-</span><span class='line'><span class="n">syntax</span> <span class="n">on</span>
-</span><span class='line'><span class="n">filetype</span> <span class="n">on</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">au</span> <span class="n">BufRead</span><span class="p">,</span><span class="n">BufNewFile</span> <span class="o">*</span>  <span class="n">setfiletype</span> <span class="n">txt</span>
-</span><span class='line'><span class="s">&quot;自动补全  </span>
-</span><span class='line'><span class="o">:</span><span class="n">inoremap</span> <span class="p">(</span> <span class="p">()</span><span class="o">&lt;</span><span class="n">ESC</span><span class="o">&gt;</span><span class="nl">i</span>
-</span><span class='line'><span class="p">:</span><span class="n">inoremap</span> <span class="p">)</span> <span class="o">&lt;</span><span class="n">c</span><span class="o">-</span><span class="n">r</span><span class="o">&gt;=</span><span class="n">ClosePair</span><span class="p">(</span><span class="sc">&#39;)&#39;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="o">:</span><span class="n">inoremap</span> <span class="p">{</span> <span class="p">{</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;</span><span class="p">}</span><span class="o">&lt;</span><span class="n">ESC</span><span class="o">&gt;</span><span class="nl">O</span>
-</span><span class='line'><span class="p">:</span><span class="n">inoremap</span> <span class="p">}</span> <span class="o">&lt;</span><span class="n">c</span><span class="o">-</span><span class="n">r</span><span class="o">&gt;=</span><span class="n">ClosePair</span><span class="p">(</span><span class="sc">&#39;}&#39;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="o">:</span><span class="n">inoremap</span> <span class="p">[</span> <span class="p">[]</span><span class="o">&lt;</span><span class="n">ESC</span><span class="o">&gt;</span><span class="nl">i</span>
-</span><span class='line'><span class="p">:</span><span class="n">inoremap</span> <span class="p">]</span> <span class="o">&lt;</span><span class="n">c</span><span class="o">-</span><span class="n">r</span><span class="o">&gt;=</span><span class="n">ClosePair</span><span class="p">(</span><span class="sc">&#39;]&#39;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="o">:</span><span class="n">inoremap</span> <span class="s">&quot; &quot;&quot;&lt;ESC&gt;i  </span>
-</span><span class='line'><span class="o">:</span><span class="n">inoremap</span> <span class="sc">&#39; &#39;</span><span class="err">&#39;</span><span class="o">&lt;</span><span class="n">ESC</span><span class="o">&gt;</span><span class="n">i</span>
-</span><span class='line'><span class="n">function</span><span class="o">!</span> <span class="n">ClosePair</span><span class="p">(</span><span class="kt">char</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">getline</span><span class="p">(</span><span class="sc">&#39;.&#39;</span><span class="p">)[</span><span class="n">col</span><span class="p">(</span><span class="sc">&#39;.&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="nl">a</span><span class="p">:</span><span class="kt">char</span>
-</span><span class='line'>        <span class="k">return</span> <span class="s">&quot;\&lt;Right&gt;&quot;</span>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;fork&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="k">else</span> <span class="k">if</span><span class="p">(</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">NLOOPS</span><span class="p">;</span> <span class="n">i</span><span class="o">+=</span><span class="mi">2</span> <span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">counter</span> <span class="o">=</span> <span class="n">updata</span><span class="p">((</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">))</span> <span class="o">!=</span> <span class="n">i</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;p: e %d, g %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">counter</span> <span class="p">);</span>
+</span><span class='line'>                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="n">printf</span><span class="p">(</span><span class="s">&quot;p area: %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">TELL_CHILD</span><span class="p">(</span> <span class="n">pid</span> <span class="p">);</span>
+</span><span class='line'>            <span class="n">WAIT_CHILD</span><span class="p">();</span>
+</span><span class='line'>            <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
 </span><span class='line'>    <span class="k">else</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nl">a</span><span class="p">:</span><span class="kt">char</span>
-</span><span class='line'>    <span class="n">endif</span>
-</span><span class='line'><span class="n">endfunction</span>
-</span><span class='line'><span class="n">filetype</span> <span class="n">plugin</span> <span class="n">indent</span> <span class="n">on</span>
-</span><span class='line'><span class="s">&quot;打开文件类型检测, 加了这句才可以用智能补全  </span>
-</span><span class='line'><span class="n">set</span> <span class="n">completeopt</span><span class="o">=</span><span class="n">longest</span><span class="p">,</span><span class="n">menu</span>
-</span><span class='line'>
-</span><span class='line'><span class="s">&quot;if has(&quot;</span><span class="n">vms</span><span class="s">&quot;)  </span>
-</span><span class='line'><span class="s">&quot;    set nobackup  </span>
-</span><span class='line'><span class="s">&quot;else  </span>
-</span><span class='line'><span class="s">&quot;    set backup  </span>
-</span><span class='line'><span class="s">&quot;endif  </span>
-</span><span class='line'>
-</span><span class='line'><span class="s">&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;设置开启ctags&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;</span>
-</span><span class='line'><span class="n">map</span> <span class="o">&lt;</span><span class="n">F4</span><span class="o">&gt;</span> <span class="o">:!</span><span class="n">ctags</span> <span class="o">-</span><span class="n">R</span> <span class="o">--</span><span class="n">c</span><span class="o">++-</span><span class="n">kinds</span><span class="o">=+</span><span class="n">p</span> <span class="o">--</span><span class="n">fields</span><span class="o">=+</span><span class="n">iaS</span> <span class="o">--</span><span class="n">extra</span><span class="o">=+</span><span class="n">q</span> <span class="p">.</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="s">&quot;第一个命令里的分号是必不可少的。这个命令让vim首先在当前目录里寻找tags文件，如果没有找到tags文件，或者没有找到对应的目标，就到父目录 中查找，一直向上递归。因为tags文件中记录的&gt;路径总是相对于tags文件所在的路径，所以要使用第二个设置项来改变vim的当前目录。     </span>
-</span><span class='line'><span class="n">set</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">;</span>
-</span><span class='line'><span class="n">set</span> <span class="n">autochdir</span>
-</span><span class='line'><span class="s">&quot;绝对路径    </span>
-</span><span class='line'><span class="s">&quot;set tags=/home/long/workstation/ganguio/uio-8139d-driver/V7/tags,/home/long/linux-3.7.3/drivers/uio/tags    </span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="s">&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;Taglist设置&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;</span>
-</span><span class='line'><span class="n">map</span> <span class="o">&lt;</span><span class="n">F3</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">Tlist</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;</span>  <span class="s">&quot;&quot;</span><span class="err">按下</span><span class="n">F3</span><span class="err">就可以呼出</span>
-</span><span class='line'><span class="s">&quot;let Tlist_Auto_Open = 1  &quot;</span><span class="err">在启动</span><span class="n">VIM</span><span class="err">后，自动打开</span><span class="n">taglist</span><span class="err">窗口</span>
-</span><span class='line'><span class="n">let</span> <span class="n">Tlist_Ctags_Cmd</span> <span class="o">=</span> <span class="err">&#39;</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">ctags</span><span class="err">&#39;</span>  <span class="s">&quot;设定ctags的位置    </span>
-</span><span class='line'><span class="n">let</span> <span class="n">Tlist_Use_Right_Window</span><span class="o">=</span><span class="mi">0</span> <span class="s">&quot; 1为让窗口显示在右边，0为显示在左边    </span>
-</span><span class='line'><span class="n">let</span> <span class="n">Tlist_Show_One_File</span><span class="o">=</span><span class="mi">0</span> <span class="s">&quot;让taglist可以同时展示多个文件的函数列表，设置为1时不同时显示&gt;多个文件的tag，只显示当前文件的    </span>
-</span><span class='line'><span class="n">let</span> <span class="n">Tlist_File_Fold_Auto_Close</span><span class="o">=</span><span class="mi">1</span> <span class="s">&quot;同时显示多个文件中的tag时，taglist只显示当前文件tag，&gt;其他文件的函数列表折叠隐藏    </span>
-</span><span class='line'><span class="n">let</span> <span class="n">Tlist_Exit_OnlyWindow</span><span class="o">=</span><span class="mi">1</span> <span class="s">&quot;当taglist是最后一个分割窗口时，自动退出vim    </span>
-</span><span class='line'><span class="s">&quot;let Tlist_Use_SingleClick= 1    &quot;</span> <span class="err">缺省情况下，在双击一个</span><span class="n">tag</span><span class="err">时，才会跳到该</span><span class="n">tag</span><span class="err">定义的位置</span>
-</span><span class='line'><span class="s">&quot;let Tlist_Process_File_Always=0  &quot;</span><span class="err">是否一直处理</span><span class="n">tags</span><span class="mf">.1</span><span class="o">:</span><span class="err">处理</span><span class="p">;</span><span class="mi">0</span><span class="o">:</span><span class="err">不处理</span>
-</span><span class='line'><span class="s">&quot;打开taglist时焦点自动转到taglist窗口&quot;</span>
-</span><span class='line'><span class="s">&quot;Tlist_GainFocus_On_ToggleOpen=1   </span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="s">&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;cscope设置&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;&quot;        </span>
-</span><span class='line'><span class="n">set</span> <span class="n">cscopequickfix</span><span class="o">=</span><span class="n">s</span><span class="o">-</span><span class="p">,</span><span class="n">c</span><span class="o">-</span><span class="p">,</span><span class="n">d</span><span class="o">-</span><span class="p">,</span><span class="n">i</span><span class="o">-</span><span class="p">,</span><span class="n">t</span><span class="o">-</span><span class="p">,</span><span class="n">e</span><span class="o">-</span>
-</span><span class='line'><span class="k">if</span> <span class="n">has</span><span class="p">(</span><span class="s">&quot;cscope&quot;</span><span class="p">)</span>
-</span><span class='line'><span class="n">set</span> <span class="n">csprg</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="n">cscope</span>
-</span><span class='line'><span class="n">set</span> <span class="n">csto</span><span class="o">=</span><span class="mi">1</span>
-</span><span class='line'><span class="n">set</span> <span class="n">cst</span>
-</span><span class='line'><span class="n">set</span> <span class="n">nocsverb</span>
-</span><span class='line'><span class="s">&quot; add any database in current directory       </span>
-</span><span class='line'><span class="k">if</span> <span class="n">filereadable</span><span class="p">(</span><span class="s">&quot;cscope.out&quot;</span><span class="p">)</span>
-</span><span class='line'>   <span class="n">cs</span> <span class="n">add</span> <span class="n">cscope</span><span class="p">.</span><span class="k">out</span>
-</span><span class='line'><span class="n">endif</span>
-</span><span class='line'><span class="n">set</span> <span class="n">csverb</span>
-</span><span class='line'><span class="n">endif</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">s</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">s</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cword&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">g</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">g</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cword&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">c</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">c</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cword&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">t</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">t</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cword&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">e</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">e</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cword&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">f</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">f</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cfile&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">i</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">i</span> <span class="o">^&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cfile&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;</span><span class="err">$</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="n">nmap</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="p">@</span><span class="o">&gt;</span><span class="nl">d</span> <span class="p">:</span><span class="n">cs</span> <span class="n">find</span> <span class="n">d</span> <span class="o">&lt;</span><span class="n">C</span><span class="o">-</span><span class="n">R</span><span class="o">&gt;=</span><span class="n">expand</span><span class="p">(</span><span class="s">&quot;&lt;cword&gt;&quot;</span><span class="p">)</span><span class="o">&lt;</span><span class="n">CR</span><span class="o">&gt;&lt;</span><span class="n">CR</span><span class="o">&gt;</span>
-</span><span class='line'><span class="k">if</span> <span class="n">filereadable</span><span class="p">(</span><span class="s">&quot;/etc/vim/vimrc.local&quot;</span><span class="p">)</span>
-</span><span class='line'>  <span class="n">source</span> <span class="o">/</span><span class="n">etc</span><span class="o">/</span><span class="n">vim</span><span class="o">/</span><span class="n">vimrc</span><span class="p">.</span><span class="n">local</span>
-</span><span class='line'><span class="n">endif</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">cs</span> <span class="n">add</span> <span class="o">~/</span><span class="n">Documents</span><span class="o">/</span><span class="n">linux3</span><span class="mf">.13</span><span class="o">/</span><span class="n">linux</span><span class="o">-</span><span class="mf">3.13.3</span><span class="o">/</span><span class="n">cscope</span><span class="p">.</span><span class="k">out</span> <span class="o">~/</span><span class="n">Documents</span><span class="o">/</span><span class="n">linux3</span><span class="mf">.13</span><span class="o">/</span><span class="n">linux</span><span class="o">-</span><span class="mf">3.13.3</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">NLOOPS</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="mi">2</span> <span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">WAIT_PARENT</span><span class="p">();</span>
+</span><span class='line'>            <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">counter</span> <span class="o">=</span> <span class="n">updata</span><span class="p">((</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">))</span> <span class="o">!=</span> <span class="n">i</span> <span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;c: e %d, g %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">counter</span> <span class="p">);</span>
+</span><span class='line'>                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="n">printf</span><span class="p">(</span><span class="s">&quot;c area: %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">TELL_PARENT</span><span class="p">(</span> <span class="n">getppid</span><span class="p">()</span> <span class="p">);</span>
+</span><span class='line'>            <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">1</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">2</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">3</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">4</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">5</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">6</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">7</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">8</span>
+</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">9</span>
+</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">10</span>
+</span><span class='line'><span class="p">...</span>
 </span></code></pre></td></tr></table></div></figure>
 
 </div>
@@ -553,7 +472,7 @@ signal函数用于接收信号：
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-02-28-xiao-xi-dui-lie/">消息队列</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-05-19-guan-yu-zu-sai/">关于阻塞</a></h1>
     
     
       <p class="meta">
@@ -562,48 +481,343 @@ signal函数用于接收信号：
 
 
 
-<time class='entry-date' datetime='2013-02-28T22:04:54+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:04 pm</span></time>
+<time class='entry-date' datetime='2013-05-19T13:22:31+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>1:22 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>消息队列操作基本步骤：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>1，key_t ftok（ const char *fname, int id ）</span></code></pre></td></tr></table></div></figure>
-
-
-<p>获取键值</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>2，int msgget( key_t key, int flag )</span></code></pre></td></tr></table></div></figure>
-
-
-<p>打开或创建一个新队列</p>
-
-<p>创建IPC结构条件（满足一个）：</p>
+  <div class="entry-content"><p>read函数只是一个通用的读文件设备的接口。<code>是否阻塞</code>需要由<code>设备的属性和设定</code>所决定。一般来说:</p>
 
 <ul>
-<li><p>一：key是IPC_PRIVATE</p></li>
-<li><p>二：key当前未与特定类型的IPC结构相结合，并且flag中指定了IPC_CREAT位</p></li>
+<li>读字符终端、网络的socket描述字，管道文件等，这 些文件的缺省read都是阻塞的方式。</li>
+<li>如果是读磁盘上的文件，一般不会是阻塞方式的。但使用锁和fcntl设置取消文件O_NOBLOCK状态，也会产生 阻塞的read效果。</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-19-unixxi-tong-xian-cheng-kong-zhi/">UNIX系统线程控制</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-19T13:00:08+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>1:00 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag314</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_init</span><span class="p">(</span> <span class="kt">pthread_attr_t</span><span class="o">*</span><span class="n">attr</span> <span class="p">)</span>  <span class="c1">//初始化pthread_attr_t结构</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_destroy</span><span class="p">(</span><span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">)</span><span class="c1">//去初始化；释放动态内存；用无效的值初始化属性对象（被误用会导致pthread_create函数返回错误）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>分离线程与不分离线程</h6>
+
+<p>分离线程：</p>
+
+<ul>
+<li><p>线程函数完成后，OS将其资源自动收回
+不分离线程：</p></li>
+<li><p>如果不调用pthread_join，或者不结束整个进程，OS不会回收其资源</p></li>
 </ul>
 
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>3，int msgsend( int msqid, const void *ptr, size_t nbytes, int flag )</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_getdetachstate</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">detachstate</span> <span class="p">)</span> <span class="c1">//获取当前线程属性</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_setdetachstate</span><span class="p">(</span><span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">detachstate</span> <span class="p">)</span> <span class="c1">//设置线程属性：</span>
+</span><span class='line'><span class="c1">// PTHREAD_CREATE_DETACHED 分离状态启动线程</span>
+</span><span class='line'><span class="c1">// PTHREAD_CREATE_JOINABLE  正常状态启动线程</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
-<p>将数据放到队列中</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getstack</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="kr">restrict</span> <span class="n">stackaddr</span><span class="p">,</span> <span class="kt">size_t</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">stacksize</span> <span class="p">);</span> <span class="c1">//获取线程栈属性</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setstack</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">stackaddr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="n">stacksize</span> <span class="p">);</span><span class="c1">//设置线程栈位置</span>
+</span><span class='line'><span class="c1">// 对进程来说，虚拟地址空间的大小是固定的，进程中只有一个栈</span>
+</span><span class='line'><span class="c1">// 如果用完了线程栈的虚拟地址空间，可以使用malloc或者mmap来为其他栈分配空间，并用pthread_attr_setstack函数改变新建线程的栈位置。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getstacksize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">stacksize</span> <span class="p">);</span><span class="c1">//获取栈大小</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setstacksize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">stacksize</span> <span class="p">);</span> <span class="c1">//设置栈大小</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>4，ssize_t msgrcv( int msqid, void *ptr, size_t nbytes, long type, int flag )</span></code></pre></td></tr></table></div></figure>
 
 
-<p>从队列中取消息</p>
 
-<p>示例程序：</p>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getguardsize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">guardsize</span> <span class="p">);</span><span class="c1">//获取线程栈末尾之后用以避免栈溢出的扩展内存的大小</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setguardsize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">stacksize</span> <span class="p">);</span><span class="c1">//设置线程栈末尾之后用以避免栈溢出的扩展内存的大小</span>
+</span><span class='line'><span class="c1">// guardsize控制线程栈末尾之后用以避免栈溢出的扩展内存的大小。属性默认为PAGESIZE个字节。</span>
+</span><span class='line'><span class="c1">// guardsize为0时不会提供警戒缓冲区</span>
+</span><span class='line'><span class="c1">// 如果对线程属性stackaddr做的修改，系统会使警戒栈缓冲区机制无效，等同为guardsize为0</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>并发度控制着用户级线程可以映射的内核线程或进程的数目。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_getconcurrency</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span><span class="c1">//返回当前并发度</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setconcurrency</span><span class="p">(</span> <span class="kt">int</span> <span class="n">level</span><span class="p">);</span><span class="c1">//设置系统并发度</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag318</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_init</span><span class="p">(</span><span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_destroy</span><span class="p">(</span><span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在进程中，默认行为时<code>多个线程可以访问同一个同步对象</code>。在这种情况下进程<code>共享互斥量</code>属性需设置为<code>PTHREAD_PROCESS_PRIVATE</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_getpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span><span class="p">);</span><span class="c1">//获取进程共享属性</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_setpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pshared</span> <span class="p">);</span><span class="c1">//设置进程共享属性</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>互斥量类型属性</h6>
+
+<ul>
+<li>1、PTHREAD_MUTEX_NORMAL  标准，不做错误检测、死锁检测</li>
+<li>2、PTHREAD_MUTEX_RECURSIVE  允许同一线程在互斥量解锁之前对该互斥量进行多次加锁</li>
+<li>3、PTHREAD_MUTEX_ERRORCHECK  提供错误检查</li>
+<li>4、PTHREAD_MUTEX_DEFAULT 请求默认语义（linux映射到NORMAL）</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_gettype</span><span class="p">(</span> <span class="kt">constpthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">type</span><span class="p">);</span><span class="c1">//获取互斥量类型属性</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_settype</span><span class="p">(</span> <span class="kt">constpthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span> <span class="p">);</span><span class="c1">//设置互斥量类型属性</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>互斥量用于保护与条件变量关联的条件时，在阻塞线程<code>之前</code>，pthread_cond_wait和pthread_cond_timedwait函数<code>释放与条件相关的互斥量</code>，这就<code>允许其他线程获取互斥量、改变条件、释放互斥量并向条件变量发送信号</code>。（因此使用递归互斥量时要特别小心，wait，timedwait只解锁一层）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_init</span><span class="p">(</span><span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_destroy</span><span class="p">(</span><span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_getpshared</span><span class="p">(</span> <span class="kt">constpthread_rwlockattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_setpshared</span><span class="p">(</span> <span class="kt">constpthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="n">intpshared</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_init</span><span class="p">(</span><span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_destroy</span><span class="p">(</span><span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_getpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">restrictattr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_setpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="n">intpshared</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>线程安全与异步信号安全</h6>
+
+<p>如果一个函数对多个线程来说时可重入的，则说这个函数是线程安全的。
+如果函数对异步信号处理程序的重入是安全的，那么就可以说函数时异步信号安全的。</p>
+
+<h6>FILE对象相关锁操作</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">ftrylockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">flockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">funlockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>进程中的<code>所有线程</code>都可以访问<code>进程的整个地址空间</code>。<code>除了使用寄存器</code>以外，线程<code>没有办法阻止其他线程访问他的数据</code>，线程私有数据也不例外。</p>
+
+<p>在分配线程私有数据之前，需要创建一个与该数据关联的键，这个键将用于获取对线程私有数据的访问权。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_key_create</span><span class="p">(</span> <span class="kt">pthread_key_t</span><span class="o">*</span><span class="n">keyp</span><span class="p">,</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">destructor</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span> <span class="p">);</span><span class="c1">//创建一个键和与键关联的析构函数</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_key_delete</span><span class="p">(</span> <span class="kt">pthread_key_t</span><span class="o">*</span><span class="n">key</span> <span class="p">);</span> <span class="c1">//删除键（不会激活与键相关联的析构函数）</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">pthread_once_t</span> <span class="n">initflag</span> <span class="o">=</span> <span class="n">PTHREAD_ONCE_INIT</span><span class="p">;</span><span class="c1">//initflag必须时一个非本地变量（是全局或静态变量），必须初始化为PTHREAD_ONCE_INIT</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_once</span><span class="p">(</span> <span class="kt">pthread_once_t</span><span class="o">*</span><span class="n">initflag</span><span class="p">,</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">initfn</span><span class="p">)(</span><span class="kt">void</span><span class="p">)</span> <span class="p">);</span> <span class="c1">//保证初始化initfn只被调用一次。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">pthread_getspecific</span><span class="p">(</span><span class="kt">pthread_key_t</span> <span class="n">key</span> <span class="p">);</span> <span class="c1">//获得线程私有数据地址</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setspecific</span><span class="p">(</span> <span class="n">pthread_key_tkey</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span> <span class="n">value</span><span class="p">);</span> <span class="c1">//把键和线程私有数据关联起来</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>取消点：线程检查是否被取消并按照请求进行动作的一个位置</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">pthread_cancel</span><span class="err">调用并不等待线程终止，在默认情况下，线程在取消请求发出以后还是继续运行，直到线程到达某个取消点。</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_setcancelstate</span><span class="p">(</span> <span class="kt">int</span> <span class="n">state</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="n">oldstate</span><span class="p">);</span><span class="c1">//修改可取消状态（PTHREAD_CANCEL_ENABLE、PTHREAD_CANCEL_DISABLE）</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">pthread_testcancel</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span><span class="c1">//自己添加取消点（如果某个取消请求处于未决状态，而且取消没有置为无效，那么线程就会被取消。但是如果取消设置被置为无效，此函数没有任何效果）（取消点需要和未决信号相结合才能取消一个进程）</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setcanceltype</span><span class="p">(</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="n">oldtype</span> <span class="p">);</span> <span class="c1">//修改取消类型（异步取消(可在任意时间取消)，延迟取消（默认状态））</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>pag334</h6>
+
+<p>每个线程都有自己的<code>信号屏蔽字</code>，但是<code>信号的处理是进程中所有线程共享</code>的。<br>
+<code>进程中的信号是递送到单个线程的。</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_sigmask</span><span class="p">(</span> <span class="kt">int</span> <span class="n">how</span><span class="p">,</span> <span class="kt">constsigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oset</span><span class="p">);</span><span class="c1">//信号屏蔽（单线程中的sigprocmask）</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">sigwait</span><span class="p">(</span> <span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">signop</span> <span class="p">);</span> <span class="c1">//等待信号发生</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>为了避免错误，线程在调用sigwait之前，<code>必须阻塞那些他正在等待的信号</code>（sigsuspend一样）。sigwait会自动取消信号集的阻塞状态（和sigsuspend有所区别，sigwait是取消set中屏蔽的信号阻塞，而sigsuspend是需要在传入的信号屏蔽字sigmask中取消对相应信号的屏蔽,且sigsuspend需要和信号处理函数相配合），直到有新的信号被递送。在返回之前将恢复线程的信号屏蔽字。<br>
+<code>为了防止信号中断线程，可以把信号加到每个线程的信号屏蔽字中，然后安排专用线程作信号处理
+新建线程继承了现有的信号屏蔽字（子进程也有继承）</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_kill</span><span class="p">(</span> <span class="kt">pthread_t</span> <span class="kr">thread</span><span class="p">,</span><span class="kt">int</span> <span class="n">signo</span> <span class="p">);</span><span class="c1">// 发送信号到线程</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>闹钟定时器时进程资源，并且所有的线程共享相同的alarm，所以进程中的多个线程<code>不可能互不干扰</code></p>
+
+<h6>pag337</h6>
+
+<p>子进程通过继承整个地址空间的副本（<code>内存是fork时就分配的，但是里面的内容是写时才复制</code>），也从父进程那里继承了所有<code>互斥量、读写锁和条件变量的状态</code>。如果父进程包含多个线程、子进程在fork返回以后，如果紧接着不是马上调用exec的话，就需要清理锁状态。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_atfork</span><span class="p">(</span><span class="kt">void</span><span class="p">(</span><span class="o">*</span> <span class="n">prepare</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">),</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">parent</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">),</span> <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">child</span><span class="p">)(</span><span class="kt">void</span> <span class="p">));</span><span class="c1">//清除锁状态建立fork处理程序prepare fork处理程序在调用fork以后运行，childfork处理程序在fork调用返回到子进程之前运行，parentfork处理程序在fork调用返回给父进程前运行。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-17-jin-cheng-he-xian-cheng-de-qu-bie/">进程和线程的区别</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-17T21:52:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:52 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h4>地址空间：</h4>
+
+<ul>
+<li>线程：无单独地址空间，共享内存，一个线程死掉等于整个进程死掉。线程只是一个进程中的不同执行路路径。线程有自己的堆栈和局部变量（寄存器集、信号屏蔽字）。</li>
+<li>进程：有独立的地址空间（调用fork时就创建子进程的地址空间副本）（现在：写时拷贝，共享正文），一个进程崩溃后在保护模式下不会对其他进程产生影响。</li>
+</ul>
+
+
+<h4>系统开销：</h4>
+
+<ul>
+<li>线程：占用资源少，所以切换时对资源的处理也少，耗费资源少。并发性高。</li>
+<li>进程：占用资源多，切换时资源耗费大。</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-16-unixxi-tong-duo-xian-cheng-bian-cheng-de-%5B%3F%5D-ge-kun-huo/">UNIX系统多线程编程的一个困惑</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-16T22:00:43+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:00 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>一组并发线程运行在一个进程的上下文中。每个线程都有他自己<code>独立的线程上下文</code>，包括线程<code>ID，栈，栈指针</code>，程序计数器，条件码和通用的目地寄存器。每个线程和其他线程一起共享进程上下文的剩余部分。这包括整个用户虚拟地址（由只读文本，读写数据，堆，以及所有共享库代码和数据区域组成），线程同样共享打开的文件集合。(在线程中定义的<code>c static属性</code>的本地变量虽然不在栈中管理，但是他的作用范围和普通的局部变量一样。因其虽然在.data或.bss中为每个定义分配空间，但是其在符号表中创建的时一个有唯一名字的<code>本地链接器符号</code>，其本质依然时局部变量（深入理解计算机系统二452页）)</p>
+
+<p>各自独立的线程栈被保存在<code>虚拟地址空间的栈区域</code>中，并且<code>通常</code>被相应的线程独立的访问。（通常而不是总是，时因为不同线程栈不对其他线程设防，如果一个线程以某种方式得到一个指向其他线程栈的指针，那么他就可以读写这个栈的任何部分）（注意，要在<code>取得所需要的线程栈的指针的情况下！</code>，如果直接引用，则程序编译将会不通过，因其访问的是自身的独立线程栈，而此栈没有所要的那个数据（在其他线程栈中））</p>
+
+<p>程序：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -630,174 +844,40 @@ signal函数用于接收信号：
 <span class='line-number'>23</span>
 <span class='line-number'>24</span>
 <span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include&lt;sys/msg.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;sys/ipc.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;sys/types.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;unistd.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;stdio.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;string.h&gt;</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include&lt;unistd.h&gt;</span>
+</span><span class='line'><span class="cp">#include&lt;pthread.h&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="k">struct</span> <span class="n">msg_buf</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">long</span> <span class="n">mtype</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">char</span> <span class="n">mtext</span><span class="p">[</span><span class="mi">512</span><span class="p">];</span>
-</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">thread</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">vargrp</span> <span class="p">);</span>
+</span><span class='line'>
 </span><span class='line'>
 </span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span> <span class="p">)</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">key_t</span> <span class="n">key</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="kt">id</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">pid</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">struct</span> <span class="n">msg_buf</span>  <span class="n">meg</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">meg</span><span class="p">.</span><span class="n">mtype</span> <span class="o">=</span> <span class="n">getpid</span><span class="p">();</span>
-</span><span class='line'>    <span class="n">key</span> <span class="o">=</span> <span class="n">ftok</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span> <span class="p">);</span><span class="c1">// ftok第一个形参必须引用一个现存文件</span>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="kt">id</span><span class="o">=</span><span class="n">msgget</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">IPC_CREAT</span> <span class="o">|</span> <span class="mo">0666</span><span class="p">))</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;message get error</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="n">pid</span><span class="o">=</span><span class="n">fork</span><span class="p">()</span> <span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">strcpy</span><span class="p">(</span> <span class="n">meg</span><span class="p">.</span><span class="n">mtext</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="p">);</span>
-</span><span class='line'>        <span class="k">if</span><span class="p">(</span> <span class="n">msgsnd</span><span class="p">(</span><span class="kt">id</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">meg</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">meg</span><span class="p">.</span><span class="n">mtext</span><span class="p">),</span> <span class="n">IPC_NOWAIT</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">)</span><span class="c1">//IPC_NOWAIT，类似IO非阻塞标识</span>
-</span><span class='line'>        <span class="p">{</span>
-</span><span class='line'>            <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;message send error</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
-</span><span class='line'>            <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="n">wait</span><span class="p">(</span> <span class="n">pid</span> <span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span> <span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">else</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span> <span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'>        <span class="k">if</span><span class="p">(</span> <span class="n">msgrcv</span><span class="p">(</span><span class="kt">id</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">meg</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">meg</span><span class="p">.</span><span class="n">mtext</span><span class="p">),</span> <span class="n">meg</span><span class="p">.</span><span class="n">mtype</span><span class="p">,</span> <span class="n">MSG_NOERROR</span> <span class="o">|</span> <span class="n">IPC_NOWAIT</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="p">)</span>
-</span><span class='line'>        <span class="p">{</span>
-</span><span class='line'>            <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;receieve error</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
-</span><span class='line'>            <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;%s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">meg</span><span class="p">.</span><span class="n">mtext</span> <span class="p">);</span>
-</span><span class='line'>        <span class="n">exit</span><span class="p">(</span> <span class="mi">1</span> <span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">pthread_create</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">tid</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="kr">thread</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">i</span> <span class="p">);</span><span class="c1">//创建线程1</span>
+</span><span class='line'>    <span class="n">pthread_exit</span><span class="p">(</span> <span class="nb">NULL</span> <span class="p">);</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-02-28-strlenhe-sizeofde-qu-bie/">Strlen和sizeof的区别</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-02-28T21:10:20+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:10 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>sizeof是<code>运算符</code>，strlen是函数，后者可以取地址</p>
-
-<p>sizeof在编译时计算，strlen运行时计算</p>
-
-<p>sizeof参数可以是类型，strlen只能用'\0'结尾的char *作参数</p>
-
-<p>sizeof不退化数组参数为指针，strlen退化数组参数为指针</p>
-
-<p>sizeof不关心空间里的内容，只关心空间本身大小，strlen关心空间里的内容（'\0'结尾），不关心空间本身</p>
-
-<p>如：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">int</span>
-</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">thread</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">vargp</span> <span class="p">)</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">char</span>    <span class="o">*</span><span class="n">ptr</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">char</span>    <span class="n">buf</span><span class="p">[</span><span class="mi">20</span><span class="p">]</span> <span class="o">=</span> <span class="s">&quot;123456&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">mytid</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">vargp</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">ptr</span> <span class="o">=</span> <span class="n">buf</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">++</span><span class="n">a</span> <span class="p">);</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;strlen: ptr %ld buf %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">ptr</span><span class="p">),</span> <span class="n">strlen</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;sizeof: ptr %ld buf %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">ptr</span><span class="p">),</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>输出：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">strlen</span><span class="p">:</span> <span class="n">ptr</span> <span class="mi">6</span> <span class="n">buf</span> <span class="mi">6</span>        <span class="c1">//strlen是以&#39;\0&#39;为终止信号，所以他只关心&#39;\0&#39;之前目标的数据量大小，  </span>
-</span><span class='line'>                           <span class="c1">//不管定义时我给的空间到底多大；strlen返回大小不将&#39;\0&#39;计入  </span>
-</span><span class='line'><span class="k">sizeof</span><span class="o">:</span> <span class="n">ptr</span> <span class="mi">8</span> <span class="n">buf</span> <span class="mi">20</span>      <span class="c1">//sizeof是我定义时所给的空间大小，不关心所给空间里面的数据量大小；  </span>
-</span><span class='line'>                          <span class="c1">//64位系统，指针大小为8字节 </span>
-</span></code></pre></td></tr></table></div></figure>
-
+<p>此程序编译不通过，出错提示为a不能识别；<br>
+这就体现出了线程调用与调用程序的区别（可能两者不具可比性）；<br>
+因为mian可以称为主线程，而a由主线程的独立线程栈进行管理，对创建的线程1是不可见的（但是可用指向独立线程栈的指针进行访问）。<br>
+将 int a = 1;<br>
+改为static int a = 1；<br>
+其结果也是编译不通过，出错原因一样。这也证实了虽然静态变量不在栈中管理，但是他的作用范围还是和局部变量一致的。</p>
 </div>
   
   
@@ -868,6 +948,14 @@ signal函数用于接收信号：
       </li>
     
       <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
       </li>
     
@@ -888,27 +976,19 @@ signal函数用于接收信号：
       </li>
     
       <li class="post">
-        <a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a>
+        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-10-chu-bu-ren-shi-uiscrollview/">初步认识UIScrollView</a>
+        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
+        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-04-ocji-ben-yu-fa/">OC基本语法</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-28-2013nian-zhong-bei-cui-ji/">2013年中悲催记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
+        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
       </li>
     
   </ul>

@@ -1,0 +1,542 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>自定义UITableViewCell - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="等高的cell storyboard自定义cell 1.创建一个继承自UITableViewCell的子类 2.在storyboard中 往cell里面增加需要用到的子控件，并使用Autolayout进行约束 设置cell的重用标志 设置cell的class为TPCDealCell 3. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2013-08-11-zi-ding-yi-uitableviewcell/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">自定义UITableViewCell</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-08-11T23:28:45+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>11</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:28 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>等高的cell</h2>
+
+<h4>storyboard自定义cell</h4>
+
+<ul>
+<li>1.创建一个继承自UITableViewCell的子类<br>
+<img src="/images/Snip20150603_10.png" alt="" /></li>
+<li>2.在storyboard中
+
+<ul>
+<li>往cell里面增加需要用到的子控件，并使用Autolayout进行约束<br>
+<img src="/images/Snip20150603_11.png" alt="" /></li>
+<li>设置cell的重用标志<br>
+<img src="/images/Snip20150603_12.png" alt="" /></li>
+<li>设置cell的class为TPCDealCell<br>
+<img src="/images/Snip20150603_14.png" alt="" /></li>
+</ul>
+</li>
+<li>3.在TPCDealCell中
+
+<ul>
+<li>提供一个封装类方法，利用重用标志找到cell</li>
+<li>将storyboard中的子控件连线到类扩展中<br></li>
+<li>需要提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件上<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TPCDealCell</span><span class="p">()</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">iconView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">titleLabel</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">buyCountLabel</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">priceLabel</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setDeal:</span><span class="p">(</span><span class="n">TPCDeal</span> <span class="o">*</span><span class="p">)</span><span class="nv">deal</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="n">_deal</span> <span class="o">=</span> <span class="n">deal</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">iconView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="n">deal</span><span class="p">.</span><span class="n">icon</span><span class="p">];</span>
+</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">titleLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">deal</span><span class="p">.</span><span class="n">title</span><span class="p">;</span>
+</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">buyCountLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%@人已购买&quot;</span><span class="p">,</span> <span class="n">deal</span><span class="p">.</span><span class="n">buyCount</span><span class="p">];</span>
+</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">priceLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;$%@&quot;</span><span class="p">,</span> <span class="n">deal</span><span class="p">.</span><span class="n">price</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>4.在控制器中
+
+<ul>
+<li>创建自定义的cell</li>
+<li>给cell传递模型数据<br></li>
+</ul>
+</li>
+</ul>
+
+
+<h4>xib自定义cell</h4>
+
+<ul>
+<li>1.创建一个继承自UITableViewCell的子类<br></li>
+<li>2.创建一个xib文件（文件名建议跟cell的类名一样）
+
+<ul>
+<li>拖拽一个UITableViewCell出来</li>
+<li>修改cell的class为TPCDealCell</li>
+<li>设置cell的重用标识</li>
+<li>往cell中添加需要用到的子控件，并使用Autolayout进行约束</li>
+</ul>
+</li>
+<li>3.在TPCDealCell中
+
+<ul>
+<li>提供一个封装类方法，利用重用标识找到cell（如果没有注册xib文件，就需要手动去加载xib文件)  <br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nl">cellWithTableView</span><span class="p">:(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">tableView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">static</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">ID</span> <span class="o">=</span> <span class="s">@&quot;deal&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">TPCDealCell</span> <span class="o">*</span><span class="n">dealCell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">dequeueReusableCellWithIdentifier</span><span class="p">:</span><span class="n">ID</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">nil</span> <span class="o">==</span> <span class="n">dealCell</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">dealCell</span> <span class="o">=</span> <span class="p">[[[</span><span class="bp">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">loadNibNamed</span><span class="p">:</span><span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">TPCDealCell</span> <span class="k">class</span><span class="p">])</span> <span class="nl">owner</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">options</span><span class="p">:</span><span class="nb">nil</span><span class="p">]</span> <span class="n">lastObject</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">dealCell</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>将xib中的子控件连线到类扩展中</li>
+<li>需要提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件上</li>
+<li>也可以将创建获得cell的代码封装起来（比如cellWithTableView:方法）</li>
+<li>4.在控制器中
+
+<ul>
+<li>利用registerNib&hellip;方法注册xib文件(<code>不是registerClass...</code>)<br></li>
+<li>创建自定义的cell</li>
+<li>给cell传递模型数据<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="bp">UINib</span> <span class="o">*</span><span class="n">nib</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UINib</span> <span class="nl">nibWithNibName</span><span class="p">:</span><span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">TPCDealCell</span> <span class="k">class</span><span class="p">])</span> <span class="nl">bundle</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">registerNib</span><span class="p">:</span><span class="n">nib</span> <span class="nl">forCellReuseIdentifier</span><span class="p">:</span><span class="s">@&quot;deal&quot;</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>代码自定义cell-frame</h4>
+
+<ul>
+<li>1.创建一个继承自UITableViewCell的子类<br>
+
+<ul>
+<li>在initWithStyle:reuseIdentifier:方法中
+
+<ul>
+<li>建议采用setup方法进行子控件创建和操作，再在上面方法中调用这个方法</li>
+<li>添加子控件(<code>添加给self.contentView</code>)</li>
+<li>设置子控件的初始化属性（如文字颜色、字体等一次性属性）（<code>不要在init方法中设置frame</code>）</li>
+</ul>
+</li>
+<li>在layoutSubviews方法中设置子控件的frame
+
+<ul>
+<li><code>注意，获取父控件frame时要使用self.contentView</code><br></li>
+</ul>
+</li>
+<li>提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件属性</li>
+<li>提供一个封装类方法，利用重用标识找到cell（<code>如果没有注册类，就需要手动去创建cell</code>)  <br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// layoutSubviews中一定要加这一句</span>
+</span><span class='line'><span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 使用self.contentView的bounds</span>
+</span><span class='line'><span class="n">CGFloat</span> <span class="n">contentViewH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">contentView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'><span class="n">CGFloat</span> <span class="n">contentViewW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">contentView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>2.在控制器中
+
+<ul>
+<li>利用registerClass&hellip;方法注册TPCDealCell类(<code>不是registerNib...</code>)</li>
+<li>在提供cell的代理方法中，创建自定义cell</li>
+<li>给cell传递模型数据</li>
+</ul>
+</li>
+</ul>
+
+
+<h4>代码自定义cell-autolayout</h4>
+
+<ul>
+<li>1.创建一个继承自UITableViewCell的子类<br>
+
+<ul>
+<li>在initWithStyle:reuseIdentifier:方法中
+
+<ul>
+<li>建议采用setup方法进行子控件创建和操作，再在上面方法中调用这个方法</li>
+<li>添加子控件(<code>添加给self.contentView</code>)</li>
+<li><code>添加子控件的约束</code>（<code>建议使用Masonry</code>）</li>
+<li>设置子控件的初始化属性（如文字颜色、字体等一次性属性）</li>
+</ul>
+</li>
+<li>提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件属性</li>
+<li>提供一个封装类方法，利用重用标识找到cell（<code>如果没有注册类，就需要手动去创建cell</code>)  <br></li>
+</ul>
+</li>
+<li>2.在控制器中
+
+<ul>
+<li>利用registerClass&hellip;方法注册TPCDealCell类(<code>不是registerNib...</code>)</li>
+<li>在提供cell的代理方法中，创建自定义cell</li>
+<li>给cell传递模型数据</li>
+</ul>
+</li>
+</ul>
+
+
+<h2>非等高的cell</h2>
+
+<ul>
+<li>调用顺序
+
+<ul>
+<li>没有估算行高调用顺序<br>
+tableView:heightForRowAtIndexPath:(1)<br>
+先于<br>
+tableView:cellForRowAtIndexPath:(2)<br>
+因为返回高度方法先于创建cell方法调用，所以不能在创建cell中根据数据模型的内容得到cell高度，并让方法1返回这个高度.<br></li>
+<li>有估算行高的调用顺序<br>
+tableView:cellForRowAtIndexPath:(1)<br>
+先于<br>
+tableView:heightForRowAtIndexPath:(2)<br>
+因为有行高估计值，所以系统会根据这个估计值先创建cell，然后再根据方法2返回<code>实际行高</code>，而这个行高我们可以在方法1中计算根据模型数据内容计算出来。<br></li>
+</ul>
+</li>
+<li><p>对于<code>多行内容</code>的UILabel高度计算[autolayout]</p>
+
+<ul>
+<li>在对多行内容UILabel进行计算时，需要对属性<code>preferredMaxLayoutWidth</code>进行赋值，来确定<code>每一行文字的最大宽度</code>。<br>
+
+<ul>
+<li>没赋值<br>
+<img src="/images/Snip20150831_4.png" alt="" /><br></li>
+<li>赋值了<br>
+<img src="/images/Snip20150831_7.png" alt="" /><br>
+如上图可知，在没设置<code>preferredMaxLayoutWidth</code>时，粉红色部分（UILabel）的高度的确是相等的，但是下面空白部分却不一样，原因是在CGRectGetMaxY(self.contentLabel.frame)时获取的值不正确，比实际多一点，导致计算的行高偏高了。<br>
+综上，<code>preferredMaxLayoutWidth不影响UILabel显示，但是影响UILabel的frame的计算</code><br></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>xib自定义cell</p>
+
+<ul>
+<li>在模型中增加一个cellHeight属性，用来存放对应cell的高度</li>
+<li>在cell的模型属性set方法中调用[self layoutIfNeed]方法强制布局，然后计算出模型的cellheight属性值</li>
+<li>方式1.在控制器中实现tableView:estimatedHeightForRowAtIndexPath:方法，返回一个估计高度，比如200</li>
+<li>方式2.设置tableView的estimatedRowHeight属性</li>
+<li>在控制器中实现tableView:heightForRowAtIndexPath:方法，返回cell的真实高度（模型中的cellHeight属性）</li>
+</ul>
+</li>
+<li>storyboard自定义cell
+
+<ul>
+<li>和xib相差无几，但是当UILabel设置为right距离父控件固定，且在<code>storyboard的宽度</code>比<code>实际显示后屏幕的宽度要大</code>时，虽然显示能正确，但是会上报一些未知错误，所以要把UILabel的right约束去掉，用preferredMaxLayoutWidth来设置每一行文字的最大宽。
+
+<ul>
+<li>如下图<br>
+<img src="/images/Snip20150607_18.png" alt="" /><br>
+<img src="/images/Snip20150607_21.png" alt="" /><br></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-08-11T23:28:45+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>11</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:28 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013-08-09-uitableviewcellzhong-yong/" title="Previous Post: UITableViewCell重用">&laquo; UITableViewCell重用</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013-08-13-uitableviewcellshu-ju-shua-xin/" title="Next Post: UITableViewCell数据刷新">UITableViewCell数据刷新 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图崩溃</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用Runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

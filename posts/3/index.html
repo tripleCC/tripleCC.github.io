@@ -9,7 +9,9 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="和师兄一起接了一个外包项目，项目里面有如下效果的需求。刚好这个模块是我负责的，想了一个比较有意思的实现方法。 效果图 需求 需求点大意是在tableView的右侧实现一个类似标签索引的东西，标签索引显示对应cell的时间。 解决方法 想到的方法一： 刚开始打算自己创建一个UILabel索引标签， &hellip;">
+  <meta name="description" content="布局原则 UIScrollView和外部控件的约束，都是用来决定其frame的（4个，上下左右）
+UIScrollView和内部子控件的约束，都是用来决定contentSize的（6个，上下左右宽高）
+UIScrollView内部子控件自动布局 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -65,6 +67,238 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-08-01T07:42:53+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>7:42 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>布局原则</h2>
+
+<ul>
+<li>UIScrollView和<code>外部控件</code>的约束，都是用来决定其<code>frame</code>的（4个，上下左右）</li>
+<li>UIScrollView和<code>内部子控</code>件的约束，都是用来决定<code>contentSize</code>的（6个，上下左右宽高）</li>
+<li>UIScrollView内部子控件自动布局
+
+<ul>
+<li><code>子控件</code>的尺寸<code>不能通过UIScrollView</code>w来约束计算，其他计算方式：
+
+<ul>
+<li>设置<code>固定值</code></li>
+<li>相对UIScrollView以外的<code>其他控件</code>来计算尺寸(参考控件)</li>
+</ul>
+</li>
+<li>UIScrollView的frame通过和<code>非子控件</code>的约束确定</li>
+<li><code>凡是和内部子控件的约束，都是辅助计算contentSize的</code>
+
+<ul>
+<li>UIScrollView的<code>contentSize通过子控件</code>来计算
+
+<ul>
+<li>根据<code>子控件的尺寸</code>以及<code>子控件与UIScrollView之间的间距</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<h2>详解</h2>
+
+<p>UIScrollView上的约束和普通UIView上的约束不太一样，，给UIScrollView子控件(contentView)添加约束，需要给子控件<code>多添加height和width两个约束</code>(把<code>添加</code>改成<code>确定</code>，选其他<code>确定宽高</code>的控件(非父控件UIScrollView,contentView自身的<code>确定宽高</code>的子控件也可以)，和contentView进行边界约束，来确定height和width行)<br>
+UIScrollView在自动布局的条件下，会根据第一个子控件的size和其四周与UIScrollView的约束情况计算contentSize的值</p>
+
+<ul>
+<li>UIScrollView子控件约束
+
+<ul>
+<li>在自动布局条件下，contentSize和非自动布局的计算貌似有点不同）</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>   <span class="bp">UIScrollView</span> <span class="o">*</span><span class="n">scrollView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIScrollView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">blueColor</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">scrollView</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">scrollView</span> <span class="nl">makeConstraints</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">MASConstraintMaker</span> <span class="o">*</span><span class="n">make</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">make</span><span class="p">.</span><span class="n">edges</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">view</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UIView</span> <span class="o">*</span><span class="n">orangeView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">orangeView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">scrollView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">orangeView</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="n">orangeView</span> <span class="nl">makeConstraints</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">MASConstraintMaker</span> <span class="o">*</span><span class="n">make</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">make</span><span class="p">.</span><span class="n">edges</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="n">scrollView</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">make</span><span class="p">.</span><span class="n">height</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="n">scrollView</span><span class="p">).</span><span class="n">offset</span><span class="p">(</span><span class="mi">100</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">make</span><span class="p">.</span><span class="n">width</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="n">scrollView</span><span class="p">).</span><span class="n">offset</span><span class="p">(</span><span class="o">-</span><span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>UIView子控件约束</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">UIView</span> <span class="o">*</span><span class="n">view</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="n">view</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">blueColor</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">view</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">view</span> <span class="nl">makeConstraints</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">MASConstraintMaker</span> <span class="o">*</span><span class="n">make</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">make</span><span class="p">.</span><span class="n">edges</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">view</span><span class="p">);</span>
+</span><span class='line'><span class="p">}];</span>
+</span><span class='line'>
+</span><span class='line'><span class="bp">UIView</span> <span class="o">*</span><span class="n">orangeView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIView</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="n">orangeView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">orangeView</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">orangeView</span> <span class="nl">makeConstraints</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">MASConstraintMaker</span> <span class="o">*</span><span class="n">make</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">make</span><span class="p">.</span><span class="n">edges</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="n">view</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// UIView情况下加下面两句会崩溃，约束冲突</span>
+</span><span class='line'>    <span class="c1">// make.height.equalTo(self.scrollView).offset(-20);</span>
+</span><span class='line'>    <span class="c1">// make.width.equalTo(self.scrollView).offset(-20);</span>
+</span><span class='line'><span class="p">}];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>一般都把子控件加到contentView中，再将contentView加到UIScrollView中
+
+<ul>
+<li>contentView和UIScrollView的top，bottom，leading和trailing约束不是确定contentView尺寸的依据，而是帮助UIScrollView确定contentView四周的边界，进而确定UIScrollView的contentSize属性，所以<code>一定要进行约束</code></li>
+<li>同样contentView的宽高也用来辅助计算contentSize，所以也需要进行约束</li>
+<li>在以下两种约束情况（UIScrollView和contentView）时，都会上报scrollView的contentSize不能确定
+
+<ul>
+<li>只约束top,bottom,width,height</li>
+<li>只约束top,bottom,leading,trailing</li>
+<li>错误如图<br>
+<img src="/images/Snip20150608_1.png" alt="" /></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>也就是给contentView设置约束时，必须设置约束，使其<code>能确定contentView的width,height，以及四周边界</code>
+
+<ul>
+<li>常用的设定是，contentView的边界以及width和UIScrollView相等，height或者bottom和子控件(必须是确定高度的)相等，这样就实现了一个简单的UITableView的功能</li>
+</ul>
+</li>
+<li>设置规则
+
+<ul>
+<li>UIScrollView和contentView的edges四个约束<code>必须设定</code></li>
+<li>contentView设置约束确定其width和height</li>
+</ul>
+</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-07-01T14:17:50+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>2:17 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>今天安装了Xcode6 beta版本，写了一个小demo来感受下新IDE，发现Xcode6竟然把pch文件给干掉了。可能是苹果公司感觉pch文件大大增加了编译的时间吧。。。不过即使不用pch，我一般还是会创建一个public.h头文件来包含一些常用的公共头文件，所以比较蛋疼。</p>
+
+<p>特地在网上搜索了下，手动创建了pch。</p>
+
+<ul>
+<li>创建pch文件<br>
+<img src="/images/Snip20150831_3.png" alt="" /></li>
+<li>打开预编译选项(BuildSetting里面搜<code>pre</code>)<br>
+<img src="/images/Snip20150831_5.png" alt="" /></li>
+<li>添加预编译文件的路径<br>
+<img src="/images/Snip20150831_6.png" alt="" /><br>
+然后就可以正常使用pch文件了。</li>
+</ul>
+
+
+<p>顺便值得一提的是Xcode6增加了LaunchScreenFile这个东东，搜索了下文档，发现这个会自动对启动图片进行拉伸，然后适应当前的真机或者模拟器。只能说以后弄启动图片再也不用搞那么麻烦了。。。<br>
+<img src="/images/Snip20150831_2.png" alt="" /><br>
+这个东西实际上是把这个xib给截屏了，然后使用截屏的图片，达到拉伸的效果，还挺智能的。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -454,204 +688,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2014-04-20T21:46:19+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:46 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>新版Ubuntu又发布啦！立刻给电脑更新了双系统，来体验体验</p>
-
-<p>记录下遇到的问题：</p>
-
-<ul>
-<li>1, 卸载ibus后system setting中相关图标消失
-ibus卸载时会将system setting中的一些使用程序附带删除（但是没有卸载）
-此时要重新安装ibus ：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">ibus</span>
-</span><span class='line'><span class="n">linux</span><span class="o">-</span><span class="nl">generic</span><span class="p">:</span> <span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">linux</span><span class="o">-</span><span class="n">generic</span>
-</span><span class='line'><span class="n">unity</span><span class="o">-</span><span class="n">control</span><span class="o">-</span><span class="n">center</span>
-</span><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">ubuntu</span><span class="o">-</span><span class="n">desktop</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>2,ibus-pinyin输入时显示的不是自己想要的字：如打进xian,出来的是xi an分开的，第一个字是溪an</p>
-
-<p>这个问题我弄了很久（刚开始以为只是简单的设置，把简拼的勾给区你，但是发现不行。。。很乱），最终是被解决了。。。但是却不知道是怎么解决的。。。反正是不知道自己设置了哪个之后再ibus restart就行了。。。（当时准备安装搜狐拼音的，没想到又好了。。。）<br>
-好像之前ibus-setup,取消了“在应用程序中启用内嵌编辑模式”（后来证明这句不是主要影响）
-运行</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">killall</span> <span class="n">ibus</span><span class="o">-</span><span class="n">daemon</span>
-</span><span class='line'><span class="n">ibus</span><span class="o">-</span><span class="n">daemon</span> <span class="o">-</span><span class="n">d</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>可能是因为这几句吧。。。</p>
-
-<p>3,修改root密码</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">passwd</span> <span class="n">root</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>后面按照说明即可</p>
-
-<p>4,安装stardict</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">stardict</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>下载辞典，解压移动到/usr/share/stardict/dic</p>
-
-<p>5,man查找不到pthread的一些函数</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">manpages</span><span class="o">-</span><span class="n">posix</span> <span class="n">manpages</span><span class="o">-</span><span class="n">posix</span><span class="o">-</span><span class="n">dev</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>获取man的pthread支持</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-08-04T21:34:02+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:34 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>Autoresizing的使用［前提是关闭Autolayout功能］</h2>
-
-<ol>
-<li><p>在xib/storyboard中使用：</p></li>
-</ol>
-
-
-<p><img src="../../images/Snip20150531_2.png" alt="" /></p>
-
-<p>如图，在左边剪头中表示控件的左边和上边相对父控件固定，并且长度和高度可变，在右边箭头中可以实时查看具体的效果。</p>
-
-<p>原图：
-<img src="../../images/Snip20150531_8.png" alt="" /></p>
-
-<p>在Preview界面中的效果如图：</p>
-
-<p><img src="../../images/Snip20150531_3.png" alt="" /></p>
-
-<p>可以看出对于不同屏幕大小或者横竖屏情况，控件始终在右下角，不会被覆盖。</p>
-
-<ol>
-<li><p>Autoresizing代码使用：</p></li>
-</ol>
-
-
-<p>UIViewAutoresizing提供以下枚举类型来对视图进行限制：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'> <span class="n">UIViewAutoresizingNone</span>                 <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 这里主要注意如左边可伸缩，则表示右边为固定值</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleLeftMargin</span>   <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">0</span><span class="p">,</span> <span class="err">距离父控件左边的间距是伸缩的（不固定的）</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleRightMargin</span>  <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">,</span> <span class="err">距离父控件右边的间距是伸缩的（不固定的）</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleTopMargin</span>    <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span><span class="p">,</span> <span class="err">距离父控件顶部的间距是伸缩的（不固定的）</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleBottomMargin</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span><span class="p">,</span> <span class="err">距离父控件底部的间距是伸缩的（不固定的）</span>
-</span><span class='line'>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleWidth</span>        <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">,</span> <span class="err">宽度跟随父控件的宽度进行自动伸缩</span>
-</span><span class='line'> <span class="n">UIViewAutoresizingFlexibleHeight</span>       <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">4</span><span class="p">,</span> <span class="err">高度跟随父控件的高度进行自动伸缩</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>将对应的autoresizingMask属性赋上面值即可：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 固定与父控件的flet、top间距，并让宽度可变</span>
-</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">myView</span><span class="p">.</span><span class="n">autoresizingMask</span> <span class="o">=</span> <span class="n">UIViewAutoresizingFlexibleRightMargin</span> <span class="o">|</span> <span class="n">UIViewAutoresizingFlexibleBottomMargin</span> <span class="o">|</span> <span class="n">UIViewAutoresizingFlexibleWidth</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>原图：
-<img src="../../images/Snip20150531_5.png" alt="" /></p>
-
-<p>翻转图：
-<img src="../../images/Snip20150531_6.png" alt="" /></p>
-
-<h2>Autoresizing的特点：</h2>
-
-<ul>
-<li>子控件可以跟随父控件的行为自动发生相应的变化</li>
-<li>前提是：<strong>关闭Autolaout功能</strong></li>
-<li>局限性
-
-<ul>
-<li><strong>只能</strong>解决<strong>子控件跟父控件</strong>的相对关系问题</li>
-<li><strong>不能</strong>解决<strong>兄弟控</strong>件的相对关系</li>
-</ul>
-</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/4">&larr; Older</a>
@@ -715,6 +751,14 @@ ibus卸载时会将system setting中的一些使用程序附带删除（但是�
       </li>
     
       <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
       </li>
     
@@ -735,27 +779,19 @@ ibus卸载时会将system setting中的一些使用程序附带删除（但是�
       </li>
     
       <li class="post">
-        <a href="/blog/2013-08-04-autorezingde-ying-yong/">Autorezing的应用</a>
+        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-10-chu-bu-ren-shi-uiscrollview/">初步认识UIScrollView</a>
+        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-05-ocyu-yan-ji-ben-te-xing/">OC语言基本特性</a>
+        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2013-07-04-ocji-ben-yu-fa/">OC基本语法</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-28-2013nian-zhong-bei-cui-ji/">2013年中悲催记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-06-21-dui-yu-zhong-duan-de-li-jie/">对于终端的理解</a>
+        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
       </li>
     
   </ul>
