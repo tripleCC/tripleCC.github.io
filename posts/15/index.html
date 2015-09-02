@@ -9,21 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="显示光标的一般顺序 显示光标 1
-GUI_CURSOR_Show(); 选择光标风格 1
-void GUI_CURSOR_Select(const GUI_CURSOR * pCursor); 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-GUI_CursorArrowS Small &hellip;">
+  <meta name="description" content="一组并发线程运行在一个进程的上下文中。每个线程都有他自己独立的线程上下文，包括线程ID，栈，栈指针，程序计数器，条件码和通用的目地寄存器。每个线程和其他线程一起共享进程上下文的剩余部分。这包括整个用户虚拟地址（由只读文本，读写数据，堆，以及所有共享库代码和数据区域组成），线程同样共享打开的文件集合 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,7 +71,7 @@ GUI_CursorArrowS Small &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2012-10-01-ucguiguang-biao-she-zhi/">UCGUI光标设置</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-05-16-unixxi-tong-duo-xian-cheng-bian-cheng-de-%5B%3F%5D-ge-kun-huo/">UNIX系统多线程编程的一个困惑</a></h1>
     
     
       <p class="meta">
@@ -94,35 +80,431 @@ GUI_CursorArrowS Small &hellip;">
 
 
 
-<time class='entry-date' datetime='2012-10-01T16:42:02+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2012</span></span> <span class='time'>4:42 pm</span></time>
+<time class='entry-date' datetime='2013-05-16T22:00:43+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:00 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><h2>显示光标的一般顺序</h2>
+  <div class="entry-content"><p>一组并发线程运行在一个进程的上下文中。每个线程都有他自己<code>独立的线程上下文</code>，包括线程<code>ID，栈，栈指针</code>，程序计数器，条件码和通用的目地寄存器。每个线程和其他线程一起共享进程上下文的剩余部分。这包括整个用户虚拟地址（由只读文本，读写数据，堆，以及所有共享库代码和数据区域组成），线程同样共享打开的文件集合。(在线程中定义的<code>c static属性</code>的本地变量虽然不在栈中管理，但是他的作用范围和普通的局部变量一样。因其虽然在.data或.bss中为每个定义分配空间，但是其在符号表中创建的时一个有唯一名字的<code>本地链接器符号</code>，其本质依然时局部变量（深入理解计算机系统二452页）)</p>
+
+<p>各自独立的线程栈被保存在<code>虚拟地址空间的栈区域</code>中，并且<code>通常</code>被相应的线程独立的访问。（通常而不是总是，时因为不同线程栈不对其他线程设防，如果一个线程以某种方式得到一个指向其他线程栈的指针，那么他就可以读写这个栈的任何部分）（注意，要在<code>取得所需要的线程栈的指针的情况下！</code>，如果直接引用，则程序编译将会不通过，因其访问的是自身的独立线程栈，而此栈没有所要的那个数据（在其他线程栈中））</p>
+
+<p>程序：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include&lt;unistd.h&gt;</span>
+</span><span class='line'><span class="cp">#include&lt;pthread.h&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">thread</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">vargrp</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">)</span>
+</span><span class='line'>        <span class="n">pthread_create</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">tid</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="kr">thread</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">i</span> <span class="p">);</span><span class="c1">//创建线程1</span>
+</span><span class='line'>    <span class="n">pthread_exit</span><span class="p">(</span> <span class="nb">NULL</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">thread</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">vargp</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">mytid</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">vargp</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">++</span><span class="n">a</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>此程序编译不通过，出错提示为a不能识别；<br>
+这就体现出了线程调用与调用程序的区别（可能两者不具可比性）；<br>
+因为mian可以称为主线程，而a由主线程的独立线程栈进行管理，对创建的线程1是不可见的（但是可用指向独立线程栈的指针进行访问）。<br>
+将 int a = 1;<br>
+改为static int a = 1；<br>
+其结果也是编译不通过，出错原因一样。这也证实了虽然静态变量不在栈中管理，但是他的作用范围还是和局部变量一致的。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-16-unixxi-tong-xian-cheng/">UNIX系统线程</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-16T19:48:56+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>7:48 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag288</h3>
+
+<p>进程的所有信息对<code>该进程的所有线程都是共享的</code>，包括可执行的<code>程序文本</code>、程序的<code>全局内存</code>和<code>堆内存</code>、<code>栈</code>以及<code>文件描述符</code>。</p>
+
+<p>进程ID在整个系统中是唯一的，线程ID只在他所属的进程环境中有效。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_equal</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="n">tid1</span><span class="p">,</span> <span class="kt">pthread_t</span> <span class="n">tid2</span><span class="p">);</span><span class="c1">//比较线程ID</span>
+</span><span class='line'><span class="kt">pthread_t</span> <span class="nf">pthread_self</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//获得自身线程ID</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_create</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tidp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">start_rtn</span><span class="p">)(</span><span class="kt">void</span><span class="p">),</span> <span class="kt">void</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">arg</span><span class="p">);</span><span class="c1">//创建线程（由restrict修饰的指针是最初唯一对指针所指向的对象进行存取的方法，仅当第二个指针基于第一个时，才能对对象进行存取）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>进程和线程都会<code>清除</code>其父进程或调用线程的<code>未决信号集</code>。</p>
+
+<h3>pag291</h3>
+
+<p>如果进程中的<code>任一线程</code>调用了exit，<em>exit或者</em>Exit，那么<code>整个进程</code>就会终止。</p>
+
+<p>单线程三种不终止整个进程的退出方式：</p>
 
 <ul>
-<li>显示光标</li>
+<li>1、线程只是从启动例程中返回，返回值时线程的退出码。</li>
+<li>2、线程可以被同一进程的其他线程取消。</li>
+<li>3、线程调用pthread_exit。</li>
 </ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">GUI_CURSOR_Show</span><span class="p">();</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_exit</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">rval_ptr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_join</span><span class="p">(</span> <span class="kt">pthread_t</span> <span class="kr">thread</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">rval_ptr</span> <span class="p">);</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
+<p>调用pthread_join后，调用进程将<code>一直阻塞</code>，直到<code>指定线程调用pthread_exit</code>、从启动例程中返回或者被取消。<br>
+<code>注意：</code>pthread_join无法对分离状态的线程进行操作。（pthread_detach使其分离）</p>
+
+<p>pthread_create和pthread_exit中的无类型指针参数所使用的内存在调用者完成调用后必须仍然有效，否则会出现无效或非法内存访问。（<code>可以使用全局变量或者在堆上分配动态内存</code>）<br>
+如：在调用线程的栈上分配该结构，或者在自己的栈上分配了一个结构然后把指向这个结构够的指针传给pthread_exit，那么当调用pthread_join的线程试图使用该结构时，这个栈有可能已被撤销。</p>
+
+<h3>pag295</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_cancel</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">);</span><span class="c1">//请求取消同一 进程中的其他线程</span>
+</span><span class='line'><span class="err">不等待线程终止，仅仅提出请求</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>线程清理函数（进程：atexit）：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="n">pthread_cleanup_push</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">rtn</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">),</span> <span class="kt">void</span> <span class="o">*</span><span class="n">arg</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">void</span> <span class="n">pthread_cleanup_pop</span><span class="p">(</span> <span class="kt">int</span> <span class="n">execute</span> <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>执行以下动作时调用：</p>
+
 <ul>
-<li>选择光标风格</li>
+<li>1、调用pthread_exit时。</li>
+<li>2、响应取消请求时。</li>
+<li>3、用非零execute参数调用pthread_cleanup_pop时</li>
+<li>（不包括return！）</li>
+</ul>
+
+
+<p>因可实现为宏，所以必须在与线程相同的作用域中以匹配对的形式使用。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="err">进程</span><span class="o">-------------------</span><span class="err">线程</span>
+</span><span class='line'><span class="n">fork</span><span class="o">-------------------</span><span class="n">pthread_create</span><span class="o">-------------------</span><span class="err">创建新的控制流</span>
+</span><span class='line'><span class="n">exit</span><span class="o">-------------------</span><span class="n">pthread_exit</span><span class="o">-------------------</span><span class="err">从现有的控制流中退出</span>
+</span><span class='line'><span class="n">waitpid</span><span class="o">---------------</span><span class="n">pthread_join</span><span class="o">-------------------</span><span class="err">等待控制流退出并得到退出状态</span>
+</span><span class='line'><span class="n">atexit</span><span class="o">-----------------</span><span class="n">pthread_cleanup_push</span><span class="o">-----------</span><span class="err">注册在退出控制流时调用的函数</span>
+</span><span class='line'><span class="n">getpid</span><span class="o">----------------</span><span class="n">pthread_self</span><span class="o">-------------------</span><span class="err">获取控制流的</span><span class="n">ID</span>
+</span><span class='line'><span class="n">abort</span><span class="o">-------------------</span><span class="n">pthread_cancel</span><span class="o">-------------------</span><span class="err">请求控制流的非正常退出</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>分离线程</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_detach</span><span class="p">(</span><span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">);</span><span class="c1">//使线程进入分离状态</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在默认情况下，线程终止状态会保存到对该线程调用phtread_join，如果线程已经处于分离状态，线程的底层存储资源可以<code>在线程终止时立即被收回</code>。</p>
+
+<h3>pag330</h3>
+
+<h4>线程同步机制：</h4>
+
+<h6>互斥锁：</h6>
+
+<p><code>使用之前必须初始化（pthread_mutex_init），释放底层内存之前必须销毁(pthread mutex_destroy)</code></p>
+
+<h6>互斥量：</h6>
+
+<p>常量PTHREAD_MUTEX_INITIALIZER（只对静态分配的互斥量）<br>
+一次只有一个线程可以对其加锁</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutex_init</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">mutex</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_nutex_destroy</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>    <span class="p">(</span><span class="err">释放动态分配的互斥量</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_lock</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>     <span class="p">(</span><span class="err">如已锁，调用线程将阻塞到互斥量被解锁</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_trylock</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>   <span class="p">(</span><span class="err">尝试加锁，已加则返回</span><span class="n">EBUSY</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_mutex_unlock</span><span class="p">(</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="n">mutex</span> <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>读写锁：</h6>
+
+<p>三种状态：
+- 1、写模式加锁状态（一次只有一个线程可以占有写模式的读写锁）
+在这个锁被解锁之前，所有试图对这个锁加锁的线程都会被阻塞。
+- 2、读模式加锁状态（多个线程可以同时占有读模式的读写锁）
+所有已读模式对他进行加锁的线程都可以得到访问权，但是如果线程希望以写模式对此锁进行加锁，他必须阻塞到所有的线程释放读锁。
+- 3、不加锁状态</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlock_init</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">rwlock</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_destroy</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_rdlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_wrlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_unlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_tryrdlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_rwlock_trywrlock</span><span class="p">(</span> <span class="kt">pthread_rwlock_t</span> <span class="o">*</span><span class="n">rwlock</span> <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>条件变量：</h6>
+
+<p>静态分配的条件变量：PTHREAD_COND_INITIALIZER<br>
+条件变量本身是由互斥量保护的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_cond_init</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">cond</span><span class="p">,</span> <span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span> <span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_destroy</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_wait</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">cond</span><span class="p">,</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">mutex</span> <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>调用后把调用线程放到<code>等待条件的线程列表</code>上，然后<code>对互斥量解锁（以便其他线程可以获取资源）</code>；<code>返回时，互斥量再次被锁住</code></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_timedwait</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">cond</span><span class="p">,</span> <span class="kt">pthread_mutex_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">mutex</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">timespec</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">timeout</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_signal</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span> <span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pthread_cond_broadcast</span><span class="p">(</span> <span class="kt">pthread_cond_t</span> <span class="o">*</span><span class="n">cond</span> <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>注意：要<code>在改变条件以后再给线程发送信号（唤醒线程必须重新检查条件，不能仅仅因为pthread_cond_wait 返回就假定条件为真）</code>
+条件变量是利用线程间共享的全局变量进行同步的一种机制，主要包括两个动作：</p>
+
+<ul>
+<li>1、<code>一个线程等待"条件变量的条件成立"而挂起</code>；</li>
+<li>2、<code>另一个线程使"条件成立"（给出条件成立信号)</code>；</li>
+</ul>
+
+
+<p>为了防止竞争，条件变量的使用总是和一个互斥锁结合在一起。</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-15-unixxi-tong-xin-hao/">UNIX系统信号</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-15T11:46:30+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>15</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:46 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag233</h3>
+
+<p>信号都被定义为正整数。<br>
+不存在编号为0的信号。<br>
+不能捕捉SIGKILL和SIGSTOP信号。<br>
+信号的处理：</p>
+
+<ul>
+<li>1，忽略信号</li>
+<li>2，捕捉信号</li>
+<li>3，执行系统默认动作（大多数信号默认动作时终止进程）</li>
 </ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">GUI_CURSOR_Select</span><span class="p">(</span><span class="k">const</span> <span class="n">GUI_CURSOR</span> <span class="o">*</span> <span class="n">pCursor</span><span class="p">);</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">signal</span> <span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">fun</span><span class="p">)(</span><span class="kt">int</span><span class="p">)))(</span><span class="kt">int</span><span class="p">)</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
+<p>fun：</p>
+
+<ul>
+<li>1、SIG_IGN  忽略信号</li>
+<li>2、SIG_DFL 默认（通常时关闭）</li>
+<li>3、调用函数地址</li>
+<li>缺点：不改变信号的处理方式就不能确定信号的当前处理方式。</li>
+</ul>
+
+
+<p>exec将原先设置为<code>要捕捉的信号</code>都更改为他们的<code>默认动作</code>，<code>其他信号</code>的状态则<code>不变</code>（对于一个进程原先要捕捉的信号，当其执行一个新程序后，就自然不能捕捉他了，因为信号捕捉函数的地址很可能在所执行的新程序文件中已无意义）</p>
+
+<h3>pag244</h3>
+
+<p>当捕捉到某个信号时被中断的是内核中执行的系统调用。
+不可重入函数特征：</p>
+
+<ul>
+<li>1，使用静态数据结构</li>
+<li>2，调用malloc或free</li>
+<li>3，标准IO函数</li>
+</ul>
+
+
+<p>信号的阻塞就是让系统暂时保留信号留待以后发送</p>
+
+<p><code>sigaction可设置SA_NOCLDWAIT标志以避免子进程僵死</code>（这样就不用执行信号处理函数再waitpid了）</p>
+
+<h3>pag250</h3>
+
+<h6>信号未决：</h6>
+
+<p>在信号产生和递送之间的时间间隔内，称信号是未决的。</p>
+
+<p>若同一种信号多次发生，通常并不将他们排队，所以如果在某种信号被阻塞时他发生了五次，那么对这种信号解除阻塞后，其信号处理函数通常只会被调用一次。</p>
+
+<p><code>当执行信号处理程序时，若新信号（相同信号）抵达，signal默认将该信号加入进程的信号队列中，直至信号处理程序执行结束。（多次抵达只取第一次）（现在在ubuntu上实测signal是这样的，APUE上面是不自动阻塞,执行信号默认操作）</code></p>
+
+<h6>发送信号：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">kill</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">int</span> <span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">raise</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span> <span class="c1">//给自身发送信号</span>
+</span><span class='line'><span class="err">调用</span><span class="n">kill</span><span class="err">为调用进程产生信号，而且此信号是不被阻塞的，那么在</span><span class="n">kill</span><span class="err">返回之前，就会将</span><span class="n">signo</span><span class="err">或者某个其他未决的非阻塞信号传送至该进程。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">alarm</span><span class="p">(</span> <span class="kt">unsigned</span> <span class="n">intseconds</span> <span class="p">)</span> <span class="c1">//每个进程只能有一个闹钟时钟</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">pause</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span><span class="c1">//使调用进程挂起直至捕捉到一个信号并从信号处理程序返回</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>pag256</h3>
+
+<p><code>所有应用程序在使用信号集前，要对该信号集调用sigemptyset或sigfillset一次.(因c编译器把未赋初值的外部和静态变量都初始化为0)</code></p>
+
+<h6>信号集：</h6>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigemptyset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">)</span>  <span class="c1">//清除信号集所有信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigfillset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">)</span>     <span class="c1">//设置所有信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigaddset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span> <span class="n">intsigno</span> <span class="p">)</span> <span class="c1">//向信号集中添加信号（要阻塞的）</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigdelset</span><span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span> <span class="n">intsigno</span> <span class="p">)</span>   <span class="c1">//从信号集中移除信号</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigismember</span><span class="p">(</span> <span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span><span class="p">,</span><span class="kt">int</span> <span class="n">signo</span> <span class="p">)</span>  <span class="c1">//测试信号是否在信号集中</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigprocmask</span><span class="p">(</span> <span class="kt">int</span> <span class="n">how</span><span class="p">,</span> <span class="kt">constsigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oset</span><span class="p">)</span><span class="c1">//oset返回当前屏蔽字（处理单线程）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>how：</p>
+
+<ul>
+<li>1、SIG_BLOCK 将当前信号屏蔽字和set指向信号集的相并</li>
+<li>2、SIG_UNBLOCK 将当前信号屏蔽字和set指向信号集补集的相交</li>
+<li>3、SIG_SETMASK 进程新的信号屏蔽字被set指向的信号集代替
+sigprocmask仅为<code>单线程的进程</code>定义。pthread_sigmask为多线程进程定义</li>
+</ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -137,195 +519,638 @@ GUI_CursorArrowS Small &hellip;">
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
 <span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">GUI_CursorArrowS</span> <span class="n">Small</span> <span class="n">arrow</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorArrowM</span> <span class="n">Medium</span> <span class="n">arrow</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorArrowL</span> <span class="n">Large</span> <span class="n">arrow</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorArrowSI</span> <span class="n">Small</span> <span class="n">inverted</span> <span class="n">arrow</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorArrowMI</span> <span class="n">Medium</span> <span class="n">inverted</span> <span class="n">arrow</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorArrowLI</span> <span class="n">Large</span> <span class="n">inverted</span> <span class="n">arrow</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorCrossS</span> <span class="n">Small</span> <span class="n">cross</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorCrossM</span> <span class="n">Medium</span> <span class="n">cross</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorCrossL</span> <span class="n">Large</span> <span class="n">cross</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorCrossSI</span> <span class="n">Small</span> <span class="n">inverted</span> <span class="n">cross</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorCrossMI</span> <span class="n">Medium</span> <span class="n">inverted</span> <span class="n">cross</span><span class="p">.</span>
-</span><span class='line'><span class="n">GUI_CursorCrossLI</span> <span class="n">Large</span> <span class="n">inverted</span> <span class="n">cross</span><span class="p">.</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">sigpending</span> <span class="p">(</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">set</span> <span class="p">)</span>
+</span><span class='line'><span class="err">返回信号集，其中各个信号对于调用进程时阻塞的而不能递送，因而也一定是当前未决的。</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="n">sigaction</span><span class="p">(</span> <span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="k">const</span> <span class="n">structsigaction</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">act</span><span class="p">,</span> <span class="k">struct</span> <span class="n">sigaction</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oact</span> <span class="p">)</span>
+</span><span class='line'><span class="n">oact</span> <span class="err">非空时返回该信号的上一次动作（包括信号屏蔽字）</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">sigaction</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">sa_handler</span><span class="p">)(</span><span class="kt">int</span><span class="p">);</span>  <span class="c1">//信号捕捉函数地址</span>
+</span><span class='line'>    <span class="n">sigset_tsa_mask</span><span class="p">;</span>       <span class="c1">//信号集。调用信号捕捉函数之前，此信号集加到进程信号集中，捕捉函数返回时恢复为原值（这里的捕捉信号函数之前这个说法要注意，下说明）</span>
+</span><span class='line'>   <span class="kt">int</span>         <span class="n">sa_flags</span><span class="p">;</span>   <span class="c1">//指定对信号处理的各个选项</span>
+</span><span class='line'>    <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">sa_sigaction</span><span class="p">)(</span><span class="kt">int</span><span class="p">,</span> <span class="kt">siginfo_t</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span><span class="p">);</span>   <span class="c1">//替代的信号处理程序（2个处理函数只能选其一）</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在信号处理程序被调用时，操作系统建立的新信号屏蔽字包括正在被递送的信号，因此保证了在处理一个给定信号时，如果这种信号再次发生，那么他会被阻塞到对前一个信号的处理结束为止。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">sigset_t</span>    <span class="n">sigmask</span><span class="p">;</span>
+</span><span class='line'><span class="k">struct</span> <span class="n">sigaction</span>    <span class="n">act</span><span class="p">,</span> <span class="n">oact</span><span class="p">;</span>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sigmask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigprocmask error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">SIGALRM have been masked in handle function</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGINT has been masked in handle function</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;handle signal</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">act</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_handler</span> <span class="o">=</span> <span class="n">sig_handler</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">act</span><span class="p">.</span><span class="n">sa_flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigaction</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">act</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">oact</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigaction error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">oact</span><span class="p">.</span><span class="n">sa_mask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGALRM has already been masked</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigprocmask</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sigmask</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;sigprocmask error</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGALRM</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGALRM has been masked in main process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">sigismember</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sigmask</span><span class="p">,</span> <span class="n">SIGINT</span><span class="p">))</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;SIGINT has been masked in main process</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">pause</span><span class="p">();</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;done</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>程序输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">^</span><span class="n">C</span>
+</span><span class='line'><span class="n">SIGALRM</span> <span class="n">have</span> <span class="n">been</span> <span class="n">masked</span> <span class="k">in</span> <span class="n">handle</span> <span class="n">function</span>    <span class="c1">//1</span>
+</span><span class='line'><span class="n">SIGINT</span> <span class="n">has</span> <span class="n">been</span> <span class="n">masked</span> <span class="k">in</span> <span class="n">handle</span> <span class="n">function</span>           <span class="c1">//2</span>
+</span><span class='line'><span class="n">done</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
 <ul>
-<li>设置光标位置（光标的移动可改动x，y来实现）</li>
+<li>1：<code>（说明sigaction在处理信号时才将sa_mask信号集添加进进程信号屏蔽字，书上的在“调用捕捉函数之前加入”这句让我理解错误了，以为调用sigaction以后就加入信号屏蔽字，捕捉信号，并从信号处理函数返回以前都是阻塞sa_mask中的信号的，实际上只有在信号处理函数中才阻塞sa_mask中的信号，和2中的差不多，只不过一个是系统自动添加，一个是人为设定信号集通过sigaction添加到进程信号屏蔽字），可能书中“在调用该信号的捕捉函数之前”的意思是：已经捕捉到信号了，但是还没且将要执行信号处理函数，这样就和输出结果一致了。。</code></li>
+<li>2：<code>（说明系统在处理信号时会将正在处理的信号加入进程信号屏蔽字）</code></li>
 </ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">GUI_CURSOR_SetPosition</span><span class="p">(</span><span class="kt">int</span> <span class="n">x</span><span class="p">,</span> <span class="kt">int</span> <span class="n">y</span><span class="p">);</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">sigsuspend</span><span class="p">(</span><span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">sigmask</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>原子操作：</h6>
+
+<p>先恢复成sigmask指定的信号屏蔽字，再使进程休眠<br>
+在捕捉到一个信号或发生了一个会终止该进程的信号之前，该进程被挂起。如果捕捉到一个信号而且从该信号处理程序返回，则sigsuspend返回，并将信号屏蔽字设置为调用sigsuspend之前的值（<code>设定----捕捉----处理----恢复</code>）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">sleep</span><span class="err">（</span><span class="kt">unsigned</span> <span class="n">intseconds</span><span class="err">）</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>挂起恢复条件：</p>
+
+<ul>
+<li>1、过了seconds</li>
+<li>2、调用进程捕捉到信号并从信号处理程序返回</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">psignal</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span><span class="n">msg</span><span class="p">);</span><span class="c1">//；类似perror</span>
+</span><span class='line'><span class="kt">char</span> <span class="o">*</span><span class="nf">strsignal</span><span class="p">(</span><span class="n">intsigno</span><span class="p">);</span><span class="c1">//类似strerror</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span> <span class="nf">sig2str</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">,</span> <span class="kt">char</span><span class="o">*</span><span class="n">str</span><span class="p">);</span><span class="c1">//将信号编号翻译成字符串</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">str2sig</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span><span class="n">signop</span><span class="p">);</span><span class="c1">//将给出的名字翻译为字符串</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>例子：</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_print</span><span class="p">(</span><span class="kt">int</span> <span class="n">signo</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>   <span class="n">printf</span><span class="p">(</span><span class="s">&quot;signal is %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpid</span><span class="p">());</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>   <span class="kt">pid_t</span>      <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>   <span class="n">signal</span><span class="p">(</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">sig_print</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>       <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'>       <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>   <span class="p">}</span>
+</span><span class='line'>   <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span><span class='line'>   <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">signal</span> <span class="n">is</span> <span class="mi">3489</span>
+</span><span class='line'><span class="n">signal</span> <span class="n">is</span> <span class="mi">3490</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>SIGINT信号传送给前台进程组里的所有进程</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-12-unixxi-tong-xin-hao-de-zi-wo-li-jie-(bu-zhi-dui-cuo-)/">UNIX系统信号的自我理解（不知对错）</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-12T11:33:23+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:33 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;string.h&gt;   </span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span> <span class="kt">int</span> <span class="n">signo</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;getsignal</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">sigset_t</span>    <span class="n">newmask</span><span class="p">,</span><span class="n">zeromask</span><span class="p">;</span>
+</span><span class='line'>   <span class="kt">pid_t</span>      <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span><span class="p">,</span> <span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigprocmask</span><span class="p">(</span><span class="n">SIG_BLOCK</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">newmask</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>      <span class="c1">//1  </span>
+</span><span class='line'>    <span class="n">signal</span><span class="p">(</span><span class="n">SIGUSR1</span><span class="p">,</span> <span class="n">sig_handler</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>      <span class="n">sleep</span><span class="p">(</span> <span class="mi">2</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;child</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">sigsuspend</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;child done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>      <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">pid</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">kill</span><span class="p">(</span> <span class="n">pid</span><span class="p">,</span><span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果省略1，则输出中子进程无child done。<br>
+添加上则有。<br>
+进程间的信号传递要用sigprocmask来阻塞（保留）信号，不然可能在sigsuspend之前传递的信号就已捕获，sigsuspend就无法返回。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span>
+</span><span class='line'><span class="nf">sig_handler</span><span class="p">(</span> <span class="kt">int</span> <span class="n">signo</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;getsignal</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">sigset_t</span>    <span class="n">newmask</span><span class="p">,</span><span class="n">zeromask</span><span class="p">;</span>
+</span><span class='line'>   <span class="kt">pid_t</span>       <span class="n">pid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigemptyset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sigaddset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">newmask</span><span class="p">,</span> <span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">signal</span><span class="p">(</span><span class="n">SIGUSR1</span><span class="p">,</span> <span class="n">sig_handler</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">pid</span> <span class="o">=</span><span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>       <span class="n">printf</span><span class="p">(</span><span class="s">&quot;child</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>       <span class="n">sigsuspend</span><span class="p">(</span><span class="o">&amp;</span><span class="n">zeromask</span> <span class="p">);</span>
+</span><span class='line'>       <span class="n">printf</span><span class="p">(</span><span class="s">&quot;child done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>       <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">sleep</span><span class="p">(</span> <span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">kill</span><span class="p">(</span> <span class="n">pid</span><span class="p">,</span><span class="n">SIGUSR1</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">sleep</span><span class="p">(</span> <span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father done</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>虽然用sleep可能不太适合（负载重时可能超过sleep2的时间），但忽略子进程被阻塞等延迟情况。</p>
+
+<p>以上程序的输出为</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">child</span>
+</span><span class='line'><span class="n">father</span>
+</span><span class='line'><span class="n">get</span> <span class="n">signal</span>
+</span><span class='line'><span class="n">child</span> <span class="n">done</span>
+</span><span class='line'><span class="n">father</span> <span class="n">done</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
 <ul>
-<li>隐藏光标（可选）</li>
+<li>1、程序执行，因主进程中sleep（2），执行进程切换至子进程</li>
+<li>2、子进程输出child，并挂起，从而执行进程恢复为主进程</li>
+<li>3、主进程如sleep(2)执行结束则输出father，并向子进程发送信号，然后子进程sleep(2)，执行切换至子进程</li>
+<li>4、一进入子进程即捕获主进程发送的信号，输出getsignal，并从挂起退出输出 child done，子进程执行完毕</li>
+<li>5、执行切换至主进程，sleep(2)执行结束后，输出father done，主进程执行结束。</li>
+</ul>
+
+
+<p>主进程未调用kill发送信号时，执行子进程过程时没有获取到信号。<br>
+主进程在调用kill向子进程发送信号后，<code>相对于主进程kill发送后，执行第一条子进程中的某一语句时</code>，子进程<code>即</code>获取到信号。此时如子进程处在挂起状态，则退出挂起。<br>
+如果主进程的kill执行前，子进程已经进入pause状态，则在下一次切换到子进程时，子进程捕捉到信号并退出pause状态。<br>
+如果主进程的kill执行时，子进程还未进入pause状态，则在下一次切换到子进程时，子进程同样捕捉到信号，但是当执行到pause时，子进程便被挂起，如无信号再次传入，则无法退出挂起状态。</p>
+
+<p>如果把上面程序的第一个sleep(2)去除，则程序可能会发生多种情况：<br>
+其中一种：主进程的kill发送信号后，切换至子进程时，子进程可能还没执行到sigsuspend。但此时信号已被捕获，并且sigsuspend没有能捕捉的信号，程序无childdone。</p>
+
+<p>所以进程间的信号传输一般用屏蔽字阻塞，这样只有当执行sigsuspend时，此函数去除相应屏蔽字才能捕捉相应信号！（函数捕捉到信号从挂起返回时，恢复屏蔽字原值）</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-05-09-unixxi-tong-jin-cheng-guan-xi/">UNIX系统进程关系</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-05-09T11:25:53+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:25 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h3>pag214</h3>
+
+<h6>登录简易流程：</h6>
+
+<ul>
+<li>init进程fork子进程exec执行getty</li>
+<li>getty开启终端设备以便输入，显示Login：</li>
+<li>用户输入用户名</li>
+<li>getty程序exec执行login程序</li>
+<li>login由用户名（getpwnam）获取pw结构，显示Password:</li>
+<li>用户输入密码</li>
+<li>login程序比对pw结构中pw_passwd</li>
+</ul>
+
+
+<h3>pag218</h3>
+
+<p>进程组使一个或多个进程的集合，通常他们与同一作业相关联，可以接收来自统一终端的各种信号。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getpgrp</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//返回调用进程的进程组ID</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">getpgid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">);</span><span class="c1">//返回pid进程的进程组ID（getpgid(0) = getpgrp()）</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">setpgid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">,</span> <span class="kt">pid_t</span> <span class="n">pgid</span><span class="p">);</span><span class="c1">//加入现有组或创建一个新进程组</span>
+</span><span class='line'><span class="n">pid</span><span class="o">=</span><span class="n">pgid</span><span class="p">,</span> <span class="n">pid</span><span class="err">指定进程变成进程组组长</span>
+</span><span class='line'><span class="n">pid</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="err">使用调用者进程</span><span class="n">PID</span>
+</span><span class='line'><span class="n">pgid</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pid</span><span class="err">指定进程</span><span class="n">ID</span><span class="err">作为进程组</span><span class="n">ID</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>进程组：</h6>
+
+<p>每个进程组都可以有一个组长进程。<code>组长进程</code>的标识是，其<code>进程组ID等于其进程ID</code>。<br>
+组长进程可以创建一个进程组，创建该组中的进程，然后终止。只要在<code>某个进程组中有一个进程</code>存在，则该<code>进程组就存在</code>，这<code>与其组长进程是否终止无关</code>。<br>
+<code>一个进程只能为他自己或他的子进程设置进程组ID</code>。在他的<code>子进程调用了exec函数之一后，他就不能改变该子进程的进程组ID</code>。</p>
+
+<h3>pag219</h3>
+
+<p>会话是一个或多个进程组的集合。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">setsid</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span><span class="c1">//建立新会话</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>调用进程不是一个进程组的组长，此函数创建一个新会话：</h6>
+
+<ul>
+<li>该进程变成新会话首进程，并且是此时新会话中的唯一进程</li>
+<li>该进程成为一个新进程组的组长进程。新进程组ID是该调用进程的进程ID</li>
+<li>该进程没有控制终端。如在调用之前有，则联系中断</li>
 </ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">GUI_CURSOR_Hide</span><span class="p">()</span><span class="err">；</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">getsid</span><span class="p">(</span><span class="kt">pid_t</span> <span class="n">pid</span><span class="p">);</span> <span class="c1">//返回会话首进程的进程组ID</span>
 </span></code></pre></td></tr></table></div></figure>
 
-</div>
-  
-  
+
+<p>一个会话可以有一个控制终端。</p>
+
+<p>建立与控制终端连接的会话首进程被称为控制进程。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">pid_t</span> <span class="nf">tcgetpgrp</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//返回前台进程组的进程组ID，该前台进程组与在filedes上打开的终端相关联</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">tcsetpgrp</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="kt">pid_t</span> <span class="n">pgrpid</span><span class="p">);</span><span class="c1">//将前台进程组ID设置为pgrpid（同一会话中的进程组ID），filedes必须引用会话的控制终端</span>
+</span><span class='line'><span class="kt">pid_t</span> <span class="nf">tcgetsid</span><span class="p">(</span><span class="kt">int</span> <span class="n">filedes</span><span class="p">);</span><span class="c1">//获得会话首进程的进程组ID</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012-09-05-ucosju-bu-bian-liang-he-ren-wu-dui-zhan/">UCOS局部变量和任务堆栈</a></h1>
-    
-    
-      <p class="meta">
-        
+<h3>pag229</h3>
+
+<h6>孤儿进程组：</h6>
+
+<p>一个进程组不是孤儿进程组的条件是，该<code>组中有一个进程</code>，其<code>父进程在属于同一会话中的另一组</code>中。</p>
+
+<p><code>父进程终止时，子进程被置入后台进程组中，shell所在进程组成为前台进程组</code>（程序9-1）</p>
+
+<h3>习题9-2</h3>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;signal.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;sys/types.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
+</span><span class='line'><span class="cp">#include &lt;string.h&gt;  </span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">int</span>
+</span><span class='line'><span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">pid_t</span>   <span class="n">pid</span><span class="p">,</span> <span class="n">sid</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;father</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;gid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpgid</span><span class="p">(</span><span class="mi">0</span><span class="p">));</span>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;session fgid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">tcgetpgrp</span><span class="p">(</span><span class="n">STDOUT_FILENO</span><span class="p">));</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">((</span><span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">sid</span> <span class="o">=</span> <span class="n">setsid</span><span class="p">();</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">child</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;gid:%d sid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">getpgid</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">sid</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">printf</span><span class="p">(</span><span class="s">&quot;session fgid:%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">tcgetsid</span><span class="p">(</span><span class="n">STDOUT_FILENO</span><span class="p">));</span>
+</span><span class='line'>        <span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
+<p>输出：</p>
 
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">father</span>
+</span><span class='line'><span class="nl">gid</span><span class="p">:</span><span class="mi">5761</span>
+</span><span class='line'><span class="n">session</span> <span class="nl">fgid</span><span class="p">:</span><span class="mi">5761</span>
+</span><span class='line'><span class="n">root</span><span class="p">@</span><span class="nl">ubuntu</span><span class="p">:</span><span class="o">~/</span><span class="n">other</span><span class="err">#</span>
+</span><span class='line'><span class="n">child</span>
+</span><span class='line'><span class="nl">gid</span><span class="p">:</span><span class="mi">5762</span> <span class="nl">sid</span><span class="p">:</span><span class="mi">5762</span>
+</span><span class='line'><span class="n">session</span> <span class="nl">fgid</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span>        <span class="err">（可知新会话无控制终端）</span>
+</span></code></pre></td></tr></table></div></figure>
 
-<time class='entry-date' datetime='2012-09-05T22:05:05+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>10:05 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>UCOS中局部变量的生命周期：<br>
-任务一直存在，所以在任务中（非子函数）定义的局部变量不会死亡，在任务间的信息传递因局部变量未死亡而可行。在子函数中定义的局部变量在退出该函数时才死亡，在子函数中调用任务切换时局部变量保留，在任务切换所至任务执行完成并回到子函数正常退出时才死亡。<br>
-UCOS任务堆栈：<br>
-【函数嵌套、所调用函数局部变量分配内存、中断服务子程序嵌套】<br>
-1、当任务运行时保存一些局部变量（CPU寄存器有限）。<br>
-2、当任务挂起时，负责保存运行现场，即CPU寄存器的值。<br></p>
-
-<p>当任务挂起时，任务堆栈中保存任务挂起前CPU寄存器的这一连续的区域肯定在整个堆栈的最上面。<br>
-任务每次挂起前用来保存当前CPU寄存器这一连续区域在整个任务堆栈空间是浮动的。<br></p>
-
-<p>初始化堆栈：<br>
-1，任务是第一次运行，而任务从本质上讲就是一段代码，所以PC指针应该定位到这段代码的第一行处，即所谓的入口地址，这个地址由任务指针保存着，所以把该指针值赋给PC即可。<br>
-2，这段代码还未被执行过，所以代码中变量与CPU的其他寄存器一点关系也没有，因此R0-R12，R14可随意给值，或者不赋值，让这些寄存器保存原来的值。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012-08-31-osunmaptb1-de-you-lai/">OSUnMapTb1[]的由来</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2012-08-31T14:57:46+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2012</span></span> <span class='time'>2:57 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>OSUnMapTb1[]共0xff个元素，0x00~0xff为索引，OSUnMap1[]里的值由分析索引得到（索引转换为二进制，从右边数，首先为1的位数即索引元素的值）<br>
-如0x50,二进制为0x1010000，从右边数，第四位首先为一，则OSUnMapTb1[0x50]=4<br>
-从右数起的原因：<br>
-优先级数：优先级值越小，优先级越高<br>
-从右至左，从上至下越来越低<br>
-y=OSUnMapTb1[OSRdyGrp] (找优先级最高的组)<br>
-x=OSUnMapTb1[OSRdyTb1[y]] (组里找最右的)<br>
-prio = (y&lt;&lt;b) + x</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012-08-29-armdui-zhan/">ARM堆栈</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2012-08-29T16:38:59+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>4:38 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>递增堆栈：</p>
-
-<p>递减堆栈：</p>
-
-<p>满堆栈：堆栈指针指向最后压入堆栈的有效数据项</p>
-
-<p>空堆栈：堆栈指针指向下一个要放入数据的空位置</p>
-
-<p>（刚好不久上课前疑惑一个问题，以前数据结构构造的堆栈是空堆栈，而讲到51时看到的又是满堆栈，当时就很困惑，（为了写一个仿ucos的操作系统）不知道原来有两种概念的堆栈）（stm32也是属于满堆栈）</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2012-08-29-cyu-yan-de-bssduan-wen-ti/">C语言的BSS段问题</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2012-08-29T16:36:13+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2012</span></span> <span class='time'>4:36 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>今天看UNP，发现头文件里面定义了没有初始化的变量。</p>
-
-<p>直觉是头文件定义变量是危险的会造成重复定义，但是试了试又没有错，记起了定义的变量有强符号和弱符号之分。</p>
-
-<p>又区查了查资料，又牵涉到定义变量的存储位置问题了，BSS，DATA。</p>
-
-<p>虽然看了一些资料说是BSS不占用磁盘空间，在程序执行前由系统（exec调用的启动例程初始为0），但是对于BSS段到低什么时候分配空间，</p>
-
-<p>系统的根据哪个标准来分配BSS空间的还不清楚。</p>
-
-<p>《程序员的自我修养》这本书什么时候再看下。。。</p>
-
-<p>关于BSS段可在《C专家编程》pag117段一节查看</p>
 </div>
   
   
@@ -360,6 +1185,14 @@ prio = (y&lt;&lt;b) + x</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-09-02-shi-yong-xiang-ying-zhe-lian-tiao-jie-jue-xu-qiu/">使用响应者链条解决需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-03-cheng-xu-bu-si/">程序不死</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
       </li>
     
@@ -369,6 +1202,10 @@ prio = (y&lt;&lt;b) + x</p>
     
       <li class="post">
         <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-03-02-jing-tai-fen-xi-bu-zhun-que-de-qing-kuang/">静态分析不准确的情况</a>
       </li>
     
       <li class="post">
@@ -396,47 +1233,35 @@ prio = (y&lt;&lt;b) + x</p>
       </li>
     
       <li class="post">
+        <a href="/blog/2015-01-02-jian-ting-jian-pan-shan-chu-an-niu/">监听键盘删除按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-12-04-autorezingde-ying-yong/">Preview功能结合Autorezing的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-11-02-she-zhi-cellzhou-bian-jian-ju/">设置cell周边间距</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+        <a href="/blog/2014-10-05-shuang-ji-di-bu-gong-ju-lan-itemdui-ying-uitableviewzhong-xin-shua-xin/">双击底部工具栏Item对应UITableView重新刷新</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+        <a href="/blog/2014-09-11-zi-ding-yi-uitextview/">自定义UITextView</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+        <a href="/blog/2014-09-01-zi-ding-yi-ti-shi-hong/">自定义提示宏</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
+        <a href="/blog/2014-08-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧标签索引需求</a>
       </li>
     
   </ul>

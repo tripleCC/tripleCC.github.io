@@ -9,10 +9,10 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="pag355 低速系统调用： 1、某些文件类型（管道、终端设备、网络设备）的数据并不存在，则读操作可能会使调用者永远阻塞。
-2、数据不能立即被上诉同样类型的文件接受（由于在管道中无空间、网络流控制等），则写操作也会使调用者永远阻塞
-3、在某种条件发生之前，打开某些类型的文件会被阻塞
-4、 &hellip;">
+  <meta name="description" content="layer:资源包[mainBundle]
+现在缓存主要应用文件夹caches tmp 系统管理（不知道什么时候清除）
+caches 可以手动管理（平时app中的清除缓存提醒）
+因为最好把清除的权限交给用户，所以采用caches进行缓存 获取沙盒目录 caches\lib\ &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -74,7 +74,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-05-24-unixxi-tong-gao-ji-io/">UNIX系统高级IO</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-09-01-chu-bu-ren-shi-ji-zhu-cun-chu/">初步认识存储技术</a></h1>
     
     
       <p class="meta">
@@ -83,121 +83,41 @@
 
 
 
-<time class='entry-date' datetime='2013-05-24T20:25:24+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>8:25 pm</span></time>
+<time class='entry-date' datetime='2013-09-01T19:19:04+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>7:19 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><h3>pag355</h3>
-
-<h3>低速系统调用：</h3>
+  <div class="entry-content"><ul>
+<li>layer:资源包[mainBundle]</li>
+<li><p>现在缓存主要应用文件夹caches</p>
 
 <ul>
-<li>1、某些文件类型（<code>管道、终端设备、网络设备</code>）的数据并不存在，则<code>读操作</code>可能会使调用者永远阻塞。</li>
-<li>2、数据不能立即被上诉同样类型的文件接受（由于在<code>管道中无空间、网络流控制</code>等），则<code>写操作</code>也会使调用者永远阻塞</li>
-<li>3、在某种条件发生之前，打开某些类型的文件会被阻塞</li>
-<li>4、对已加上强制性记录锁的文件进行读写</li>
-<li>5、某些ioctl操作</li>
-<li>6、某些进程间通信函数</li>
+<li>tmp 系统管理（不知道什么时候清除）</li>
+<li>caches 可以手动管理（平时app中的清除缓存提醒）</li>
+<li>因为最好把清除的权限交给用户，所以采用caches进行缓存<br></li>
 </ul>
-
-
-<p>虽然读写磁盘文件会使调用者在短暂时间内阻塞，但并不能将与磁盘IO有关的系统调用视为低速。</p>
-
-<h6>指定一个给定描述符为非阻塞IO：</h6>
+</li>
+<li><p>获取沙盒目录<br></p>
 
 <ul>
-<li>1、open获得描述符，并指定O_NONBLOCK</li>
-<li>2、调用fcntl，打开O_NONBLOCK，先获取，在或，再改变</li>
+<li>caches\lib\document文件夹路径获取</li>
+<li>tmp文件夹路径获取
+
+<ul>
+<li>NSTemporaryDirectory</li>
 </ul>
-
-
-<h6>记录锁（字节范围锁）：</h6>
-
-<p>当一个进程正在读或修改文件的某个部分时，他可以阻止其他进程修改同一文件区。（锁定的只是文件中的一个区域）</p>
-
-<h6>不同进程提出锁请求：</h6>
-
-<p><code>多进程</code>在一个给定的字节上可以有一把<code>共享的读锁</code>，但是在<code>一个给定字节</code>上只能有一个进程<code>独用的一把写锁</code>。<br>
-如果在一个给定的字节上已有一把或多把读锁，则不能在该字节上再加写锁。如在一个字节上已经有一把独占性的写锁，则不能再对他加任何读锁。</p>
-
-<h6>单个进程提出多个锁请求情况：</h6>
-
-<p>如果一个进程对一个文件区间已经有了一把锁，后来该进程又企图在同一文件区间再加一把锁，那么新锁将替换老锁。（调用进程绝不会阻塞在自己持有的锁上）<br>
-加读锁时，该描述符必须时读打开；加写锁时，该描述符必须时写打开。</p>
-
-<p><code>应先用F_GETLK测试能否建立一把锁，然后用F_SETLK和F_SETLKW试图建立一把锁。
-F_GETLK是检测其他进程是否有现存锁，不能报告调用进程自己的锁。</code></p>
-
-<h3>pag363</h3>
-
-<h6>锁的隐含继承和释放：</h6>
+</li>
+<li>preference文件夹路径获取
 
 <ul>
-<li>1、当一个进程终止时，他所建立的锁全部释放；任何时候关闭一个描述符时，则该进程（<code>仅限于调用进程</code>）通过<code>这一描述符可以引用的文件上的任何一把锁</code>都被释放。（也就是说作用<code>对象变成了文件i节点</code>，而<code>不是文件描述符，或者文件表项</code>）
-如：</li>
+<li>[NSUserDefaults standardUserDefaults]</li>
 </ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fd1</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span> <span class="n">pathname</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
-</span><span class='line'><span class="n">read_lock</span><span class="p">(</span> <span class="n">fd1</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
-</span><span class='line'><span class="n">fd2</span> <span class="o">=</span> <span class="n">dup</span><span class="p">(</span> <span class="n">fd1</span> <span class="p">);</span> <span class="p">(</span><span class="err">指向同一文件表项</span><span class="p">)</span>  <span class="c1">//fd2 = open(pathname, ... );（指向新建文件表项）</span>
-</span><span class='line'><span class="n">close</span><span class="p">(</span> <span class="n">fd2</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在close（fd2）后，fd1上设置的锁被释放</p>
-
-<ul>
-<li>2、由fork产生的子进程不继承父进程所设置的锁。(记录锁本身就是为了进程间能独立写文件)</li>
-<li>3、在执行exec后，新进程可以继承原执行程序的锁（没有设置close-on-exec标志）</li>
+</li>
 </ul>
-
-
-<h6>锁的释放：</h6>
-
-<p>关闭进程中的相应描述符，内核会从该描述符所关联的i节点开始，逐个检查lockf链表中各项，并释放由<code>调用进程</code>持有的各把锁。（<code>文件i节点会为每个进程维护一个锁结构</code>）</p>
-
-<p>对一个特定文件打开其设置组ID位并关闭其组执行位，则对该文件开启了强制性锁机制。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fstat</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">statbuf</span> <span class="p">);</span>
-</span><span class='line'><span class="n">fchmod</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="p">(</span><span class="n">statbuf</span><span class="p">.</span><span class="n">st_mode</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">S_IXGRP</span><span class="p">)</span> <span class="o">|</span> <span class="n">S_ISGID</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>pag376</h3>
-
-<h6>处理文件描述符和文件状态标志：</h6>
-
-<p>先取当前写模式值，然后修改他（与或并），而不只是将写模式设置为某个绝对值。</p>
-
-<h3>pag382</h3>
-
-<h6>IO多路转换：</h6>
-
-<p>先构造一张有关描述符的列表，然后调用一个函数，直到这些描述符中的一个已准备好进行IO时，该函数才返回。在返回时，它告诉进程哪些描述符已准备好进行IO。<br>
-传向select的参数告诉内核：</p>
-
-<ul>
-<li>1、我们所关心的描述符</li>
-<li>2、对于每个描述符我们所关心的状态（是否读一个给定的描述符?是否想写一个给定的描述符？是否关心一个描述符的异常状态？）</li>
-<li>3、愿意等待多长时间（可以永远等待，等待一个固定量时间，或完全不等待）</li>
-</ul>
-
-
-<p>从select返回告诉我们：</p>
-
-<ul>
-<li>1、已准备好的描述符的数量</li>
-<li>2、对于读写或异常这三个状态中的每一个，哪些描述符已准备好</li>
+</li>
 </ul>
 
 
@@ -206,19 +126,102 @@ F_GETLK是检测其他进程是否有现存锁，不能报告调用进程自己�
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">selet</span><span class="p">(</span> <span class="kt">int</span> <span class="n">maxfdp1</span><span class="p">,</span> <span class="n">fd_set</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">readfds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">writefds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">restrictexceptfds</span><span class="p">,</span> <span class="k">struct</span> <span class="n">timeval</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tvptr</span> <span class="p">);(</span><span class="n">maxfdp1</span><span class="err">为最大描述符</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pselet</span><span class="p">(</span> <span class="kt">int</span> <span class="n">maxfdp1</span><span class="p">,</span> <span class="n">fd_set</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">readfds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">writefds</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">restrictexceptfds</span><span class="p">,</span> <span class="k">const</span> <span class="k">struct</span> <span class="n">timespec</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">tvptr</span><span class="p">,</span> <span class="k">const</span> <span class="kt">sigset_t</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">sigmask</span> <span class="p">);</span> <span class="c1">//多了信号屏蔽这以块功能</span>
-</span><span class='line'><span class="err">对</span><span class="n">fd_set</span><span class="err">处理函数：</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">FD_ISSET</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//测试指定位是否设置</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">FD_CLR</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//清除指定位</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">FD_SET</span><span class="p">(</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//设置指定位</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">FD_ZERO</span><span class="p">(</span> <span class="n">fd_set</span> <span class="o">*</span><span class="n">fdset</span><span class="p">);</span><span class="c1">//所有位清零</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// NSSearchPathDirectory:搜索的目录</span>
+</span><span class='line'><span class="c1">// NSSearchPathDomainMask：搜索范围 NSUserDomainMask:表示在用户的手机上查找</span>
+</span><span class='line'><span class="c1">// expandTilde 是否展开全路径，如果没有展开，应用的沙盒路径就是~</span>
+</span><span class='line'><span class="c1">// 存储一定要要展开路径</span>
+</span><span class='line'><span class="bp">NSArray</span> <span class="o">*</span><span class="n">NSSearchPathForDirectoriesInDomains</span><span class="p">(</span><span class="n">NSSearchPathDirectory</span> <span class="n">directory</span><span class="p">,</span> <span class="n">NSSearchPathDomainMask</span> <span class="n">domainMask</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="n">expandTilde</span><span class="p">)</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>常用方式：</p>
+<ul>
+<li>方式1.使用plist进行存储
+
+<ul>
+<li>plist<code>不能存储自定义对象</code></li>
+<li>存储步骤
+
+<ul>
+<li>如NSDictionary
+
+<ul>
+<li>存储：<code>writeToFile:atomically:</code></li>
+<li>读取：<code>dictionaryWithContentsOfFile:</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>方式2.使用偏好设置进行存储
+
+<ul>
+<li>iOS7之前需要加上synchornize进行同步</li>
+<li>存储步骤
+
+<ul>
+<li>获取路径</li>
+<li>设置键值对</li>
+<li>获取键值对<br></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSUserDefaults</span> <span class="o">*</span><span class="n">defaults</span> <span class="err">＝</span> <span class="p">[</span><span class="bp">NSUserDefaults</span> <span class="n">standardUserDefaults</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="n">defaults</span> <span class="nl">setObject</span><span class="p">:</span><span class="s">@&quot;jack&quot;</span> <span class="nl">forKey</span><span class="p">:</span><span class="s">@&quot;name&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">name</span> <span class="o">=</span> <span class="p">[</span><span class="n">defaults</span> <span class="nl">stringForKey</span><span class="p">:</span><span class="s">@&quot;name&quot;</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>方式3.使用归档进行存储
+
+<ul>
+<li>NSKeyedArchiver、NSKeyedUnarchiver</li>
+<li>如果对数组进行归档，则会对数组里面的元素一个一个进行归档</li>
+<li>使用步骤
+
+<ul>
+<li>存储类型需要实现以下NSCoding两个协议
+
+<ul>
+<li>encodeWithCoder:
+
+<ul>
+<li><code>父类遵守NSCoding时</code>写[super encodeWithCoder:aCoder]</li>
+<li>使用如<code>encodeObject:forKey:</code>归档属性</li>
+</ul>
+</li>
+<li>initWithCoder:
+
+<ul>
+<li><code>父类遵守NSCoding时</code>才写[super initWithCoder:decoder],否则[super init]</li>
+<li>使用如<code>decodeObject:forKey</code>解档属性</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>调用类方法<code>archiveRootObject:toFile:</code>对目标对象进行归档</li>
+<li>调用类方法<code>unarchiveObjectWithFile:</code>对目标进行解档</li>
+</ul>
+</li>
+<li>归档多个对象时，可以用NSData
+
+<ul>
+<li>编码 <br></li>
+<li>解码</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -228,85 +231,154 @@ F_GETLK是检测其他进程是否有现存锁，不能报告调用进程自己�
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">fd_set</span> <span class="n">rset</span><span class="p">;</span>
-</span><span class='line'><span class="kt">int</span>        <span class="n">fd</span><span class="p">;</span>
-</span><span class='line'><span class="n">FD_ZERO</span><span class="p">(</span><span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
-</span><span class='line'><span class="n">FD_SET</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
-</span><span class='line'><span class="n">FD_SET</span><span class="p">(</span><span class="n">STDIN_FILENO</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">);</span>
-</span><span class='line'><span class="err">从</span><span class="n">select</span><span class="err">返回后：</span>
-</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">FD_ISSET</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rset</span><span class="p">))</span> <span class="p">{</span>
-</span><span class='line'><span class="p">}</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 新建一块可变数据区</span>
+</span><span class='line'><span class="bp">NSMutableData</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableData</span> <span class="n">data</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 将数据区连接到一个NSKeyedArchiver对象</span>
+</span><span class='line'><span class="bp">NSKeyedArchiver</span> <span class="o">*</span><span class="n">archiver</span> <span class="o">=</span> <span class="p">[[[</span><span class="bp">NSKeyedArchiver</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initForWritingWithMutableData</span><span class="p">:</span><span class="n">data</span><span class="p">]</span> <span class="n">autorelease</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 开始存档对象，存档的数据都会存储到NSMutableData中</span>
+</span><span class='line'><span class="p">[</span><span class="n">archiver</span> <span class="nl">encodeObject</span><span class="p">:</span><span class="n">person1</span> <span class="nl">forKey</span><span class="p">:</span><span class="s">@&quot;person1&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">archiver</span> <span class="nl">encodeObject</span><span class="p">:</span><span class="n">person2</span> <span class="nl">forKey</span><span class="p">:</span><span class="s">@&quot;person2&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 存档完毕(一定要调用这个方法)</span>
+</span><span class='line'><span class="p">[</span><span class="n">archiver</span> <span class="n">finishEncoding</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 将存档的数据写入文件</span>
+</span><span class='line'><span class="p">[</span><span class="n">data</span> <span class="nl">writeToFile</span><span class="p">:</span><span class="n">path</span> <span class="nl">atomically</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
 </span></code></pre></td></tr></table></div></figure>
 
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">poll</span><span class="p">(</span> <span class="k">struct</span> <span class="n">pollfd</span> <span class="n">fdarray</span><span class="p">[],</span><span class="kt">nfds_t</span> <span class="n">nfds</span><span class="p">,</span> <span class="kt">int</span> <span class="n">timeout</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>函数构造一个pollfd结构数组，每个数组元素指定一个描述符编号以及对其所关心的状态。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">pollfd</span> <span class="p">{</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">fd</span><span class="p">;</span>
-</span><span class='line'><span class="kt">short</span> <span class="n">events</span><span class="p">;</span>
-</span><span class='line'><span class="kt">short</span> <span class="n">revents</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 从文件中读取数据</span>
+</span><span class='line'><span class="bp">NSData</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSData</span> <span class="nl">dataWithContentsOfFile</span><span class="p">:</span><span class="n">path</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 根据数据，解析成一个NSKeyedUnarchiver对象</span>
+</span><span class='line'><span class="bp">NSKeyedUnarchiver</span> <span class="o">*</span><span class="n">unarchiver</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSKeyedUnarchiver</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initForReadingWithData</span><span class="p">:</span><span class="n">data</span><span class="p">];</span>
+</span><span class='line'><span class="n">Person</span> <span class="o">*</span><span class="n">person1</span> <span class="o">=</span> <span class="p">[</span><span class="n">unarchiver</span> <span class="nl">decodeObjectForKey</span><span class="p">:</span><span class="s">@&quot;person1&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="n">Person</span> <span class="o">*</span><span class="n">person2</span> <span class="o">=</span> <span class="p">[</span><span class="n">unarchiver</span> <span class="nl">decodeObjectForKey</span><span class="p">:</span><span class="s">@&quot;person2&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 恢复完毕</span>
+</span><span class='line'><span class="p">[</span><span class="n">unarchiver</span> <span class="n">finishDecoding</span><span class="p">];</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>通过events告诉内核我们对该描述符关心的是什么。返回时，内核设置revents成员，以说明对于该描述符已经发生了什么事件。</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">ssize_t</span> <span class="nf">readv</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="n">conststruct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iov</span><span class="p">,</span> <span class="kt">int</span> <span class="n">iovcnt</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">ssize_t</span> <span class="nf">writev</span><span class="p">(</span> <span class="kt">int</span> <span class="n">filedes</span><span class="p">,</span> <span class="n">conststruct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iov</span><span class="p">,</span> <span class="kt">int</span> <span class="n">iovcnt</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
+</div>
+  
+  
 
 
-<p>在一次函数调用中读写多个非连续缓冲区。</p>
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-09-01-dai-li-she-ji/">代理设计</a></h1>
+    
+    
+      <p class="meta">
+        
 
-<p>管道、FIFO以及某些设备，特别时终端、网络和STREAMS设备有下列两种性质：</p>
+
+
+
+<time class='entry-date' datetime='2013-09-01T00:01:28+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>12:01 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>代理</h2>
 
 <ul>
-<li>1、一次read操作所返回的数据可能少于所要求的数据，即使还没达到文件尾端也可能是这样的。这不是一个错误，应当继续该设备。</li>
-<li>2、一次write操作的返回值也可能少于指定输出的字节数。这不是一个错误，应当继续该设备。</li>
+<li><p>代理设计模式的作用:</p>
+
+<ul>
+<li>1.A对象监听B对象的一些行为，A成为B的代理</li>
+<li>2.B对象想告诉A对象一些事情，A成为B的代理</li>
+</ul>
+</li>
+<li><p>代理设计模式的总结：</p>
+
+<ul>
+<li>如果你想监听别人的一些行为，那么你就要成为别人的代理</li>
+<li>如果你想告诉别人一些事情，那么就让别人成为你的代理</li>
+</ul>
+</li>
+<li><p>代理设计模式的开发步骤</p>
+
+<ul>
+<li>1.拟一份协议（协议名字的格式：控件名 + Delegate），在协议里面声明一些代理方法（一般代理方法都是@optional），代理方法都会返回发生事件的对象(如UIScrollView代理方法，返回对应的UIScrollView对象)</li>
+<li>2.声明一个代理属性：@property (nonatomic, weak) id&lt;代理协议> delegate;</li>
+<li>3.在内部发生某些行为时，调用代理对应的代理方法，通知代理内部发生什么事</li>
+<li>4.<code>设置代理：xxx.delegate = yyy</code>（这一步我很容易忘了。。。）;</li>
+<li>5.yyy对象遵守协议，实现代理方法</li>
+</ul>
+</li>
+<li>示例
+
+<ul>
+<li>UIScrollViewDelegate</li>
+<li>scrollViewDidScroll:</li>
+</ul>
+</li>
 </ul>
 
 
-<h3>pag390</h3>
+<h2>代理和通知的区别</h2>
 
-<h6>存储映射IO：</h6>
+<ul>
+<li>代理：1个对象只能告诉另1个对象发生了什么事，且需要知道代理是否实现了某些方法，需要反馈</li>
+<li>通知：1个对象可以告诉N个对象发生了什么事，不需要目标是否执行了某些操作，直接扔出去就行，不需要反馈</li>
+<li>通知需要关注的比代理多，需要知道通知名称等，代理比较直接，直接delegate</li>
+</ul>
 
-<p>使一个磁盘文件与存储空间中的一个缓冲区相映射。于是当从缓冲区取数据，就相当于读文件中的相应字节。将数据存入缓冲区，则相应字节就自动写入文件。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">mmap</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span><span class="kt">int</span> <span class="n">prot</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span><span class="p">,</span> <span class="kt">int</span> <span class="n">fileds</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">off</span> <span class="p">);</span> <span class="c1">//将给定文件映射到存储区域</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>通常将addr设置为0，表示由系统选择该映射区的起始地址。<br>
-off和addr通常指定为0.</p>
-
-<p>不能用其在网络设备或终端设备等一些设备之间进行复制。</p>
-
-<p>在调用fork之后，子进程继承存储映射区（<code>存储映射区是父进程地址空间的一部分，子进程将复制</code>），同样，因为<code>exec之后子进程采用全新的地址空间，所以不继承存储空间</code>。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">mprotect</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span><span class="kt">int</span> <span class="n">prot</span> <span class="p">);</span><span class="c1">//更改一个现存映射存储区</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">msync</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">,</span> <span class="n">intflags</span> <span class="p">);</span><span class="c1">//将修改的页冲洗到被映射的文件中</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">munmap</span><span class="p">(</span> <span class="kt">caddr_t</span> <span class="n">addr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">len</span><span class="p">);</span> <span class="c1">//解除存储区映射（关闭文件描述符并不解除映射区）调用munmap不会使映射区的内容写到磁盘文件上。</span>
-</span></code></pre></td></tr></table></div></figure>
+</div>
+  
+  
 
 
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-08-31-uibuttonzi-ding-yi-diao-zheng-nei-bu-jie-gou/">UIButton自定义调整内部结构</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-08-31T23:57:39+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>11:57 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><ul>
+<li>原则：一张图片和一条文字的组合，就可以用按钮</li>
+</ul>
+
+
+<h2>调整图片和文字的显示位置</h2>
+
+<ul>
+<li>方式1.重写imageRectForContentRect:和titleRectForContentRect:方法<br></li>
+</ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -329,112 +401,33 @@ off和addr通常指定为0.</p>
 <span class='line-number'>18</span>
 <span class='line-number'>19</span>
 <span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-<span class='line-number'>61</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;stdlib.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;fcntl.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;sys/mman.h&gt;  </span>
-</span><span class='line'><span class="cp">#include &lt;stdio.h&gt;  </span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#define NLOOPS      1000  </span>
-</span><span class='line'><span class="cp">#define SIZE        sizeof(long)  </span>
-</span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="kt">int</span>
-</span><span class='line'><span class="nf">updata</span><span class="p">(</span> <span class="kt">long</span> <span class="o">*</span><span class="n">ptr</span> <span class="p">)</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 以下两个方法的传入参数contentRect会减去edgesInsert边距长度</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nf">imageRectForContentRect:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">contentRect</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span><span class="p">(</span> <span class="p">(</span><span class="o">*</span><span class="n">ptr</span><span class="p">)</span><span class="o">++</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">CGRect</span> <span class="n">imageRect</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span>  <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">imageRect</span><span class="p">;</span>
 </span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">int</span>
-</span><span class='line'><span class="nf">main</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nf">titleRectForContentRect:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">contentRect</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span>     <span class="n">fd</span><span class="p">,</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">counter</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">pid_t</span>   <span class="n">pid</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">void</span>    <span class="o">*</span><span class="n">area</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">fd</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span><span class="s">&quot;/dev/zero&quot;</span><span class="p">,</span> <span class="n">O_RDWR</span><span class="p">))</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">)</span>
-</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;open&quot;</span> <span class="p">);</span>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">area</span> <span class="o">=</span> <span class="n">mmap</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">SIZE</span><span class="p">,</span> <span class="n">PROT_READ</span> <span class="o">|</span> <span class="n">PROT_WRITE</span><span class="p">,</span> <span class="n">MAP_SHARED</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">==</span> <span class="n">MAP_FAILED</span> <span class="p">)</span>
-</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;mmap error&quot;</span> <span class="p">);</span>
-</span><span class='line'>    <span class="n">close</span><span class="p">(</span> <span class="n">fd</span> <span class="p">);</span>
+</span><span class='line'>    <span class="bp">CGRect</span> <span class="n">titleRect</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">TELL_WAIT</span><span class="p">();</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">pid</span> <span class="o">=</span> <span class="n">fork</span><span class="p">())</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">)</span>
-</span><span class='line'>        <span class="n">perror</span><span class="p">(</span> <span class="s">&quot;fork&quot;</span> <span class="p">);</span>
-</span><span class='line'>    <span class="k">else</span> <span class="k">if</span><span class="p">(</span> <span class="n">pid</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">NLOOPS</span><span class="p">;</span> <span class="n">i</span><span class="o">+=</span><span class="mi">2</span> <span class="p">)</span>
-</span><span class='line'>        <span class="p">{</span>
-</span><span class='line'>            <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">counter</span> <span class="o">=</span> <span class="n">updata</span><span class="p">((</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">))</span> <span class="o">!=</span> <span class="n">i</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;p: e %d, g %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">counter</span> <span class="p">);</span>
-</span><span class='line'>                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="n">printf</span><span class="p">(</span><span class="s">&quot;p area: %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">);</span>
-</span><span class='line'>            <span class="n">TELL_CHILD</span><span class="p">(</span> <span class="n">pid</span> <span class="p">);</span>
-</span><span class='line'>            <span class="n">WAIT_CHILD</span><span class="p">();</span>
-</span><span class='line'>            <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">else</span>
-</span><span class='line'>    <span class="p">{</span>
-</span><span class='line'>        <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">NLOOPS</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="mi">2</span> <span class="p">)</span>
-</span><span class='line'>        <span class="p">{</span>
-</span><span class='line'>            <span class="n">WAIT_PARENT</span><span class="p">();</span>
-</span><span class='line'>            <span class="k">if</span><span class="p">(</span> <span class="p">(</span><span class="n">counter</span> <span class="o">=</span> <span class="n">updata</span><span class="p">((</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">))</span> <span class="o">!=</span> <span class="n">i</span> <span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;c: e %d, g %d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">counter</span> <span class="p">);</span>
-</span><span class='line'>                <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="n">printf</span><span class="p">(</span><span class="s">&quot;c area: %ld</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="kt">long</span> <span class="o">*</span><span class="p">)</span><span class="n">area</span><span class="p">);</span>
-</span><span class='line'>            <span class="n">TELL_PARENT</span><span class="p">(</span> <span class="n">getppid</span><span class="p">()</span> <span class="p">);</span>
-</span><span class='line'>            <span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">exit</span><span class="p">(</span> <span class="mi">0</span> <span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">titleRect</span><span class="p">;</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>输出</p>
+<ul>
+<li>方式2.重写layoutSubviews方法<br></li>
+</ul>
+
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -447,99 +440,26 @@ off和addr通常指定为0.</p>
 <span class='line-number'>9</span>
 <span class='line-number'>10</span>
 <span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">1</span>
-</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">2</span>
-</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">3</span>
-</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">4</span>
-</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">5</span>
-</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">6</span>
-</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">7</span>
-</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">8</span>
-</span><span class='line'><span class="n">p</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">9</span>
-</span><span class='line'><span class="n">c</span> <span class="nl">area</span><span class="p">:</span> <span class="mi">10</span>
-</span><span class='line'><span class="p">...</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-05-19-guan-yu-zu-sai/">关于阻塞</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-05-19T13:22:31+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>1:22 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>read函数只是一个通用的读文件设备的接口。<code>是否阻塞</code>需要由<code>设备的属性和设定</code>所决定。一般来说:</p>
-
-<ul>
-<li>读字符终端、网络的socket描述字，管道文件等，这 些文件的缺省read都是阻塞的方式。</li>
-<li>如果是读磁盘上的文件，一般不会是阻塞方式的。但使用锁和fcntl设置取消文件O_NOBLOCK状态，也会产生 阻塞的read效果。</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-05-19-unixxi-tong-xian-cheng-kong-zhi/">UNIX系统线程控制</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-05-19T13:00:08+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>1:00 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h3>pag314</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_init</span><span class="p">(</span> <span class="kt">pthread_attr_t</span><span class="o">*</span><span class="n">attr</span> <span class="p">)</span>  <span class="c1">//初始化pthread_attr_t结构</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_destroy</span><span class="p">(</span><span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">)</span><span class="c1">//去初始化；释放动态内存；用无效的值初始化属性对象（被误用会导致pthread_create函数返回错误）</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">titleH</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">imageView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="n">titleH</span><span class="p">);</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">titleLabel</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<h6>分离线程与不分离线程</h6>
-
-<p>分离线程：</p>
+<h2>取消点击高亮</h2>
 
 <ul>
-<li><p>线程函数完成后，OS将其资源自动收回
-不分离线程：</p></li>
-<li><p>如果不调用pthread_join，或者不结束整个进程，OS不会回收其资源</p></li>
+<li>重写setHighlighted:方法<br></li>
 </ul>
 
 
@@ -547,11 +467,49 @@ off和addr通常指定为0.</p>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_getdetachstate</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">detachstate</span> <span class="p">)</span> <span class="c1">//获取当前线程属性</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_attr_setdetachstate</span><span class="p">(</span><span class="kt">pthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">detachstate</span> <span class="p">)</span> <span class="c1">//设置线程属性：</span>
-</span><span class='line'><span class="c1">// PTHREAD_CREATE_DETACHED 分离状态启动线程</span>
-</span><span class='line'><span class="c1">// PTHREAD_CREATE_JOINABLE  正常状态启动线程</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setHighlighted:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">highlighted</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>通过取消IB中的HighlightedAdjustsImage也可以</li>
+</ul>
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013-08-20-uiimagetu-pian-la-shen-chu-li/">UIImage图片拉伸处理</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-08-20T23:54:40+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:54 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><ul>
+<li><p>封装为分类</p></li>
+<li><p>方式1.resizableImageWithCapInsets:resizingMode:<br></p></li>
+</ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -562,186 +520,55 @@ off和addr通常指定为0.</p>
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getstack</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="kr">restrict</span> <span class="n">stackaddr</span><span class="p">,</span> <span class="kt">size_t</span><span class="o">*</span><span class="kr">restrict</span> <span class="n">stacksize</span> <span class="p">);</span> <span class="c1">//获取线程栈属性</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">resizableImage:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="n">name</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setstack</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">stackaddr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="n">stacksize</span> <span class="p">);</span><span class="c1">//设置线程栈位置</span>
-</span><span class='line'><span class="c1">// 对进程来说，虚拟地址空间的大小是固定的，进程中只有一个栈</span>
-</span><span class='line'><span class="c1">// 如果用完了线程栈的虚拟地址空间，可以使用malloc或者mmap来为其他栈分配空间，并用pthread_attr_setstack函数改变新建线程的栈位置。</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getstacksize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">stacksize</span> <span class="p">);</span><span class="c1">//获取栈大小</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setstacksize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">stacksize</span> <span class="p">);</span> <span class="c1">//设置栈大小</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageH</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageW</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">image</span> <span class="nl">resizableImageWithCapInsets</span><span class="p">:</span><span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="n">imageH</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">imageW</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">imageH</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="p">,</span> <span class="n">imageW</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span><span class="nl">resizingMode</span><span class="p">:</span><span class="n">UIImageResizingModeStretch</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_getguardsize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">guardsize</span> <span class="p">);</span><span class="c1">//获取线程栈末尾之后用以避免栈溢出的扩展内存的大小</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_attr_setguardsize</span><span class="p">(</span> <span class="kt">constpthread_attr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">stacksize</span> <span class="p">);</span><span class="c1">//设置线程栈末尾之后用以避免栈溢出的扩展内存的大小</span>
-</span><span class='line'><span class="c1">// guardsize控制线程栈末尾之后用以避免栈溢出的扩展内存的大小。属性默认为PAGESIZE个字节。</span>
-</span><span class='line'><span class="c1">// guardsize为0时不会提供警戒缓冲区</span>
-</span><span class='line'><span class="c1">// 如果对线程属性stackaddr做的修改，系统会使警戒栈缓冲区机制无效，等同为guardsize为0</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>并发度控制着用户级线程可以映射的内核线程或进程的数目。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_getconcurrency</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span><span class="c1">//返回当前并发度</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setconcurrency</span><span class="p">(</span> <span class="kt">int</span> <span class="n">level</span><span class="p">);</span><span class="c1">//设置系统并发度</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>pag318</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_init</span><span class="p">(</span><span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_destroy</span><span class="p">(</span><span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在进程中，默认行为时<code>多个线程可以访问同一个同步对象</code>。在这种情况下进程<code>共享互斥量</code>属性需设置为<code>PTHREAD_PROCESS_PRIVATE</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_getpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span><span class="p">);</span><span class="c1">//获取进程共享属性</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_setpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pshared</span> <span class="p">);</span><span class="c1">//设置进程共享属性</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>互斥量类型属性</h6>
 
 <ul>
-<li>1、PTHREAD_MUTEX_NORMAL  标准，不做错误检测、死锁检测</li>
-<li>2、PTHREAD_MUTEX_RECURSIVE  允许同一线程在互斥量解锁之前对该互斥量进行多次加锁</li>
-<li>3、PTHREAD_MUTEX_ERRORCHECK  提供错误检查</li>
-<li>4、PTHREAD_MUTEX_DEFAULT 请求默认语义（linux映射到NORMAL）</li>
+<li>方式2.stretchableImageWithLeftCapWidth:topCapHeight:</li>
 </ul>
 
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_gettype</span><span class="p">(</span> <span class="kt">constpthread_mutexattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">type</span><span class="p">);</span><span class="c1">//获取互斥量类型属性</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_mutexattr_settype</span><span class="p">(</span> <span class="kt">constpthread_mutexattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="kt">int</span> <span class="n">type</span> <span class="p">);</span><span class="c1">//设置互斥量类型属性</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>互斥量用于保护与条件变量关联的条件时，在阻塞线程<code>之前</code>，pthread_cond_wait和pthread_cond_timedwait函数<code>释放与条件相关的互斥量</code>，这就<code>允许其他线程获取互斥量、改变条件、释放互斥量并向条件变量发送信号</code>。（因此使用递归互斥量时要特别小心，wait，timedwait只解锁一层）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_init</span><span class="p">(</span><span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_destroy</span><span class="p">(</span><span class="kt">pthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_getpshared</span><span class="p">(</span> <span class="kt">constpthread_rwlockattr_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">attr</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_rwlockattr_setpshared</span><span class="p">(</span> <span class="kt">constpthread_rwlockattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="n">intpshared</span> <span class="p">);</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">resizableImage:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="n">name</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_init</span><span class="p">(</span><span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_destroy</span><span class="p">(</span><span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_getpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">restrictattr</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">pshared</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_condattr_setpshared</span><span class="p">(</span><span class="k">const</span> <span class="kt">pthread_condattr_t</span> <span class="o">*</span><span class="n">attr</span><span class="p">,</span> <span class="n">intpshared</span> <span class="p">);</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageH</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageW</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">image</span> <span class="nl">stretchableImageWithLeftCapWidth</span><span class="p">:</span><span class="n">imageW</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="nl">topCapHeight</span><span class="p">:</span><span class="n">imageH</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<h6>线程安全与异步信号安全</h6>
+<ul>
+<li>方式3.在图片Images.xcassets中进行设置<br>
 
-<p>如果一个函数对多个线程来说时可重入的，则说这个函数是线程安全的。
-如果函数对异步信号处理程序的重入是安全的，那么就可以说函数时异步信号安全的。</p>
-
-<h6>FILE对象相关锁操作</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">ftrylockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">flockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">funlockfile</span><span class="p">(</span> <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
+<ul>
+<li>在Images.xcassets选中想修改的图片<br></li>
+<li>执行以下操作<br>
+<img src="/images/Snip20150606_1.png" alt="" />
+<img src="/images/Snip20150606_2.png" alt="" /></li>
+</ul>
+</li>
+</ul>
 
 
-<p>进程中的<code>所有线程</code>都可以访问<code>进程的整个地址空间</code>。<code>除了使用寄存器</code>以外，线程<code>没有办法阻止其他线程访问他的数据</code>，线程私有数据也不例外。</p>
-
-<p>在分配线程私有数据之前，需要创建一个与该数据关联的键，这个键将用于获取对线程私有数据的访问权。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_key_create</span><span class="p">(</span> <span class="kt">pthread_key_t</span><span class="o">*</span><span class="n">keyp</span><span class="p">,</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">destructor</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span> <span class="p">);</span><span class="c1">//创建一个键和与键关联的析构函数</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_key_delete</span><span class="p">(</span> <span class="kt">pthread_key_t</span><span class="o">*</span><span class="n">key</span> <span class="p">);</span> <span class="c1">//删除键（不会激活与键相关联的析构函数）</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">pthread_once_t</span> <span class="n">initflag</span> <span class="o">=</span> <span class="n">PTHREAD_ONCE_INIT</span><span class="p">;</span><span class="c1">//initflag必须时一个非本地变量（是全局或静态变量），必须初始化为PTHREAD_ONCE_INIT</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_once</span><span class="p">(</span> <span class="kt">pthread_once_t</span><span class="o">*</span><span class="n">initflag</span><span class="p">,</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">initfn</span><span class="p">)(</span><span class="kt">void</span><span class="p">)</span> <span class="p">);</span> <span class="c1">//保证初始化initfn只被调用一次。</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">pthread_getspecific</span><span class="p">(</span><span class="kt">pthread_key_t</span> <span class="n">key</span> <span class="p">);</span> <span class="c1">//获得线程私有数据地址</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setspecific</span><span class="p">(</span> <span class="n">pthread_key_tkey</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span> <span class="n">value</span><span class="p">);</span> <span class="c1">//把键和线程私有数据关联起来</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>取消点：线程检查是否被取消并按照请求进行动作的一个位置</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">pthread_cancel</span><span class="err">调用并不等待线程终止，在默认情况下，线程在取消请求发出以后还是继续运行，直到线程到达某个取消点。</span>
-</span><span class='line'><span class="kt">int</span> <span class="n">pthread_setcancelstate</span><span class="p">(</span> <span class="kt">int</span> <span class="n">state</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="n">oldstate</span><span class="p">);</span><span class="c1">//修改可取消状态（PTHREAD_CANCEL_ENABLE、PTHREAD_CANCEL_DISABLE）</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">pthread_testcancel</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span><span class="c1">//自己添加取消点（如果某个取消请求处于未决状态，而且取消没有置为无效，那么线程就会被取消。但是如果取消设置被置为无效，此函数没有任何效果）（取消点需要和未决信号相结合才能取消一个进程）</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">pthread_setcanceltype</span><span class="p">(</span> <span class="kt">int</span> <span class="n">type</span><span class="p">,</span><span class="kt">int</span> <span class="o">*</span><span class="n">oldtype</span> <span class="p">);</span> <span class="c1">//修改取消类型（异步取消(可在任意时间取消)，延迟取消（默认状态））</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>pag334</h6>
-
-<p>每个线程都有自己的<code>信号屏蔽字</code>，但是<code>信号的处理是进程中所有线程共享</code>的。<br>
-<code>进程中的信号是递送到单个线程的。</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_sigmask</span><span class="p">(</span> <span class="kt">int</span> <span class="n">how</span><span class="p">,</span> <span class="kt">constsigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">oset</span><span class="p">);</span><span class="c1">//信号屏蔽（单线程中的sigprocmask）</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">sigwait</span><span class="p">(</span> <span class="k">const</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">set</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="kr">restrict</span> <span class="n">signop</span> <span class="p">);</span> <span class="c1">//等待信号发生</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>为了避免错误，线程在调用sigwait之前，<code>必须阻塞那些他正在等待的信号</code>（sigsuspend一样）。sigwait会自动取消信号集的阻塞状态（和sigsuspend有所区别，sigwait是取消set中屏蔽的信号阻塞，而sigsuspend是需要在传入的信号屏蔽字sigmask中取消对相应信号的屏蔽,且sigsuspend需要和信号处理函数相配合），直到有新的信号被递送。在返回之前将恢复线程的信号屏蔽字。<br>
-<code>为了防止信号中断线程，可以把信号加到每个线程的信号屏蔽字中，然后安排专用线程作信号处理
-新建线程继承了现有的信号屏蔽字（子进程也有继承）</code></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_kill</span><span class="p">(</span> <span class="kt">pthread_t</span> <span class="kr">thread</span><span class="p">,</span><span class="kt">int</span> <span class="n">signo</span> <span class="p">);</span><span class="c1">// 发送信号到线程</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>闹钟定时器时进程资源，并且所有的线程共享相同的alarm，所以进程中的多个线程<code>不可能互不干扰</code></p>
-
-<h6>pag337</h6>
-
-<p>子进程通过继承整个地址空间的副本（<code>内存是fork时就分配的，但是里面的内容是写时才复制</code>），也从父进程那里继承了所有<code>互斥量、读写锁和条件变量的状态</code>。如果父进程包含多个线程、子进程在fork返回以后，如果紧接着不是马上调用exec的话，就需要清理锁状态。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">pthread_atfork</span><span class="p">(</span><span class="kt">void</span><span class="p">(</span><span class="o">*</span> <span class="n">prepare</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">),</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">parent</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">),</span> <span class="kt">void</span><span class="p">(</span><span class="o">*</span><span class="n">child</span><span class="p">)(</span><span class="kt">void</span> <span class="p">));</span><span class="c1">//清除锁状态建立fork处理程序prepare fork处理程序在调用fork以后运行，childfork处理程序在fork调用返回到子进程之前运行，parentfork处理程序在fork调用返回给父进程前运行。</span>
-</span></code></pre></td></tr></table></div></figure>
-
+<p>第三种方式一般用来设置APP自带的一些图标。</p>
 </div>
   
   
@@ -754,7 +581,7 @@ off和addr通常指定为0.</p>
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-05-17-jin-cheng-he-xian-cheng-de-qu-bie/">进程和线程的区别</a></h1>
+      <h1 class="entry-title"><a href="/blog/2013-08-14-uitableviewcellduo-xing-cao-zuo/">UITableViewCell多行操作</a></h1>
     
     
       <p class="meta">
@@ -763,61 +590,24 @@ off和addr通常指定为0.</p>
 
 
 
-<time class='entry-date' datetime='2013-05-17T21:52:02+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>9:52 pm</span></time>
+<time class='entry-date' datetime='2013-08-14T20:50:48+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>8:50 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><h4>地址空间：</h4>
+  <div class="entry-content"><ul>
+<li>重点：多行操作选中的是模型，并不是选中的cell</li>
+<li>方式1.通过添加checked属性，并在setter方法中对checkView进行操作[需要自己添加选中提示view]
 
 <ul>
-<li>线程：无单独地址空间，共享内存，一个线程死掉等于整个进程死掉。线程只是一个进程中的不同执行路路径。线程有自己的堆栈和局部变量（寄存器集、信号屏蔽字）。</li>
-<li>进程：有独立的地址空间（调用fork时就创建子进程的地址空间副本）（现在：写时拷贝，共享正文），一个进程崩溃后在保护模式下不会对其他进程产生影响。</li>
+<li>删除操作代码<br></li>
+<li>选中属性更改<br></li>
+</ul>
+</li>
 </ul>
 
-
-<h4>系统开销：</h4>
-
-<ul>
-<li>线程：占用资源少，所以切换时对资源的处理也少，耗费资源少。并发性高。</li>
-<li>进程：占用资源多，切换时资源耗费大。</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-05-16-unixxi-tong-duo-xian-cheng-bian-cheng-de-%5B%3F%5D-ge-kun-huo/">UNIX系统多线程编程的一个困惑</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-05-16T22:00:43+08:00'><span class='date'><span class='date-month'>May</span> <span class='date-day'>16</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>10:00 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>一组并发线程运行在一个进程的上下文中。每个线程都有他自己<code>独立的线程上下文</code>，包括线程<code>ID，栈，栈指针</code>，程序计数器，条件码和通用的目地寄存器。每个线程和其他线程一起共享进程上下文的剩余部分。这包括整个用户虚拟地址（由只读文本，读写数据，堆，以及所有共享库代码和数据区域组成），线程同样共享打开的文件集合。(在线程中定义的<code>c static属性</code>的本地变量虽然不在栈中管理，但是他的作用范围和普通的局部变量一样。因其虽然在.data或.bss中为每个定义分配空间，但是其在符号表中创建的时一个有唯一名字的<code>本地链接器符号</code>，其本质依然时局部变量（深入理解计算机系统二452页）)</p>
-
-<p>各自独立的线程栈被保存在<code>虚拟地址空间的栈区域</code>中，并且<code>通常</code>被相应的线程独立的访问。（通常而不是总是，时因为不同线程栈不对其他线程设防，如果一个线程以某种方式得到一个指向其他线程栈的指针，那么他就可以读写这个栈的任何部分）（注意，要在<code>取得所需要的线程栈的指针的情况下！</code>，如果直接引用，则程序编译将会不通过，因其访问的是自身的独立线程栈，而此栈没有所要的那个数据（在其他线程栈中））</p>
-
-<p>程序：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -836,48 +626,209 @@ off和addr通常指定为0.</p>
 <span class='line-number'>15</span>
 <span class='line-number'>16</span>
 <span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include&lt;unistd.h&gt;</span>
-</span><span class='line'><span class="cp">#include&lt;pthread.h&gt;</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 存储需要删除模型数组</span>
+</span><span class='line'><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">deleteDeals</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
+</span><span class='line'><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">indexPaths</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">thread</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">vargrp</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span> <span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">pthread_t</span> <span class="n">tid</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">for</span><span class="p">(</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">)</span>
-</span><span class='line'>        <span class="n">pthread_create</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">tid</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="kr">thread</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">i</span> <span class="p">);</span><span class="c1">//创建线程1</span>
-</span><span class='line'>    <span class="n">pthread_exit</span><span class="p">(</span> <span class="nb">NULL</span> <span class="p">);</span>
+</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="k">in</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>     <span class="c1">// 在didSelectRowAtIndexPath设置的选中属性</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">deal</span><span class="p">.</span><span class="n">isChecked</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">deleteDeals</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">indexPaths</span> <span class="nl">addObject</span><span class="p">:[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">indexOfObject</span><span class="p">:</span><span class="n">deal</span><span class="p">]</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">]];</span>
+</span><span class='line'>    <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
 </span><span class='line'>
-</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">thread</span><span class="p">(</span> <span class="kt">void</span> <span class="o">*</span><span class="n">vargp</span> <span class="p">)</span>
+</span><span class='line'><span class="c1">// 从全局模型中删除要删除的模型数据</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">removeObjectsInArray</span><span class="p">:</span><span class="n">deleteDeals</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 更新tableView数据</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">deleteRowsAtIndexPaths</span><span class="p">:</span><span class="n">indexPaths</span> <span class="nl">withRowAnimation</span><span class="p">:</span><span class="n">UITableViewRowAnimationFade</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">didSelectRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">int</span> <span class="n">mytid</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">vargp</span><span class="p">;</span>
+</span><span class='line'><span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="n">printf</span><span class="p">(</span> <span class="s">&quot;%d</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="o">++</span><span class="n">a</span> <span class="p">);</span>
+</span><span class='line'><span class="c1">// 设置模型选中状态</span>
+</span><span class='line'><span class="n">deal</span><span class="p">.</span><span class="n">checked</span> <span class="o">=</span> <span class="o">!</span><span class="n">deal</span><span class="p">.</span><span class="n">isChecked</span><span class="p">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 取消cell的选中状态</span>
+</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="nl">deselectRowAtIndexPath</span><span class="p">:</span><span class="n">indexPath</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>此程序编译不通过，出错提示为a不能识别；<br>
-这就体现出了线程调用与调用程序的区别（可能两者不具可比性）；<br>
-因为mian可以称为主线程，而a由主线程的独立线程栈进行管理，对创建的线程1是不可见的（但是可用指向独立线程栈的指针进行访问）。<br>
-将 int a = 1;<br>
-改为static int a = 1；<br>
-其结果也是编译不通过，出错原因一样。这也证实了虽然静态变量不在栈中管理，但是他的作用范围还是和局部变量一致的。</p>
+<ul>
+<li>方式2.将checkView暴露给控制器，由控制器操作是否隐藏
+
+<ul>
+<li>由于需要暴露checkView所以不推荐使用</li>
+<li>添加删除模型数组属性deleteDeals</li>
+<li>删除操作代码<br></li>
+<li>隐藏选中提示view代码<br></li>
+<li>删除模型数组设置代码<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 删除全局模型中需要删除的模型数据</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">removeObjectsInArray</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 清空需要删除模型数据数组缓存</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="n">removeAllObjects</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="n">TPCDealCell</span> <span class="o">*</span><span class="n">dealCell</span> <span class="o">=</span> <span class="p">[</span><span class="n">TPCDealCell</span> <span class="nl">cellWithTableView</span><span class="p">:</span><span class="n">tableView</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">dealCell</span><span class="p">.</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 隐藏模型对应cell的选中控件</span>
+</span><span class='line'><span class="n">dealCell</span><span class="p">.</span><span class="n">checkView</span><span class="p">.</span><span class="n">hidden</span> <span class="o">=</span> <span class="o">!</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">dealCell</span><span class="p">.</span><span class="n">deal</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="n">dealCell</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">didSelectRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="nl">deselectRowAtIndexPath</span><span class="p">:</span><span class="n">indexPath</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 如果已经包含了，则删去对应的模型</span>
+</span><span class='line'><span class="c1">// 如果没有包含，则添加对应的模型</span>
+</span><span class='line'><span class="k">if</span> <span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">deal</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">removeObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>方式3.苹果自带多行操作方法
+
+<ul>
+<li>添加删除模型数组属性deleteDeals</li>
+<li>设置allowsMultipleSelectionDuringEditing=YES</li>
+<li>设置editing=YES</li>
+<li>删除操作代码<br></li>
+<li>选中和取消选中<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 删除全局模型中需要删除的模型数据</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">removeObjectsInArray</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 清空需要删除模型数据数组缓存</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="n">removeAllObjects</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 实现以下两个方法，对选中删除数组进行操作</span>
+</span><span class='line'>    <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">tableView</span><span class="p">:(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">tableView</span> <span class="nl">didSelectRowAtIndexPath</span><span class="p">:(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="n">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">tableView</span><span class="p">:(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">tableView</span> <span class="nl">didDeselectRowAtIndexPath</span><span class="p">:(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="n">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">removeObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
 </div>
   
   
@@ -912,6 +863,14 @@ off和addr通常指定为0.</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-09-02-shi-yong-xiang-ying-zhe-lian-tiao-jie-jue-xu-qiu/">使用响应者链条解决需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-03-cheng-xu-bu-si/">程序不死</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
       </li>
     
@@ -921,6 +880,10 @@ off和addr通常指定为0.</p>
     
       <li class="post">
         <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-03-02-jing-tai-fen-xi-bu-zhun-que-de-qing-kuang/">静态分析不准确的情况</a>
       </li>
     
       <li class="post">
@@ -948,47 +911,35 @@ off和addr通常指定为0.</p>
       </li>
     
       <li class="post">
+        <a href="/blog/2015-01-02-jian-ting-jian-pan-shan-chu-an-niu/">监听键盘删除按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-12-04-autorezingde-ying-yong/">Preview功能结合Autorezing的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-11-02-she-zhi-cellzhou-bian-jian-ju/">设置cell周边间距</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+        <a href="/blog/2014-10-05-shuang-ji-di-bu-gong-ju-lan-itemdui-ying-uitableviewzhong-xin-shua-xin/">双击底部工具栏Item对应UITableView重新刷新</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+        <a href="/blog/2014-09-11-zi-ding-yi-uitextview/">自定义UITextView</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+        <a href="/blog/2014-09-01-zi-ding-yi-ti-shi-hong/">自定义提示宏</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
+        <a href="/blog/2014-08-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧标签索引需求</a>
       </li>
     
   </ul>

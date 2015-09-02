@@ -9,7 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="原则：一张图片和一条文字的组合，就可以用按钮 调整图片和文字的显示位置 方式1.重写imageRectForContentRect:和titleRectForContentRect:方法 1
+  <meta name="description" content="同事用了最近刚出的GitBook又崩溃了。。。他近一个星期的笔记都没了。。。还好只是一个星期的。。。还是我大Mou好。。。答应给他写个简单的备份脚本。。。 1
 2
 3
 4
@@ -29,7 +29,13 @@
 18
 19
 20
-// &hellip;">
+21
+22
+23
+24
+25
+26
+27 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -91,7 +97,7 @@
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2013-08-31-uibuttonzi-ding-yi-diao-zheng-nei-bu-jie-gou/">UIButton自定义调整内部结构</a></h1>
+      <h1 class="entry-title"><a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a></h1>
     
     
       <p class="meta">
@@ -100,22 +106,569 @@
 
 
 
-<time class='entry-date' datetime='2013-08-31T23:57:39+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>31</span><span class='date-suffix'>st</span>, <span class='date-year'>2013</span></span> <span class='time'>11:57 pm</span></time>
+<time class='entry-date' datetime='2014-04-29T13:47:36+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>1:47 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><ul>
-<li>原则：一张图片和一条文字的组合，就可以用按钮</li>
+  <div class="entry-content"><p>同事用了最近刚出的GitBook又崩溃了。。。他近一个星期的笔记都没了。。。还好只是一个星期的。。。还是我大Mou好。。。答应给他写个简单的备份脚本。。。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#!/bin/bash</span>
+</span><span class='line'><span class="cp"># Create by tripleCC</span>
+</span><span class='line'><span class="cp"># Date 13/06/07</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#  1.进入终端</span>
+</span><span class='line'><span class="cp">#  crontab -e</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#  2.添加以下信息：6点－23点，每1小时检测一次SUMMARYTEMP.md有没有被修改，有就会备份</span>
+</span><span class='line'><span class="cp">#  * 6-23/1 * * * 此脚本全绝对路径</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#  3.根据自己的GitBook文件夹修改以下目录名</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#GitBook源目录/备份目录的上层路径</span>
+</span><span class='line'><span class="n">rootPath</span><span class="o">=</span><span class="s">&quot;/Users/tripleCC/Documents&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#GitBook源目录名</span>
+</span><span class='line'><span class="n">dirName</span><span class="o">=</span><span class="s">&quot;GitBook&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#备份目录名</span>
+</span><span class='line'><span class="n">dirBackUpName</span><span class="o">=</span><span class="s">&quot;GitBookBackUp&quot;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">cd</span> <span class="err">$</span><span class="n">rootPath</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#如果备份文件夹不存在，直接创建</span>
+</span><span class='line'><span class="k">if</span> <span class="p">[</span> <span class="o">!</span> <span class="o">-</span><span class="n">r</span> <span class="err">$</span><span class="n">dirBackUpName</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>    <span class="n">mkdir</span> <span class="err">$</span><span class="n">dirBackUpName</span> <span class="o">&amp;</span>
+</span><span class='line'><span class="k">else</span>
+</span><span class='line'>    <span class="n">echo</span> <span class="n">backup</span> <span class="n">dictory</span> <span class="n">is</span> <span class="n">already</span> <span class="n">exist</span>
+</span><span class='line'><span class="n">fi</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="p">[</span> <span class="o">!</span> <span class="o">-</span><span class="n">r</span> <span class="p">.</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="o">/</span><span class="n">autocp</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>    <span class="n">mkdir</span> <span class="p">.</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="o">/</span><span class="n">autocp</span>
+</span><span class='line'>   <span class="n">echo</span> <span class="n">create</span> <span class="n">autocp</span>
+</span><span class='line'><span class="n">fi</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#进入备份SUMMARYTEMP.md所在目录</span>
+</span><span class='line'><span class="n">cd</span> <span class="p">.</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="o">/</span><span class="n">autocp</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="p">[</span> <span class="o">!</span> <span class="o">-</span><span class="n">f</span> <span class="s">&quot;SUMMARYTEMP.md&quot;</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>  <span class="n">echo</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span> <span class="n">is</span> <span class="n">not</span> <span class="n">exist</span><span class="p">,</span> <span class="n">create</span> <span class="n">it</span> <span class="n">now</span>
+</span><span class='line'>  <span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirBackUpName</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="err">`</span><span class="n">date</span> <span class="o">+%</span><span class="n">Y</span><span class="o">%</span><span class="n">m</span><span class="o">%</span><span class="n">d</span><span class="o">%</span><span class="n">H</span><span class="err">`</span> <span class="o">&amp;</span>
+</span><span class='line'>  <span class="n">cp</span> <span class="p">..</span><span class="o">/</span><span class="n">SUMMARY</span><span class="p">.</span><span class="n">md</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span> <span class="o">&amp;</span>
+</span><span class='line'><span class="k">else</span>
+</span><span class='line'>  <span class="n">diff</span> <span class="p">..</span><span class="o">/</span><span class="n">SUMMARY</span><span class="p">.</span><span class="n">md</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">[</span> <span class="err">$</span><span class="o">?</span> <span class="o">-</span><span class="n">ne</span> <span class="mi">0</span> <span class="p">]</span> <span class="p">;</span> <span class="n">then</span>
+</span><span class='line'>        <span class="n">echo</span> <span class="n">file</span> <span class="n">has</span> <span class="n">been</span> <span class="n">changed</span><span class="p">,</span> <span class="k">copy</span> <span class="n">it</span> <span class="n">now</span>
+</span><span class='line'>        <span class="n">cp</span> <span class="o">-</span><span class="n">r</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span> <span class="p">..</span><span class="o">/</span><span class="p">..</span><span class="o">/</span><span class="err">$</span><span class="n">dirBackUpName</span><span class="o">/</span><span class="err">$</span><span class="n">dirName</span><span class="err">`</span><span class="n">date</span> <span class="o">+%</span><span class="n">Y</span><span class="o">%</span><span class="n">m</span><span class="o">%</span><span class="n">d</span><span class="o">%</span><span class="n">H</span><span class="err">`</span> <span class="o">&amp;</span>
+</span><span class='line'>        <span class="n">cp</span> <span class="p">..</span><span class="o">/</span><span class="n">SUMMARY</span><span class="p">.</span><span class="n">md</span> <span class="n">SUMMARYTEMP</span><span class="p">.</span><span class="n">md</span> <span class="o">&amp;</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>        <span class="n">echo</span> <span class="n">file</span> <span class="n">is</span> <span class="n">the</span> <span class="n">same</span>
+</span><span class='line'>    <span class="n">fi</span>
+</span><span class='line'><span class="n">fi</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个备份文件夹只会在新增或删除GitBook章节时才会进行备份</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-04-21T13:14:41+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>21</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>1:14 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>wubi ubuntu被我玩崩了以后，我就把wubi卸载了，由于里面有一些想要的文件，于是就把root.disk复制出来了。</p>
+
+<p>但是不知道怎么查看root.disk里面的文件。</p>
+
+<p>昨晚重新装了ubuntu14.04,这次是真正的双系统了，于是就把root.disk复制进ubuntu系统</p>
+
+<p>试试看能不能挂载</p>
+
+<p>sudo mount root.disk /mnt</p>
+
+<p>没想到还真行了，可以查看里面的文件！</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-04-20T21:46:19+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:46 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>新版Ubuntu又发布啦！立刻给电脑更新了双系统，来体验体验</p>
+
+<p>记录下遇到的问题：</p>
+
+<ul>
+<li>1, 卸载ibus后system setting中相关图标消失
+ibus卸载时会将system setting中的一些使用程序附带删除（但是没有卸载）
+此时要重新安装ibus ：</li>
 </ul>
 
 
-<h2>调整图片和文字的显示位置</h2>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">ibus</span>
+</span><span class='line'><span class="n">linux</span><span class="o">-</span><span class="nl">generic</span><span class="p">:</span> <span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">linux</span><span class="o">-</span><span class="n">generic</span>
+</span><span class='line'><span class="n">unity</span><span class="o">-</span><span class="n">control</span><span class="o">-</span><span class="n">center</span>
+</span><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">ubuntu</span><span class="o">-</span><span class="n">desktop</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>2,ibus-pinyin输入时显示的不是自己想要的字：如打进xian,出来的是xi an分开的，第一个字是溪an</p>
+
+<p>这个问题我弄了很久（刚开始以为只是简单的设置，把简拼的勾给区你，但是发现不行。。。很乱），最终是被解决了。。。但是却不知道是怎么解决的。。。反正是不知道自己设置了哪个之后再ibus restart就行了。。。（当时准备安装搜狐拼音的，没想到又好了。。。）<br>
+好像之前ibus-setup,取消了“在应用程序中启用内嵌编辑模式”（后来证明这句不是主要影响）
+运行</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">killall</span> <span class="n">ibus</span><span class="o">-</span><span class="n">daemon</span>
+</span><span class='line'><span class="n">ibus</span><span class="o">-</span><span class="n">daemon</span> <span class="o">-</span><span class="n">d</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可能是因为这几句吧。。。</p>
+
+<p>3,修改root密码</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">passwd</span> <span class="n">root</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>后面按照说明即可</p>
+
+<p>4,安装stardict</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">stardict</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>下载辞典，解压移动到/usr/share/stardict/dic</p>
+
+<p>5,man查找不到pthread的一些函数</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">get</span> <span class="n">install</span> <span class="n">manpages</span><span class="o">-</span><span class="n">posix</span> <span class="n">manpages</span><span class="o">-</span><span class="n">posix</span><span class="o">-</span><span class="n">dev</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>获取man的pthread支持</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-04-15-fu-zi-kong-zhi-qi-de-ying-yong/">父子控制器的应用</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-04-15T23:39:39+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>15</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>11:39 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>父子控制器的应用</h2>
+
+<p>父子控制器可以在很多地方加以利用，比如大部分的新闻客户端，首页就是通过这个方式，将控制器的view加入到UIScrollView中，进行多个界面的滑动。</p>
 
 <ul>
-<li>方式1.重写imageRectForContentRect:和titleRectForContentRect:方法<br></li>
+<li>可以使用在当tabBar不在底部，在顶部或者左边的情况下
+
+<ul>
+<li>模仿苹果自定义UITabBarController<br>
+<img src="/images/Snip20150707_10.png" alt="" /><br></li>
+</ul>
+</li>
+</ul>
+
+
+<h2>没有成为父子控制器的影响</h2>
+
+<h3>对一些事件的影响</h3>
+
+<ul>
+<li>存在控制器A，B</li>
+<li>当只是把控制器B的view，添加为控制器A的view的子控件时，在控制器B被A作为属性强引用的前提下，虽然B能显示出来，但是<code>B的控制器不能响应一些事件</code>，如屏幕旋转，两者都实现了以下方法
+
+<ul>
+<li>最终调用的只有控制器A，因为控制器B只是A的一个属性，A没有传递事件给B的必要条件</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">willRotateToInterfaceOrientation</span><span class="p">:(</span><span class="n">UIInterfaceOrientation</span><span class="p">)</span><span class="n">toInterfaceOrientation</span> <span class="nl">duration</span><span class="p">:(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="n">duration</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>对push/pop和modal的影响</h3>
+
+<ul>
+<li>push
+
+<ul>
+<li>根控制器push控制器A，控制器A使控制器B的view成为控制器A的view的子控件，并以属性方式强引用控制器B，让两个控制器都实现以下代码
+
+<ul>
+<li>在点击控制器A的view时，能进行pop；点击控制器B的view不能，因为此时B的navigationController＝nil</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesBegan:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">navigationController</span> <span class="nl">popViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>modal
+
+<ul>
+<li>根控制器modal控制器A，控制器A使控制器B的view成为控制器A的view的子控件，并以属性方式强引用控制器B，让两个控制器都实现以下代码
+
+<ul>
+<li>在点击控制器A的view时，能进行dismiss；点击控制器B的view时，dismiss不成功，因为B只是A的一个属性，B的dismiss不会对A造成任何影响，且本身B不是present出来的，所以没有现象</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesBegan:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">dismissViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span> <span class="nl">completion</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>对内部控件回调方法与数据源影响</h3>
+
+<ul>
+<li>比如按钮，在这种情况下点击关联按钮会崩，因为控制器不在了，还调用他的方法，会显示坏内存访问</li>
+<li>没UITableViewController控制器的情况下，滑动tableView只是不显示数据，但是不会崩，因为dataSource变成了nil（dataSource是assign［MRC］，没有控制器时就是nil），调用方法就变成了向nil发送信息，不出错</li>
+</ul>
+
+
+<h3>成为父子控制器后的影响</h3>
+
+<ul>
+<li>成为父子控制器后，会在父子控制器之间<code>建立链条</code>，<code>当子控制器不能完成一些事时，就会让父控制器来做</code>(pop,dismiss[实际上是操作的控制器A])；<code>父控制器的一些事件也会传递给子控制器</code>(旋转事件对于响应方法的触发)。</li>
+<li>注意
+
+<ul>
+<li>导航控制器<code>push控制</code>器时，会把对应的控制器<code>加入到子控制器数组</code>中
+
+<ul>
+<li><code>如导航控制器push了A，B的view为A的view的子控件，要使点击B的view也能进行pop，则B需要成为A的子控制器</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<h2>监听子控制器的添加与删除</h2>
+
+<p><img src="/images/Snip20150705_11.png" alt="" />
+- 当当前控制器已经被添加到某个父控制器上时，就会调用以下方法（如导航控制器push时）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">didMoveToParentViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">parent</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>手动调用addChildViewController:不会触发以上方法，如果需要可以在添加后手动调用（没有转场动画时），但是不管是手动还是自动，都会调用</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">willMoveToParentViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">parent</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>当当前控制器被父控制器移除时，也会调用didMoveToParentViewController:方法，并且传入nil参数，表示添加到nil父控制器中</li>
+</ul>
+
+
+<h2>控制器父子关系的建立原则</h2>
+
+<ul>
+<li>如果2个控制器的view是父子关系(不管是直接还是间接的父子关系)，那么这2个控制器也应该为父子关系
+
+<ul>
+<li>不需要管两个控制器view 中隔了多少个控件，只要两个控制器view有父子关系就添加为父子控制器</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="n">a</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">b</span><span class="p">.</span><span class="n">view</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">a</span> <span class="nl">addChildViewController</span><span class="p">:</span><span class="n">b</span><span class="p">];</span>
+</span><span class='line'><span class="c1">// 或者</span>
+</span><span class='line'><span class="p">[</span><span class="n">a</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">otherView</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">otherView</span> <span class="n">addSubbiew</span><span class="p">.</span><span class="n">b</span><span class="p">.</span><span class="n">view</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">a</span> <span class="nl">addChildViewController</span><span class="p">:</span><span class="n">b</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>子控制器相关操作</h2>
+
+<ul>
+<li>获得所有的子控制器</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">childViewControllers</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>添加一个子控制器</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TPCOneViewController成为了self的子控制器</span>
+</span><span class='line'><span class="c1">// self成为了TPCOneViewController</span>
+</span><span class='line'><span class="c1">// 通过addChildViewController添加的控制器都会存在于childViewControllers数组中</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">addChildViewController</span><span class="p">:[[</span><span class="n">TPCOneViewController</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>获得父控制器</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="bp">UIViewController</span> <span class="o">*</span><span class="n">parentViewController</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>将一个控制器从它的父控制器中移除</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 控制器a从它的父控制器中移除</span>
+</span><span class='line'><span class="p">[</span><span class="n">a</span> <span class="n">removeFromParentViewController</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-04-01T00:24:24+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2014</span></span> <span class='time'>12:24 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>cell分割线设置</h2>
+
+<ul>
+<li>在一般情况下,UITableView在没有cell数据的地方也有分割线<br><img src="/images/Snip20150901_8.png" alt="" /></li>
+<li>想做到这样的效果<br><img src="/images/Snip20150901_9.png" alt="" />
+
+<ul>
+<li>方式1.自定义cell
+
+<ul>
+<li>取消tableView的分割线，并且在cell中在底部自己添加分割线(高度为1的UIView)</li>
+</ul>
+</li>
+<li>方式2.设置tableFooterView为一个没有尺寸的view<br></li>
+</ul>
+
+
+<pre><code class="objc">self.tableView.tableFooterView = [[UIView alloc] init];
+</code></pre>
+
+<h2>cell左滑出现多个按钮</h2></li>
+<li>效果图<br>
+<img src="/images/Snip20150901_10.png" alt="" /></li>
+<li>实现步骤
+
+<ul>
+<li>1.实现以下代理方法(和原先一样)<br></li>
+</ul>
+
+
+<pre><code class="objc">  - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
+  {
+
+  }
+</code></pre>
+
+<ul>
+<li>2.实现添加动作代理方法（这个是iOS8新增的接口）<br></li>
+</ul>
+</li>
 </ul>
 
 
@@ -139,861 +692,27 @@
 <span class='line-number'>18</span>
 <span class='line-number'>19</span>
 <span class='line-number'>20</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 以下两个方法的传入参数contentRect会减去edgesInsert边距长度</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nf">imageRectForContentRect:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">contentRect</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="nl">tableView</span><span class="p">:(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">tableView</span> <span class="nl">editActionsForRowAtIndexPath</span><span class="p">:(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="n">indexPath</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>  <span class="c1">// 添加的动作：删除</span>
+</span><span class='line'>    <span class="n">UITableViewRowAction</span> <span class="o">*</span><span class="n">deleteAction</span> <span class="o">=</span> <span class="p">[</span><span class="n">UITableViewRowAction</span> <span class="nl">rowActionWithStyle</span><span class="p">:</span><span class="n">UITableViewRowActionStyleDefault</span> <span class="nl">title</span><span class="p">:</span><span class="s">@&quot;删除&quot;</span> <span class="nl">handler</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">UITableViewRowAction</span> <span class="o">*</span><span class="n">action</span><span class="p">,</span> <span class="bp">NSIndexPath</span> <span class="o">*</span><span class="n">indexPath</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">contacts</span> <span class="nl">removeObjectAtIndex</span><span class="p">:</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="bp">CGRect</span> <span class="n">imageRect</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span>  <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">deleteRowsAtIndexPaths</span><span class="p">:</span><span class="l">@[</span><span class="n">indexPath</span><span class="l">]</span> <span class="nl">withRowAnimation</span><span class="p">:</span><span class="n">UITableViewRowAnimationFade</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">imageRect</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="n">saveContacts</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span><span class='line'>    <span class="c1">// 添加的动作：黑名单</span>
+</span><span class='line'>    <span class="n">UITableViewRowAction</span> <span class="o">*</span><span class="n">blackAction</span> <span class="o">=</span> <span class="p">[</span><span class="n">UITableViewRowAction</span> <span class="nl">rowActionWithStyle</span><span class="p">:</span><span class="n">UITableViewRowActionStyleDefault</span> <span class="nl">title</span><span class="p">:</span><span class="s">@&quot;黑名单&quot;</span> <span class="nl">handler</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">UITableViewRowAction</span> <span class="o">*</span><span class="n">action</span><span class="p">,</span> <span class="bp">NSIndexPath</span> <span class="o">*</span><span class="n">indexPath</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;黑名单&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}];</span>
 </span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nf">titleRectForContentRect:</span><span class="p">(</span><span class="bp">CGRect</span><span class="p">)</span><span class="nv">contentRect</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="n">contentRect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 可以使用colorWithPatternImage:来设置为背景图片</span>
+</span><span class='line'>    <span class="n">blackAction</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">grayColor</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="bp">CGRect</span> <span class="n">titleRect</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">titleRect</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式2.重写layoutSubviews方法<br></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">buttonW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">titleH</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">imageView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="n">titleH</span><span class="p">);</span>
-</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">titleLabel</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">buttonH</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">buttonW</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="l">@[</span><span class="n">deleteAction</span><span class="p">,</span> <span class="n">blackAction</span><span class="l">]</span><span class="p">;</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
-
-
-<h2>取消点击高亮</h2>
-
-<ul>
-<li>重写setHighlighted:方法<br></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setHighlighted:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">highlighted</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>通过取消IB中的HighlightedAdjustsImage也可以</li>
-</ul>
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-08-20-uiimagetu-pian-la-shen-chu-li/">UIImage图片拉伸处理</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-08-20T23:54:40+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:54 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><ul>
-<li><p>封装为分类</p></li>
-<li><p>方式1.resizableImageWithCapInsets:resizingMode:<br></p></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">resizableImage:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="n">name</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageH</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageW</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">image</span> <span class="nl">resizableImageWithCapInsets</span><span class="p">:</span><span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="n">imageH</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">imageW</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">imageH</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="p">,</span> <span class="n">imageW</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">)</span><span class="nl">resizingMode</span><span class="p">:</span><span class="n">UIImageResizingModeStretch</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式2.stretchableImageWithLeftCapWidth:topCapHeight:</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">resizableImage:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="n">name</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageH</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">imageW</span> <span class="o">=</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">image</span> <span class="nl">stretchableImageWithLeftCapWidth</span><span class="p">:</span><span class="n">imageW</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="nl">topCapHeight</span><span class="p">:</span><span class="n">imageH</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式3.在图片Images.xcassets中进行设置<br>
-
-<ul>
-<li>在Images.xcassets选中想修改的图片<br></li>
-<li>执行以下操作<br>
-<img src="/images/Snip20150606_1.png" alt="" />
-<img src="/images/Snip20150606_2.png" alt="" /></li>
-</ul>
-</li>
-</ul>
-
-
-<p>第三种方式一般用来设置APP自带的一些图标。</p>
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-08-14-uitableviewcellduo-xing-cao-zuo/">UITableViewCell多行操作</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-08-14T20:50:48+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>8:50 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><ul>
-<li>重点：多行操作选中的是模型，并不是选中的cell</li>
-<li>方式1.通过添加checked属性，并在setter方法中对checkView进行操作[需要自己添加选中提示view]
-
-<ul>
-<li>删除操作代码<br></li>
-<li>选中属性更改<br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 存储需要删除模型数组</span>
-</span><span class='line'><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">deleteDeals</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
-</span><span class='line'><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">indexPaths</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="k">in</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>     <span class="c1">// 在didSelectRowAtIndexPath设置的选中属性</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">deal</span><span class="p">.</span><span class="n">isChecked</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">deleteDeals</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">indexPaths</span> <span class="nl">addObject</span><span class="p">:[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">indexOfObject</span><span class="p">:</span><span class="n">deal</span><span class="p">]</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">]];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 从全局模型中删除要删除的模型数据</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">removeObjectsInArray</span><span class="p">:</span><span class="n">deleteDeals</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 更新tableView数据</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">deleteRowsAtIndexPaths</span><span class="p">:</span><span class="n">indexPaths</span> <span class="nl">withRowAnimation</span><span class="p">:</span><span class="n">UITableViewRowAnimationFade</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">didSelectRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 设置模型选中状态</span>
-</span><span class='line'><span class="n">deal</span><span class="p">.</span><span class="n">checked</span> <span class="o">=</span> <span class="o">!</span><span class="n">deal</span><span class="p">.</span><span class="n">isChecked</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 取消cell的选中状态</span>
-</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="nl">deselectRowAtIndexPath</span><span class="p">:</span><span class="n">indexPath</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式2.将checkView暴露给控制器，由控制器操作是否隐藏
-
-<ul>
-<li>由于需要暴露checkView所以不推荐使用</li>
-<li>添加删除模型数组属性deleteDeals</li>
-<li>删除操作代码<br></li>
-<li>隐藏选中提示view代码<br></li>
-<li>删除模型数组设置代码<br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 删除全局模型中需要删除的模型数据</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">removeObjectsInArray</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 清空需要删除模型数据数组缓存</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="n">removeAllObjects</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="n">TPCDealCell</span> <span class="o">*</span><span class="n">dealCell</span> <span class="o">=</span> <span class="p">[</span><span class="n">TPCDealCell</span> <span class="nl">cellWithTableView</span><span class="p">:</span><span class="n">tableView</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">dealCell</span><span class="p">.</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 隐藏模型对应cell的选中控件</span>
-</span><span class='line'><span class="n">dealCell</span><span class="p">.</span><span class="n">checkView</span><span class="p">.</span><span class="n">hidden</span> <span class="o">=</span> <span class="o">!</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">dealCell</span><span class="p">.</span><span class="n">deal</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">return</span> <span class="n">dealCell</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">didSelectRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="nl">deselectRowAtIndexPath</span><span class="p">:</span><span class="n">indexPath</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 如果已经包含了，则删去对应的模型</span>
-</span><span class='line'><span class="c1">// 如果没有包含，则添加对应的模型</span>
-</span><span class='line'><span class="k">if</span> <span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">deal</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">removeObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式3.苹果自带多行操作方法
-
-<ul>
-<li>添加删除模型数组属性deleteDeals</li>
-<li>设置allowsMultipleSelectionDuringEditing=YES</li>
-<li>设置editing=YES</li>
-<li>删除操作代码<br></li>
-<li>选中和取消选中<br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 删除全局模型中需要删除的模型数据</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deals</span> <span class="nl">removeObjectsInArray</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 清空需要删除模型数据数组缓存</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="n">removeAllObjects</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 实现以下两个方法，对选中删除数组进行操作</span>
-</span><span class='line'>    <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">tableView</span><span class="p">:(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">tableView</span> <span class="nl">didSelectRowAtIndexPath</span><span class="p">:(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="n">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>     <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">tableView</span><span class="p">:(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">tableView</span> <span class="nl">didDeselectRowAtIndexPath</span><span class="p">:(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="n">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">TPCDeal</span> <span class="o">*</span><span class="n">deal</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">deals</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">deleteDeals</span> <span class="nl">removeObject</span><span class="p">:</span><span class="n">deal</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-08-13-uitableviewcellshu-ju-shua-xin/">UITableViewCell数据刷新</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-08-13T12:41:03+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>13</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>12:41 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>数据刷新的原则</h2>
-
-<ul>
-<li>通过修改模型数据，来修改tableView的展示
-
-<ul>
-<li>先修改模型数据</li>
-<li>再调用数据刷新方法</li>
-<li>修改模型数据的个数要和修改cell的个数一致，并且位置要相对应</li>
-</ul>
-</li>
-<li>不要直接修改cell上面子控件的属性</li>
-</ul>
-
-
-<h2>数据刷新方法</h2>
-
-<ul>
-<li>重新刷新屏幕上的所有cell<br></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="n">reloadData</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>刷新特定行的cell<br></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">reloadRowsAtIndexPaths</span><span class="p">:</span><span class="l">@[</span>
-</span><span class='line'>        <span class="p">[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:</span><span class="mi">0</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">],</span>
-</span><span class='line'>        <span class="p">[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:</span><span class="mi">1</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">]</span>
-</span><span class='line'>        <span class="l">]</span>
-</span><span class='line'>        <span class="nl">withRowAnimation</span><span class="p">:</span><span class="n">UITableViewRowAnimationLeft</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>插入特定行数的cell<br></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 添加2个模型对象至模型数组头部（注意insert进模型数组时的索引都是0）</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">insertRowsAtIndexPaths</span><span class="p">:</span><span class="l">@[</span>
-</span><span class='line'>        <span class="p">[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:</span><span class="mi">0</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">],</span>
-</span><span class='line'>        <span class="p">[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:</span><span class="mi">1</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">]</span>
-</span><span class='line'>        <span class="l">]</span>
-</span><span class='line'>        <span class="nl">withRowAnimation</span><span class="p">:</span><span class="n">UITableViewRowAnimationLeft</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>删除特定行数的cell<br></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 删除模型数组头部的2个模型对象（注意从模型数组remove时的索引都是0）</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">deleteRowsAtIndexPaths</span><span class="p">:</span><span class="l">@[</span>
-</span><span class='line'>        <span class="p">[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:</span><span class="mi">0</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">],</span>
-</span><span class='line'>        <span class="p">[</span><span class="bp">NSIndexPath</span> <span class="nl">indexPathForRow</span><span class="p">:</span><span class="mi">1</span> <span class="nl">inSection</span><span class="p">:</span><span class="mi">0</span><span class="p">]</span>
-</span><span class='line'>        <span class="l">]</span>
-</span><span class='line'>        <span class="nl">withRowAnimation</span><span class="p">:</span><span class="n">UITableViewRowAnimationLeft</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-</div>
-  
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2013-08-11-zi-ding-yi-uitableviewcell/">自定义UITableViewCell</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2013-08-11T23:28:45+08:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>11</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>11:28 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>等高的cell</h2>
-
-<h4>storyboard自定义cell</h4>
-
-<ul>
-<li>1.创建一个继承自UITableViewCell的子类<br>
-<img src="/images/Snip20150603_10.png" alt="" /></li>
-<li>2.在storyboard中
-
-<ul>
-<li>往cell里面增加需要用到的子控件，并使用Autolayout进行约束<br>
-<img src="/images/Snip20150603_11.png" alt="" /></li>
-<li>设置cell的重用标志<br>
-<img src="/images/Snip20150603_12.png" alt="" /></li>
-<li>设置cell的class为TPCDealCell<br>
-<img src="/images/Snip20150603_14.png" alt="" /></li>
-</ul>
-</li>
-<li>3.在TPCDealCell中
-
-<ul>
-<li>提供一个封装类方法，利用重用标志找到cell</li>
-<li>将storyboard中的子控件连线到类扩展中<br></li>
-<li>需要提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件上<br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TPCDealCell</span><span class="p">()</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">iconView</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">titleLabel</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">buyCountLabel</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">priceLabel</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setDeal:</span><span class="p">(</span><span class="n">TPCDeal</span> <span class="o">*</span><span class="p">)</span><span class="nv">deal</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="n">_deal</span> <span class="o">=</span> <span class="n">deal</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">iconView</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="n">deal</span><span class="p">.</span><span class="n">icon</span><span class="p">];</span>
-</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">titleLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">deal</span><span class="p">.</span><span class="n">title</span><span class="p">;</span>
-</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">buyCountLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%@人已购买&quot;</span><span class="p">,</span> <span class="n">deal</span><span class="p">.</span><span class="n">buyCount</span><span class="p">];</span>
-</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">priceLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;$%@&quot;</span><span class="p">,</span> <span class="n">deal</span><span class="p">.</span><span class="n">price</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>4.在控制器中
-
-<ul>
-<li>创建自定义的cell</li>
-<li>给cell传递模型数据<br></li>
-</ul>
-</li>
-</ul>
-
-
-<h4>xib自定义cell</h4>
-
-<ul>
-<li>1.创建一个继承自UITableViewCell的子类<br></li>
-<li>2.创建一个xib文件（文件名建议跟cell的类名一样）
-
-<ul>
-<li>拖拽一个UITableViewCell出来</li>
-<li>修改cell的class为TPCDealCell</li>
-<li>设置cell的重用标识</li>
-<li>往cell中添加需要用到的子控件，并使用Autolayout进行约束</li>
-</ul>
-</li>
-<li>3.在TPCDealCell中
-
-<ul>
-<li>提供一个封装类方法，利用重用标识找到cell（如果没有注册xib文件，就需要手动去加载xib文件)  <br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nl">cellWithTableView</span><span class="p">:(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">tableView</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">static</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">ID</span> <span class="o">=</span> <span class="s">@&quot;deal&quot;</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">TPCDealCell</span> <span class="o">*</span><span class="n">dealCell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">dequeueReusableCellWithIdentifier</span><span class="p">:</span><span class="n">ID</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">nil</span> <span class="o">==</span> <span class="n">dealCell</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">dealCell</span> <span class="o">=</span> <span class="p">[[[</span><span class="bp">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">loadNibNamed</span><span class="p">:</span><span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">TPCDealCell</span> <span class="k">class</span><span class="p">])</span> <span class="nl">owner</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">options</span><span class="p">:</span><span class="nb">nil</span><span class="p">]</span> <span class="n">lastObject</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">dealCell</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>将xib中的子控件连线到类扩展中</li>
-<li>需要提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件上</li>
-<li>也可以将创建获得cell的代码封装起来（比如cellWithTableView:方法）</li>
-<li>4.在控制器中
-
-<ul>
-<li>利用registerNib&hellip;方法注册xib文件(<code>不是registerClass...</code>)<br></li>
-<li>创建自定义的cell</li>
-<li>给cell传递模型数据<br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="bp">UINib</span> <span class="o">*</span><span class="n">nib</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UINib</span> <span class="nl">nibWithNibName</span><span class="p">:</span><span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">TPCDealCell</span> <span class="k">class</span><span class="p">])</span> <span class="nl">bundle</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">registerNib</span><span class="p">:</span><span class="n">nib</span> <span class="nl">forCellReuseIdentifier</span><span class="p">:</span><span class="s">@&quot;deal&quot;</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h4>代码自定义cell-frame</h4>
-
-<ul>
-<li>1.创建一个继承自UITableViewCell的子类<br>
-
-<ul>
-<li>在initWithStyle:reuseIdentifier:方法中
-
-<ul>
-<li>建议采用setup方法进行子控件创建和操作，再在上面方法中调用这个方法</li>
-<li>添加子控件(<code>添加给self.contentView</code>)</li>
-<li>设置子控件的初始化属性（如文字颜色、字体等一次性属性）（<code>不要在init方法中设置frame</code>）</li>
-</ul>
-</li>
-<li>在layoutSubviews方法中设置子控件的frame
-
-<ul>
-<li><code>注意，获取父控件frame时要使用self.contentView</code><br></li>
-</ul>
-</li>
-<li>提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件属性</li>
-<li>提供一个封装类方法，利用重用标识找到cell（<code>如果没有注册类，就需要手动去创建cell</code>)  <br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// layoutSubviews中一定要加这一句</span>
-</span><span class='line'><span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
-</span><span class='line'><span class="c1">// 使用self.contentView的bounds</span>
-</span><span class='line'><span class="n">CGFloat</span> <span class="n">contentViewH</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">contentView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">;</span>
-</span><span class='line'><span class="n">CGFloat</span> <span class="n">contentViewW</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">contentView</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>2.在控制器中
-
-<ul>
-<li>利用registerClass&hellip;方法注册TPCDealCell类(<code>不是registerNib...</code>)</li>
-<li>在提供cell的代理方法中，创建自定义cell</li>
-<li>给cell传递模型数据</li>
-</ul>
-</li>
-</ul>
-
-
-<h4>代码自定义cell-autolayout</h4>
-
-<ul>
-<li>1.创建一个继承自UITableViewCell的子类<br>
-
-<ul>
-<li>在initWithStyle:reuseIdentifier:方法中
-
-<ul>
-<li>建议采用setup方法进行子控件创建和操作，再在上面方法中调用这个方法</li>
-<li>添加子控件(<code>添加给self.contentView</code>)</li>
-<li><code>添加子控件的约束</code>（<code>建议使用Masonry</code>）</li>
-<li>设置子控件的初始化属性（如文字颜色、字体等一次性属性）</li>
-</ul>
-</li>
-<li>提供一个模型属性，重写模型的set方法，在这个方法中设置模型数据到子控件属性</li>
-<li>提供一个封装类方法，利用重用标识找到cell（<code>如果没有注册类，就需要手动去创建cell</code>)  <br></li>
-</ul>
-</li>
-<li>2.在控制器中
-
-<ul>
-<li>利用registerClass&hellip;方法注册TPCDealCell类(<code>不是registerNib...</code>)</li>
-<li>在提供cell的代理方法中，创建自定义cell</li>
-<li>给cell传递模型数据</li>
-</ul>
-</li>
-</ul>
-
-
-<h2>非等高的cell</h2>
-
-<ul>
-<li>调用顺序
-
-<ul>
-<li>没有估算行高调用顺序<br>
-tableView:heightForRowAtIndexPath:(1)<br>
-先于<br>
-tableView:cellForRowAtIndexPath:(2)<br>
-因为返回高度方法先于创建cell方法调用，所以不能在创建cell中根据数据模型的内容得到cell高度，并让方法1返回这个高度.<br></li>
-<li>有估算行高的调用顺序<br>
-tableView:cellForRowAtIndexPath:(1)<br>
-先于<br>
-tableView:heightForRowAtIndexPath:(2)<br>
-因为有行高估计值，所以系统会根据这个估计值先创建cell，然后再根据方法2返回<code>实际行高</code>，而这个行高我们可以在方法1中计算根据模型数据内容计算出来。<br></li>
-</ul>
-</li>
-<li><p>对于<code>多行内容</code>的UILabel高度计算[autolayout]</p>
-
-<ul>
-<li>在对多行内容UILabel进行计算时，需要对属性<code>preferredMaxLayoutWidth</code>进行赋值，来确定<code>每一行文字的最大宽度</code>。<br>
-
-<ul>
-<li>没赋值<br>
-<img src="/images/Snip20150831_4.png" alt="" /><br></li>
-<li>赋值了<br>
-<img src="/images/Snip20150831_7.png" alt="" /><br>
-如上图可知，在没设置<code>preferredMaxLayoutWidth</code>时，粉红色部分（UILabel）的高度的确是相等的，但是下面空白部分却不一样，原因是在CGRectGetMaxY(self.contentLabel.frame)时获取的值不正确，比实际多一点，导致计算的行高偏高了。<br>
-综上，<code>preferredMaxLayoutWidth不影响UILabel显示，但是影响UILabel的frame的计算</code><br></li>
-</ul>
-</li>
-</ul>
-</li>
-<li><p>xib自定义cell</p>
-
-<ul>
-<li>在模型中增加一个cellHeight属性，用来存放对应cell的高度</li>
-<li>在cell的模型属性set方法中调用[self layoutIfNeed]方法强制布局，然后计算出模型的cellheight属性值</li>
-<li>方式1.在控制器中实现tableView:estimatedHeightForRowAtIndexPath:方法，返回一个估计高度，比如200</li>
-<li>方式2.设置tableView的estimatedRowHeight属性</li>
-<li>在控制器中实现tableView:heightForRowAtIndexPath:方法，返回cell的真实高度（模型中的cellHeight属性）</li>
-</ul>
-</li>
-<li>storyboard自定义cell
-
-<ul>
-<li>和xib相差无几，但是当UILabel设置为right距离父控件固定，且在<code>storyboard的宽度</code>比<code>实际显示后屏幕的宽度要大</code>时，虽然显示能正确，但是会上报一些未知错误，所以要把UILabel的right约束去掉，用preferredMaxLayoutWidth来设置每一行文字的最大宽。
-
-<ul>
-<li>如下图<br>
-<img src="/images/Snip20150607_18.png" alt="" /><br>
-<img src="/images/Snip20150607_21.png" alt="" /><br></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
 
 </div>
   
@@ -1029,6 +748,14 @@ tableView:heightForRowAtIndexPath:(2)<br>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2015-09-02-shi-yong-xiang-ying-zhe-lian-tiao-jie-jue-xu-qiu/">使用响应者链条解决需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-03-cheng-xu-bu-si/">程序不死</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
       </li>
     
@@ -1038,6 +765,10 @@ tableView:heightForRowAtIndexPath:(2)<br>
     
       <li class="post">
         <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-03-02-jing-tai-fen-xi-bu-zhun-que-de-qing-kuang/">静态分析不准确的情况</a>
       </li>
     
       <li class="post">
@@ -1065,47 +796,35 @@ tableView:heightForRowAtIndexPath:(2)<br>
       </li>
     
       <li class="post">
+        <a href="/blog/2015-01-02-jian-ting-jian-pan-shan-chu-an-niu/">监听键盘删除按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-12-04-autorezingde-ying-yong/">Preview功能结合Autorezing的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-11-02-she-zhi-cellzhou-bian-jian-ju/">设置cell周边间距</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-08-01-uiscrollviewde-zi-dong-bu-ju/">UIScrollView的自动布局</a>
+        <a href="/blog/2014-10-05-shuang-ji-di-bu-gong-ju-lan-itemdui-ying-uitableviewzhong-xin-shua-xin/">双击底部工具栏Item对应UITableView重新刷新</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-07-01-guan-yu-xcode6de-pchwen-jian/">关于Xcode6的pch文件</a>
+        <a href="/blog/2014-09-11-zi-ding-yi-uitextview/">自定义UITextView</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-05-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">tableView右侧标签索引需求</a>
+        <a href="/blog/2014-09-01-zi-ding-yi-ti-shi-hong/">自定义提示宏</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2014-04-29-gitbookzi-dong-bei-fen/">GitBook自动备份</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-21-wubiubuntubeng-kui-,xie-zai-hou-huo-qu-ubuntugen-mu-lu-xia-de-wen-jian/">WubiUbuntu崩后获取根目录下的文件</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-20-ubuntu14-dot-04ti-yan-ji/">Ubuntu14.04体验记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-04-01-cellqu-xiao-fen-ge-xian-ji-zuo-hua-chu-xian-duo-ge-an-niu/">Cell取消分割线及左滑出现多个按钮</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2014-03-20-uiscrollview2ge-uiimageviewwu-xian-xun-huan/">UIScrollView2个UIImageView无限循环</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-11-01-zhuang-tai-lan-yin-cang/">状态栏隐藏</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2013-11-01-kong-zhi-qi-ji-kong-zhi-qi-viewde-chuang-jian/">控制器及控制器view的创建</a>
+        <a href="/blog/2014-08-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧标签索引需求</a>
       </li>
     
   </ul>

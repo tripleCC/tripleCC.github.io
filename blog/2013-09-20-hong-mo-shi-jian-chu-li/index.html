@@ -1,0 +1,434 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>触摸事件处理 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="响应者对象 继承了UIResponder能接收并处理事件的对象
+如 UIApplication、UIViewController、UIView都继承自UIResponder 处理方法
+touches中存放的都是UITouch对象
+一次完整的触摸过程中，只会产生一个事件对象， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2013-09-20-hong-mo-shi-jian-chu-li/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">触摸事件处理</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-09-20T16:14:11+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>4:14 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><ul>
+<li><p>响应者对象</p>
+
+<ul>
+<li>继承了<code>UIResponder</code>能<code>接收并处理事件</code>的对象</li>
+<li>如
+
+<ul>
+<li>UIApplication、UIViewController、UIView都继承自UIResponder</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>处理方法</p></li>
+<li><p>touches中存放的都是UITouch对象<br></p></li>
+<li><p><code>一次完整</code>的触摸过程中，只会产生<code>一个事件对象</code>，4个触摸方法都是<code>同一个event参数</code></p></li>
+<li><p>如果两根手指<code>同时</code>触摸一个view，那么view只会调用<code>一次</code>touchesBegan:withEvent:方法，touches参数中装着<code>2个UITouch对象</code></p></li>
+<li><p>如果这两根手指<code>一前一后</code>分开触摸同一个view，那么view会分别调用<code>2次</code>touchesBegan:withEvent:方法，并且每次调用时的touches参数中只包含<code>一个UITouch对象</code></p></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 一根或者多根手指开始触摸view，系统会自动调用view的下面方法</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesBegan:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 一根或者多根手指在view上移动，系统会自动调用view的下面方法（随着手指的移动，会持续调用该方法）</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesMoved:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 一根或者多根手指离开view，系统会自动调用view的下面方法</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesEnded:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 触摸结束前，某个系统事件(例如电话呼入)会打断触摸过程，系统会自动调用view的下面方法</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesCancelled:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2><code>UITouch</code></h2>
+
+<ul>
+<li><p>当用户用一根手指触摸屏幕时，会创建一个与手指相关联的UITouch对象</p></li>
+<li><p><code>一根手指</code>对应<code>一个UITouch</code>对象</p></li>
+<li>UITouch的作用
+
+<ul>
+<li>保存着跟手指相关的信息，比如触摸的位置、时间、阶段</li>
+<li>当手指移动时，系统会<code>更新同一个</code>UITouch对象，使之能够一直保存该手指在的触摸位置</li>
+<li>当手指离开屏幕时，系统会<code>销毁</code>相应的UITouch对象</li>
+</ul>
+</li>
+<li>UITouch常见属性</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 触摸产生时所处的窗口</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIWindow</span>    <span class="o">*</span><span class="n">window</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 触摸产生时所处的视图</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIView</span>      <span class="o">*</span><span class="n">view</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 短时间内点按屏幕的次数，可以根据tapCount判断单击、双击或更多的点击</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="bp">NSUInteger</span>          <span class="n">tapCount</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 记录了触摸事件产生或变化时的时间，单位是秒</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="n">NSTimeInterval</span>      <span class="n">timestamp</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 当前触摸事件所处的状态</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="n">UITouchPhase</span>        <span class="n">phase</span><span class="p">;</span>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> *UITouchPhaseBegan,</span>
+</span><span class='line'><span class="cm"> *UITouchPhaseMoved,</span>
+</span><span class='line'><span class="cm"> *UITouchPhaseStationary,</span>
+</span><span class='line'><span class="cm"> *UITouchPhaseEnded,</span>
+</span><span class='line'><span class="cm"> *UITouchPhaseCancelled,</span>
+</span><span class='line'><span class="cm"> */</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><code>UITouch常用方法</code>
+
+<ul>
+<li>在进行旋转等变换时需要用到</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 返回值表示触摸在view上的位置</span>
+</span><span class='line'><span class="c1">// 这里返回的位置是针对view的坐标系的（以view的左上角为原点(0, 0)）</span>
+</span><span class='line'><span class="c1">// 调用时传入的view参数为nil的话，返回的是触摸点在UIWindow的位置</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGPoint</span><span class="p">)</span><span class="nf">locationInView:</span><span class="p">(</span><span class="bp">UIView</span> <span class="o">*</span><span class="p">)</span><span class="nv">view</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 该方法记录了前一个触摸点的位置</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGPoint</span><span class="p">)</span><span class="nf">previousLocationInView:</span><span class="p">(</span><span class="bp">UIView</span> <span class="o">*</span><span class="p">)</span><span class="nv">view</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>UIEvent</h2>
+
+<ul>
+<li>每产生一个事件，就会产生一个UIEvent对象</li>
+<li>常见属性</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 事件类型</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="n">UIEventType</span>     <span class="n">type</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="n">UIEventSubtype</span>  <span class="n">subtype</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 事件产生的时间</span>
+</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">readonly</span><span class="p">)</span> <span class="n">NSTimeInterval</span>  <span class="n">timestamp</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>获取UITouch方法</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nf">allTouches</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nf">touchesForWindow:</span><span class="p">(</span><span class="bp">UIWindow</span> <span class="o">*</span><span class="p">)</span><span class="nv">window</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nf">touchesForView:</span><span class="p">(</span><span class="bp">UIView</span> <span class="o">*</span><span class="p">)</span><span class="nv">view</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nf">touchesForGestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gesture</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-09-20T16:14:11+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>4:14 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013-09-12-kong-zhi-qi-modaltiao-zhuan/" title="Previous Post: 控制器Modal跳转">&laquo; 控制器Modal跳转</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013-10-04-cheng-xu-qi-dong-guo-cheng/" title="Next Post: 程序启动过程">程序启动过程 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-02-shi-yong-xiang-ying-zhe-lian-tiao-jie-jue-xu-qiu/">使用响应者链条解决需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-03-cheng-xu-bu-si/">程序不死</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-03-02-jing-tai-fen-xi-bu-zhun-que-de-qing-kuang/">静态分析不准确的情况</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图崩溃</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用Runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-02-jian-ting-jian-pan-shan-chu-an-niu/">监听键盘删除按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-12-04-autorezingde-ying-yong/">Preview功能结合Autorezing的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-11-02-she-zhi-cellzhou-bian-jian-ju/">设置cell周边间距</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-05-shuang-ji-di-bu-gong-ju-lan-itemdui-ying-uitableviewzhong-xin-shua-xin/">双击底部工具栏Item对应UITableView重新刷新</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-09-11-zi-ding-yi-uitextview/">自定义UITextView</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-09-01-zi-ding-yi-ti-shi-hong/">自定义提示宏</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧标签索引需求</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

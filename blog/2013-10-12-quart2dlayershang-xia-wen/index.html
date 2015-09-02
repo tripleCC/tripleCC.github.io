@@ -1,0 +1,825 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Quart2DLayer上下文 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="layer上下文 -drawRect:方法 只有在这个方法里面才能获取到跟view的layer相关联的图形上下文［仅限制为layer上下文］ 重新绘制注意点 不能手动调用，因为手动点用时不能获取图形上下文，我们自己创建不了，只能系统帮我们创建，并且传递给我们
+要想重新绘制， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2013-10-12-quart2dlayershang-xia-wen/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Quart2DLayer上下文</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-10-12T02:32:16+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>2:32 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>layer上下文</h2>
+
+<ul>
+<li>-drawRect:方法
+
+<ul>
+<li><code>只有</code>在这个方法里面才能获取到跟<code>view的layer相关联</code>的图形上下文［仅限制为layer上下文］
+
+<ul>
+<li>重新绘制注意点
+
+<ul>
+<li><code>不能手动调用</code>，因为手动点用时不能获取图形上下文，我们自己创建不了，只能系统帮我们创建，并且传递给我们</li>
+<li>要想重新绘制，需要<code>调用setNeedsDisplay</code>
+
+<ul>
+<li>这个方法并不会马上调用drawRect，其实这个方法只是给当前控件添加刷新的标记，等下一次屏幕刷新的时候才会调用drawRect，所以<code>多次调用setNeedsDisplay并不会造成性能损失</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>调用时间
+
+<ul>
+<li>当这个view<code>要显示的时候</code>才会调用drawRect绘制图形
+
+<ul>
+<li>在viewWillAppear之后在viewDidAppear之前调用</li>
+</ul>
+</li>
+<li>使用<code>setNeedsDisplay</code>后，在屏幕进行刷新时也会进行调用</li>
+</ul>
+</li>
+<li>rect参数
+
+<ul>
+<li>这个参数传进来的是控件的<code>bounds</code></li>
+</ul>
+</li>
+<li>注意，只要调用了这个方法，就会把前面绘制的东西全部清除</li>
+<li>当渲染系统准备好，它会调用视图图层的-display方法，此时，图层会装配他的后备存储。然后建立一个CoreGraphics上下文(CGContextRef)，将后备存储对应内存中的数据恢复出来，绘图会进入对应的内存区域，并使用CGContextRef绘制。</li>
+<li>当使用UIKit的绘制方法如(UIRectFill()/[UIBezierPath fill])代替-drawRect方法，他们将会使用这个上下文。使用步骤是：UiKit将<code>后备存储的CGContextRef</code>推进他的<code>上下文堆栈</code>(<code>貌似不管怎样，都会先push进管理的上下文堆栈</code>)，也就是说，他会将那个上下文设置为当前的。因此UIGraphicsGetCurrent将会返回那个对应的上下文。如果想直接使用CoreGraphics方法，可以自己调用UIGraphicsGetCurrent得到相同的上下文，并且讲这个上下文传给CoreGraphics方法。</li>
+</ul>
+</li>
+<li>图形上下文
+
+<ul>
+<li>可以理解为画布，我的理解就是缓存，专门存放我要画到屏幕上的内容（因为CPU输送数据的速度总是快于屏幕显示的速度的，所以需要这么一个缓存）</li>
+<li>图形上下文必须<code>跟view相关联</code>，才能将内容绘制到view上面</li>
+<li>目前我们所用的上下文都是以<code>UIGraphics</code>开头进行获取</li>
+<li>CGContextRef
+
+<ul>
+<li>Ref:引用</li>
+<li>CG:目前使用到的类型和函数一般都是CG开头</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>绘制图形的四个步骤
+
+<ul>
+<li>1.<code>获取上下文</code>
+
+<ul>
+<li>UIGraphicsGetCurrentContext()这个函数用来获取各种上下文（bitmap、layer等）</li>
+</ul>
+</li>
+<li>2.<code>创建、绘制路径</code></li>
+<li>3.<code>添加路径</code></li>
+<li>4.<code>渲染</code>
+
+<ul>
+<li>有些绘制方式是使用系统<code>默认创建</code>的路径，或者调用了一<code>集成的方法</code>（如UIBezierPath的fill，就集成了1、3、4步骤），所以，只要是绘图，<code>一定</code>会经历这4个步骤</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>绘制图形的三种方法
+
+<ul>
+<li><p>1.手动创建路径<br></p></li>
+<li><p>2.使用系统创建的路径</p></li>
+<li><p>3.使用Bezier类</p></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 1获取上下文</span>
+</span><span class='line'><span class="n">CGContextRef</span> <span class="n">ctx</span> <span class="o">=</span> <span class="n">UIGraphicsGetCurrentContext</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 2绘制路径</span>
+</span><span class='line'><span class="c1">// 创建路径</span>
+</span><span class='line'><span class="n">CGMutablePathRef</span> <span class="n">path</span> <span class="o">=</span> <span class="n">CGPathCreateMutable</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">CGPathMoveToPoint</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGPathAddLineToPoint</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">rect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">rect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">-</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGPathAddLineToPoint</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">rect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 3添加路径（这里会把路径的内容拷贝过去，所以在添加后渲染前释放path也没关系，但是不能对path进行操作，除非重新申请内存）</span>
+</span><span class='line'><span class="n">CGContextAddPath</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">path</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 释放路径</span>
+</span><span class='line'><span class="n">CGPathRelease</span><span class="p">(</span><span class="n">path</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 设置上下文属性</span>
+</span><span class='line'><span class="n">CGContextSetLineWidth</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGContextSetLineCap</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">kCGLineCapRound</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGContextSetLineJoin</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">kCGLineJoinRound</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 重新申请一份内存给path</span>
+</span><span class='line'><span class="n">path</span> <span class="o">=</span> <span class="n">CGPathCreateMutable</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">CGPathMoveToPoint</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGPathAddLineToPoint</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGContextAddPath</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">path</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 释放路径</span>
+</span><span class='line'><span class="n">CGPathRelease</span><span class="p">(</span><span class="n">path</span><span class="p">);</span>
+</span><span class='line'><span class="c1">// 4渲染</span>
+</span><span class='line'><span class="n">CGContextStrokePath</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 1获取上下文</span>
+</span><span class='line'>    <span class="n">CGContextRef</span> <span class="n">ctx</span> <span class="o">=</span> <span class="n">UIGraphicsGetCurrentContext</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">//绘制路径，上下文默认创建并添加了路径</span>
+</span><span class='line'>    <span class="n">CGContextMoveToPoint</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CGContextAddLineToPoint</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">rect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="n">rect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">-</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CGContextAddLineToPoint</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">rect</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">-</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置宽度,两端和转角属性</span>
+</span><span class='line'>    <span class="n">CGContextSetLineWidth</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="mi">20</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CGContextSetLineCap</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">kCGLineCapRound</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CGContextSetLineJoin</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">kCGLineJoinRound</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 渲染</span>
+</span><span class='line'>    <span class="n">CGContextStrokePath</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">UIBezierPath</span> <span class="o">*</span><span class="n">path</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBezierPath</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">path</span> <span class="nl">moveToPoint</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">)];</span>
+</span><span class='line'><span class="p">[</span><span class="n">path</span> <span class="nl">addLineToPoint</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)];</span>
+</span><span class='line'><span class="p">[</span><span class="n">path</span> <span class="nl">addLineToPoint</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">20</span><span class="p">)];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 给路径添加属性</span>
+</span><span class='line'><span class="c1">// 这里添加的属性是Bezier类给路径的私有属性，并没有添加进上下文，这点在后面会讲</span>
+</span><span class='line'><span class="n">path</span><span class="p">.</span><span class="n">lineWidth</span> <span class="o">=</span> <span class="mi">20</span><span class="p">;</span>
+</span><span class='line'><span class="n">path</span><span class="p">.</span><span class="n">lineJoinStyle</span> <span class="o">=</span> <span class="n">kCGLineJoinRound</span><span class="p">;</span>
+</span><span class='line'><span class="n">path</span><span class="p">.</span><span class="n">lineCapStyle</span> <span class="o">=</span> <span class="n">kCGLineCapRound</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 这个属性会添加进上下文</span>
+</span><span class='line'><span class="p">[[</span><span class="bp">UIColor</span> <span class="n">redColor</span><span class="p">]</span> <span class="n">set</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 绘制</span>
+</span><span class='line'><span class="c1">// 内部集成了添加路径给上下文并渲染</span>
+</span><span class='line'><span class="p">[</span><span class="n">path</span> <span class="n">stroke</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">path</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBezierPath</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">path</span> <span class="nl">moveToPoint</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">)];</span>
+</span><span class='line'><span class="p">[</span><span class="n">path</span> <span class="nl">addLineToPoint</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span> <span class="mi">20</span><span class="p">)];</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[[</span><span class="bp">UIColor</span> <span class="n">greenColor</span><span class="p">]</span> <span class="n">set</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">path</span> <span class="n">stroke</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>UIBezierPath绘制和通过手动获取CGContextRef绘制弧形的区别</li>
+<li>绘制弧形Arc的<code>最后一个参数</code>实际效果是<code>相反</code>的（具体什么方向手动试）
+
+<ul>
+<li>绘制Arc时，顺时针方向弧度增加，逆时针方向弧度减少</li>
+<li>Bezier<br></li>
+<li>CGContextRef<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">UIBezierPath</span> <span class="o">*</span><span class="n">path</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIBezierPath</span> <span class="nl">bezierPathWithArcCenter</span><span class="p">:</span><span class="n">CGPointMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="nl">radius</span><span class="p">:</span><span class="mi">50</span> <span class="nl">startAngle</span><span class="p">:</span><span class="mi">0</span> <span class="nl">endAngle</span><span class="p">:</span><span class="n">M_PI_2</span> <span class="nl">clockwise</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">CGContextAddArc</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">M_PI_2</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>绘制饼状图和柱状图
+
+<ul>
+<li>绘制饼状图<br></li>
+</ul>
+
+
+<pre><code class="objc">- (void)drawRect:(CGRect)rect
+{
+  // 获取随机数值数组
+  NSArray *array = [self randomIntegerArrayWithin:100 elementNumber:4];
+
+  CGPoint center = CGPointMake(rect.size.width * 0.5, rect.size.height * 0.5);
+  CGFloat startAngle = 0;
+  CGFloat endAngle = 0;
+
+  for (NSNumber *number in array) {
+      endAngle = startAngle + [number floatValue] / 100.0 * M_PI * 2;
+
+      UIBezierPath *path = [UIBezierPath bezierPathWithArcCenter:center radius:rect.size.width * 0.5 startAngle:startAngle endAngle:endAngle clockwise:YES];
+      [path addLineToPoint:center];
+
+      // 获取随机颜色
+      [[self randomColor] set];
+      [path fill];
+
+      // 下一个弧形的起始角度等于当前弧形的结束角度
+      startAngle = endAngle;
+  }
+}
+</code></pre>
+
+<ul>
+<li>绘制柱状图<br></li>
+</ul>
+
+
+<pre><code class="objc">- (void)drawRect:(CGRect)rect
+{
+  NSInteger count = 4;
+  NSInteger max  = 100;
+
+  // 获取随机数值数组
+  NSArray *array = [self randomIntegerArrayWithin:max elementNumber:count];
+
+  CGFloat w = rect.size.width / (array.count * 2 - 1);
+  __block CGFloat x = 0;
+  __block CGFloat y = 0;
+  __block CGFloat h = 0;
+
+  [array enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+      x = w * idx * 2;
+      h = [obj floatValue] / (CGFloat)max * rect.size.height;
+
+      // 倒立着画
+      y = rect.size.height - h;
+
+      UIBezierPath *path = [UIBezierPath bezierPathWithRect:CGRectMake(x, y, w, h)];
+
+      // 获取随机颜色
+      [[self randomColor] set];
+      [path fill];
+  }];
+}
+</code></pre></li>
+<li>绘制动态图形
+
+<ul>
+<li>绘制动态图形时，一般不使用NSTimer定时器，一般使用<code>CADisplayLink</code><br>
+
+<ul>
+<li>CADisplayLink无法设置调用时间，默认屏幕刷新时就会调用</li>
+<li>因为CADisplayLink的回调函数在<code>屏幕刷新时就会调用</code>，而-drawRect:在<code>调用setNeedsDisplay后，刷新屏幕时也会调用</code>，所以在CADisplayLink的回调函数中调用setNeedsDisplay，就能实现很顺畅的动画效果</li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="`objc"> CADisplayLink *link = [CADisplayLink displayLinkWithTarget:self selector:@selector(timeChange)];
+ // 要加进主循环中
+  [link addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSDefaultRunLoopMode];
+</code></pre></li>
+<li>图形上下文状态栈
+
+<ul>
+<li>UIKit<code>维护着一个上下文堆栈</code></li>
+<li>在渲染时，会获取图形上下文栈中的属性，对路径进行绘制，并且图形上下文状态栈<code>不会自动清空</code>，也就是下次添加路径并进行绘制时，使用的还是<code>同一个状态栈，相同的状态</code>，所以需要进行覆盖</li>
+<li>可以通过以下函数<code>保存和还原</code>状态栈的内容，从而实现后面添加的路径也能以保存状态前的属性进行绘制的功能</li>
+</ul>
+
+
+<pre><code class="objc">// 保存当前的状态栈
+CGContextSaveGState(ctx);
+
+// 复原以前最后一个保存的状态栈
+CGContextRestoreGState(ctx);
+</code></pre>
+
+<ul>
+<li>UIBezierPath类的一些改动
+
+<ul>
+<li>如以下代码，不需要进行保存还原操作，第二条路径还是以原始的属性进行绘制<br>
+
+<ul>
+<li>之所以会这样，是因为Bezier把<code>对路径的部分属性私有化</code>了，并没有在状态栈中共享<br></li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="objc">// 图形上下文对应的同一个，但是Bezier把对路径的部分属性私有化了
+UIBezierPath *path = [UIBezierPath bezierPath];
+
+[path moveToPoint:CGPointZero];
+[path addLineToPoint:CGPointMake(100, 100)];
+path.lineWidth = 20;
+path.lineCapStyle = kCGLineCapRound;
+[path stroke];
+
+path = [UIBezierPath bezierPath];
+
+[path moveToPoint:CGPointMake(100, 50)];
+[path addLineToPoint:CGPointMake(200, 50)];
+
+[path stroke];
+</code></pre>
+
+<ul>
+<li>假如在以上代码添加颜色属性，如下所示<br>
+
+<ul>
+<li>第二条路径绘制出来还是红色，因为通过[[UIColor redColor] set]设置的属性在上下文状态栈中共享，并<code>没有被私有化</code>。所以还是需要通过存储状态栈的状态来实现用原始属性对第二条路径进行绘制。</li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="objc">// 获取上下文
+// CGContextRef ctx = UIGraphicsGetCurrentContext();
+
+// 没有存储和复原，第二条路径绘制出来还是红色
+//    CGContextSaveGState(ctx);
+
+// 图形上下文对应的同一个，但是被色儿把对路径的部分属性私有化了
+UIBezierPath *path = [UIBezierPath bezierPath];
+
+[path moveToPoint:CGPointZero];
+
+[path addLineToPoint:CGPointMake(100, 100)];
+path.lineWidth = 20;
+path.lineCapStyle = kCGLineCapRound;
+
+// 颜色属性是在上下文状态栈中共享的
+[[UIColor redColor] set];
+[path stroke];
+
+//    CGContextRestoreGState(ctx);
+path = [UIBezierPath bezierPath];
+
+[path moveToPoint:CGPointMake(100, 50)];
+[path addLineToPoint:CGPointMake(200, 50)];
+
+[path stroke];
+</code></pre>
+
+<ul>
+<li>Bezier的底层做法还是离不开绘图的4个步骤，通过以下代码得知，Bezier是在调用fill、stroke时<code>获取上下文</code>并<code>将路径添加进上下文</code>的<br>
+
+<ul>
+<li>上下文在进入drawRect:时系统就传入了，我们只需要获取就行，类似<code>[[UIColor redColor] set]会默认设置到上下文中</code>。</li>
+<li>所以可以<code>在drawRect:外部创建Bezier路径</code>，<code>在drawRect:里面调用fill、stroke进行渲染</code></li>
+<li>输出<br><img src="./image/Snip20150618_1.png" alt="" /></li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="objc">// Bezier添加路径的上下文就是以下代码获取的上下文
+CGContextRef ctx = UIGraphicsGetCurrentContext();
+
+UIBezierPath *path = [UIBezierPath bezierPath];
+
+[path moveToPoint:CGPointZero];
+
+[path addLineToPoint:CGPointMake(100, 100)];
+
+// 在stroke之前，从上下文获取的路径当前点不存在，说明是在stroke时获取上下文并将路径添加进上下文
+NSLog(@"%@", NSStringFromCGPoint(CGContextGetPathCurrentPoint(ctx)));
+[path stroke];
+
+// 执行渲染操作后，上下文中的路径会被清空
+NSLog(@"%@", NSStringFromCGPoint(CGContextGetPathCurrentPoint(ctx)));
+</code></pre>
+
+<ul>
+<li>所以在进行矩阵操作时，Bezier可以直接这样写
+
+<ul>
+<li><code>矩阵操作必须在添加路径之前操作</code></li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="objc">  - (void)drawRect:(CGRect)rect
+{
+CGContextRef ctx = UIGraphicsGetCurrentContext();
+
+UIBezierPath *path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(0, 0, 300, 200)];
+
+CGContextScaleCTM(ctx, 0.5, 0.5);
+CGContextRotateCTM(ctx, M_PI_4);
+
+// 以下方法将路径添加进上下文，并且渲染
+[path fill];
+}
+</code></pre>
+
+<ul>
+<li>而<code>手动添加路径</code>的原生的绘制需要在addPath之前写</li>
+</ul>
+
+
+<pre><code class="objc">- (void)drawRect:(CGRect)rect
+{
+CGContextRef ctx = UIGraphicsGetCurrentContext();
+
+CGMutablePathRef path = CGPathCreateMutable();
+
+CGPathMoveToPoint(path, NULL, 0, 0);
+CGPathAddLineToPoint(path, NULL, 200, 200);
+
+// 需要在addPath之前写
+CGContextRotateCTM(ctx, M_PI_4);
+
+// 向图形上下文添加路径
+CGContextAddPath(ctx, path);
+
+CGContextStrokePath(ctx);
+}
+</code></pre>
+
+<ul>
+<li>因为需要在添加路径前进行矩阵操作，所以使用系统默认创建的路径就不行了，矩阵操作不能生效
+
+<ul>
+<li>按理论，路径被加进上下文，是被拷贝内容过去的，也就是说，一旦添加路径后，即使我再修改原先添加的路径也不能生效的，需要再进行一次添加。但是以下代码却能对已经在上下文中的路径进行修改，可能<code>CGContext开</code>头的函数就是操作的<code>上下文中的默认路径</code></li>
+</ul>
+</li>
+</ul>
+
+
+<pre><code class="objc">- (void)drawRect:(CGRect)rect
+{
+CGContextRef ctx = UIGraphicsGetCurrentContext();
+
+// 应该在这一句就在上下文中创建了默认路径
+CGContextMoveToPoint(ctx, 20, 20);
+
+// 输出有值，说明默认路径在创建时就被加入了上下文中
+NSLog(@"%@", NSStringFromCGPoint(CGContextGetPathCurrentPoint(ctx)));
+
+CGContextAddLineToPoint(ctx, 200, 200);
+
+// 系统默认的路径已经添加进默认上下文了，所以以下矩阵操作无效
+CGContextRotateCTM(ctx, M_PI_4);
+
+CGContextStrokePath(ctx);
+}
+</code></pre></li>
+</ul>
+</li>
+<li>UIBezierPath<br>
+
+<ul>
+<li>使用UIBezierPath为什么不传入一个上下文参数到方法中？因为当使用UIKit或者AppKit时，<code>上下文是唯一</code>的。UIKit<code>维护着一个上下文堆栈</code>，UIKit方法总是<code>绘制到最顶层的上下文</code>中。</li>
+</ul>
+
+
+<pre><code>// 获取顶层上下文
+UIGraphicsGetCurrentContext()
+// 在UiKit的堆栈中推进上下文
+UIGraphicsPushContext(&lt;#CGContextRef context#&gt;)
+// 在Uikit的堆栈中取出上下文
+UIGraphicsPopContext()
+</code></pre>
+
+<ul>
+<li>使用<code>UIGraphicsBeginImageContextWithOptions()</code>和<code>UIGraphicsEndImageContext()</code>创建方式类似于<code>CGBitmapContextCreateImage()</code></li>
+</ul>
+</li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-10-12T02:32:16+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>2:32 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013-10-04-cheng-xu-qi-dong-guo-cheng/" title="Previous Post: 程序启动过程">&laquo; 程序启动过程</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013-10-15-quartz2dbitmapshang-xia-wen/" title="Next Post: Quartz2DBitmap上下文">Quartz2DBitmap上下文 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-02-shi-yong-xiang-ying-zhe-lian-tiao-jie-jue-xu-qiu/">使用响应者链条解决需求</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-03-cheng-xu-bu-si/">程序不死</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-05-31-runloopzhi-shi-shu-li/">Runloop知识梳理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-27-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-04-10-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-03-02-jing-tai-fen-xi-bu-zhun-que-de-qing-kuang/">静态分析不准确的情况</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-10-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-02-01-sdwebimagejia-zai-da-tu/">SDWebImage加载大图崩溃</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-22-chang-yong-runtimehan-shu/">常用Runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-21-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-01-02-jian-ting-jian-pan-shan-chu-an-niu/">监听键盘删除按钮</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-12-04-autorezingde-ying-yong/">Preview功能结合Autorezing的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-11-02-she-zhi-cellzhou-bian-jian-ju/">设置cell周边间距</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-20-uialertcontrollerde-shi-yong/">UIAlertController的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-10-05-shuang-ji-di-bu-gong-ju-lan-itemdui-ying-uitableviewzhong-xin-shua-xin/">双击底部工具栏Item对应UITableView重新刷新</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-09-11-zi-ding-yi-uitextview/">自定义UITextView</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-09-01-zi-ding-yi-ti-shi-hong/">自定义提示宏</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014-08-29-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧标签索引需求</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
