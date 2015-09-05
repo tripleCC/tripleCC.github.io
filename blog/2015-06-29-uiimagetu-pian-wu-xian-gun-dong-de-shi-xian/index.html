@@ -1,0 +1,377 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>UIImage图片无限滚动的实现 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="当app需要切换显示的图片少时，可以使用创建多个UIImageView，来实现多个图片切换显示；但是在图片较多时，这种做法显得很耗内存。所以以下总结了一下自己知道的几个方法与实现。 采用三个UIImageView+UIScrollView 在图片显示完全（endDecelerating）时， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2015-06-29-uiimagetu-pian-wu-xian-gun-dong-de-shi-xian/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">UIImage图片无限滚动的实现</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-06-29T20:34:41+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:34 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>当app需要切换显示的图片少时，可以使用创建多个UIImageView，来实现多个图片切换显示；但是在图片较多时，这种做法显得很耗内存。所以以下总结了一下自己知道的几个方法与实现。</p>
+
+<h2>采用三个UIImageView+UIScrollView</h2>
+
+<ul>
+<li>在图片显示完全（endDecelerating）时，重新设置三个UIImageView的图片内容</li>
+<li>调整UIScrollView的偏移量，始终显示中间的UIImageView</li>
+</ul>
+
+
+<p>如有图片1、2、3、4、5，默认存放图片5、1、2，显示中间图片1:
+1. 向后滚动，显示图片2
+2. 图片显示完全时，重新设置UIImageView中的图片为图片1、2、3
+3. 设置UIScrollView的偏移量，使其显示中间的UIImageView，即图片2
+4. 向后滚动，显示图片3
+5. 图片显示完全时，重新设置UIImageView中的图片为图片2、3、4
+6. 设置UIScrollView的偏移量，使其显示中间的UIImageView，即图片3</p>
+
+<p>向前滚动同理。</p>
+
+<p>如下图所示：
+- 初始时显示图片1，然后向左滑动<br>
+<img src="http://upload-images.jianshu.io/upload_images/608238-5b3333308130db41.png" alt="Snip20150531_26.png" />
+- 滑动完成时显示的是图片2<br>
+<img src="http://upload-images.jianshu.io/upload_images/608238-30a37a324e0703f4.png" alt="Snip20150531_27.png" />
+- 在滑动完成时，修改UIImageView显示的内容如下图所示<br>
+<img src="http://upload-images.jianshu.io/upload_images/608238-8e67d99a823bda3d.png" alt="Snip20150531_28.png" />
+- 接着上一步，立即修改UIScrollView的偏移量，使其显示中间的UIImageView，即图片2<br>
+<img src="http://upload-images.jianshu.io/upload_images/608238-188aa676e9b3e033.png" alt="Snip20150531_29.png" />
+如上，最终结果显示的都是最中间的UIImageView，看起来像是无限个UIImageView一样</p>
+
+<h2>采用两个UIImageView＋UIScrollView</h2>
+
+<p>这个方法，和上面的方法原理是一样的。
+假设使用UIV1表示始终显示的UIImageView，使用UIV2表示备份的UIImageView
+- 首先，初始状态如下图所示，显示的是图片1（为了方便查看，我把UIImageView下移了，实际上和上面一排重合）
+<img src="http://upload-images.jianshu.io/upload_images/608238-e9f71af87ba94a2e.png" alt="初始状态" />
+- 这时候，向右边滚动（是滚，不是滑&hellip;），UIV2就立即显示图片2，这是，在屏幕可以看见图片1、2
+<img src="http://upload-images.jianshu.io/upload_images/608238-a26e5b3a0ec5fa4b.png" alt="向右滚动" />
+- 当滚动完成时只能看见图片2，如下
+<img src="http://upload-images.jianshu.io/upload_images/608238-3bf47831487e7b3d.png" alt="滚动完成" />
+- 这是，将UIV1的图片换成图片2，同时将UIScrollView的偏移量设置到中间的位置（这个过程很快，实际看不出来有修改和移动）
+<img src="http://upload-images.jianshu.io/upload_images/608238-5e0132f54f9d58d7.png" alt="修改图片" />
+<img src="http://upload-images.jianshu.io/upload_images/608238-416bdcdb42a39f86.png" alt="修改偏移量" />
+- 向左滚动的情况
+<img src="http://upload-images.jianshu.io/upload_images/608238-a66494ef3b2c7a2b.png" alt="左滚动" />
+- 立即将UIV2的frame修改至最左边的位置，并设置图片为0
+<img src="http://upload-images.jianshu.io/upload_images/608238-2d242582193fc81f.png" alt="左滚动修改UIV2图片并移动" />
+- 修改完成后情况
+<img src="http://upload-images.jianshu.io/upload_images/608238-699d90a71ef13f69.png" alt="移动完成" />
+- 修改UIV1图片为图片0，并且设置UIScrollView偏移至中间位置
+<img src="http://upload-images.jianshu.io/upload_images/608238-bcbda2c23a81e2e7.png" alt="修改UIV1图片" />
+<img src="http://upload-images.jianshu.io/upload_images/608238-2760f939321cf86c.png" alt="最终显示结果" /></p>
+
+<h2>使用UICollectionView</h2>
+
+<p>因为UICollectionView有cell重用机制，所以只需要两个cell，即可完成上面的功能，内存压力也不会太大。</p>
+
+<ul>
+<li>设置UICollectionView的属性</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">UICollectionViewFlowLayout</span> <span class="o">*</span><span class="n">collectionViewLayout</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UICollectionViewFlowLayout</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>   <span class="c1">// 设置cell间距</span>
+</span><span class='line'>    <span class="n">collectionViewLayout</span><span class="p">.</span><span class="n">minimumLineSpacing</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>  <span class="c1">// 设置尺寸为view的大小</span>
+</span><span class='line'>    <span class="n">collectionViewLayout</span><span class="p">.</span><span class="n">itemSize</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">;</span>
+</span><span class='line'>  <span class="c1">// 设置为水平滑动</span>
+</span><span class='line'>    <span class="n">collectionViewLayout</span><span class="p">.</span><span class="n">scrollDirection</span> <span class="o">=</span> <span class="n">UICollectionViewScrollDirectionHorizontal</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UICollectionView</span> <span class="o">*</span><span class="n">collectionView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UICollectionView</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">bounds</span> <span class="nl">collectionViewLayout</span><span class="p">:</span><span class="n">collectionViewLayout</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">collectionView</span><span class="p">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">collectionView</span><span class="p">.</span><span class="n">dataSource</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'>   <span class="c1">// 设置页切换允许</span>
+</span><span class='line'>    <span class="n">collectionView</span><span class="p">.</span><span class="n">pagingEnabled</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">collectionView</span><span class="p">.</span><span class="n">bounces</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>对cell进行注册</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="p">[</span><span class="n">collectionView</span> <span class="nl">registerClass</span><span class="p">:[</span><span class="bp">UICollectionViewCell</span> <span class="k">class</span><span class="p">]</span> <span class="nl">forCellWithReuseIdentifier</span><span class="p">:</span><span class="s">@&quot;tpc&quot;</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>然后根据外界传入的图片，设置数据源方法即可实现了</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">numberOfSectionsInCollectionView:</span><span class="p">(</span><span class="bp">UICollectionView</span> <span class="o">*</span><span class="p">)</span><span class="nv">collectionView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">collectionView:</span><span class="p">(</span><span class="bp">UICollectionView</span> <span class="o">*</span><span class="p">)</span><span class="nv">collectionView</span> <span class="nf">numberOfItemsInSection:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">section</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">.</span><span class="n">count</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UICollectionViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">collectionView:</span><span class="p">(</span><span class="bp">UICollectionView</span> <span class="o">*</span><span class="p">)</span><span class="nv">collectionView</span> <span class="nf">cellForItemAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="bp">UICollectionViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[</span><span class="n">collectionView</span> <span class="nl">dequeueReusableCellWithReuseIdentifier</span><span class="p">:</span><span class="s">@&quot;tpc&quot;</span> <span class="nl">forIndexPath</span><span class="p">:</span><span class="n">indexPath</span><span class="p">];</span>
+</span><span class='line'>    <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">imageView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImageView</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithImage</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">images</span><span class="p">[</span><span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">]];</span>
+</span><span class='line'>    <span class="n">imageView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">backgroundView</span> <span class="o">=</span> <span class="n">imageView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>总结</h2>
+
+<p>对于前面两种方法，我使用了UIImageView的tag来记录对应图片的下标，所以也省去了一个变量。
+获取演示代码：<a href="https://github.com/tripleCC/TPCPageScrollView">代码地址</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-06-29T20:34:41+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:34 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/" title="Previous Post: 新浪微博iOS底部功能按钮简单实现">&laquo; 新浪微博iOS底部功能按钮简单实现</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2015-07-10-runtimeji-chu/" title="Next Post: runtime基础">runtime基础 &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>About Me</h1>
+  <p> 喜欢技术，热衷底层，涉略微处理器、linux，最终加入移动大家庭 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc" style="color: coral"> 访问我的简书 </a>
+</section>
+
+<section>
+    <h1>文章分类</h1>
+    <ul id="categories">
+        
+    </ul>
+</section><section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">RunLoop基础元素解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-09-01-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧滚动标签</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-23-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-19-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-14-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-12-chang-yong-runtimehan-shu/">常用Runtime函数</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-11-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-07-10-runtimeji-chu/">Runtime基础</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-29-uiimagetu-pian-wu-xian-gun-dong-de-shi-xian/">UIImage图片无限滚动的实现</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/">新浪微博iOS底部功能按钮简单实现</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
