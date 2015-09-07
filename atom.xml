@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2015-09-07T11:54:09+08:00</updated>
+  <updated>2015-09-07T14:30:21+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -18,10 +18,11 @@
     <link href="http://triplecc.github.io/blog/2015-09-06-ioszhi-shi-sui-pian-%5B%3F%5D/"/>
     <updated>2015-09-06T00:04:36+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-[?]</id>
-    <content type="html"><![CDATA[<ol>
+    <content type="html"><![CDATA[<p>学习工作中总会有那么几个注意点和困惑点，这些琐碎的知识点容易让我迷惑，所以决定做这么一个纪录，希望能持之以恒，积少成多</p>
+
+<ol>
 <li>解决同时设置阴影和裁剪，阴影消失问题</li>
-<li>Swift中使用字符串创建类</li>
-<li>Swift中的错误处理</li>
+<li>Swift中使用字符串创建类及错误处理</li>
 </ol>
 
 
@@ -54,9 +55,102 @@
 
 <h1>在Swift中使用字符串创建类</h1>
 
-<p>在Swift中有了命名空间这个概念（namespace），使用.self打印类名，会发现对应的类名带有namespace前缀如下：</p>
+<p>在swift中有了命名空间这个概念（namespace），使用.self打印类名，会发现对应的类名带有namespace前缀如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">&lt;</span><span class="n">SwiftWB</span><span class="p">.</span><span class="nl">HomeViewController</span><span class="p">:</span> <span class="mh">0x7fbf81f4e5e0</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
 
 <p>Swift还在不断改进，所以这里只针对Xcode7 Beta5（在beta4写出来貌似在这个测试版本上会出错）</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">path</span> <span class="o">=</span> <span class="bp">NSBundle</span><span class="p">.</span><span class="n">mainBundle</span><span class="p">().</span><span class="n">pathForResource</span><span class="p">(</span><span class="s">&quot;MainVCSettings&quot;</span><span class="p">,</span> <span class="nl">ofType</span><span class="p">:</span> <span class="s">&quot;json&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="k">if</span> <span class="n">let</span> <span class="n">jsonPath</span> <span class="o">=</span> <span class="n">path</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">do</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">let</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">NSData</span><span class="p">(</span><span class="nl">contentsOfFile</span><span class="p">:</span> <span class="n">jsonPath</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">let</span> <span class="n">dataArr</span> <span class="o">=</span> <span class="n">try</span> <span class="bp">NSJSONSerialization</span><span class="p">.</span><span class="n">JSONObjectWithData</span><span class="p">(</span><span class="n">data</span><span class="o">!</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">.</span><span class="n">MutableContainers</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">let</span> <span class="n">prefixStr</span> <span class="o">=</span> <span class="bp">NSBundle</span><span class="p">.</span><span class="n">mainBundle</span><span class="p">().</span><span class="n">infoDictionary</span><span class="o">!</span><span class="p">[</span><span class="s">&quot;CFBundleExecutable&quot;</span><span class="p">]</span> <span class="n">as</span><span class="o">!</span> <span class="n">String</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span> <span class="n">object</span> <span class="k">in</span> <span class="n">dataArr</span> <span class="n">as</span><span class="o">!</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">print</span><span class="p">(</span><span class="n">prefixStr</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;vcName&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">)</span>
+</span><span class='line'>            <span class="n">let</span> <span class="nl">cls</span><span class="p">:</span> <span class="n">AnyClass</span><span class="o">?</span> <span class="o">=</span> <span class="n">NSClassFromString</span><span class="p">(</span><span class="n">prefixStr</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;vcName&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 读取的名称不一定有对应的控制器，所以在这里做一个动态绑定</span>
+</span><span class='line'>            <span class="k">if</span> <span class="n">let</span> <span class="n">vcCls</span> <span class="o">=</span> <span class="n">cls</span> <span class="n">as</span><span class="o">?</span> <span class="bp">UIViewController</span><span class="p">.</span><span class="n">Type</span> <span class="p">{</span>
+</span><span class='line'>                <span class="n">let</span> <span class="n">vc</span> <span class="o">=</span> <span class="n">vcCls</span><span class="p">.</span><span class="n">init</span><span class="p">()</span>
+</span><span class='line'>                <span class="n">addChildViewController</span><span class="p">(</span><span class="n">vc</span><span class="p">,</span> <span class="nl">title</span><span class="p">:</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;title&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">,</span> <span class="nl">imageName</span><span class="p">:</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;imageName&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span> <span class="n">catch</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">addChildViewController</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面代码从MainVCSettings文件读取控制器的关联信息，并创建对应的控制器，详细信息已在注释中表明</p>
+
+<p>从上面代码还可以看出，swift对于错误的处理有了一定的变化。在Objective-C中，对应的JSON解析是通过block回调来进行处理的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSJSONSerialization</span> <span class="nl">dataWithJSONObject</span><span class="p">:(</span><span class="kt">id</span><span class="p">)</span> <span class="nl">options</span><span class="p">:(</span><span class="n">NSJSONWritingOptions</span><span class="p">)</span> <span class="nl">error</span><span class="p">:(</span><span class="bp">NSError</span> <span class="o">*</span><span class="k">__autoreleasing</span> <span class="o">*</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>而swift中采用了抛出异常的方式：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">public</span> <span class="k">class</span> <span class="n">func</span> <span class="n">JSONObjectWithData</span><span class="p">(</span><span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span><span class="p">,</span> <span class="n">options</span> <span class="nl">opt</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">AnyObject</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>模式的写法如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">do</span> <span class="p">{</span>
+</span><span class='line'>  <span class="p">...</span>
+</span><span class='line'>  <span class="c1">// 注意需要使用try</span>
+</span><span class='line'>    <span class="n">let</span> <span class="n">dataArr</span> <span class="o">=</span> <span class="n">try</span> <span class="bp">NSJSONSerialization</span><span class="p">.</span><span class="n">JSONObjectWithData</span><span class="p">(</span><span class="n">data</span><span class="o">!</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">.</span><span class="n">MutableContainers</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span> <span class="n">catch</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// 错误处理</span>
+</span><span class='line'>  <span class="p">...</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
 ]]></content>
   </entry>
   
