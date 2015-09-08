@@ -9,9 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="学习工作中总会有那么几个注意点和困惑点，这些琐碎的知识点容易让我迷惑，所以决定做这么一个纪录，希望能持之以恒，积少成多 解决同时设置阴影和裁剪，阴影消失问题
-swift中使用字符串创建类及错误处理
-swift中回调函数设置作用域注意 解决同时设置阴影和裁剪，阴影消失问题 阴影注意点 &hellip;">
+  <meta name="description" content="原文由ariok发表，地址是implementing-the-twitter-ios-app-ui 编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。 结构描述 在编码之前，我将对UI的结构做一个简单的介绍。 打开Main.storyboard文件。在唯一的一个控制器view中， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +65,242 @@ swift中回调函数设置作用域注意 解决同时设置阴影和裁剪，�
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/">翻译篇：实现Twitter个人详情动态效果</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-09-08T01:32:07+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>1:32 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>原文由<a href="https://github.com/ariok">ariok</a>发表，地址是<a href="http://www.thinkandbuild.it/implementing-the-twitter-ios-app-ui/">implementing-the-twitter-ios-app-ui</a></p>
+
+<p>编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。</p>
+
+<h1>结构描述</h1>
+
+<p>在编码之前，我将对UI的结构做一个简单的介绍。<br></p>
+
+<p>打开Main.storyboard文件。在唯一的一个控制器view中，你可以发现两个主要的对象。第一个是显示Header的视图，第二个是一个包含个人头像(我们叫它Avatar)和其他与账号相关，比如用户名、follow按钮的ScrollView。Sizer控件只是用来确认ScrollView内容是否能进行垂直滚动。<br></p>
+
+<p>就像你所看到的，这个结构非常简单。需要的注意的是，我将Header放在ScrollView外面，而不是把它和其他ScrollView子控件放在一起。因为这样做可以让这个结构具备更好的扩展性。<br></p>
+
+<h1>开始编码</h1>
+
+<p>如果你仔细看完动画，你会注意到你可以管理两个不同的动作：<br></p>
+
+<p>1) 用户下拉（当ScrollView内容已经在屏幕的顶部时）<br></p>
+
+<p>2) 用户上/下滚动<br></p>
+
+<p>这个动作可以分解成四步：<br></p>
+
+<p>2.1) 向上滚动，Header控件缩小直到它的尺寸和导航栏默认尺寸相等，然后这个Header控件就会粘在屏幕的上方<br></p>
+
+<p>2.2) 向上滚动， Avatar（头像）逐渐变小<br></p>
+
+<p>2.3) 当Header控件和ScrollView的子控件重叠时，Avatar（头像）在Header控件底部<br></p>
+
+<p>2.4) 当用户名Label的顶部和Header控件底部重叠时，一个新的白色Label将会从Header控件的中底部显示。并且Header控件的图片变模糊。<br></p>
+
+<p>打开ViewController.swift，让我们一步一步地实现这些功能<br></p>
+
+<h1>设置控制器</h1>
+
+<p>第一件需要去做的事是获取ScrollView的offset信息。通过实现UIScrollViewDelegate协议的scrollViewDidScroll方法，我们可以很容易地做到这一点。<br></p>
+
+<p>一种最简单的展示一个view上变化的方式是使用CoreAnimation三维变换，并且设置新值给layer.transform属性。<br></p>
+
+<p>这个关于CoreAnimation的教程可能会让它变得简便：<br>
+<a href="http://www.thinkandbuild.it/playing-around-with-core-graphics-core-animation-and-touch-events-part-1/.">http://www.thinkandbuild.it/playing-around-with-core-graphics-core-animation-and-touch-events-part-1/.</a></p>
+
+<p>以下是scrollViewDidScroll方法的第一部分：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">y</span>
+</span><span class='line'><span class="n">var</span> <span class="n">avatarTransform</span> <span class="o">=</span> <span class="n">CATransform3DIdentity</span>
+</span><span class='line'><span class="n">var</span> <span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DIdentity</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我们可以在这个方法里面获取当前的竖直偏移，并且初始化两个将要在方法后面设置的转换信息。</p>
+
+<h1>下拉</h1>
+
+<p>让我们对下拉动作进行处理：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">let</span> <span class="nl">headerScaleFactor</span><span class="p">:</span><span class="n">CGFloat</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span> <span class="o">/</span> <span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span>
+</span><span class='line'>    <span class="n">let</span> <span class="n">headerSizevariation</span> <span class="o">=</span> <span class="p">((</span><span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">headerScaleFactor</span><span class="p">))</span> <span class="o">-</span> <span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span>
+</span><span class='line'>    <span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DTranslate</span><span class="p">(</span><span class="n">headerTransform</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">headerSizevariation</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DScale</span><span class="p">(</span><span class="n">headerTransform</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">headerScaleFactor</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">headerScaleFactor</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">headerTransform</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>首先，我们检查偏移量是否为负数，即ScrollView是否已出现弹性区域。<br></p>
+
+<p>剩下的代码是一些简单的数学运算。<br></p>
+
+<p>这个Header控件需要放大来保持它的上边缘和屏幕顶部相对固定，并且这个图片是从底部开始放大的。<br></p>
+
+<p>总的来说，这个变换主要由缩放，然后转化view的尺寸变化为到顶部的距离构成。事实上，你可以朝屏幕顶端移动ImageView图层的中点并且进行缩放来相同的效果。<br></p>
+
+<p><img src="/images/Snip20150908_3.png" alt="" /></p>
+
+<p>使用一个属性来对头部缩放比例进行计算。我们希望Header控件参照偏移量进行适当的缩放。换种说法：当偏移量为Header视图控件的两倍时，头部缩放比例应该设置为2.0。<br></p>
+
+<p>我们需要处理的第二个动作是上下滚动。让我们看看如何一步一步地完成主要视图的变换。<br></p>
+
+<h1>Header（第一阶段）</h1>
+
+<p>当前的偏移量应该大于0。Header控件应该根据以下的偏移量来进行竖直移动，直到它到达指定高度（我们下面将会对Header模糊进行讲解）。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DTranslate</span><span class="p">(</span><span class="n">headerTransform</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="n">offset_HeaderStop</span><span class="p">,</span> <span class="o">-</span><span class="n">offset</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这一次的这段代码真的是很简单。我们只需要转换Header控件为一个最小值，Header控件将会在这个点停止移动。<br></p>
+
+<p>因为我比较懒，所以我写死了一些数值，比如offset_HeaderStop。我们可以通过更加优雅的方式，比如计算UI控件的位置来实现相同的效果。或许在下一次我会试试。<br></p>
+
+<h1>AVATAR（阿凡达）</h1>
+
+<p>这个阿凡达（图片）以和下拉相同的逻辑进行缩放，只是在这种情况下，图片是和底部贴合而不是顶部。这段代码和上面比较相似，除了减小缩放的比例为1.4。<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">avatarScaleFactor</span> <span class="o">=</span> <span class="p">(</span><span class="n">min</span><span class="p">(</span><span class="n">offset_HeaderStop</span><span class="p">,</span> <span class="n">offset</span><span class="p">))</span> <span class="o">/</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span> <span class="o">/</span> <span class="mf">1.4</span> <span class="c1">// Slow down the animation</span>
+</span><span class='line'><span class="n">let</span> <span class="n">avatarSizeVariation</span> <span class="o">=</span> <span class="p">((</span><span class="n">avatarImage</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">avatarScaleFactor</span><span class="p">))</span> <span class="o">-</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
+</span><span class='line'><span class="n">avatarTransform</span> <span class="o">=</span> <span class="n">CATransform3DTranslate</span><span class="p">(</span><span class="n">avatarTransform</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">avatarSizeVariation</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'><span class="n">avatarTransform</span> <span class="o">=</span> <span class="n">CATransform3DScale</span><span class="p">(</span><span class="n">avatarTransform</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">avatarScaleFactor</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">avatarScaleFactor</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>就像你看到的，当Header控件停止变化时，我们使用min函数来停止个人头像的缩放（offset_HeaderStop）。<br></p>
+
+<p>此时，我们根据当前的偏移量来设置最顶层的图层。除非偏移量大于等于offset_HeaderStop，否则顶部图层始终是个人头像。当偏移量大于offset_HeaderStop，这个图层就变成了Header控件。<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;=</span> <span class="n">offset_HeaderStop</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">&lt;</span> <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span><span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">&gt;=</span> <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">=</span> <span class="mi">2</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>白色Label</h1>
+
+<p>以下是白色Label执行动画的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">labelTransform</span> <span class="o">=</span> <span class="n">CATransform3DMakeTranslation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="n">distance_W_LabelHeader</span><span class="p">,</span> <span class="n">offset_B_LabelHeader</span> <span class="o">-</span> <span class="n">offset</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+</span><span class='line'><span class="n">headerLabel</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">labelTransform</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里介绍两个新的变量：当偏移量等于offset_B_LabelHeader时，这个黑色的用户名Label刚好到达Header视图的底部。<br></p>
+
+<p><img src="/images/Snip20150908_4.png" alt="" /><br></p>
+
+<p>distance_W_LabelHeader是Header控件的底部和Header中的白色Label中点的距离。<br>
+<img src="/images/Snip20150908_5.png" alt="" /><br></p>
+
+<p>这个转换通过以下逻辑进行计算：黑色Label一旦喝Header控件相交，白色Label就立即显示，并且白色Label到达Header控件的中点时停止。所以使用以下代码来创建Y的偏移：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="n">distance_W_LabelHeader</span><span class="p">,</span> <span class="n">offset_B_LabelHeader</span> <span class="o">-</span> <span class="n">offset</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>模糊</h1>
+
+<p>最后一个效果是模糊Header控件。为了得到合适的决定方案，我使用了三个不同的库&hellip;我还尝试创建自己的OpenGL ES，但是实时更新模糊效果总是非常迟缓。<br></p>
+
+<p>我了解到我可以只对模糊进行一次计算，让模糊和非模糊的图片进行重叠，并且改变透明度值。我很确定，这就是Twitter采用的方法。<br></p>
+
+<p>在viewDidAppear中我们计算模糊的Header并且通过设置透明度为0来进行隐藏。<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">headerBlurImageView</span> <span class="o">=</span> <span class="bp">UIImageView</span><span class="p">(</span><span class="nl">frame</span><span class="p">:</span> <span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">)</span>
+</span><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="bp">UIImage</span><span class="p">(</span><span class="nl">named</span><span class="p">:</span> <span class="s">&quot;header_bg&quot;</span><span class="p">)</span><span class="o">?</span><span class="p">.</span><span class="n">blurredImageWithRadius</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nl">iterations</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nl">tintColor</span><span class="p">:</span> <span class="bp">UIColor</span><span class="p">.</span><span class="n">clearColor</span><span class="p">())</span>
+</span><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">contentMode</span> <span class="o">=</span> <span class="n">UIViewContentMode</span><span class="p">.</span><span class="n">ScaleAspectFill</span>
+</span><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.0</span>
+</span><span class='line'><span class="n">header</span><span class="p">.</span><span class="n">insertSubview</span><span class="p">(</span><span class="n">headerBlurImageView</span><span class="p">,</span> <span class="nl">belowSubview</span><span class="p">:</span> <span class="n">headerLabel</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>模糊的view可以使用<a href="https://github.com/nicklockwood/FXBlurView">FXBlurView</a>得到。<br></p>
+
+<p>在scrollViewDidScroll方法中，我们只需要根据偏移量来更新透明度就行了。<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">min</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="n">offset</span> <span class="o">-</span> <span class="n">offset_B_LabelHeader</span><span class="p">)</span><span class="o">/</span><span class="n">distance_W_LabelHeader</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上计算逻辑主要为：最大值必须为1，模糊效果必须在黑色Label到达Header控件时出现，在白色Label停止后停止加深模糊。<br></p>
+
+<p><a href="https://github.com/ariok/TB_TwitterUI">源码地址</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -1491,304 +1725,6 @@ swift中回调函数设置作用域注意 解决同时设置阴影和裁剪，�
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-07-23-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-23T20:17:32+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>23</span><span class='date-suffix'>rd</span>, <span class='date-year'>2015</span></span> <span class='time'>8:17 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><h2>UINavigationBar属性</h2>
-
-<ul>
-<li>如果想统一设置，可以通过以下方法，获取当前类下的所有对象的导航条，然后进行设置</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景图片<br>
-<img src="/images/Snip20150724_4.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// barMetrics需要设置成UIBarMetricsDefault</span>
-</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setBackgroundimages</span><span class="p">:(</span><span class="n">UIimages</span> <span class="o">*</span><span class="p">)</span><span class="n">backgroundimages</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景阴影图片<br>
-<img src="/images/Snip20150724_5.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">shadowimages</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景颜色<br>
-<img src="/images/Snip20150724_6.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">barTintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题文字属性<br>
-<img src="/images/Snip20150724_10.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">titleTextAttributes</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>系统类型按钮文字颜色<br>
-<img src="/images/Snip20150724_9.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">tintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>返回按钮图片<br>
-<img src="/images/Snip20150724_11.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 必须要两个都设置，并且图片要设置成不渲染</span>
-</span><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorimages</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorTransitionMaskimages</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题垂直偏移<br>
-<img src="/images/Snip20150724_12.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setTitleVerticalPositionAdjustment</span><span class="p">:(</span><span class="n">CGFloat</span><span class="p">)</span><span class="n">adjustment</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>返回按钮更改</h2>
-
-<p>系统原装效果:<br>
-<img src="/images/Snip20150724_13.png" alt="" /><br></p>
-
-<p>如果有以下需求:</p>
-
-<ul>
-<li>去除上面返回按钮上“我是标题”字样，并设置返回图片为白色</li>
-</ul>
-
-
-<h6>分析</h6>
-
-<ul>
-<li>图片修改
-
-<ul>
-<li>方式1：设置返回图片颜色</li>
-<li>方式2：直接设置返回图片</li>
-<li>方式3：使用按钮覆盖返回图片(这种方式会使返回箭头图片和左边距离加大，但可以用取巧的方式调整)</li>
-</ul>
-</li>
-<li>文字修改
-
-<ul>
-<li>方式1：设置控制器navigationItem的backBarButtonItem显示文字为""</li>
-<li>方式2：设置返回按钮文字偏移量，使其移出屏幕</li>
-<li>方式3：采用控制器navigationItem的leftBarButtonItem进行覆盖</li>
-</ul>
-</li>
-</ul>
-
-
-<h6>解决</h6>
-
-<p>综合以上说明，这里给出三种方式(都是针对的自定义UINavigationController)：</p>
-
-<ul>
-<li>方式1:在<code>-pushViewController:animated:</code>中设置文字 ，在<code>+initialize</code>方法中设置返回图片或改变返回图片颜色
-
-<ul>
-<li>注意导航栏对图片的渲染</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">pushViewController</span><span class="p">:(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">animated</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">backBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTitle</span><span class="p">:</span><span class="s">@&quot;&quot;</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">action</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取特定类的所有导航条</span>
-</span><span class='line'><span class="bp">UINavigationBar</span> <span class="o">*</span><span class="n">navigationBar</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式1：使用自己的图片替换原来的返回图片</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorTransitionMaskImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式2：设置返回图片颜色</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">whiteColor</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式2:在<code>+initialize</code>方法中设置所有返回按钮文字的偏移量，其他设置和方式1一致</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">appearance</span><span class="p">]</span> <span class="nl">setBackButtonTitlePositionAdjustment</span><span class="p">:</span><span class="n">UIOffsetMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="nl">forBarMetrics</span><span class="p">:</span><span class="n">UIBarMetricsDefault</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式3.重写<code>-pushViewController:animated:</code>方法,使用控制器的<code>navigationItem的leftBarButtonItem</code>覆盖返回按钮
-
-<ul>
-<li>需要判断是否为根控制器，如果是根控制器就不添加
-
-<ul>
-<li>导航控制器的<code>viewControllers.count</code>不为0即表示传入的为非根控制器</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">pushViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">viewControllers</span><span class="p">.</span><span class="n">count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithImage</span><span class="p">:[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">]</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">action</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">back</span><span class="p">)];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">back</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">popViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>方案对比</h6>
-
-<ul>
-<li>方案1和方案2改动较小，对系统自带的返回功能无影响。<br></li>
-<li>方式3灵活性最高，但是会<code>使系统的滑动返回失效</code>，需要自己实现，具体实现参照<a href="https://github.com/forkingdog/FDFullscreenPopGesture">forkingdog全屏手势分类</a><br></li>
-<li>方式3还会使按钮更加偏向右边：</li>
-</ul>
-
-
-<p><img src="/images/Snip20150722_10.png" alt="" /><br>
-通过以下方式可以使按钮向左边靠：
-<img src="/images/Snip20150722_11.png" alt="" /><br>
-- 采用customView，<code>添加自己定义的UIButton</code><br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="c1">// 返回按钮内容左靠</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentHorizontalAlignment</span> <span class="o">=</span> <span class="n">UIControlContentHorizontalAlignmentLeft</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 让返回按钮内容继续向左边偏移10</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentEdgeInsets</span> <span class="o">=</span> <span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-</span><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithCustomView</span><span class="p">:</span><span class="n">button</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1814,6 +1750,10 @@ swift中回调函数设置作用域注意 解决同时设置阴影和裁剪，�
 </section><section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/">翻译篇：实现Twitter个人详情动态效果</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015-09-06-ioszhi-shi-sui-pian-%5B%3F%5D/">iOS知识碎片一</a>
