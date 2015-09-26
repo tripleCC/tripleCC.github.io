@@ -9,9 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="UINavigationBar属性 如果想统一设置，可以通过以下方法，获取当前类下的所有对象的导航条，然后进行设置 1
-[UINavigationBar appearanceWhenContainedIn:self, nil]; 背景图片 1
-2 // &hellip;">
+  <meta name="description" content="最终设置UITextField的placeholder效果： 有需求1如下： 未点击时UITextField的placeholder为浅灰色
+点击后，还未进行输入时，UITextField的placeholder变为深灰色 这个实现并不难： 通过通知或者重写UITextField的响应者处理方法， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +66,263 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-07-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-07-27T20:17:49+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:17 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最终设置UITextField的placeholder效果：<br></p>
+
+<p><img src="/images/2015-07-28%2016_46_41.gif" alt="" /><br></p>
+
+<p>有需求1如下：</p>
+
+<ul>
+<li>未点击时UITextField的placeholder为浅灰色</li>
+<li>点击后，还未进行输入时，UITextField的placeholder变为深灰色</li>
+</ul>
+
+
+<p>这个实现并不难：</p>
+
+<ul>
+<li>通过通知或者重写UITextField的响应者处理方法，都可以实现捕获点击时间</li>
+<li>UITextField设置placeholder可以使用以下属性：
+
+<ul>
+<li>通过设置这个富文本属性，可以得到丰富多彩的placeholder<br></li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">@</span><span class="bp">NSCopying</span> <span class="k">var</span> <span class="nl">attributedPlaceholder</span><span class="p">:</span> <span class="bp">NSAttributedString</span><span class="o">?</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 附带光标颜色属性</span>
+</span><span class='line'><span class="k">var</span> <span class="nl">tintColor</span><span class="p">:</span> <span class="bp">UIColor</span><span class="o">!</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是需求2加了点东西：</p>
+
+<ul>
+<li>点击后，还未进行输入时，UITextField的placeholder文字左右进行小幅度抖动<br></li>
+</ul>
+
+
+<p>可以看到通过设置attributedPlaceholder，可以改变一些静态的属性，如颜色和文字大小。<br>
+但是如果需要里面的文字做一些简单的抖动效果貌似就不行了，UITextField没有提供相关属性，我们也不知道placeholder是在何种控件中显示的。<br>
+既然不知道laceholder是在何种控件中显示，那就通过以下代码打印出UITextField中所有的成员变量（函数参考<a href="http://triplecc.github.io/blog/2015-01-10-runtimeji-chu/">runtime基础元素解析</a>），看看是否会有什么发现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">([</span><span class="bp">UITextField</span> <span class="k">class</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">outCount</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">Ivar</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivars</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%s&quot;</span><span class="p">,</span> <span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">free</span><span class="p">(</span><span class="n">ivars</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>截取关键部分如下：<br></p>
+
+<p><img src="/images/Snip20150728_2.png" alt="" /><br></p>
+
+<p>从字面上看，上面的<code>_placeholderLabel</code>是否就是显示placeholder的控件？<br>
+测试实际结果的确是显示placeholder的控件。<br>
+只要有了这个控件，那要做一些小抖动的动画那就没什么问题了，先获取这个UILabel:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">var</span> <span class="nl">tpcPlaceholderLabel</span><span class="p">:</span><span class="bp">UILabel</span><span class="o">?</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kr">get</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">valueForKey</span><span class="p">(</span><span class="s">&quot;_placeholderLabel&quot;</span><span class="p">)</span> <span class="kt">as</span><span class="o">?</span> <span class="bp">UILabel</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后重写UITextField的响应者处理函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 成为第一响应者</span>
+</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">becomeFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 存储正常颜色</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">normalColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">normalColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="c1">// 存储选中颜色</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">selectedColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">selectedColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">selectedColor</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 执行placeholder动画函数</span>
+</span><span class='line'>    <span class="n">placeholderLabelDoAnimationWithType</span><span class="p">(</span><span class="n">animationType</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">becomeFirstResponder</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 放弃第一响应者</span>
+</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">resignFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">switch</span> <span class="n">animationType</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeUpDown</span> <span class="p">:</span>
+</span><span class='line'>        <span class="k">fallthrough</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeBlowUp</span> <span class="p">:</span>
+</span><span class='line'>        <span class="k">fallthrough</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeLeftRight</span> <span class="p">:</span>
+</span><span class='line'>        <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">CGAffineTransformIdentity</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeEasyInOut</span> <span class="p">:</span>
+</span><span class='line'>        <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>            <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span>
+</span><span class='line'>        <span class="p">})</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeNone</span> <span class="p">:</span>
+</span><span class='line'>        <span class="k">break</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">operate</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 设置为初始颜色</span>
+</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">normalColor</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">resignFirstResponder</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后通过以下函数，传入相应的动作就可以得到抖动的效果了</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">func</span> <span class="nf">doAnimation</span><span class="p">(</span><span class="nl">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>    <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">delay</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nl">usingSpringWithDamping</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nl">initialSpringVelocity</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">UIViewAnimationOptions</span><span class="p">.</span><span class="n">CurveEaseInOut</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>        <span class="n">action</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">},</span> <span class="nl">completion</span><span class="p">:</span> <span class="nb">nil</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>还有一点，根据上面打印的UITextField成员变量，看到了<code>_displayLabel</code>，这个就是在键盘输入后显示文字的UILabel了。这个属性可以用来干嘛？<br>
+我想，<code>可能会有这么一种需求（不过可能没有），就是用户输入错误时，UITextField中已经输入的文字做左右抖动，以间接的形式，辅助提醒用户，这一栏输错了，而不是弹出一个HUB</code>。<br>
+由于UITextField内部做了某些处理，所以无法在成为第一响应者时做一些动作，那么，就在放弃第一响应者函数中。<br></p>
+
+<p>相关代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 设置一个在放弃第一响应者的闭包属性</span>
+</span><span class='line'><span class="k">var</span> <span class="nl">operateWhenResignFirstResponder</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="p">())</span><span class="o">?</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 在func resignFirstResponder() -&gt; Bool函数中调用</span>
+</span><span class='line'><span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">operate</span><span class="p">()</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>代码地址</h4>
+
+<p><a href="https://github.com/tripleCC/TPCDynamicTextFiled/blob/master/README.md">UITextFiled文字抖动效果</a></p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -3613,284 +3869,6 @@ id objc_getAssociatedObject(id object, const void *key)
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-07-11-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-11T20:16:13+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>11</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:16 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>runtime可以以底层的角度来对一些实现方式进行更改，比如说KVC<br>
-首先，先来了解下KVC的底层原理:<br>
-key : value</p>
-
-<ul>
-<li>1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值</li>
-<li>2.如果没有setValue:，就在模型中查找_value属性</li>
-<li>3.如果没有_value属性，就查找value属性</li>
-<li>4.如果还没有就报错</li>
-</ul>
-
-
-<p>在和后台通信的JSON数据中，可能会看到这种JSON数据：<br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="s">&quot;id&quot;</span> <span class="o">:</span> <span class="s">&quot;tripleCC&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="s">&quot;age&quot;</span> <span class="o">:</span> <span class="s">&quot;30&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="s">&quot;address&quot;</span> <span class="o">:</span> <span class="s">&quot;杭州&quot;</span><span class="p">,</span>
-</span><span class='line'>    <span class="s">&quot;schooll&quot;</span> <span class="o">:</span> <span class="s">&quot;HDU&quot;</span>
-</span><span class='line'>    <span class="p">...</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>其中的id是什么？是Objective-C关键字，也就是说我不能定义以下属性：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="kt">id</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>由于数据模型名称没有和JSON的键值一一对应，我们不能使用以下方法，对模型中的成员变量进行统一设置：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setValuesForKeysWithDictionary:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">keyedValues</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>既然这样，可以选择手动一个个去实现。但是这样在数据少的时候可以试试，在数据比较多时就不太现实了，程序的可扩展性也不好。<br>
-现在来了解下相对比较简单的两种解决方法：</p>
-
-<h2>方式1.重写setValue:forKey:</h2>
-
-<p>setValuesForKeysWithDictionary:的底层是调用setValue:forKey:的，所以可以考虑重写这个方法，并且判断其key是id时，手动转换成模型的成员变量名，这里假设把id对应成以下属性：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">ID</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>有了对应的属性名后，就可以重写底层方法了：
-  - 如下所示，当判断到key的值为id时，我手动将key转换成了模型属性名，即ID</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setValue:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">value</span> <span class="nf">forKey:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">key</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">key</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;id&quot;</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="s">@&quot;ID&quot;</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">super</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKey</span><span class="p">:</span><span class="n">key</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这样，当使用setValuesForKeysWithDictionary:就不会出现模型中找不到对应的成员变量的错误了。</p>
-
-<h2>方式2.使用runtime</h2>
-
-<p>考虑到runtime和KVC的实现原理，可以使用另一种实现思路，就是<code>先在模型中找到对应的成员变量，然后从JSON字典中找到对应的数据进行赋值</code>。<br>
-这里先要了解runtime的两个实例变量操作方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取成员变量列表</span>
-</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span> <span class="nf">class_copyIvarList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">);</span>
-</span><span class='line'><span class="c1">// 获取成员变量名</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">ivar_getName</span> <span class="p">(</span> <span class="n">Ivar</span> <span class="n">v</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>详细实现步骤：<br></p>
-
-<ul>
-<li>1.获取模型中的所有实例变量</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>2.将获取出来以'<em>&lsquo;开头的实例变量名去处&rsquo;</em>&lsquo;符号</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>   <span class="bp">NSString</span> <span class="o">*</span><span class="n">ivarName</span> <span class="o">=</span> <span class="l">@(</span><span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">)</span><span class="l">)</span><span class="p">;</span>
-</span><span class='line'>   <span class="n">ivarName</span> <span class="o">=</span> <span class="p">[</span><span class="n">ivarName</span> <span class="nl">substringFromIndex</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>3.获取JOSN字典中对应的value，如果没有，手动设置我们传入的字典映射，以指定对应的模型变量名，最后调用setValue:forKeyPath:设置模型实例变量值</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
-</span><span class='line'><span class="c1">// 由外界通知内部，模型中成员变量名对应字典里面的哪个key</span>
-</span><span class='line'><span class="c1">// 这里是ID -&gt; id</span>
-</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="c1">// 这里的mapDict就是外界传入的映射字典</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">mapDict</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">keyName</span> <span class="o">=</span> <span class="n">mapDict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">keyName</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">[</span><span class="n">objc</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="n">ivarName</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>由于需要针对所有模型使用，可以将其设置为NSObject分类。以上步骤的完整代码为：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// dict  -&gt; 资源文件提供的字典</span>
-</span><span class='line'><span class="c1">// mapDict  -&gt; 提供的key映射（实际变量名:资源文件key）</span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">objcWithDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">dict</span> <span class="nf">mapDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">mapDict</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">id</span> <span class="n">objc</span> <span class="o">=</span> <span class="p">[[</span><span class="nb">self</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 遍历模型中成员变量</span>
-</span><span class='line'>    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">count</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">Ivar</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivars</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 成员变量名称</span>
-</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">ivarName</span> <span class="o">=</span> <span class="l">@(</span><span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">)</span><span class="l">)</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 获取出来的是`_`开头的成员变量名，需要截取`_`之后的字符串</span>
-</span><span class='line'>        <span class="n">ivarName</span> <span class="o">=</span> <span class="p">[</span><span class="n">ivarName</span> <span class="nl">substringFromIndex</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
-</span><span class='line'>        <span class="c1">// 由外界通知内部，模型中成员变量名对应字典里面的哪个key</span>
-</span><span class='line'>        <span class="c1">// ID -&gt; id</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">mapDict</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="bp">NSString</span> <span class="o">*</span><span class="n">keyName</span> <span class="o">=</span> <span class="n">mapDict</span><span class="p">[</span><span class="n">ivarName</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>                <span class="n">value</span> <span class="o">=</span> <span class="n">dict</span><span class="p">[</span><span class="n">keyName</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">objc</span> <span class="nl">setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKeyPath</span><span class="p">:</span><span class="n">ivarName</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">objc</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>使用方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">itemWithDict:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">dict</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="c1">// 传入key和实例变量名的映射字典@{@&quot;ID&quot;:@&quot;id&quot;}</span>
-</span><span class='line'>    <span class="n">TPCItem</span> <span class="o">*</span><span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">TPCItem</span> <span class="nl">objcWithDict</span><span class="p">:</span><span class="n">dict</span> <span class="nl">mapDict</span><span class="p">:</span><span class="l">@{</span><span class="s">@&quot;ID&quot;</span><span class="o">:</span><span class="s">@&quot;id&quot;</span><span class="l">}</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">item</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>看了一些相关框架的源码，有些框架的底层就是通过这种方式实现的，比如MJExtension就是通过获取对象里面的所有属性来进行操作的（这里个人感觉获取成员变量适用面会更广一点）</p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -3918,6 +3896,10 @@ key : value</p>
 </section><section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-26-ioszhi-shi-sui-pian-er/">iOS知识碎片二</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/">翻译篇：实现Twitter个人详情动态效果</a>
