@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2015-09-26T14:24:26+08:00</updated>
+  <updated>2015-09-26T15:09:38+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -42,6 +42,99 @@
 <li>抽象来说，这就是4个仓库，只不过是放在了不同的地方，他们之间的数据传输可以大体总结为两个方式pull+push。</li>
 </ul>
 </li>
+</ul>
+
+
+<p>3、遇到一些问题，尽量联想并结合以前相关的知识和代码进行解决</p>
+
+<ul>
+<li>这点是在php构造函数上面的一个疑问，代码如下
+
+<ul>
+<li>当时问的是为什么要另外弄一个init函数，而不是直接使用构造函数__construct，后来没有得到直接的回答。只是引导性的问我构造函数什么时候执行等等问题，后来得出的结论是这些问题其实我都知道，但是就没有联想到这个问题上面，就是init可能会在其他地方被调用，如果改为构造函数的话， 那就无法进行二次调用了。这就是“伸手党”。</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'> <span class="k">public</span> <span class="k">function</span> <span class="nf">init</span><span class="p">(</span><span class="nv">$options</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">table</span> <span class="o">=</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">&#39;table&#39;</span><span class="p">];</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="o">=</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">&#39;columns&#39;</span><span class="p">];</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">key</span> <span class="o">=</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">];</span>
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">reset</span><span class="p">();</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-----------------</span><span class="nx">snip</span><span class="o">----------------</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>     <span class="nv">$options</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>         <span class="s1">&#39;table&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;babel_node&#39;</span><span class="p">,</span>
+</span><span class='line'>         <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
+</span><span class='line'>         <span class="s1">&#39;pkey&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pid&#39;</span><span class="p">,</span>
+</span><span class='line'>         <span class="s1">&#39;columns&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>             <span class="s1">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;node_id&#39;</span><span class="p">,</span>
+</span><span class='line'>             <span class="s1">&#39;pid&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;nod_pid&#39;</span><span class="p">,</span>
+</span><span class='line'>             <span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;nod_title&#39;</span>
+</span><span class='line'>         <span class="p">));</span>
+</span><span class='line'>     <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$options</span><span class="p">);</span>
+</span><span class='line'> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>4、架构的本质是分层和抽象，代码的本质是路由</p>
+
+<ul>
+<li>其实只要有一种语言工具，能提供基本的表达式和if else就能编写几乎所有业务了。</li>
+</ul>
+
+
+<p>5、工作外的时间尽量用来总结，提炼本质，而不是学习新知识，去跨界的阅读</p>
+
+<ul>
+<li>这点还是有些意外的，因为当时说是自己平时可能会上appcoda上面看些小demo，然后就得到了这样的一个建议，说是知识是学不完了，不总结一些本质性的东西，会离世界上最先进的技术越来越远。怎么说呢，现在还是体会不到吧。后来推荐的一些读物：<a href="http://www.ruanyifeng.com/blog/">阮一峰</a>,<a href="http://www.cnblogs.com/weidagang2046/p/the-nature-of-meta.html">程序本质</a></li>
+</ul>
+
+
+<p>6、看函数要看本质，理解这个函数从根本上要做什么事情，而不是更具部分调用的上下文来判定
+7、如何对每个小任务按照知识点进行分块，每个分块应该如何进行学习或者设计，并且在这一步，分块的设计应该是面向接口的，而不是针对内部细节</p>
+
+<ul>
+<li><p>这一点真的是感触很深，因为以前可能只会对一些大任务进行模块的划分，而现在是要对一个小任务进行分块。比如现在有以下任务：给界面添加一个评论输入框，点击提交的时候将评论插入到数据库，然后界面更新出现评论。给10分钟进行分块。后来我的划分是这样的：</p>
+
+<ul>
+<li>1、针对界面，可能涉及到HTML的一些语句，还有与php传递数据的问题。因为这一块不是很熟悉，所以花20分钟进行学习</li>
+<li>2、针对数据库操作，给根Data添加一个insert函数，函数无入参，返回false/主键值。用15分钟
+
+<ul>
+<li>这里当时没事先设计好，只是说要创建一个插入函数，其实这里要做的是进行面向接口设计，不必去在意细节</li>
+</ul>
+</li>
+<li>3、最后花15分钟进行编码</li>
+</ul>
+
+
+<p>事实上，我花了肯定不止1小时来完成这个任务，但是这种分块技巧让我受益匪浅，知道了将每一步要做些什么具象出来，而不是想到哪里写哪里。</p></li>
 </ul>
 
 ]]></content>
