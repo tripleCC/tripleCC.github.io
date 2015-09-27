@@ -5,13 +5,11 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>新浪微博iOS底部功能按钮简单实现 - tripleCC的技术博客</title>
+  <title>Php后台编程初探 - tripleCC的技术博客</title>
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="以上效果主要涉及点 1.九宫格布局
-2.形变动画
-3.UIView动画 首先，考虑图片的效果，初步采用使用modal控制器来实现，但是考虑到modal最后会移除modal他的控制器的view，所以，还是使用自定义UIView来实现这个功能。 做这种功能，首先实现的是按钮出现位置， &hellip;">
+  <meta name="description" content="这一个星期主要需要理解的代码主要是实现这样的一个功能： ">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -20,7 +18,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://triplecc.github.io/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/">
+  <link rel="canonical" href="http://triplecc.github.io/blog/2015-09-26-phphou-tai-bian-cheng-chu-tan/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
@@ -70,7 +68,7 @@
   
   <header>
     
-      <h1 class="entry-title">新浪微博iOS底部功能按钮简单实现</h1>
+      <h1 class="entry-title">Php后台编程初探</h1>
     
     
       <p class="meta">
@@ -79,55 +77,16 @@
 
 
 
-<time class='entry-date' datetime='2015-06-29T20:31:41+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:31 pm</span></time>
+<time class='entry-date' datetime='2015-09-26T20:40:04+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>26</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:40 pm</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p><img src="/images/2015-09-08%2001_23_36.gif" alt="效果图" /></p>
+<div class="entry-content"><p>这一个星期主要需要理解的代码主要是实现这样的一个功能：<br></p>
 
-<h2>以上效果主要涉及点</h2>
-
-<ul>
-<li><p>1.九宫格布局</p></li>
-<li><p>2.形变动画</p></li>
-<li><p>3.UIView动画</p></li>
-</ul>
-
-
-<p>首先，考虑图片的效果，初步采用使用modal控制器来实现，但是考虑到modal最后会移除modal他的控制器的view，所以，还是使用自定义UIView来实现这个功能。</p>
-
-<p>做这种功能，首先实现的是按钮出现位置，后面在实现动画就容易了。</p>
-
-<ul>
-<li><p>1.首先进行九宫格布局，创建模型传入指定数量的按钮，并且使用形变，将所有的按钮移动到看不见的坐标</p></li>
-<li><p>2.点击底部按钮后，设置形变至屏幕区域（这里直接设置成CGAffineTransformIdentity）</p></li>
-<li><p>3.对功能按钮的点击和松开进行监听（实现touches方法也可），按钮点击功能菜单按钮后，使用形变设置按钮变大，松开时，再设置形变变大，并且使其透明度为0</p></li>
-<li><p>4.再点击底部按钮后，设置形变至不可见区域</p></li>
-</ul>
-
-
-<p>明确几个功能点后，动画效果就好说了。</p>
-
-<ul>
-<li>1.点击底部按钮后，使用UIView弹性动画，每个按钮设置不同的delay，这样就实现了弹簧与时间间隔效果了。</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">animateWithDuration:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">duration</span> <span class="nf">delay:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">delay</span> <span class="nf">usingSpringWithDamping:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">dampingRatio</span> <span class="nf">initialSpringVelocity:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">velocity</span> <span class="nf">options:</span><span class="p">(</span><span class="n">UIViewAnimationOptions</span><span class="p">)</span><span class="nv">options</span> <span class="nf">animations:</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">void</span><span class="p">))</span><span class="nv">animations</span> <span class="nf">completion:</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">BOOL</span> <span class="n">finished</span><span class="p">))</span><span class="nv">completion</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><p>2.点击功能菜单后，在点击时使用普通UIView动画，使按钮变大，松开时，再次使用UIView，让按钮变大的同时渐渐消失</p></li>
-<li><p>3.再次点击底部按钮后，使用普通的UIView动画，倒序隐藏并缩小按钮</p></li>
-</ul>
-
-
-<p>github：<a href="https://github.com/tripleCC/TPCSpringMenu">代码地址</a></p>
+<p><img src="/images/2015-09-27%2010_07_51.gif" alt="" /></p>
 </div>
 
 
@@ -143,7 +102,7 @@
 
 
 
-<time class='entry-date' datetime='2015-06-29T20:31:41+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:31 pm</span></time>
+<time class='entry-date' datetime='2015-09-26T20:40:04+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>26</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:40 pm</span></time>
       
 
 
@@ -158,8 +117,8 @@
     
     <p class="meta">
       
+        <a class="basic-alignment left" href="/blog/2015-09-26-ioszhi-shi-sui-pian-er/" title="Previous Post: 关于这一周总结">&laquo; 关于这一周总结</a>
       
-        <a class="basic-alignment right" href="/blog/2015-06-29-uiimagetu-pian-wu-xian-gun-dong-de-shi-xian/" title="Next Post: UIImage图片无限滚动的实现">UIImage图片无限滚动的实现 &raquo;</a>
       
     </p>
   </footer>

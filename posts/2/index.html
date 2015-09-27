@@ -9,8 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="最终设置UITextField的placeholder效果： 有需求1如下： 未点击时UITextField的placeholder为浅灰色
-点击后，还未进行输入时，UITextField的placeholder变为深灰色 这个实现并不难： 通过通知或者重写UITextField的响应者处理方法， &hellip;">
+  <meta name="description" content="看到有些APP在tableView右侧增加了一个滚动标签，并且显示滑条所指向的cell的部分数据。这里写下自己的想法，实现还是简单的。 效果图 需求 需求点大意是在tableView的右侧实现一个类似标签索引的东西，标签索引显示对应cell的时间。 解决方法 想到的方法一： &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +65,215 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-09-01-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧滚动标签</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-09-01T20:30:39+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2015</span></span> <span class='time'>8:30 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>看到有些APP在tableView右侧增加了一个滚动标签，并且显示滑条所指向的cell的部分数据。这里写下自己的想法，实现还是简单的。</p>
+
+<h4>效果图</h4>
+
+<p><img src="/images/2015-08-29%2021_16_47.gif" alt="" /><br></p>
+
+<h4>需求</h4>
+
+<p>需求点大意是在tableView的右侧实现一个类似标签索引的东西，标签索引显示对应cell的时间。</p>
+
+<h4>解决方法</h4>
+
+<p>想到的方法一：</p>
+
+<ul>
+<li>刚开始打算自己创建一个UILabel索引标签，然后监听tableView的contentOffset来实现索引标签的移动：</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// 在这里根据scrollView.contentOffset.y来改变标签索引的坐标</span>
+</span><span class='line'>  <span class="c1">// contentSize的高度，和屏幕高度是成固定比例的，所以可以计算出来</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>后来感觉这样太麻烦，于是就打算监听scrollview内部的导航view决定索引标签的移动。由于是scrollView的内部控件，所以就通过断点的方式获取控件的成员变量名:<br>
+<img src="/images/Snip20150829_4.png" alt="" /></p>
+
+<p>看出成员变量名如下：<br>
+<img src="/images/Snip20150829_3.png" alt="" /></p>
+
+<p>由此可以引出方法二和三。</p>
+
+<p>方法二：</p>
+
+<ul>
+<li>还是采用创建UILabel，不过是加到控制器的view上，然后根据其中的_verticalScrollIndicator的左边，来进行相应的移动。</li>
+</ul>
+
+
+<p>由于此标签索引不需要交互，所以我采用了方法三。<br>
+方法三：</p>
+
+<ul>
+<li>将创建的UILabel添加到<em>verticalScrollIndicator上，成为它的子控件。然后通过indexPathForRowAtPoint:获取对应的cell的行号。因为</em>verticalScrollIndicator本身是和tableView在同一个坐标系，所以也不需要做转换。</li>
+</ul>
+
+
+<p>主要代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">ViewController</span> <span class="p">()</span> <span class="o">&lt;</span><span class="bp">UITableViewDataSource</span><span class="p">,</span> <span class="bp">UITableViewDelegate</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIView</span> <span class="o">*</span><span class="n">scrollIndicator</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="bp">NSString</span> <span class="o">*</span><span class="k">const</span> <span class="n">reuseIndentifier</span> <span class="o">=</span> <span class="s">@&quot;testCell&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">ViewController</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">tableView</span><span class="p">.</span><span class="n">rowHeight</span> <span class="o">=</span> <span class="mi">150</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">numberOfRowsInSection:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">section</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">200</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="bp">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">dequeueReusableCellWithIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">cell</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">cell</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableViewCell</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithStyle</span><span class="p">:</span><span class="n">UITableViewCellStyleDefault</span> <span class="nl">reuseIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">backgroundColor</span>  <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="nl">colorWithRed</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">green</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">blue</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">alpha</span><span class="p">:</span><span class="mf">0.5</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;just a function test--%ld!&quot;</span><span class="p">,</span> <span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span> <span class="o">=</span> <span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">scrollView</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 在这里根据_verticalScrollIndicator的中点，来获取对应的cell行号，从而可以获取对应行的数据来进行显示</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">indexPathForRowAtPoint</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">center</span><span class="p">].</span><span class="n">row</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewWillBeginDragging:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// 这里注意要在点击时获取，如果在view加载完成时设置标签索引的中点，那么获取的_verticalScrollIndicator的frame是不对的</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">valueForKey</span><span class="p">:</span><span class="s">@&quot;verticalScrollIndicator&quot;</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UILabel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">)];</span>
+</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="bp">CGPoint</span> <span class="n">center</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">center</span><span class="p">.</span><span class="n">y</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">center</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">indicatorView</span><span class="p">];</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -3382,493 +3590,6 @@ id objc_getAssociatedObject(id object, const void *key)
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-07-12-chang-yong-runtimehan-shu/">常用Runtime函数</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-07-12T11:28:20+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>11:28 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>这里主要纪录一些常用的函数：</p>
-
-<h2>类</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 根据类，获取类名</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">class_getName</span><span class="p">(</span><span class="kt">Class</span> <span class="n">cls</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 根据类名获取类</span>
-</span><span class='line'><span class="kt">Class</span> <span class="n">objc_getClass</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>注意，以下有获取<code>列表</code>的函数需要手动<code>free</code>获取的列表</li>
-<li>成员变量</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取成员变量列表</span>
-</span><span class='line'><span class="n">Ivar</span> <span class="o">*</span> <span class="n">class_copyIvarList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 获取类成员变量的信息</span>
-</span><span class='line'><span class="n">Ivar</span> <span class="n">class_getClassVariable</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 根据实例变量名，获取类中实例变量</span>
-</span><span class='line'><span class="n">Ivar</span> <span class="n">class_getInstanceVariable</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 往运行时创建的类添加成员变量</span>
-</span><span class='line'><span class="kt">BOOL</span> <span class="n">class_addIvar</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">uint8_t</span> <span class="n">alignment</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">types</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>属性</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取属性列表</span>
-</span><span class='line'><span class="kt">objc_property_t</span> <span class="o">*</span> <span class="n">class_copyPropertyList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 获取指定的属性</span>
-</span><span class='line'><span class="kt">objc_property_t</span> <span class="n">class_getProperty</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 获取属性列表</span>
-</span><span class='line'><span class="kt">objc_property_t</span> <span class="o">*</span> <span class="n">class_copyPropertyList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 为类添加属性</span>
-</span><span class='line'><span class="kt">BOOL</span> <span class="n">class_addProperty</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="k">const</span> <span class="kt">objc_property_attribute_t</span> <span class="o">*</span><span class="n">attributes</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">attributeCount</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方法</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取方法列表</span>
-</span><span class='line'><span class="n">Method</span> <span class="o">*</span> <span class="n">class_copyMethodList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 添加方法</span>
-</span><span class='line'><span class="kt">BOOL</span> <span class="n">class_addMethod</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span><span class="p">,</span> <span class="kt">IMP</span> <span class="n">imp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">types</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 获取实例方法</span>
-</span><span class='line'><span class="n">Method</span> <span class="n">class_getInstanceMethod</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 获取类方法</span>
-</span><span class='line'><span class="n">Method</span> <span class="n">class_getClassMethod</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 替代方法的实现</span>
-</span><span class='line'><span class="kt">IMP</span> <span class="n">class_replaceMethod</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span><span class="p">,</span> <span class="kt">IMP</span> <span class="n">imp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">types</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 返回方法的具体实现</span>
-</span><span class='line'><span class="kt">IMP</span> <span class="n">class_getMethodImplementation</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span> <span class="p">)</span>
-</span><span class='line'><span class="kt">IMP</span> <span class="n">class_getMethodImplementation_stret</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 类实例是否响应指定的selector</span>
-</span><span class='line'><span class="kt">BOOL</span> <span class="n">class_respondsToSelector</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">sel</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>协议</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取协议列表</span>
-</span><span class='line'><span class="n">Protocol</span> <span class="o">*</span> <span class="n">class_copyProtocolList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 添加协议</span>
-</span><span class='line'><span class="kt">BOOL</span> <span class="n">class_addProtocol</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="n">Protocol</span> <span class="o">*</span><span class="n">protocol</span> <span class="p">)</span>
-</span><span class='line'><span class="c1">// 返回类是否实现指定的协议</span>
-</span><span class='line'><span class="kt">BOOL</span> <span class="n">class_conformsToProtocol</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="n">Protocol</span> <span class="o">*</span><span class="n">protocol</span> <span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>动态创建</h2>
-
-<ul>
-<li>类</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 创建一个新类和元类</span>
-</span><span class='line'><span class="kt">Class</span> <span class="nf">objc_allocateClassPair</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">superclass</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">extraBytes</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 销毁一个类及其相关联的类</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">objc_disposeClassPair</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 在应用中注册由objc_allocateClassPair创建的类</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">objc_registerClassPair</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>对象</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 创建类实例</span>
-</span><span class='line'>  <span class="kt">id</span> <span class="nf">class_createInstance</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">extraBytes</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c1">// 在指定位置创建类实例</span>
-</span><span class='line'>  <span class="kt">id</span> <span class="nf">objc_constructInstance</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">bytes</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c1">// 销毁类实例</span>
-</span><span class='line'>  <span class="kt">void</span> <span class="o">*</span> <span class="nf">objc_destructInstance</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>实例对象操作</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 返回指定对象的一份拷贝</span>
-</span><span class='line'><span class="kt">id</span> <span class="nf">object_copy</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 释放指定对象占用的内存</span>
-</span><span class='line'><span class="kt">id</span> <span class="nf">object_dispose</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 修改类实例的实例变量的值</span>
-</span><span class='line'><span class="n">Ivar</span> <span class="nf">object_setInstanceVariable</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">value</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取对象实例变量的值</span>
-</span><span class='line'><span class="n">Ivar</span> <span class="nf">object_getInstanceVariable</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">outValue</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回指向给定对象分配的任何额外字节的指针</span>
-</span><span class='line'><span class="kt">void</span> <span class="o">*</span> <span class="nf">object_getIndexedIvars</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回对象中实例变量的值</span>
-</span><span class='line'><span class="kt">id</span> <span class="nf">object_getIvar</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span><span class="p">,</span> <span class="n">Ivar</span> <span class="n">ivar</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 设置对象中实例变量的值</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">object_setIvar</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span><span class="p">,</span> <span class="n">Ivar</span> <span class="n">ivar</span><span class="p">,</span> <span class="kt">id</span> <span class="n">value</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回给定对象的类名</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">object_getClassName</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回对象的类</span>
-</span><span class='line'><span class="kt">Class</span> <span class="nf">object_getClass</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 设置对象的类</span>
-</span><span class='line'><span class="kt">Class</span> <span class="nf">object_setClass</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">obj</span><span class="p">,</span> <span class="kt">Class</span> <span class="n">cls</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>获取类定义</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取已注册的类定义的列表</span>
-</span><span class='line'><span class="kt">int</span> <span class="nf">objc_getClassList</span> <span class="p">(</span> <span class="kt">Class</span> <span class="o">*</span><span class="n">buffer</span><span class="p">,</span> <span class="kt">int</span> <span class="n">bufferCount</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 创建并返回一个指向所有已注册类的指针列表</span>
-</span><span class='line'><span class="kt">Class</span> <span class="o">*</span> <span class="nf">objc_copyClassList</span> <span class="p">(</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回指定类的类定义</span>
-</span><span class='line'><span class="kt">Class</span> <span class="nf">objc_lookUpClass</span> <span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">Class</span> <span class="nf">objc_getClass</span> <span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="p">);</span>
-</span><span class='line'><span class="kt">Class</span> <span class="nf">objc_getRequiredClass</span> <span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回指定类的元类</span>
-</span><span class='line'><span class="kt">Class</span> <span class="nf">objc_getMetaClass</span> <span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>成员变量、属性</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取成员变量名</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">ivar_getName</span> <span class="p">(</span> <span class="n">Ivar</span> <span class="n">v</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取成员变量类型编码</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">ivar_getTypeEncoding</span> <span class="p">(</span> <span class="n">Ivar</span> <span class="n">v</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取成员变量的偏移量</span>
-</span><span class='line'><span class="kt">ptrdiff_t</span> <span class="nf">ivar_getOffset</span> <span class="p">(</span> <span class="n">Ivar</span> <span class="n">v</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 设置关联对象</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">objc_setAssociatedObject</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">object</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">key</span><span class="p">,</span> <span class="kt">id</span> <span class="n">value</span><span class="p">,</span> <span class="n">objc_AssociationPolicy</span> <span class="n">policy</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取关联对象</span>
-</span><span class='line'><span class="kt">id</span> <span class="nf">objc_getAssociatedObject</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">object</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">key</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 移除关联对象</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">objc_removeAssociatedObjects</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">object</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取属性名</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">property_getName</span> <span class="p">(</span> <span class="kt">objc_property_t</span> <span class="n">property</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取属性特性描述字符串</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">property_getAttributes</span> <span class="p">(</span> <span class="kt">objc_property_t</span> <span class="n">property</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取属性中指定的特性</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span> <span class="nf">property_copyAttributeValue</span> <span class="p">(</span> <span class="kt">objc_property_t</span> <span class="n">property</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">attributeName</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取属性的特性列表</span>
-</span><span class='line'><span class="kt">objc_property_attribute_t</span> <span class="o">*</span> <span class="nf">property_copyAttributeList</span> <span class="p">(</span> <span class="kt">objc_property_t</span> <span class="n">property</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>方法</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 调用指定方法的实现</span>
-</span><span class='line'><span class="kt">id</span> <span class="nf">method_invoke</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">receiver</span><span class="p">,</span> <span class="n">Method</span> <span class="n">m</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 调用返回一个数据结构的方法的实现</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">method_invoke_stret</span> <span class="p">(</span> <span class="kt">id</span> <span class="n">receiver</span><span class="p">,</span> <span class="n">Method</span> <span class="n">m</span><span class="p">,</span> <span class="p">...</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取方法名</span>
-</span><span class='line'><span class="kt">SEL</span> <span class="nf">method_getName</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回方法的实现</span>
-</span><span class='line'><span class="kt">IMP</span> <span class="nf">method_getImplementation</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取描述方法参数和返回值类型的字符串</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">method_getTypeEncoding</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取方法的返回值类型的字符串</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span> <span class="nf">method_copyReturnType</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取方法的指定位置参数的类型字符串</span>
-</span><span class='line'><span class="kt">char</span> <span class="o">*</span> <span class="nf">method_copyArgumentType</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">index</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 通过引用返回方法的返回值类型字符串</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">method_getReturnType</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">dst</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">dst_len</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回方法的参数的个数</span>
-</span><span class='line'><span class="kt">unsigned</span> <span class="kt">int</span> <span class="nf">method_getNumberOfArguments</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 通过引用返回方法指定位置参数的类型字符串</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">method_getArgumentType</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">index</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">dst</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">dst_len</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 返回指定方法的方法描述结构体</span>
-</span><span class='line'><span class="k">struct</span> <span class="n">objc_method_description</span> <span class="o">*</span> <span class="nf">method_getDescription</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 设置方法的实现</span>
-</span><span class='line'><span class="kt">IMP</span> <span class="nf">method_setImplementation</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span><span class="p">,</span> <span class="kt">IMP</span> <span class="n">imp</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 交换两个方法的实现</span>
-</span><span class='line'><span class="kt">void</span> <span class="nf">method_exchangeImplementations</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m1</span><span class="p">,</span> <span class="n">Method</span> <span class="n">m2</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>方法选择器</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 返回给定选择器指定的方法的名称</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">sel_getName</span> <span class="p">(</span> <span class="kt">SEL</span> <span class="n">sel</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 在Objective-C Runtime系统中注册一个方法，将方法名映射到一个选择器，并返回这个选择器</span>
-</span><span class='line'><span class="kt">SEL</span> <span class="nf">sel_registerName</span> <span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 在Objective-C Runtime系统中注册一个方法</span>
-</span><span class='line'><span class="kt">SEL</span> <span class="nf">sel_getUid</span> <span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 比较两个选择器</span>
-</span><span class='line'><span class="kt">BOOL</span> <span class="nf">sel_isEqual</span> <span class="p">(</span> <span class="kt">SEL</span> <span class="n">lhs</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">rhs</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>库相关</h2>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取所有加载的Objective-C框架和动态库的名称</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">**</span> <span class="nf">objc_copyImageNames</span> <span class="p">(</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取指定类所在动态库</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">class_getImageName</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span> <span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 获取指定库或框架中所有类的类名</span>
-</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">**</span> <span class="nf">objc_copyClassNamesForImage</span> <span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">image</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">outCount</span> <span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -3896,6 +3617,10 @@ id objc_getAssociatedObject(id object, const void *key)
 </section><section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-26-phphou-tai-bian-cheng-chu-tan/">Php后台编程初探</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015-09-26-ioszhi-shi-sui-pian-er/">关于这一周总结</a>
