@@ -9,7 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="这一个星期主要需要理解的代码主要是实现这样的一个功能： ">
+  <meta name="description" content="1、UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题 UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题 今天解决了一个奇怪的问题。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -71,6 +71,114 @@
       
   <header>
     
+      <h1 class="entry-title"><a href="/blog/2015-09-30-ioszhi-shi-sui-pian-er/">iOS知识碎片二</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-09-30T23:08:45+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>30</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>11:08 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>1、UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题</p>
+
+<h2>UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题</h2>
+
+<p>今天解决了一个奇怪的问题。老代码使用UITableView来进行类似网易新闻首页的TitleIndex的切换（UITableView旋转90度，cell也相应旋转，主要说是因为这样不用计算contentSize；个人比较喜欢直接用UIScrollView或者UICollectionView），然后会存在一个奇怪的bug：<br>
+当drag到顶部或者底部时，再drag一次或以上，然后点击对应的cell，会出现第一次没有效果（cell使用touchBegin可以捕获到），第二次才调用tableView: didSelectRowAtIndexPath:的情况。<br>
+找了一下午，也在stackoverflow上找了一些答案，但是大都是说UIScrollView和UITableView混用造成，而且问题现象也有点区别。<br>
+后来发现是因为设计了一个属性：bounces，UITableView设置了这个属性之后，就会出现以上现象，以下就是下午的DEMO：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableView</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">500</span><span class="p">)];</span>
+</span><span class='line'>    <span class="n">tableView</span><span class="p">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">tableView</span><span class="p">.</span><span class="n">dataSource</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 就是因为这一句</span>
+</span><span class='line'>    <span class="n">tableView</span><span class="p">.</span><span class="n">bounces</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">tableView</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">numberOfRowsInSection:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">section</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="mi">15</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">static</span> <span class="bp">NSInteger</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableViewCell</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithStyle</span><span class="p">:</span><span class="n">UITableViewCellStyleDefault</span> <span class="nl">reuseIdentifier</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">selectionStyle</span> <span class="o">=</span> <span class="n">UITableViewCellSelectionStyleNone</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="n">i</span><span class="o">++</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">didSelectRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%zd&quot;</span><span class="p">,</span> <span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果设置bounces为NO，就会出现上面所说的bug。去除的话就会出现两边有弹性的情况。所以解决方案有以下几种：<br>
+1. 更改方案，不用UITableView，改用UICollection、UIScrollView
+2. 在cell中设置tap手势，点击时使用代理传出，然后进行手动调用
+3. 接受有弹性的情况</p>
+
+<p>最后我采用的情况3，因为最方便，也不会造成大影响～～</p>
+</div>
+  
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
       <h1 class="entry-title"><a href="/blog/2015-09-26-phphou-tai-bian-cheng-chu-tan/">PHP后台编程初探</a></h1>
     
     
@@ -90,6 +198,999 @@
   <div class="entry-content"><p>这一个星期主要需要理解的代码主要是实现这样的一个功能：<br></p>
 
 <p><img src="/images/2015-09-27%2010_07_51.gif" alt="" /></p>
+
+<p>这是一个分类网站的雏形，主要针对的是面向对象的应用和思想。</p>
+
+<h2>业务</h2>
+
+<p>分类业务主要包括以下几点：</p>
+
+<ul>
+<li>核心信息是<code>广告</code></li>
+<li>将广告按照类目、地区、用户进行了分类</li>
+<li>广告具有所属类目、所属地区、所属用户以及对应评论特性</li>
+<li>也可以从类目、地区、用户中获取对应的所有广告信息</li>
+</ul>
+
+
+<h2>核心代码层级构建</h2>
+
+<ul>
+<li>创建一个单例，管理数据库的连接（DataConnection）</li>
+<li>根据表结构，创建一个共同的父类（Data），一个父类对象对应每个表中的特定行（table、key），这个父类提供主键查询（load），字段查询（find）功能。另外一点技巧是根据PHP动态创建属性的特性，创建一个数组属性，供外界传入各自拥有的字段映射（关联数组）</li>
+<li>数据库中的部分表中存在父子节点关系，所以创建一个管理父子节点的子类（Tree），提供常用的树操作：查询子节点（children）、查询父节点（parent）、查询父族（getTree）</li>
+<li>各个不同的表创建一个子类，并根据不同的字段，在构造时传入不同的<code>初始值</code>和<code>需要动态创建的属性及对应的查询字段</code></li>
+</ul>
+
+
+<h2>核心代码剖析</h2>
+
+<h4>PHP部分基础语法</h4>
+
+<p>变量：<br>
+PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="nv">$color</span>    <span class="nv">$符号表示变量</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>数组：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="c1">// 创建数组</span>
+</span><span class='line'><span class="nv">$a</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 关联数组</span>
+</span><span class='line'><span class="nv">$a</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="o">=&gt;</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="o">=&gt;</span><span class="s2">&quot;b&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 添加数组</span>
+</span><span class='line'><span class="nv">$o</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Object</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$a</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$o</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 关联数组的遍历(as)</span>
+</span><span class='line'><span class="k">foreach</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">echo</span> <span class="s2">&quot;键:&quot;</span> <span class="o">.</span> <span class="nv">$key</span> <span class="o">.</span> <span class="s2">&quot;  &quot;</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">echo</span> <span class="s2">&quot;值:&quot;</span> <span class="o">.</span> <span class="nv">$value</span> <span class="o">.</span> <span class="s2">&quot;  &quot;</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 普通数组的另一种遍历方式</span>
+</span><span class='line'><span class="nv">$a</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="s2">&quot;2&quot;</span><span class="p">);</span>
+</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="nv">$i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nv">$i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="nv">$i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">echo</span> <span class="nv">$a</span><span class="p">[</span><span class="nv">$i</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>字符串的基本运算：<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">.</span>      <span class="nx">串接</span>
+</span><span class='line'><span class="o">.=</span>     <span class="nx">串接赋值</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>clone对象复制（新对象）：<br>
+对对象内的基本数值类型进行传值复制，对对象内对象型的成员变量，如果不重写__clone函数，显示clone这个对象成员变量，那么这个成员变量就是进行引用复制，不是生成一个新的对象</p>
+
+<p>继承使用extends。<br></p>
+
+<p>this、self、parent为分别指向当前对象、当前类、父类的指针。<br></p>
+
+<h4>数据连接单例</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="k">class</span> <span class="nc">DataConnection</span> <span class="p">{</span>
+</span><span class='line'>     <span class="k">private</span> <span class="k">static</span> <span class="nv">$dataConnection</span><span class="p">;</span>
+</span><span class='line'>     <span class="k">public</span> <span class="nv">$connection</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>         <span class="c1">// 连接数据库</span>
+</span><span class='line'>         <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">connection</span> <span class="o">=</span> <span class="nb">mysql_connect</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="s1">&#39;root&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">or</span> <span class="k">die</span><span class="p">(</span><span class="nb">mysql_error</span><span class="p">());</span>
+</span><span class='line'>         <span class="c1">// 选取chaoge数据库</span>
+</span><span class='line'>         <span class="nb">mysql_select_db</span><span class="p">(</span><span class="s2">&quot;chaoge&quot;</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">connection</span><span class="p">)</span> <span class="k">or</span> <span class="k">die</span><span class="p">(</span><span class="nb">mysql_error</span><span class="p">());;</span>
+</span><span class='line'>         <span class="c1">// 向数据库执行SET NAMES UTF8命令(执行数据库命令，设置字符集编码格式)</span>
+</span><span class='line'>         <span class="nb">mysql_query</span><span class="p">(</span><span class="s2">&quot;SET NAMES UTF8&quot;</span><span class="p">,</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">connection</span><span class="p">)</span> <span class="k">or</span> <span class="k">die</span><span class="p">(</span><span class="nb">mysql_error</span><span class="p">());;</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>     <span class="k">public</span> <span class="k">static</span> <span class="k">function</span> <span class="nf">getInstance</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>         <span class="c1">// 为空创建</span>
+</span><span class='line'>         <span class="k">if</span> <span class="p">(</span><span class="nb">is_null</span><span class="p">(</span><span class="nx">self</span><span class="o">::</span><span class="nv">$dataConnection</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>             <span class="nx">self</span><span class="o">::</span><span class="nv">$dataConnection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">DataConnection</span><span class="p">();</span>
+</span><span class='line'>         <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>         <span class="k">return</span> <span class="nx">self</span><span class="o">::</span><span class="nv">$dataConnection</span><span class="p">;</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>共同父类Data</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'> <span class="k">class</span> <span class="nc">Data</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">private</span> <span class="nv">$sql</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="nv">$rs</span><span class="p">;</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="k">public</span> <span class="nv">$table</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">public</span> <span class="nv">$key</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">public</span> <span class="nv">$columns</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">table</span> <span class="o">=</span> <span class="nv">$option</span><span class="p">[</span><span class="s1">&#39;table&#39;</span><span class="p">];</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">key</span> <span class="o">=</span> <span class="nv">$option</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">];</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="o">=</span> <span class="nv">$option</span><span class="p">[</span><span class="s1">&#39;columns&#39;</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">fetch</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 取得结果集中的一行作为关联数组</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">mysql_fetch_assoc</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">rs</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">query</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$connection</span> <span class="o">=</span> <span class="nx">DataConnection</span><span class="o">::</span><span class="na">getInstance</span><span class="p">()</span><span class="o">-&gt;</span><span class="na">connection</span><span class="p">;</span>
+</span><span class='line'>            <span class="c1">// 执行查询语句</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">rs</span> <span class="o">=</span> <span class="nb">mysql_query</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sql</span><span class="p">,</span> <span class="nv">$connection</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 返回查找到的行数</span>
+</span><span class='line'>            <span class="c1">// mysql_num_rows返回实际结果集中获取的行数</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">mysql_affected_rows</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 查找主键所在行的数据</span>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">load</span><span class="p">(</span><span class="nv">$v</span><span class="o">=</span><span class="k">null</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 获取主键字段对应的属性名</span>
+</span><span class='line'>            <span class="nv">$key</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">key</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nv">$v</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// 获取主键值</span>
+</span><span class='line'>                <span class="nv">$v</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$key</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 创建数据库查询语句</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sql</span> <span class="o">=</span> <span class="s2">&quot;SELECT * FROM </span><span class="si">{</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">table</span><span class="si">}</span><span class="s2"> WHERE </span><span class="si">{</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span><span class="p">[</span><span class="nv">$key</span><span class="p">]</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="nv">$v</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'>             <span class="c1">// 进行数据库查询                                                                                                                                                        </span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// 获取主键所在行关联数组</span>
+</span><span class='line'>                <span class="nv">$ar</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">fetch</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">foreach</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="c1">// 设置动态添加属性的值为对应数据库字段读取的值</span>
+</span><span class='line'>                    <span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$key</span> <span class="o">=</span> <span class="nv">$ar</span><span class="p">[</span><span class="nv">$value</span><span class="p">];</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>                <span class="k">return</span> <span class="nv">$this</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">return</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 可以根据columns中的字段来进行查找</span>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">find</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 拼接where，WHERE 1=1是减少是否需要添加WHERE的麻烦</span>
+</span><span class='line'>            <span class="nv">$where</span> <span class="o">=</span> <span class="s2">&quot; WHERE 1 = 1 &quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="nv">$limit</span> <span class="o">=</span> <span class="s2">&quot; LIMIT 0, 10 &quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">foreach</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$key</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="c1">// 如果对应的动态属性有值，就添加对应的查询条件</span>
+</span><span class='line'>                    <span class="c1">// $value是数据库字段，$this-&gt;$key是模型属性的值</span>
+</span><span class='line'>                    <span class="nv">$where</span> <span class="o">.=</span> <span class="s2">&quot;AND </span><span class="si">{</span><span class="nv">$value</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 拼接查询语句</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sql</span> <span class="o">=</span> <span class="s2">&quot;SELECT * FROM </span><span class="si">{</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">table</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nv">$where</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nv">$limit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nv">$ar</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span><span class='line'>            <span class="c1">// 进行数据库查询</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// 获取查询的一行数据</span>
+</span><span class='line'>                <span class="k">while</span> <span class="p">(</span><span class="nv">$a</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">fetch</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="c1">// 这里进行clone，表示只是想要查询，并不想要改变$this的相关属性值</span>
+</span><span class='line'>                    <span class="c1">// 实现面向对象编程的方式，使用clone</span>
+</span><span class='line'>                    <span class="nv">$o</span> <span class="o">=</span> <span class="k">clone</span> <span class="nv">$this</span><span class="p">;</span>
+</span><span class='line'>                    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                        <span class="c1">// 设置动态添加属性的值为对应数据库字段读取的值</span>
+</span><span class='line'>                        <span class="nv">$o</span><span class="o">-&gt;</span><span class="nv">$key</span> <span class="o">=</span> <span class="nv">$a</span><span class="p">[</span><span class="nv">$value</span><span class="p">];</span>
+</span><span class='line'>                    <span class="p">}</span>
+</span><span class='line'>                    <span class="c1">// 将设置号查询数据的对象添加到数组中</span>
+</span><span class='line'>                    <span class="nv">$ar</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$o</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>      <span class="c1">// 重写__get方法，获取属性时就先判断属性有没有,没有的话输出null</span>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">__get</span><span class="p">(</span><span class="nv">$property_name</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// $this有$property_name属性的情况下返回属性值</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">property_exists</span><span class="p">(</span><span class="nv">$this</span><span class="p">,</span> <span class="nv">$property_name</span><span class="p">)</span> <span class="o">?</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$property_name</span> <span class="o">:</span> <span class="k">null</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>因为一个Data对象对应着数据库中的一行数据，所以需要有以下对应的属性：<br>
+1. table    ->对应的表<br>
+2. key      ->对应行主键<br>
+3. columns  ->对应每个表中各自的私有字段<br></p>
+
+<p>并且其中涉及到了PHP动态<code>创建属性</code>的特性。<br></p>
+
+<p>动态创建的属性默认是public的，要想动态创建私有的属性，可以这么做：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="k">class</span> <span class="nc">foo</span> <span class="p">{</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$a</span><span class="p">;</span>
+</span><span class='line'>  <span class="k">private</span> <span class="nv">$_properties</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">__set</span><span class="p">(</span><span class="nv">$var</span><span class="p">,</span> <span class="nv">$val</span> <span class="o">=</span> <span class="k">null</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">_properties</span><span class="p">[</span><span class="nv">$var</span><span class="p">]</span> <span class="o">=</span> <span class="nv">$val</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="k">public</span> <span class="k">function</span> <span class="nf">__get</span><span class="p">(</span><span class="nv">$var</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>      
+</span><span class='line'>      <span class="k">return</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">_properties</span><span class="p">[</span><span class="nv">$var</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">foo</span><span class="p">();</span>
+</span><span class='line'><span class="nv">$a</span><span class="o">-&gt;</span><span class="na">__set</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span><span class="s1">&#39;111&#39;</span><span class="p">);</span>
+</span><span class='line'><span class="k">echo</span> <span class="nv">$a</span><span class="o">-&gt;</span><span class="na">__get</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>使用一个private的数组，每次创建时可以往这个数组里面添加元素。<br></p>
+
+<p>__set当给不可访问或不存在属性赋值时被使用。<br></p>
+
+<p>__get当读取不可访问或不存在的属性时被调用。<br></p>
+
+<p>可以在以上函数中设置错误抛出，当访问不存在属性时就抛出错误。<br></p>
+
+<p>isset是在参数为null或者属性不存在时返回false，否则返回true。<br></p>
+
+<p>其中有两个数据库的函数，我纠结了挺久，是关于执行SELECT返回的数据行数。</p>
+
+<ul>
+<li>mysql_affected_rows()
+
+<ul>
+<li>Retrieves the number of rows from a result set. This command is only valid for statements like SELECT or SHOW that return an actual result set.</li>
+</ul>
+</li>
+<li>mysql_num_rows()
+
+<ul>
+<li>Get the number of affected rows by the last INSERT, UPDATE, REPLACE or DELETE query associated with link_identifier.</li>
+</ul>
+</li>
+</ul>
+
+
+<p>但是实际使用的时候，两者返回的值是一样的，个人感觉和手册上面说的有点不一样。最后在stackoverflow问了下，得出以下结论：</p>
+
+<ul>
+<li>mysql_affected_rows()返回查询到的数据行数</li>
+<li>mysql_num_rows()返回实际返回的数据行数（结果集中）</li>
+</ul>
+
+
+<p>详细的讨论在这里：<a href="http://bytes.com/topic/php/answers/749156-difference-between-mysql_affected_rows-mysql_num_rows">mysql_affected_rows()和mysql_num_rows()</a></p>
+
+<h2>管理树操作子类Tree</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="k">class</span> <span class="nc">Tree</span> <span class="k">extends</span> <span class="nx">Data</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">public</span> <span class="nv">$pkey</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">pkey</span> <span class="o">=</span> <span class="nv">$option</span><span class="p">[</span><span class="s1">&#39;pkey&#39;</span><span class="p">];</span>
+</span><span class='line'>            <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">children</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 获取主键字段对应的属性名</span>
+</span><span class='line'>            <span class="nv">$key</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">key</span><span class="p">;</span>
+</span><span class='line'>            <span class="c1">// 获取父页节点主键对应的属性名</span>
+</span><span class='line'>            <span class="nv">$pkey</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">pkey</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 这里name属性还没有被创建，试一下__get</span>
+</span><span class='line'>            <span class="k">echo</span> <span class="s2">&quot;&lt;br&gt;&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="nb">var_dump</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">name</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">echo</span> <span class="s2">&quot;&lt;br&gt;&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">table</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 获取对象类名</span>
+</span><span class='line'>            <span class="nv">$class</span> <span class="o">=</span> <span class="nb">get_class</span><span class="p">(</span><span class="nv">$this</span><span class="p">);</span>
+</span><span class='line'>            <span class="nv">$o</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">$class</span><span class="p">;</span>
+</span><span class='line'>            <span class="nv">$o</span><span class="o">-&gt;</span><span class="nv">$pkey</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$key</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nv">$o</span><span class="o">-&gt;</span><span class="na">find</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">parent</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 获取主键字段对应的属性名</span>
+</span><span class='line'>            <span class="nv">$key</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">key</span><span class="p">;</span>
+</span><span class='line'>            <span class="c1">// 获取父节点主键对应的属性名</span>
+</span><span class='line'>            <span class="nv">$pkey</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">pkey</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nv">$class</span> <span class="o">=</span> <span class="nb">get_class</span><span class="p">(</span><span class="nv">$this</span><span class="p">);</span>
+</span><span class='line'>            <span class="nv">$o</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">$class</span><span class="p">;</span>
+</span><span class='line'>            <span class="nv">$o</span><span class="o">-&gt;</span><span class="nv">$key</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$pkey</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nv">$o</span><span class="o">-&gt;</span><span class="na">load</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>      <span class="k">public</span> <span class="k">function</span> <span class="nf">getTree</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 获取父页面主键对应的属性名</span>
+</span><span class='line'>            <span class="nv">$pkey</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">pkey</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nv">$ar</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+</span><span class='line'>            <span class="c1">// clone是产生一个和原来一样的新的对象，没有clone的话是一个对象引用</span>
+</span><span class='line'>            <span class="c1">// 这里主要是规避$this不能被赋值问题</span>
+</span><span class='line'>            <span class="c1">// 因为$o中的属性并不会被改变，所以这里也可以不使用clone</span>
+</span><span class='line'>          <span class="c1">// $o = clone $this;</span>
+</span><span class='line'>            <span class="nv">$o</span> <span class="o">=</span> <span class="nv">$this</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">do</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// 将从本身开始，到最后层级的父节点添加到数组中</span>
+</span><span class='line'>                <span class="nv">$ar</span><span class="p">[]</span> <span class="o">=</span> <span class="nv">$o</span><span class="p">;</span>
+</span><span class='line'>                <span class="c1">// 获取父节点</span>
+</span><span class='line'>                <span class="nv">$o</span> <span class="o">=</span> <span class="nv">$o</span><span class="o">-&gt;</span><span class="na">parent</span><span class="p">();</span>
+</span><span class='line'>                <span class="c1">// 如果没有父节点对应的主键值，那么表示没有父节点，退出循环</span>
+</span><span class='line'>            <span class="p">}</span><span class="k">while</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$o</span><span class="o">-&gt;</span><span class="nv">$pkey</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nv">$o</span><span class="o">-&gt;</span><span class="nv">$pkey</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 将父节点排在最前面</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">array_reverse</span><span class="p">(</span><span class="nv">$ar</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>php实现面向对象的编程方式可以使用两种方式：</p>
+
+<ol>
+<li><code>clone</code>方式，这样不管实际类是哪种，都可以拷贝一个全新的对象出来。这种方式在这个上下文下需要对clone的类的部分属性进行清空。</li>
+<li>使用另一种方式，即以上方式：通过<code>get_class</code>获取类名，然后重新创建一个。</li>
+</ol>
+
+
+<h2>详细子类</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'>   <span class="k">class</span> <span class="nc">Category</span> <span class="k">extends</span> <span class="nx">Tree</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$option</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                <span class="c1">// 表格</span>
+</span><span class='line'>                <span class="s1">&#39;table&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;babel_node&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="c1">// 主键</span>
+</span><span class='line'>                <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="c1">// 父节点主键</span>
+</span><span class='line'>                <span class="s1">&#39;pkey&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pid&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="c1">// 表格对应的私有字段</span>
+</span><span class='line'>                <span class="s1">&#39;columns&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                    <span class="s1">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;node_id&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;pid&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;nod_pid&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;nod_title&#39;</span>
+</span><span class='line'>                <span class="p">)</span>
+</span><span class='line'>            <span class="p">);</span>
+</span><span class='line'>            <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">ads</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Ad</span><span class="p">();</span>
+</span><span class='line'>            <span class="c1">// 设置分类id</span>
+</span><span class='line'>            <span class="nv">$a</span><span class="o">-&gt;</span><span class="na">categoryId</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">;</span>
+</span><span class='line'>            <span class="c1">// 因为分类id被设置了，所以查找的时候就只有分类id这一个过滤条件</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nv">$a</span><span class="o">-&gt;</span><span class="na">find</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">class</span> <span class="nc">Area</span> <span class="k">extends</span> <span class="nx">Tree</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$option</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                <span class="s1">&#39;table&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;babel_area&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;pkey&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pid&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;columns&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                    <span class="s1">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;area_id&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;pid&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;area_pid&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;area_title&#39;</span>
+</span><span class='line'>                <span class="p">)</span>
+</span><span class='line'>            <span class="p">);</span>
+</span><span class='line'>            <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">ads</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Ad</span><span class="p">();</span>
+</span><span class='line'>            <span class="c1">// 设置地区id</span>
+</span><span class='line'>            <span class="nv">$a</span><span class="o">-&gt;</span><span class="na">areaId</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">;</span>
+</span><span class='line'>            <span class="c1">// 因为地区id被设置了，所以查找的时候就只有地区id这一个过滤条件</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nv">$a</span><span class="o">-&gt;</span><span class="na">find</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">class</span> <span class="nc">User</span> <span class="k">extends</span> <span class="nx">Data</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$option</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                <span class="s1">&#39;table&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;babel_User&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;columns&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                    <span class="s1">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;usr_id&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;email&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;usr_email&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;usr_nick&#39;</span>
+</span><span class='line'>                <span class="p">)</span>
+</span><span class='line'>            <span class="p">);</span>
+</span><span class='line'>            <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">ads</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$a</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Ad</span><span class="p">();</span>
+</span><span class='line'>            <span class="c1">// 设置用户id</span>
+</span><span class='line'>            <span class="nv">$a</span><span class="o">-&gt;</span><span class="na">userId</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">;</span>
+</span><span class='line'>            <span class="c1">// 因为用户id被设置了，所以查找的时候就只有用户id这一个过滤条件</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nv">$a</span><span class="o">-&gt;</span><span class="na">find</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>  <span class="k">class</span> <span class="nc">Comment</span> <span class="k">extends</span> <span class="nx">Data</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$option</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                <span class="s1">&#39;table&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;babel_reply&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;columns&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                    <span class="s1">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;rpl_id&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;adId&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;rpl_tpc_id&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;userId&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;rpl_post_usr_id&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;userName&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;rpl_post_nick&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;content&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;rpl_content&#39;</span>
+</span><span class='line'>                <span class="p">)</span>
+</span><span class='line'>            <span class="p">);</span>
+</span><span class='line'>            <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">class</span> <span class="nc">Ad</span> <span class="k">extends</span> <span class="nx">Data</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// 广告里面包含了对应所属的分类，用户，地区信息</span>
+</span><span class='line'>        <span class="k">public</span> <span class="nv">$category</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">public</span> <span class="nv">$user</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">public</span> <span class="nv">$area</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$option</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                <span class="s1">&#39;table&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;babel_topic&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
+</span><span class='line'>                <span class="s1">&#39;columns&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>                    <span class="s1">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;tpc_id&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;categoryId&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;tpc_pid&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;userId&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;tpc_uid&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;areaId&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;tpc_area&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;tpc_title&#39;</span><span class="p">,</span>
+</span><span class='line'>                    <span class="s1">&#39;content&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;tpc_content&#39;</span>
+</span><span class='line'>                <span class="p">)</span>
+</span><span class='line'>            <span class="p">);</span>
+</span><span class='line'>            <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$option</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">load</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">parent</span><span class="o">::</span><span class="na">load</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// 设置分类、用户、地区属性对应的主键值</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">category</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Category</span><span class="p">();</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">category</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">categoryId</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">user</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">User</span><span class="p">();</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">user</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">userId</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">area</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Area</span><span class="p">();</span>
+</span><span class='line'>            <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">area</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">areaId</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">return</span> <span class="nv">$this</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">public</span> <span class="k">function</span> <span class="nf">commments</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>            <span class="nv">$c</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Comment</span><span class="p">();</span>
+</span><span class='line'>            <span class="c1">// 设置评论id</span>
+</span><span class='line'>            <span class="nv">$c</span><span class="o">-&gt;</span><span class="na">adId</span> <span class="o">=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">id</span><span class="p">;</span>
+</span><span class='line'>            <span class="c1">// 因为评论id被设置了，所以查找的时候就只有评论id这一个过滤条件</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nv">$c</span><span class="o">-&gt;</span><span class="na">find</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这几个子类将自身的属性和数据库中的字段进行了映射，这样外部操作就可以脱离数据库了，只需要和模型交互即可。</p>
+
+<h2>主页界面构建</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'>  <span class="c1">// 包含kijiji.php文件                                                                                                                                                                                </span>
+</span><span class='line'>    <span class="k">require_once</span><span class="p">(</span><span class="s2">&quot;kijiji.php&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// 在URL中捕获id参数的值</span>
+</span><span class='line'>    <span class="nv">$id</span> <span class="o">=</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">];</span>
+</span><span class='line'>    <span class="nv">$c</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Category</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$c</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$id</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$c</span><span class="o">-&gt;</span><span class="na">load</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nv">$d</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Data</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$d</span><span class="o">-&gt;</span><span class="na">id</span> <span class="o">=</span> <span class="nv">$id</span><span class="p">;</span>
+</span><span class='line'><span class="c1">//    $d-&gt;load();</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//   $d-&gt;song = 1;</span>
+</span><span class='line'><span class="c1">//    var_dump(get_object_vars($d));</span>
+</span><span class='line'><span class="c1">//    var_dump(get_object_vars($c));</span>
+</span><span class='line'><span class="c1">//    var_dump(get_class_methods(&quot;Category&quot;));</span>
+</span><span class='line'><span class="c1">//    var_dump(get_class_vars(&quot;Category&quot;));</span>
+</span><span class='line'>    <span class="k">foreach</span> <span class="p">(</span><span class="nv">$c</span><span class="o">-&gt;</span><span class="na">children</span><span class="p">()</span> <span class="k">as</span> <span class="nv">$o</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">echo</span> <span class="s2">&quot;&lt;hr&gt;&lt;a href=list.php?id=</span><span class="si">{</span><span class="nv">$o</span><span class="o">-&gt;</span><span class="na">id</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="nv">$o</span><span class="o">-&gt;</span><span class="na">name</span><span class="si">}</span><span class="s2">&lt;/a&gt;&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$o</span><span class="o">-&gt;</span><span class="na">children</span><span class="p">()</span> <span class="k">as</span> <span class="nv">$oo</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">echo</span> <span class="s2">&quot;&lt;li&gt;&lt;a href=list.php?id=</span><span class="si">{</span><span class="nv">$oo</span><span class="o">-&gt;</span><span class="na">id</span><span class="si">}</span><span class="s2">&gt;</span><span class="si">{</span><span class="nv">$oo</span><span class="o">-&gt;</span><span class="na">name</span><span class="si">}</span><span class="s2">&lt;/a&gt;&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="cp">?&gt;</span><span class="x"></span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>添加</h2>
+
+<p>添加功能是后面新增的，主要需要有两点：<br>
+1. 界面上需要一个输入框和一个确认键，确认后提交评论<br>
+2. 提交的评论存入数据库</p>
+
+<p>这个功能主要分成两部分：界面，数据库<br>
+1. 界面使用PHP的表单来进行数据传输<br>
+2. 数据库插入在Data类中添加一个无参，返回值为false/数据主键的方法</p>
+
+<p>具体代码如下：<br>
+界面代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="c1">// 从POST中获取评论数据</span>
+</span><span class='line'><span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;comment&#39;</span><span class="p">])){</span>
+</span><span class='line'>    <span class="nv">$comment</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Comment</span><span class="p">();</span>
+</span><span class='line'>    <span class="nv">$comment</span><span class="o">-&gt;</span><span class="na">content</span> <span class="o">=</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;comment&#39;</span><span class="p">];</span>
+</span><span class='line'>    <span class="nv">$comment</span><span class="o">-&gt;</span><span class="na">userName</span> <span class="o">=</span> <span class="s2">&quot;songruiwang&quot;</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$comment</span><span class="o">-&gt;</span><span class="na">userId</span> <span class="o">=</span> <span class="mi">2222</span><span class="p">;</span>
+</span><span class='line'>    <span class="nv">$comment</span><span class="o">-&gt;</span><span class="na">adId</span> <span class="o">=</span> <span class="nv">$id</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">echo</span> <span class="s2">&quot;主键:&quot;</span> <span class="o">.</span> <span class="nv">$comment</span><span class="o">-&gt;</span><span class="na">insert</span><span class="p">();</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 通过表单实现界面刷新，并且以POST的方式传递数据</span>
+</span><span class='line'><span class="k">echo</span> <span class="s1">&#39;&lt;form method=&quot;post&quot;&gt;&lt;input type=&quot;text&quot; name=&quot;comment&quot;&gt;</span>
+</span><span class='line'><span class="s1">&lt;input type=&quot;submit&quot;  value=&quot;提交&quot;&gt;&lt;/form&gt;&#39;</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>数据库插入代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'>  <span class="c1">// 插入数据</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">function</span> <span class="nf">insert</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nv">$keys</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$values</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">foreach</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="k">as</span> <span class="nv">$key</span> <span class="o">=&gt;</span> <span class="nv">$value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 不插入设置主键</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="nv">$key</span> <span class="o">!=</span> <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">key</span> <span class="o">&amp;&amp;</span> <span class="nb">isset</span><span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$key</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>                <span class="nv">$keys</span> <span class="o">.=</span> <span class="s2">&quot;</span><span class="si">{</span><span class="nv">$value</span><span class="si">}</span><span class="s2">,&quot;</span><span class="p">;</span>
+</span><span class='line'>                <span class="nv">$values</span> <span class="o">.=</span> <span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="nv">$key</span><span class="si">}</span><span class="s2">&#39;,&quot;</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 去掉最后面的逗号</span>
+</span><span class='line'>        <span class="nv">$keys</span> <span class="o">=</span> <span class="nb">substr</span><span class="p">(</span><span class="nv">$keys</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$keys</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>        <span class="nv">$values</span> <span class="o">=</span> <span class="nb">substr</span><span class="p">(</span><span class="nv">$values</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nb">strlen</span><span class="p">(</span><span class="nv">$values</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 构造数据库sql语句</span>
+</span><span class='line'>        <span class="nv">$databaseName</span> <span class="o">=</span> <span class="s2">&quot;chaoge&quot;</span><span class="p">;</span>
+</span><span class='line'>        <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">sql</span> <span class="o">=</span> <span class="s2">&quot;INSERT INTO </span><span class="si">{</span><span class="nv">$databaseName</span><span class="si">}</span><span class="s2"> . </span><span class="si">{</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">table</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nv">$keys</span><span class="si">}</span><span class="s2">) VALUES (</span><span class="si">{</span><span class="nv">$values</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 执行数据库插入语句</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nv">$this</span><span class="o">-&gt;</span><span class="na">query</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 返回上一步插入后产生的主键</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">mysql_insert_id</span><span class="p">();</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">return</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
 </div>
   
   
@@ -712,778 +1813,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">RunLoop基础元素解析</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-09-04T21:58:21+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:58 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><a href="http://blog.ibireme.com">深入理解RunLoop</a>这篇文章写的很好！</p>
-
-<h2>简介</h2>
-
-<p>RunLoop顾名思义，就是<code>运行循环</code>的意思。<br>
-基本作用：</p>
-
-<ul>
-<li>保持程序的持续运行</li>
-<li>处理App中的各类事件（触摸事件、定时器事件、Selector事件）</li>
-<li>节省CPU资源，提高程序性能：没有事件时就进行睡眠状态</li>
-</ul>
-
-
-<p>内部实现：</p>
-
-<ul>
-<li>do-while循环，在这个循环内部不断地处理各种任务（Source\Timeer\Observer）</li>
-</ul>
-
-
-<p>注意点：</p>
-
-<ul>
-<li>一个线程对应一个RunLoop（采用字典存储，<code>线程号为key，RunLoop为value</code>）</li>
-<li>主线程的RunLoop默认已经启动，子线程的RunLoop需要手动启动</li>
-<li><p>RunLoop只能选择一个Mode启动，如果当前Mode没有任何Source、Timer、Observer，那么就不会进入RunLoop</p>
-
-<ul>
-<li>RunLoop的主要函数调用顺序为：<code>CFRunLoopRun-&gt;CFRunLoopRunSpecific-&gt;__CFRunLoopRun</code>
-<img src="/images/Snip20150713_2.png" alt="" /><br></li>
-<li><code>注意特殊情况</code>，事实上，在<code>只有</code>Observer的情况，也不一定会进入循环，因为源代码里面只会显式地检测两个东西：<code>Source和Timer</code>(这两个是主动向RunLoop发送消息的)；Observer是被动接收消息的<br>
-<img src="/images/Snip20150713_11.png" alt="" /></li>
-</ul>
-</li>
-<li><p>RunLoop在<code>第一次获取时创建</code>，在<code>线程结束时销毁</code></p></li>
-</ul>
-
-
-<p>RunLoop循环示意图:(针对上面的<code>__CFRunLoopRun</code>函数，Mode已经判断非空前提)</p>
-
-<ul>
-<li>图1<br><img src="/images/Snip20150712_39.png" alt="RunLoop循环示意图" /><br></li>
-<li>图2<br><img src="/images/Snip20150713_3.png" alt="" /><br></li>
-</ul>
-
-
-<p>接触过微处理器编程的基本上都知道，在编写微处理器程序时，我通常会在main函数中写一个无限循环，然后在这个循环里面对外部事件进行监听，比如外部中断，一些传感器的数据等，在没有外部中断时，就让CPU进入低功耗模式。如果接收到了外部中断，就恢复到正常模式，对中断进行处理。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 根据中断决定是否切换模式执行任务</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="c1">// 或者</span>
-</span><span class='line'><span class="k">for</span> <span class="p">(;;)</span> <span class="p">{</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>RunLoop和这个相似，也是在线程的main中增加了一个循环：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kt">BOOL</span> <span class="n">running</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">do</span> <span class="p">{</span>
-</span><span class='line'>        <span class="c1">// 执行各种任务，处理各种事件</span>
-</span><span class='line'>             <span class="c1">// ......</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">running</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>所以线程在这种情况下，便不会退出。<br>
-关于<code>MainRunLoop</code>：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">@autoreleasepool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">UIApplicationMain</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="nb">nil</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">AppDelegate</span> <span class="k">class</span><span class="p">]));</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在viewDidLoad中设置断电，然后得到以下主线程栈信息：<br>
-<img src="/images/Snip20150712_40.png" alt="" /><br>
-可以看到，UIApplicationMain内部启动了一个和主线程相关联的RunLoop（_CFRunLoopRun）。在这里也可以推断，程序进入UIApplicationMain就不会退出了。我稍微对主函数进行了如下修改，并在return语句上打印了断点：<br>
-<img src="/images/Snip20150712_41.png" alt="" /><br>
-运行程序后，并不会在断点处停下，证实了上面的推断。</p>
-
-<p>上面涉及了一个_CFRunLoopRun函数，接下来说明下iOS中访问和使用RunLoop的API：</p>
-
-<ul>
-<li>Foundation&ndash;NSRunLoop</li>
-<li>Core Foundation&ndash;CFRunLoopRef(开源)</li>
-</ul>
-
-
-<p>因为后者是开源的，且前者是在后者上针对OC的封装，所以一般是对CFRunLoopRef进行研究。<br>
-两套API对应获取RunLoop对象的方式：</p>
-
-<ul>
-<li>Foundation
-
-<ul>
-<li>[NSRunLoop currentRunLoop]; // 当前runloop</li>
-<li>[NSRunLoop mainRunLoop];// 主线程runloop</li>
-</ul>
-</li>
-<li>Core Foundation
-
-<ul>
-<li>CFRunLoopGetCurrent();// 当前runloop</li>
-<li>CFRunLoopGetMain();// 主线程runloop</li>
-</ul>
-</li>
-</ul>
-
-
-<p>值得注意的是，获取当前RunLoop都是进行懒加载的，也就是调用时自动创建线程对应的RunLoop。<br></p>
-
-<h3>RunLoop相关类：</h3>
-
-<ul>
-<li>CFRunLoopRef</li>
-<li>CFRunLoopModeRef</li>
-<li>CFRunLoopSourceRef</li>
-<li>CFRunLoopTimerRef</li>
-<li>CFRunLoopObserverRef</li>
-</ul>
-
-
-<p><img src="/images/Snip20150712_43.png" alt="类之间关系" /><br>
-以上图片说明了各个类之间的关系。<br>
-<code>CFRunLoopModeRef</code>说明：</p>
-
-<ul>
-<li>代表RunLoop的运行模式，一个RunLoop可以包含多个Mode，每个Mode可以包含多个Source、Timer、Observer</li>
-<li>每次RunLoop启动时，只能指定其中一个Mode，这个Mode就变成了CurrentMode</li>
-<li>当启动RunLoop时，如果所在Mode中没有Source、Timer、Observer，那么将不会进入RunLoop，会直接结束</li>
-<li>如果要切换Mode，只能退出Loop，再重新制定一个Mode进入</li>
-</ul>
-
-
-<p>系统默认注册了5个Mode:</p>
-
-<ul>
-<li><code>NSDefaultRunLoopMode</code>：App的默认Mode，通常主线程是在这个Mode下运行</li>
-<li><code>UITrackingRunLoopMode</code>：界面跟踪 Mode，用于 ScrollView 追踪触摸滑动，保证界面滑动时不受其他 Mode 影响</li>
-<li>UIInitializationRunLoopMode: 在刚启动 App 时第进入的第一个 Mode，启动完成后就不再使用</li>
-<li>GSEventReceiveRunLoopMode: 接受系统事件的内部 Mode，通常用不到</li>
-<li><code>NSRunLoopCommonModes</code>: 这是一个占位用的Mode，不是一种真正的Mode</li>
-</ul>
-
-
-<p>关于<code>NSRunLoopCommonModes</code>：</p>
-
-<ul>
-<li>一个Mode可以将自己标记为“Common”属性，每当 RunLoop 的内容发生变化时，RunLoop会对标记有“Common”属性的Mode进行相适应的切换，并同步Source/Observer/Timer</li>
-<li>在主线程中，kCFRunLoopDefaultMode 和 UITrackingRunLoopMode这两个Mode都是被默认标记为“Common”属性的，从输出的主线程RunLoop可以查看。<br><img src="/images/Snip20150712_42.png" alt="“Common”属性" /><br>
-－ 结合上面两点，当使用NSRunLoopCommonModes占位时，会表明使用标记为“Common”属性的Mode，在一定层度上，可以说是“拥有了两个Mode”，可以在这两个Mode中的其中任意一个进行工作</li>
-</ul>
-
-
-<p><code>CFRunLoopTimerRef</code>说明：</p>
-
-<ul>
-<li>CFRunLoopTimerRef是基于时间的触发器，它包含了一个时间长度和一个回调函数指针。当它加入到RunLoop时，RunLoop会注册对应的时间点，当时间点到时，RunLoop会被唤醒以执行那个回调</li>
-<li>CFRunLoopTimerRef大部分指的是NSTimer，它受RunLoop的Mode影响</li>
-<li><p>由于NSTimer在RunLoop中处理，所以受其影响较大，有时可能会不准确。还有一种定时器是GCD定时器，它并不在RunLoop中，所以不受其影响，也就比较精确
-接下来说明各种Mode下，NSTimer的工作情况：</p></li>
-<li><p>情况1</p>
-
-<ul>
-<li>在对创建的定时器进行模式修改前，scheduledTimerWithTimeInterval创建的定时器只在NSDefaultRunLoopMode模式下可以正常运行，当滚动UIScroolView时，模式转换成UITrackingRunLoopMode，定时器就失效了。</li>
-<li>修改成NSRunLoopCommonModes后，定时器在两个模式下都可以正常运行</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 创建的定时器默认添加到当前的RunLoop中（没有就创建），而且是NSDefaultRunLoopMode模式</span>
-</span><span class='line'><span class="bp">NSTimer</span> <span class="o">*</span><span class="n">timer</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSTimer</span> <span class="nl">scheduledTimerWithTimeInterval</span><span class="p">:</span><span class="mf">1.0</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">repeats</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 可以通过以下方法对模型进行修改</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">mainRunLoop</span><span class="p">]</span> <span class="nl">addTimer</span><span class="p">:</span><span class="n">timer</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">NSRunLoopCommonModes</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>情况2
-
-<ul>
-<li>timerWithTimeInterval创建的定时器并没有手动添加进RunLoop，所以需要手动进行添加。当添加为以下模式时，定时器只在UITrackingRunLoopMode模式下进行工作，也就是滑动UIScrollView时就会工作，停止滑动时就不工作</li>
-<li>如果把UITrackingRunLoopMode换成NSDefaultRunLoopMode，那么效果就和情况1没修改Mode前的效果一样</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSTimer</span> <span class="o">*</span><span class="n">timer</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSTimer</span> <span class="nl">timerWithTimeInterval</span><span class="p">:</span><span class="mf">1.0</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">repeats</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 在UITrackingRunLoopMode模式下定时器才会运行</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">mainRunLoop</span><span class="p">]</span> <span class="nl">addTimer</span><span class="p">:</span><span class="n">timer</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">UITrackingRunLoopMode</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><code>CFRunLoopSourceRef</code>说明：</p>
-
-<ul>
-<li>Source分类
-
-<ul>
-<li>按官方文档
-
-<ul>
-<li>Port-Based Sources</li>
-<li>Custom Input Sources</li>
-<li>Cocoa Perform Selector Sources</li>
-</ul>
-</li>
-<li>按照函数调用栈
-
-<ul>
-<li>Source0：非基于Port的
-
-<ul>
-<li>Source0本身不能主动触发事件，只包含了一个回调函数指针</li>
-</ul>
-</li>
-<li>Source1：基于Port的，通过内核和其他线程通信，接收、分发系统事件
-
-<ul>
-<li>包含了mach_port和一个回调函数指针，接收到相关消息后，会分发给Source0进行处理</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-
-<p><code>CFRunLoopObserverRef</code>说明：
-- CFRunLoopObserverRef是观察者，能够监听RunLoop的状态改变
-- 能够监听的状态</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="nf">CF_OPTIONS</span><span class="p">(</span><span class="n">CFOptionFlags</span><span class="p">,</span> <span class="n">CFRunLoopActivity</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">kCFRunLoopEntry</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">0</span><span class="p">),</span>        <span class="c1">// 进入RunLoop</span>
-</span><span class='line'>        <span class="n">kCFRunLoopBeforeTimers</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">),</span> <span class="c1">//即将处理timer</span>
-</span><span class='line'>        <span class="n">kCFRunLoopBeforeSources</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">),</span><span class="c1">//即将处理Sources</span>
-</span><span class='line'>        <span class="n">kCFRunLoopBeforeWaiting</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span><span class="p">),</span><span class="c1">//即将进入休眠</span>
-</span><span class='line'>        <span class="n">kCFRunLoopAfterWaiting</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span><span class="p">),</span> <span class="c1">//即将唤醒</span>
-</span><span class='line'>        <span class="n">kCFRunLoopExit</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">),</span>         <span class="c1">//即将退出RunLoop</span>
-</span><span class='line'>        <span class="n">kCFRunLoopAllActivities</span> <span class="o">=</span> <span class="mh">0x0FFFFFFFU</span><span class="c1">//所有活动</span>
-</span><span class='line'>    <span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>添加监听者步骤</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 创建监听着</span>
-</span><span class='line'><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span> <span class="o">=</span> <span class="n">CFRunLoopObserverCreateWithHandler</span><span class="p">(</span><span class="n">CFAllocatorGetDefault</span><span class="p">(),</span> <span class="n">kCFRunLoopBeforeTimers</span><span class="p">,</span> <span class="nb">YES</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">^</span><span class="p">(</span><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span><span class="p">,</span> <span class="n">CFRunLoopActivity</span> <span class="n">activity</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="n">activity</span><span class="p">);</span>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//    [[NSRunLoop currentRunLoop] getCFRunLoop]</span>
-</span><span class='line'><span class="c1">// 向当前runloop添加监听者</span>
-</span><span class='line'><span class="n">CFRunLoopAddObserver</span><span class="p">(</span><span class="n">CFRunLoopGetCurrent</span><span class="p">(),</span> <span class="n">observer</span><span class="p">,</span> <span class="n">kCFRunLoopDefaultMode</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 释放内存</span>
-</span><span class='line'><span class="n">CFRelease</span><span class="p">(</span><span class="n">observer</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>CF的内存管理（Core Foundation）：</p>
-
-<ul>
-<li>1.凡是带有Create、Copy、Retain等字眼的函数，创建出来的对象，都需要在最后做一次release</li>
-<li>比如CFRunLoopObserverCreate</li>
-<li>2.release函数：CFRelease(对象);</li>
-</ul>
-
-
-<h3>自动释放池释放的时间和RunLoop的关系：</h3>
-
-<ul>
-<li>注意，这里的自动释放池指的是<code>主线程的自动释放池</code>，我们看不见它的创建和销毁。自己<code>手动创建@autoreleasepool {}</code>是<code>根据代码块来的</code>，<code>出了这个代码块就释放了</code>。</li>
-<li> App启动后，苹果在主线程 RunLoop 里注册了两个 Observer，其回调都是 <code>_wrapRunLoopWithAutoreleasePoolHandler()</code>。</li>
-<li>第一个 Observer 监视的事件是 Entry(<code>即将进入Loop</code>)，其回调内会调用 _objc_autoreleasePoolPush() <code>创建自动释放池</code>。其 order 是-2147483647，优先级最高，保证创建释放池发生在其他所有回调之前。
-<br><img src="/images/Snip20150713_5.png" alt="" /></li>
-<li>第二个 Observer 监视了两个事件： BeforeWaiting(<code>准备进入休眠</code>) 时调用<em>objc_autoreleasePoolPop() 和 </em>objc_autoreleasePoolPush() <code>释放旧的池并创建新池</code>；Exit(<code>即将退出Loop</code>) 时调用 _objc_autoreleasePoolPop() 来<code>释放自动释放池</code>。这个 Observer 的 order 是 2147483647，优先级最低，保证其释放池子发生在其他所有回调之后。
-<br><img src="/images/Snip20150713_4.png" alt="" /></li>
-<li>在主线程执行的代码，通常是写在诸如事件回调、Timer回调内的。这些回调会被 RunLoop 创建好的 AutoreleasePool 环绕着，所以不会出现内存泄漏，开发者也不必显示创建 Pool 了。</li>
-<li>在<code>自己创建线程</code>时，需要<code>手动创建</code>自动释放池<code>AutoreleasePool</code></li>
-</ul>
-
-
-<p>综合上面，可以得到以下结论：<br>
-<img src="/images/Snip20150713_12.png" alt="" /></p>
-
-<h3>@autoreleasepool {}内部实现</h3>
-
-<p>有以下代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">@autoreleasepool</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>查看编译转换后的代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="cm">/* @autoreleasepool */</span> <span class="p">{</span> <span class="n">__AtAutoreleasePool</span> <span class="n">__autoreleasepool</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>__AtAutoreleasePool是什么呢？找到其定义：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">__AtAutoreleasePool</span> <span class="p">{</span>
-</span><span class='line'>  <span class="n">__AtAutoreleasePool</span><span class="p">()</span> <span class="p">{</span><span class="n">atautoreleasepoolobj</span> <span class="o">=</span> <span class="n">objc_autoreleasePoolPush</span><span class="p">();}</span>
-</span><span class='line'>  <span class="o">~</span><span class="n">__AtAutoreleasePool</span><span class="p">()</span> <span class="p">{</span><span class="n">objc_autoreleasePoolPop</span><span class="p">(</span><span class="n">atautoreleasepoolobj</span><span class="p">);}</span>
-</span><span class='line'>  <span class="kt">void</span> <span class="o">*</span> <span class="n">atautoreleasepoolobj</span><span class="p">;</span>
-</span><span class='line'><span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>可以看到__AtAutoreleasePool是一个类：
-  - 其构造函数使用objc_autoreleasePoolPush创建了一个线程池，并保存给成员变量atautoreleasepoolobj。
-  - 其析构函数使用objc_autoreleasePoolPop销毁了线程池</p>
-
-<p>结合以上信息，main函数里面的__autoreleasepool是一个局部变量。当其创建时，会调用构造函数创建线程池，出了{}代码块时，局部变量被销毁，调用其析构函数销毁线程池。</p>
-
-<h2>RunLoop实际应用</h2>
-
-<h3>常驻线程</h3>
-
-<p>当创建一个线程，并且希望它一直存在时，就需要使用到RunLoop，否则线程一执行完任务就会停止。
-要向线程存在，需要有强指针引用他，其他的代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 属性</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSThread</span> <span class="o">*</span><span class="kr">thread</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 创建线程</span>
-</span><span class='line'><span class="n">_thread</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="nl">object</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'><span class="p">[</span><span class="n">_thread</span> <span class="n">start</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesBegan:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="c1">// 点击时使线程_thread执行test方法</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:</span><span class="n">_thread</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">test</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;__test__&quot;</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>就单单以上代码，是不起效果的，因为线程没有RunLoop，执行完test后就停止了，无法再让其执行任务（强制start会崩溃）。<br>
-通过在<code>子线程中给RunLoop添加监听者</code>，可以了解下<code>performSelector:onThread:</code>内部做的事情：</p>
-
-<ul>
-<li>调用performSelector:onThread: 时，实际上它会创建一个<code>Source0</code>加到<code>对应线程的RunLoop</code>里去，所以，如果对应的线程没有RunLoop，这个方法就会失效<br>
-<img src="/images/Snip20150716_5.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 这句在主线程中调用</span>
-</span><span class='line'><span class="c1">// _thread就是下面的线程</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:</span><span class="n">_thread</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>performSelecter:afterDelay:也是一样的内部操作方法，只是创建的<code>Timer</code>添加到<code>当前线程</code>的RunLoop中了<br>
-<img src="/images/Snip20150716_6.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 创建RunLoop即将唤醒监听者</span>
-</span><span class='line'><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span> <span class="o">=</span> <span class="n">CFRunLoopObserverCreateWithHandler</span><span class="p">(</span><span class="n">CFAllocatorGetDefault</span><span class="p">(),</span> <span class="n">kCFRunLoopBeforeTimers</span><span class="p">,</span> <span class="nb">YES</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">^</span><span class="p">(</span><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span><span class="p">,</span> <span class="n">CFRunLoopActivity</span> <span class="n">activity</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 打印唤醒前的RunLoop</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%ld--%@&quot;</span><span class="p">,</span> <span class="n">activity</span><span class="p">,</span> <span class="p">[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]);</span>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 向当前runloop添加监听者</span>
-</span><span class='line'><span class="n">CFRunLoopAddObserver</span><span class="p">(</span><span class="n">CFRunLoopGetCurrent</span><span class="p">(),</span> <span class="n">observer</span><span class="p">,</span> <span class="n">kCFRunLoopDefaultMode</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 释放内存</span>
-</span><span class='line'><span class="n">CFRelease</span><span class="p">(</span><span class="n">observer</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">setView</span><span class="p">:)</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">afterDelay</span><span class="p">:</span><span class="mf">2.0</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c1">// 使model不为空</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]</span> <span class="nl">addPort</span><span class="p">:[</span><span class="bp">NSPort</span> <span class="n">port</span><span class="p">]</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">NSDefaultRunLoopMode</span><span class="p">];</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]</span> <span class="n">run</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>综合上面的解释，可以知道performSelector:onThread:没有起作用，是因为_thread线程内部没有RunLoop，所以需要在线程内部创建RunLoop。<br>
-创建RunLoop并使对应线程成为常驻线程的常见方式有2:</p>
-
-<ul>
-<li>方式1
-
-<ul>
-<li><p>向创建的RunLoop添加NSPort（Sources），让Mode不为空，RunLoop能进入循环不会退出</p>
-
-<pre><code class="objc">[[NSRunLoop currentRunLoop] addPort:[NSPort port] forMode:NSDefaultRunLoopMode];
-[[NSRunLoop currentRunLoop] run];
-</code></pre></li>
-</ul>
-</li>
-<li>方式2
-
-<ul>
-<li><p>让RunLoop一直尝试运行，判断Mode是否为空，不是为空就进入RunLoop循环</p>
-
-<pre><code class="objc">while (1) {
-    [[NSRunLoop currentRunLoop] run];
-}
-</code></pre></li>
-</ul>
-</li>
-</ul>
-
-
-<p><code>AFNetWorking</code>就使用到了常驻线程：</p>
-
-<ul>
-<li>创建常驻线程</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">networkRequestThreadEntryPoint:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">__unused</span> <span class="n">object</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">@autoreleasepool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">currentThread</span><span class="p">]</span> <span class="nl">setName</span><span class="p">:</span><span class="s">@&quot;AFNetworking&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 创建RunLoop并向Mode添加NSMachPort，使RunLoop不会退出</span>
-</span><span class='line'>        <span class="bp">NSRunLoop</span> <span class="o">*</span><span class="n">runLoop</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">runLoop</span> <span class="nl">addPort</span><span class="p">:[</span><span class="bp">NSMachPort</span> <span class="n">port</span><span class="p">]</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">NSDefaultRunLoopMode</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">runLoop</span> <span class="n">run</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">+</span> <span class="p">(</span><span class="bp">NSThread</span> <span class="o">*</span><span class="p">)</span><span class="n">networkRequestThread</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">static</span> <span class="bp">NSThread</span> <span class="o">*</span><span class="n">_networkRequestThread</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">oncePredicate</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">oncePredicate</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
-</span><span class='line'>        <span class="n">_networkRequestThread</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">networkRequestThreadEntryPoint</span><span class="p">:)</span> <span class="nl">object</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">_networkRequestThread</span> <span class="n">start</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">_networkRequestThread</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>使用常驻线程</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">start</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">lock</span> <span class="n">lock</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="nb">self</span> <span class="n">isCancelled</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">cancelConnection</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:[[</span><span class="nb">self</span> <span class="k">class</span><span class="p">]</span> <span class="n">networkRequestThread</span><span class="p">]</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span> <span class="nl">modes</span><span class="p">:[</span><span class="nb">self</span><span class="p">.</span><span class="n">runLoopModes</span> <span class="n">allObjects</span><span class="p">]];</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">([</span><span class="nb">self</span> <span class="n">isReady</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">AFOperationExecutingState</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">operationDidStart</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:[[</span><span class="nb">self</span> <span class="k">class</span><span class="p">]</span> <span class="n">networkRequestThread</span><span class="p">]</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span> <span class="nl">modes</span><span class="p">:[</span><span class="nb">self</span><span class="p">.</span><span class="n">runLoopModes</span> <span class="n">allObjects</span><span class="p">]];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">lock</span> <span class="n">unlock</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>给子线程开启定时器</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">_thread</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="nl">object</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'><span class="p">[</span><span class="n">_thread</span> <span class="n">start</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 子线程添加定时器</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">subTimer</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="c1">// 默认创建RunLoop并向其model添加timer，所以后续只需要让RunLoop run起来即可</span>
-</span><span class='line'>    <span class="p">[</span><span class="bp">NSTimer</span> <span class="nl">scheduledTimerWithTimeInterval</span><span class="p">:</span><span class="mf">1.0</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">repeats</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 貌似source1不为空，source0就不为空</span>
-</span><span class='line'><span class="c1">//    [[NSRunLoop currentRunLoop] addPort:[NSPort port] forMode:NSDefaultRunLoopMode];</span>
-</span><span class='line'>    <span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]</span> <span class="n">run</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>让某些事件（行为、任务）在特定模式下执行</h3>
-
-<p>比如图片的设置，在UIScrollView滚动的情况下，我不希望设置图片，等停止滚动了再设置图片，可以用以下代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 图片只在NSDefaultRunLoopMode模式下会进行设置显示</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageView</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">setImage</span><span class="p">:)</span> <span class="nl">withObject</span><span class="p">:[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;Snip20150712_39&quot;</span><span class="p">]</span> <span class="nl">afterDelay</span><span class="p">:</span><span class="mf">2.0</span> <span class="nl">inModes</span><span class="p">:</span><span class="l">@[</span><span class="n">NSDefaultRunLoopMode</span><span class="l">]</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>先设置任务在NSDefaultRunLoopMode模式在执行，这样，在滚动使RunLoop进入UITrackingRunLoopMode时，就不会进行图片的设置了。</p>
-
-<h3>控制定时器在特定模式下执行</h3>
-
-<p>上文的《<code>CFRunLoopTimerRef</code>说明：》中已经指出</p>
-
-<h3>添加Observer监听RunLoop的状态</h3>
-
-<p>监听点击事件的处理（在所有点击事件之前做一些事情）<br>
-具体步骤在《<code>CFRunLoopObserverRef</code>说明：》中已写明</p>
-
-<h1>GCD定时器</h1>
-
-<p>注意：</p>
-
-<ul>
-<li>dispatch_source_t是个类，这点比较特殊</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());</span>
-</span><span class='line'>    <span class="kt">dispatch_source_t</span> <span class="n">timer</span> <span class="o">=</span> <span class="n">dispatch_source_create</span><span class="p">(</span><span class="n">DISPATCH_SOURCE_TYPE_TIMER</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">));</span>
-</span><span class='line'>    <span class="n">dispatch_source_set_timer</span><span class="p">(</span><span class="n">timer</span><span class="p">,</span> <span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">,</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">dispatch_source_set_event_handler</span><span class="p">(</span><span class="n">timer</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;__&quot;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span> <span class="p">[</span><span class="bp">NSThread</span> <span class="n">currentThread</span><span class="p">]);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">static</span> <span class="bp">NSInteger</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">count</span><span class="o">++</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="c1">// 为什么dispatch_cancel不能用_timer?/</span>
-</span><span class='line'>            <span class="c1">// Controlling expression type &#39;__strong dispatch_source_t&#39; (aka &#39;NSObject&lt;OS_dispatch_source&gt; *__strong&#39;) not compatible with any generic association type</span>
-</span><span class='line'>            <span class="c1">// 类型错误，可能dispatch_cancel是宏定义，需要的就是方法调用，而不是变量</span>
-</span><span class='line'><span class="c1">//            dispatch_cancel(self.timer);</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">dispatch_source_cancel</span><span class="p">(</span><span class="n">_timer</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="c1">// 定时器默认是停止的，需要手动恢复</span>
-</span><span class='line'>    <span class="n">dispatch_resume</span><span class="p">(</span><span class="n">timer</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 需要一个强引用保证timer不被释放</span>
-</span><span class='line'>    <span class="n">_timer</span> <span class="o">=</span> <span class="n">timer</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -1509,6 +1838,10 @@
 </section><section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-30-ioszhi-shi-sui-pian-er/">iOS知识碎片二</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015-09-26-phphou-tai-bian-cheng-chu-tan/">PHP后台编程初探</a>

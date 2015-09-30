@@ -9,14 +9,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="这里主要纪录一些常用的函数： 类 1
-2
-3
-4
-5
-// 根据类，获取类名
-const char *class_getName(Class cls) // 根据类名获取类
-Class objc_getClass(const char *name) 注意， &hellip;">
+  <meta name="description" content="最近用到了sunnyxx的forkingdog系列(UIView-FDCollapsibleConstraints)，纪录下关联对象和MethodSwizzling在实际场景中的应用。 基本概念 关联对象 关联对象操作函数 设置关联对象： /** * 设置关联对象 * * @param &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -72,6 +65,949 @@ Class objc_getClass(const char *name) 注意， &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-07-14-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-07-14T14:53:13+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:53 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>最近用到了sunnyxx的forkingdog系列(<a href="https://github.com/forkingdog/UIView-FDCollapsibleConstraints">UIView-FDCollapsibleConstraints</a>)，纪录下关联对象和MethodSwizzling在实际场景中的应用。</p>
+
+<h2>基本概念</h2>
+
+<h4>关联对象</h4>
+
+<ul>
+<li>关联对象操作函数
+
+<ul>
+<li>设置关联对象：</li>
+</ul>
+
+
+<pre><code class="objc">/**
+ *  设置关联对象
+ *
+ *  @param object 源对象
+ *  @param key    关联对象的key
+ *  @param value  关联的对象
+ *  @param policy 关联策略
+ */
+void objc_setAssociatedObject(id object, const void *key, id value, objc_AssociationPolicy policy)
+</code></pre>
+
+<ul>
+<li>获取关联对象：</li>
+</ul>
+
+
+<pre><code class="objc">/**
+ *  获取关联对象
+ *
+ *  @param object 源对象
+ *  @param key    关联对象的key
+ *
+ *  @return 关联的对象
+ */
+id objc_getAssociatedObject(id object, const void *key)
+</code></pre>
+
+其中设置关联对象的策略有以下5种：
+
+<ul>
+<li>和MRC的内存操作retain、assign方法效果差不多
+
+<ul>
+<li>比如设置的关联对象是一个UIView，并且这个UIView已经有父控件时，可以使用OBJC_ASSOCIATION_ASSIGN</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">OBJC_ASSOCIATION_ASSIGN</span>               <span class="c1">// 对关联对象进行弱引用</span>
+</span><span class='line'><span class="n">OBJC_ASSOCIATION_RETAIN_NONATOMIC</span>   <span class="c1">// 对关联对象进行强引用(非原子)</span>
+</span><span class='line'><span class="n">OBJC_ASSOCIATION_COPY_NONATOMIC</span>     <span class="c1">// 对关联对象进行拷贝引用(非原子)</span>
+</span><span class='line'><span class="n">OBJC_ASSOCIATION_RETAIN</span>                <span class="c1">// 对关联对象进行强引用</span>
+</span><span class='line'><span class="n">OBJC_ASSOCIATION_COPY</span>              <span class="c1">// 对关联对象进行拷贝引用</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>关联对象在一些第三方框架的分类中常常见到，这里在分析前先看下分类的结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="kt">category_t</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 类名</span>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 类</span>
+</span><span class='line'>    <span class="kt">classref_t</span> <span class="n">cls</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 实例方法</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="kt">method_list_t</span> <span class="o">*</span><span class="n">instanceMethods</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 类方法</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="kt">method_list_t</span> <span class="o">*</span><span class="n">classMethods</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 协议</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="kt">protocol_list_t</span> <span class="o">*</span><span class="n">protocols</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// 属性</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="kt">property_list_t</span> <span class="o">*</span><span class="n">instanceProperties</span><span class="p">;</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>从以上的分类结构，可以看出，分类中是不能添加成员变量的，也就是Ivar类型。所以，如果想在分类中<code>存储某些数据</code>时，关联对象就是在这种情况下的常用选择。</p>
+
+<p>需要注意的是，<code>关联对象并不是成员变量</code>，关联对象是由一个<code>全局哈希表</code>存储的键值对中的值。</p>
+
+<p>全局哈希表的定义如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">class</span> <span class="n">AssociationsManager</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">static</span> <span class="kt">spinlock_t</span> <span class="n">_lock</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">static</span> <span class="n">AssociationsHashMap</span> <span class="o">*</span><span class="n">_map</span><span class="p">;</span>               <span class="c1">// associative references:  object pointer -&gt; PtrPtrHashMap.</span>
+</span><span class='line'><span class="nl">public</span><span class="p">:</span>
+</span><span class='line'>    <span class="n">AssociationsManager</span><span class="p">()</span>   <span class="p">{</span> <span class="n">spinlock_lock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_lock</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>    <span class="o">~</span><span class="n">AssociationsManager</span><span class="p">()</span>  <span class="p">{</span> <span class="n">spinlock_unlock</span><span class="p">(</span><span class="o">&amp;</span><span class="n">_lock</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">AssociationsHashMap</span> <span class="o">&amp;</span><span class="n">associations</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">_map</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span>
+</span><span class='line'>            <span class="n">_map</span> <span class="o">=</span> <span class="n">new</span> <span class="n">AssociationsHashMap</span><span class="p">();</span>
+</span><span class='line'>        <span class="k">return</span> <span class="o">*</span><span class="n">_map</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中的AssociationsHashMap就是那个全局哈希表，而注释中也说明的很清楚了：哈希表中存储的键值对是<code>（源对象指针 : 另一个哈希表）</code>。而这个value，即ObjectAssociationMap对应的哈希表如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// hash_map和unordered_map是模版类</span>
+</span><span class='line'><span class="c1">// 查看源码后可以看出AssociationsHashMap的key是disguised_ptr_t类型，value是ObjectAssociationMap *类型</span>
+</span><span class='line'><span class="c1">// ObjectAssociationMap的key是void *类型，value是ObjcAssociation类型</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#if TARGET_OS_WIN32</span>
+</span><span class='line'>    <span class="k">typedef</span> <span class="n">hash_map</span> <span class="n">ObjectAssociationMap</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">typedef</span> <span class="n">hash_map</span> <span class="n">AssociationsHashMap</span><span class="p">;</span>
+</span><span class='line'><span class="cp">#else</span>
+</span><span class='line'>    <span class="k">typedef</span> <span class="n">ObjcAllocator</span> <span class="o">&gt;</span> <span class="n">ObjectAssociationMapAllocator</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">class</span> <span class="nl">ObjectAssociationMap</span> <span class="p">:</span> <span class="n">public</span> <span class="n">std</span><span class="o">::</span><span class="n">map</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nl">public</span><span class="p">:</span>
+</span><span class='line'>        <span class="kt">void</span> <span class="o">*</span><span class="n">operator</span> <span class="n">new</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="o">::</span><span class="n">_malloc_internal</span><span class="p">(</span><span class="n">n</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kt">void</span> <span class="n">operator</span> <span class="n">delete</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span><span class="p">)</span> <span class="p">{</span> <span class="o">::</span><span class="n">_free_internal</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>    <span class="k">typedef</span> <span class="n">ObjcAllocator</span> <span class="o">&gt;</span> <span class="n">AssociationsHashMapAllocator</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">class</span> <span class="nl">AssociationsHashMap</span> <span class="p">:</span> <span class="n">public</span> <span class="n">unordered_map</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nl">public</span><span class="p">:</span>
+</span><span class='line'>        <span class="kt">void</span> <span class="o">*</span><span class="n">operator</span> <span class="n">new</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="o">::</span><span class="n">_malloc_internal</span><span class="p">(</span><span class="n">n</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kt">void</span> <span class="n">operator</span> <span class="n">delete</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span><span class="p">)</span> <span class="p">{</span> <span class="o">::</span><span class="n">_free_internal</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中的ObjectAssociationMap就是value的类型。同时，也可以知道ObjectAssociationMap的键值对类型为<code>（关联对象对应的key : 关联对象）</code>，也就是函数objc_setAssociatedObject的对应的key:value参数。</p>
+
+<p>大部分情况下，关联对像会使用<code>getter方法的SEL当作key</code>(getter方法中可以这样表示：_cmd)。</p>
+
+<p>更多和关联对象有关的底层信息，可以查看<a href="http://tech.meituan.com/DiveIntoCategory.html">Dive into Category</a></p>
+
+<h4>MethodSwizzling</h4>
+
+<p>MethodSwizzling主要原理就是利用runtime的动态特性，<code>交换方法对应的实现</code>，也就是<code>IMP</code>。
+通常，MethodSwizzling的封装为：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">load</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="c1">// 源方法－－原始的方法</span>
+</span><span class='line'><span class="c1">// 目的方法－－我们自己实现的，用来替换源方法</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">onceToken</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// MethodSwizzling代码只需要在类加载时调用一次，并且需要线程安全环境</span>
+</span><span class='line'>    <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">onceToken</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="kt">Class</span> <span class="k">class</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="k">class</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 获取方法的SEL</span>
+</span><span class='line'>        <span class="kt">SEL</span> <span class="n">origionSel</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="n">viewDidLoad</span><span class="p">);</span>
+</span><span class='line'>        <span class="kt">SEL</span> <span class="n">swizzlingSel</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="n">tpc_viewDidLoad</span><span class="p">);</span>
+</span><span class='line'>        <span class="c1">//    IMP origionMethod = class_getMethodImplementation(class, origionSel);</span>
+</span><span class='line'>        <span class="c1">//    IMP swizzlingMethod = class_getMethodImplementation(class, swizzlingSel);</span>
+</span><span class='line'>        <span class="c1">// 根据SEL获取对应的Method</span>
+</span><span class='line'>        <span class="n">Method</span> <span class="n">origionMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">origionSel</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">Method</span> <span class="n">swizzlingMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzlingSel</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 向类中添加目的方法对应的Method</span>
+</span><span class='line'>        <span class="kt">BOOL</span> <span class="n">hasAdded</span> <span class="o">=</span> <span class="n">class_addMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">origionSel</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">swizzlingMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">swizzlingMethod</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 交换源方法和目的方法的Method方法实现</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">hasAdded</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">class_replaceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzlingSel</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">));</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">,</span> <span class="n">swizzlingMethod</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>为了便于区别，这里列出Method的结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="kt">method_t</span> <span class="o">*</span><span class="n">Method</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// method_t</span>
+</span><span class='line'><span class="k">struct</span> <span class="kt">method_t</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">SEL</span> <span class="n">name</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">types</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">IMP</span> <span class="n">imp</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">...</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>实现MethodSwizzling需要了解的有以下几个常用函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 返回方法的具体实现</span>
+</span><span class='line'><span class="kt">IMP</span> <span class="nf">class_getMethodImplementation</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span> <span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 返回方法描述</span>
+</span><span class='line'><span class="n">Method</span> <span class="n">class_getInstanceMethod</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span> <span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 添加方法</span>
+</span><span class='line'><span class="kt">BOOL</span> <span class="n">class_addMethod</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span><span class="p">,</span> <span class="kt">IMP</span> <span class="n">imp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">types</span> <span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 替代方法的实现</span>
+</span><span class='line'><span class="kt">IMP</span> <span class="n">class_replaceMethod</span> <span class="p">(</span> <span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">name</span><span class="p">,</span> <span class="kt">IMP</span> <span class="n">imp</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">types</span> <span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 返回方法的实现</span>
+</span><span class='line'><span class="kt">IMP</span> <span class="n">method_getImplementation</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 获取描述方法参数和返回值类型的字符串</span>
+</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="nf">method_getTypeEncoding</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m</span> <span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 交换两个方法的实现</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">method_exchangeImplementations</span> <span class="p">(</span> <span class="n">Method</span> <span class="n">m1</span><span class="p">,</span> <span class="n">Method</span> <span class="n">m2</span> <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>介绍MethodSwizzling的文章很多，更多和MethodSwizzling有关的信息，可以查看<a href="http://blog.csdn.net/yiyaaixuexi/article/details/9374411">Objective-C的hook方案（一）:  Method Swizzling</a></p>
+
+<h2>针对UIView-FDCollapsibleConstraints的应用</h2>
+
+<p>UIView-FDCollapsibleConstraints是sunnyxx阳神写的一个UIView分类，可以实现仅在IB中对UIView上的约束进行设置，就达到以下效果，而不需要编写改变约束的代码：（图片来源[UIView-FDCollapsibleConstraints]</p>
+
+<p><img src="/images/screenshot0.gif" alt="" /><br>
+<img src="/images/screenshot1.gif" alt="" /><br></p>
+
+<h2>源代码解析</h2>
+
+<ul>
+<li><p>实现思路</p>
+
+<ul>
+<li><code>将需要和view关联且需要动态修改的约束添加进一个特定的数组里面</code></li>
+<li><code>根据view的内容是否为nil，对特定数组中的约束值进行统一设置</code></li>
+</ul>
+</li>
+<li><p>头文件</p>
+
+<ul>
+<li><code>IBOutletCollection</code>表示xib中的相同的控件连接到一个数组中（<a href="http://southpeak.github.io/blog/2015/05/10/ioszhi-shi-xiao-ji-di-%5B%3F%5D-qi-2015-dot-05-dot-10/">介绍链接</a>）
+
+<ul>
+<li>这里表示将NSLayoutConstraint控件添加到fd_collapsibleConstraints数组中</li>
+<li>IBOutletCollectionh和IBOutlet操作方式一样，需要<code>在IB中进行相应的拖拽</code>才能把对应的控件加到数组中（<code>UIView-&gt;NSLayoutConstraint</code>）</li>
+<li>设置了IBOutletCollection之后，当从storybooard或者xib中加载时，根据<code>KVC原理</code>，<code>最终会</code>调用fd_collapsibleConstraints的setter方法，然后就可以在其setter方法中做相应的操作了</li>
+</ul>
+</li>
+<li><code>IBInspectable</code> 表示这个属性可以在IB中更改，如下图
+<img src="/images/Snip20150704_1.png" alt="" />
+
+<ul>
+<li>还有一个这里没用，<code>IB_DESIGNABLE</code>，这个表示可以在IB中实时显示修改的效果</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="bp">UIView</span> <span class="nl">(FDCollapsibleConstraints)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// Assigning this property immediately disables the view&#39;s collapsible constraints&#39;</span>
+</span><span class='line'><span class="c1">/// by setting their constants to zero.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">assign</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">fd_collapsed</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// Specify constraints to be affected by &quot;fd_collapsed&quot; property by connecting in</span>
+</span><span class='line'><span class="c1">/// Interface Builder.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">copy</span><span class="p">)</span> <span class="n">IBOutletCollection</span><span class="p">(</span><span class="bp">NSLayoutConstraint</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">fd_collapsibleConstraints</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="bp">UIView</span> <span class="nl">(FDAutomaticallyCollapseByIntrinsicContentSize)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// Enable to automatically collapse constraints in &quot;fd_collapsibleConstraints&quot; when</span>
+</span><span class='line'><span class="c1">/// you set or indirectly set this view&#39;s &quot;intrinsicContentSize&quot; to {0, 0} or absent.</span>
+</span><span class='line'><span class="c1">///</span>
+</span><span class='line'><span class="c1">/// For example:</span>
+</span><span class='line'><span class="c1">///  imagesView.images = nil;</span>
+</span><span class='line'><span class="c1">///  label.text = nil, label.text = @&quot;&quot;;</span>
+</span><span class='line'><span class="c1">///</span>
+</span><span class='line'><span class="c1">/// &quot;NO&quot; by default, you may enable it by codes.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">assign</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">fd_autoCollapse</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">/// &quot;IBInspectable&quot; property, more friendly to Interface Builder.</span>
+</span><span class='line'><span class="c1">/// You gonna find this attribute in &quot;Attribute Inspector&quot;, toggle &quot;On&quot; to enable.</span>
+</span><span class='line'><span class="c1">/// Why not a &quot;fd_&quot; prefix? Xcode Attribute Inspector will clip it like a shit.</span>
+</span><span class='line'><span class="c1">/// You should not assgin this property directly by code, use &quot;fd_autoCollapse&quot; instead.</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">assign</span><span class="p">,</span> <span class="k">getter</span><span class="o">=</span><span class="n">fd_autoCollapse</span><span class="p">)</span> <span class="n">IBInspectable</span> <span class="kt">BOOL</span> <span class="n">autoCollapse</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>_FDOriginalConstantStorage
+
+<ul>
+<li>在这个分类中，给NSLayoutConstraint约束关联一个存储<code>约束初始值</code>的浮点数，以便在修改约束值后，可以还原
+
+<ul>
+<li>objc_setAssociatedObject 设置关联对象</li>
+<li>objc_getAssociatedObject 获取关联对象</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">/// A stored property extension for NSLayoutConstraint&#39;s original constant.</span>
+</span><span class='line'><span class="k">@implementation</span> <span class="bp">NSLayoutConstraint</span> <span class="nl">(_FDOriginalConstantStorage)</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 给NSLayoutConstraint关联一个初始约束值</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setFd_originalConstant:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">originalConstant</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">objc_setAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="k">@selector</span><span class="p">(</span><span class="n">fd_originalConstant</span><span class="p">),</span> <span class="l">@(</span><span class="n">originalConstant</span><span class="l">)</span><span class="p">,</span> <span class="n">OBJC_ASSOCIATION_RETAIN</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nf">fd_originalConstant</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="cp">#if CGFLOAT_IS_DOUBLE</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">)</span> <span class="n">doubleValue</span><span class="p">];</span>
+</span><span class='line'><span class="cp">#else</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">)</span> <span class="n">floatValue</span><span class="p">];</span>
+</span><span class='line'><span class="cp">#endif</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>FDCollapsibleConstraints
+
+<ul>
+<li>实现fd_collapsibleConstraints属性的setter和getter方法 (<code>关联一个存储约束的对象</code>)
+
+<ul>
+<li>在<code>getter方法中创建关联对象constraints</code>（和<code>懒加载</code>的方式类似，不过不是创建成员变量）</li>
+<li>在<code>setter方法中设置约束的初始值</code>，并<code>添加进关联对象constraints</code>中，方便统一操作</li>
+</ul>
+</li>
+<li>从IB中关联的约束，根据KVC地层原理，最终会调用setFd_collapsibleConstraints:方法，也就是这一步不需要手动调用，系统自己完成（在awakeFromNib之前完成IB这些值的映射）</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="p">)</span><span class="n">fd_collapsibleConstraints</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// 获取对象的所有约束关联值</span>
+</span><span class='line'>    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">constraints</span> <span class="o">=</span> <span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">constraints</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">constraints</span> <span class="o">=</span> <span class="l">@[]</span><span class="p">.</span><span class="n">mutableCopy</span><span class="p">;</span>
+</span><span class='line'>        <span class="c1">// 设置对象的所有约束关联值</span>
+</span><span class='line'>        <span class="n">objc_setAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">,</span> <span class="n">constraints</span><span class="p">,</span> <span class="n">OBJC_ASSOCIATION_RETAIN</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">constraints</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// IBOutletCollection表示xib中的相同的控件连接到一个数组中</span>
+</span><span class='line'>  <span class="c1">// 因为设置了IBOutletCollection，所以从xib使用KVC加载时，最终会调用set方法</span>
+</span><span class='line'>  <span class="c1">// 然后就来到了这个方法</span>
+</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setFd_collapsibleConstraints</span><span class="p">:(</span><span class="bp">NSArray</span> <span class="o">*</span><span class="p">)</span><span class="n">fd_collapsibleConstraints</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Hook assignments to our custom `fd_collapsibleConstraints` property.</span>
+</span><span class='line'>    <span class="c1">// 返回保存原始约束的数组，使用关联对象</span>
+</span><span class='line'>    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">constraints</span> <span class="o">=</span> <span class="p">(</span><span class="bp">NSMutableArray</span> <span class="o">*</span><span class="p">)</span><span class="nb">self</span><span class="p">.</span><span class="n">fd_collapsibleConstraints</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="n">fd_collapsibleConstraints</span> <span class="nl">enumerateObjectsUsingBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSLayoutConstraint</span> <span class="o">*</span><span class="n">constraint</span><span class="p">,</span> <span class="bp">NSUInteger</span> <span class="n">idx</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="o">*</span><span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// Store original constant value</span>
+</span><span class='line'>        <span class="c1">// 保存原始的约束</span>
+</span><span class='line'>        <span class="n">constraint</span><span class="p">.</span><span class="n">fd_originalConstant</span> <span class="o">=</span> <span class="n">constraint</span><span class="p">.</span><span class="n">constant</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">constraints</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">constraint</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>使用Method Swizzling交换自己的和系统的-setValue:forKey:方法
+
+<ul>
+<li>实现自己的KVC的-setValue:forKey:方法</li>
+<li>Method Swizzling的完全体</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">load</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'><span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">onceToken</span><span class="p">;</span>
+</span><span class='line'><span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">onceToken</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>    <span class="kt">Class</span> <span class="k">class</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="k">class</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">SEL</span> <span class="n">origionSel</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="n">viewDidLoad</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">SEL</span> <span class="n">swizzlingSel</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="n">tpc_viewDidLoad</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">//    IMP origionMethod = class_getMethodImplementation(class, origionSel);</span>
+</span><span class='line'>    <span class="c1">//    IMP swizzlingMethod = class_getMethodImplementation(class, swizzlingSel);</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">origionMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">origionSel</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">swizzlingMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzlingSel</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">BOOL</span> <span class="n">hasAdded</span> <span class="o">=</span> <span class="n">class_addMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">origionSel</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">swizzlingMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">swizzlingMethod</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">hasAdded</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">class_replaceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzlingSel</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">));</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">,</span> <span class="n">swizzlingMethod</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>这一步作者的意思是这种类型的IBOutlet不会触发其setter方法，但是经过测试，注释掉这段代码后，系统还是自己触发了setter方法，说明这种IBOutlet还是可以触发setter方法的。所以，即使没有这一段代码，应该也是可行的<br>
+<img src="/images/Snip20150704_8.png" alt="" /><br></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#pragma mark - Hacking KVC</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// load先从原类,再调用分类的开始调用</span>
+</span><span class='line'><span class="c1">// 也就是调用的顺序是</span>
+</span><span class='line'><span class="c1">// 原类</span>
+</span><span class='line'><span class="c1">// FDCollapsibleConstraints</span>
+</span><span class='line'><span class="c1">// FDAutomaticallyCollapseByIntrinsicContentSize</span>
+</span><span class='line'><span class="c1">// 所以并不冲突</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">load</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// Swizzle setValue:forKey: to intercept assignments to `fd_collapsibleConstraints`</span>
+</span><span class='line'>  <span class="c1">// from Interface Builder. We should not do so by overriding setvalue:forKey:</span>
+</span><span class='line'>  <span class="c1">// as the primary class implementation would be bypassed.</span>
+</span><span class='line'>  <span class="kt">SEL</span> <span class="n">originalSelector</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="nl">setValue</span><span class="p">:</span><span class="nl">forKey</span><span class="p">:);</span>
+</span><span class='line'>  <span class="kt">SEL</span> <span class="n">swizzledSelector</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="nl">fd_setValue</span><span class="p">:</span><span class="nl">forKey</span><span class="p">:);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kt">Class</span> <span class="k">class</span> <span class="o">=</span> <span class="bp">UIView</span><span class="p">.</span><span class="k">class</span><span class="p">;</span>
+</span><span class='line'>  <span class="n">Method</span> <span class="n">originalMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">originalSelector</span><span class="p">);</span>
+</span><span class='line'>  <span class="n">Method</span> <span class="n">swizzledMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzledSelector</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">,</span> <span class="n">swizzledMethod</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// xib也就是xml，再加载进行decode时，会调用setValue:forKey:，把他的方法替换成自身的，然后获取添加的约束</span>
+</span><span class='line'><span class="c1">// 不使用重写这个KVC方法的方式，是因为这样会覆盖view本身在这个方法中进行的操作</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">fd_setValue:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">value</span> <span class="nf">forKey:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">key</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="bp">NSString</span> <span class="o">*</span><span class="n">injectedKey</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithUTF8String</span><span class="p">:</span><span class="n">sel_getName</span><span class="p">(</span><span class="k">@selector</span><span class="p">(</span><span class="n">fd_collapsibleConstraints</span><span class="p">))];</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="p">([</span><span class="n">key</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">injectedKey</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>      <span class="c1">// This kind of IBOutlet won&#39;t trigger property&#39;s setter, so we forward it.</span>
+</span><span class='line'>      <span class="c1">// 作者的意思是，IBOutletCollection不会触发对应属性的setter方法，所以这里执行手动调用</span>
+</span><span class='line'>      <span class="nb">self</span><span class="p">.</span><span class="n">fd_collapsibleConstraints</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>      <span class="c1">// Forward the rest of KVC&#39;s to original implementation.</span>
+</span><span class='line'>      <span class="p">[</span><span class="nb">self</span> <span class="nl">fd_setValue</span><span class="p">:</span><span class="n">value</span> <span class="nl">forKey</span><span class="p">:</span><span class="n">key</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>设置对应的约束值
+
+<ul>
+<li>注意，这里只要传入的是YES，那么，这个UIView对应的存入<code>constraints关联对象的所有约束</code>，都会置为0</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#pragma mark - Dynamic Properties</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setFd_collapsed:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">collapsed</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">fd_collapsibleConstraints</span> <span class="nl">enumerateObjectsUsingBlock</span><span class="p">:</span>
+</span><span class='line'> <span class="o">^</span><span class="p">(</span><span class="bp">NSLayoutConstraint</span> <span class="o">*</span><span class="n">constraint</span><span class="p">,</span> <span class="bp">NSUInteger</span> <span class="n">idx</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="o">*</span><span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>     <span class="k">if</span> <span class="p">(</span><span class="n">collapsed</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>         <span class="c1">// 如果view的内容为nil，则将view关联的constraints对象所有值设置为0</span>
+</span><span class='line'>         <span class="n">constraint</span><span class="p">.</span><span class="n">constant</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="c1">// 如果view的内容不为nil，则将view关联的constraints对象所有值返回成原值</span>
+</span><span class='line'>         <span class="n">constraint</span><span class="p">.</span><span class="n">constant</span> <span class="o">=</span> <span class="n">constraint</span><span class="p">.</span><span class="n">fd_originalConstant</span><span class="p">;</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'> <span class="p">}];</span>
+</span><span class='line'>    <span class="c1">// 设置fd_collapsed关联对象，供自动collapsed使用</span>
+</span><span class='line'>  <span class="n">objc_setAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="k">@selector</span><span class="p">(</span><span class="n">fd_collapsed</span><span class="p">),</span> <span class="l">@(</span><span class="n">collapsed</span><span class="l">)</span><span class="p">,</span> <span class="n">OBJC_ASSOCIATION_RETAIN</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">fd_collapsedFDAutomaticallyCollapseByIntrinsicContentSize</span><span class="p">{</span>
+</span><span class='line'><span class="k">return</span> <span class="p">[</span><span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">)</span> <span class="n">boolValue</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>FDAutomaticallyCollapseByIntrinsicContentSize
+
+<ul>
+<li>使用Method Swizzling交换自己的和系统的-fd_updateConstraints方法</li>
+<li>[self fd_updateConstraints]调用的是self的updateConstraints方法，fd_updateConstraints和updateConstraints方法的Method（映射SEL和IMP）已经调换了</li>
+<li><code>intrinsicContentSize(控件的内置大小)</code>默认为UIViewNoIntrinsicMetric，当<code>控件中没有内容时</code>，调用intrinsicContentSize返回的即为<code>默认值</code>（<a href="http://www.mgenware.com/blog/?p=491">介绍链接</a>）</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="cp">#pragma mark - Hacking &quot;-updateConstraints&quot;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">load</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Swizzle to hack &quot;-updateConstraints&quot; method</span>
+</span><span class='line'>    <span class="kt">SEL</span> <span class="n">originalSelector</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="n">updateConstraints</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">SEL</span> <span class="n">swizzledSelector</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="n">fd_updateConstraints</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">Class</span> <span class="k">class</span> <span class="o">=</span> <span class="bp">UIView</span><span class="p">.</span><span class="k">class</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">originalMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">originalSelector</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">swizzledMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzledSelector</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">,</span> <span class="n">swizzledMethod</span><span class="p">);</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">fd_updateConstraints</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Call primary method&#39;s implementation</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">fd_updateConstraints</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">fd_autoCollapse</span> <span class="o">&amp;&amp;</span> <span class="nb">self</span><span class="p">.</span><span class="n">fd_collapsibleConstraints</span><span class="p">.</span><span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// &quot;Absent&quot; means this view doesn&#39;t have an intrinsic content size, {-1, -1} actually.</span>
+</span><span class='line'>        <span class="k">const</span> <span class="bp">CGSize</span> <span class="n">absentIntrinsicContentSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">UIViewNoIntrinsicMetric</span><span class="p">,</span> <span class="n">UIViewNoIntrinsicMetric</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 当设置控件显示内容为nil时，计算出来的contentSize和上面的相等</span>
+</span><span class='line'>        <span class="c1">// Calculated intrinsic content size</span>
+</span><span class='line'>        <span class="k">const</span> <span class="bp">CGSize</span> <span class="n">contentSize</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="n">intrinsicContentSize</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// When this view doesn&#39;t have one, or has no intrinsic content size after calculating,</span>
+</span><span class='line'>        <span class="c1">// it going to be collapsed.</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">CGSizeEqualToSize</span><span class="p">(</span><span class="n">contentSize</span><span class="p">,</span> <span class="n">absentIntrinsicContentSize</span><span class="p">)</span> <span class="o">||</span>
+</span><span class='line'>            <span class="n">CGSizeEqualToSize</span><span class="p">(</span><span class="n">contentSize</span><span class="p">,</span> <span class="n">CGSizeZero</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 当控件没有内容时，则设置控件关联对象constraints的所有约束值为0</span>
+</span><span class='line'>            <span class="nb">self</span><span class="p">.</span><span class="n">fd_collapsed</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>          <span class="c1">// 当控件有内容时，则设置控件关联对象constraints的所有约束值返回为原值</span>
+</span><span class='line'>            <span class="nb">self</span><span class="p">.</span><span class="n">fd_collapsed</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>设置一些动态属性（关联对象）</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="cp">#pragma mark - Dynamic Properties</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">fd_autoCollapse</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">)</span> <span class="n">boolValue</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setFd_autoCollapse</span><span class="p">:(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">autoCollapse</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">objc_setAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="k">@selector</span><span class="p">(</span><span class="n">fd_autoCollapse</span><span class="p">),</span> <span class="l">@(</span><span class="n">autoCollapse</span><span class="l">)</span><span class="p">,</span> <span class="n">OBJC_ASSOCIATION_RETAIN</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setAutoCollapse</span><span class="p">:(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">collapse</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Just forwarding</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">fd_autoCollapse</span> <span class="o">=</span> <span class="n">collapse</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>总结</h2>
+
+<p>总体来说，在分类中要想实现相对复杂的逻辑，却<code>不能添加成员变量</code>，也<code>不想对需要操作的类进行继承</code>，这时就需要runtime中的<code>关联对象和MethodSwizzling</code>技术了。</p>
+
+<p>forkingdog系列分类都用到了runtime的一些知识，代码简洁注释齐全风格也不错，比较适合需要学习runtime应用知识的我。</p>
+</div>
+  
+  
+
+
+    </article>
   
   
     <article>
@@ -2897,77 +3833,9 @@ key : value</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/">新浪微博iOS底部功能按钮简单实现</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-06-29T20:31:41+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:31 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><img src="/images/2015-09-08%2001_23_36.gif" alt="效果图" /></p>
-
-<h2>以上效果主要涉及点</h2>
-
-<ul>
-<li><p>1.九宫格布局</p></li>
-<li><p>2.形变动画</p></li>
-<li><p>3.UIView动画</p></li>
-</ul>
-
-
-<p>首先，考虑图片的效果，初步采用使用modal控制器来实现，但是考虑到modal最后会移除modal他的控制器的view，所以，还是使用自定义UIView来实现这个功能。</p>
-
-<p>做这种功能，首先实现的是按钮出现位置，后面在实现动画就容易了。</p>
-
-<ul>
-<li><p>1.首先进行九宫格布局，创建模型传入指定数量的按钮，并且使用形变，将所有的按钮移动到看不见的坐标</p></li>
-<li><p>2.点击底部按钮后，设置形变至屏幕区域（这里直接设置成CGAffineTransformIdentity）</p></li>
-<li><p>3.对功能按钮的点击和松开进行监听（实现touches方法也可），按钮点击功能菜单按钮后，使用形变设置按钮变大，松开时，再设置形变变大，并且使其透明度为0</p></li>
-<li><p>4.再点击底部按钮后，设置形变至不可见区域</p></li>
-</ul>
-
-
-<p>明确几个功能点后，动画效果就好说了。</p>
-
-<ul>
-<li>1.点击底部按钮后，使用UIView弹性动画，每个按钮设置不同的delay，这样就实现了弹簧与时间间隔效果了。</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">animateWithDuration:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">duration</span> <span class="nf">delay:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">delay</span> <span class="nf">usingSpringWithDamping:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">dampingRatio</span> <span class="nf">initialSpringVelocity:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">velocity</span> <span class="nf">options:</span><span class="p">(</span><span class="n">UIViewAnimationOptions</span><span class="p">)</span><span class="nv">options</span> <span class="nf">animations:</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">void</span><span class="p">))</span><span class="nv">animations</span> <span class="nf">completion:</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">BOOL</span> <span class="n">finished</span><span class="p">))</span><span class="nv">completion</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><p>2.点击功能菜单后，在点击时使用普通UIView动画，使按钮变大，松开时，再次使用UIView，让按钮变大的同时渐渐消失</p></li>
-<li><p>3.再次点击底部按钮后，使用普通的UIView动画，倒序隐藏并缩小按钮</p></li>
-</ul>
-
-
-<p>github：<a href="https://github.com/tripleCC/TPCSpringMenu">代码地址</a></p>
-</div>
-  
-  
-
-
-    </article>
-  
   <div class="pagination">
+    
+      <a class="prev" href="/posts/4">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -2992,6 +3860,10 @@ key : value</p>
 </section><section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-09-30-ioszhi-shi-sui-pian-er/">iOS知识碎片二</a>
+      </li>
     
       <li class="post">
         <a href="/blog/2015-09-26-phphou-tai-bian-cheng-chu-tan/">PHP后台编程初探</a>
