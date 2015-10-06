@@ -120,7 +120,8 @@
   </header>
 
 
-  <div class="entry-content"><p>1、UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题</p>
+  <div class="entry-content"><p>1、UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题<br>
+2、高德、百度地图定位不准确问题</p>
 
 <h2>UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题</h2>
 
@@ -207,6 +208,65 @@
 
 
 <p>最后我采用的情况3，因为最方便，也不会造成大影响～～</p>
+
+<h2>高德、百度地图定位不准确问题</h2>
+
+<p>APP中需要向百度和高德传递一个目的地坐标，但是发现定位了百度和高德的坐标都是不准确的Bug。然后搜索了下得知关于<code>火星坐标</code>、<code>地球坐标</code>、<code>百度坐标</code>的一些信息。<br></p>
+
+<p>原先不知道后台传递过来的是火星坐标还是地球坐标，所以先将后台传递的坐标给打印出来，并且在网页高德地图中输入打印的坐标，然后和网页地图中搜索对应的地址相对比，发现基本无偏差，所以确认后台传递过来的是火星地图（高德地图用的火星坐标）<br></p>
+
+<p>然后就是百度地图了，因为就使用一个地图坐标转换的功能，所以不想引入整个百度SDK。上网搜了下对应的坐标转换算法，如下：<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">double</span> <span class="n">x_pi</span> <span class="o">=</span> <span class="mf">3.14159265358979324</span> <span class="o">*</span> <span class="mf">3000.0</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="nf">bd_encrypt</span><span class="p">(</span><span class="kt">double</span> <span class="n">gg_lat</span><span class="p">,</span> <span class="kt">double</span> <span class="n">gg_lon</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">bd_lat</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">bd_lon</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="kt">double</span> <span class="n">x</span> <span class="o">=</span> <span class="n">gg_lon</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">gg_lat</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">double</span> <span class="n">z</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.00002</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">x_pi</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">double</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">atan2</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.000003</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x_pi</span><span class="p">);</span>
+</span><span class='line'>    <span class="o">*</span><span class="n">bd_lon</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.0065</span><span class="p">;</span>
+</span><span class='line'>    <span class="o">*</span><span class="n">bd_lat</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.006</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这是从火星坐标转换到百度坐标的函数（作者从百度SDK中逆向出来的代码）。<br></p>
+
+<p>将后台传送的坐标通过如上函数的转换，就可以在百度地图APP中精确地进行显示了。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">urlString</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;baidumap://map/direction?origin=latlng:%lf,%lf|name:我的位置&amp;destination=latlng:%f,%f|name:%@&amp;mode=driving&quot;</span><span class="p">,</span> <span class="n">location</span><span class="p">.</span><span class="n">coordinate</span><span class="p">.</span><span class="n">latitude</span><span class="p">,</span> <span class="n">location</span><span class="p">.</span><span class="n">coordinate</span><span class="p">.</span><span class="n">longitude</span><span class="p">,</span> <span class="n">bdlat</span><span class="p">,</span> <span class="n">bdlon</span><span class="p">,</span> <span class="n">title</span><span class="p">]</span> <span class="nl">stringByAddingPercentEscapesUsingEncoding</span><span class="p">:</span><span class="n">NSUTF8StringEncoding</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[[</span><span class="bp">UIApplication</span> <span class="n">sharedApplication</span><span class="p">]</span> <span class="nl">openURL</span><span class="p">:[</span><span class="bp">NSURL</span> <span class="nl">URLWithString</span><span class="p">:</span><span class="n">urlString</span><span class="p">]];</span><span class="err">`</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是发现高德地图还是显示不正确，然后查看了高德地图的API文档，发现是老代码有一个参数传错了：dev=0，原来传的是1，表示再进行一次国测转换（如果传的是地球坐标，那么这里传1）。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">urlString</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;iosamap://navi?sourceApplication=%@&amp;backScheme=%@&amp;poiname=%@&amp;lat=%lf&amp;lon=%lf&amp;dev=0&amp;style=2&quot;</span><span class="p">,</span> <span class="s">@&quot;FANCY&quot;</span><span class="p">,</span> <span class="s">@&quot;mudlab-manhattan&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lng</span><span class="p">]</span> <span class="nl">stringByAddingPercentEscapesUsingEncoding</span><span class="p">:</span><span class="n">NSUTF8StringEncoding</span><span class="p">];</span>
+</span><span class='line'><span class="p">[[</span><span class="bp">UIApplication</span> <span class="n">sharedApplication</span><span class="p">]</span> <span class="nl">openURL</span><span class="p">:[</span><span class="bp">NSURL</span> <span class="nl">URLWithString</span><span class="p">:</span><span class="n">urlString</span><span class="p">]];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下是相应资料：</p>
+
+<p><a href="http://blog.csdn.net/coolypf/article/details/8569813">火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换算法</a></p>
+
+<p><a href="http://blog.csdn.net/zhaoxy_thu/article/details/17033347">Objective-C上地球坐标系到火星坐标系转换算法</a></p>
+
+<p><a href="http://blog.csdn.net/jiajiayouba/article/details/25140967">iOS 火星坐标相关整理及解决方案汇总</a></p>
 </div>
   
   
