@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2015-10-13T10:22:23+08:00</updated>
+  <updated>2015-11-01T16:16:30+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,92 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Octopress因为Ruby版本出现push不生效问题]]></title>
+    <link href="http://triplecc.github.io/blog/2015-11-01-octopressyin-wei-rubyban-ben-chu-xian-pushbu-sheng-xiao-wen-ti/"/>
+    <updated>2015-11-01T15:51:24+08:00</updated>
+    <id>http://triplecc.github.io/blog/octopressyin-wei-rubyban-ben-chu-xian-pushbu-sheng-xiao-wen-ti</id>
+    <content type="html"><![CDATA[<p>使用Octopress提交改的博客配置，但是发现配置并没有生效，然后本地预览也报以下错误：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Errno::ENOENT: No Such File or Directory - Jekyll </span></code></pre></td></tr></table></div></figure>
+
+
+<p>上网搜了下资料，已经有人遇到过了<a href="http://schalkneethling.github.io/blog/2015/10/16/errno-enoent-no-such-file-or-directory-jekyll-octopress-el-capitan/">Errno::ENOENT: No Such File or Directory - Jekyll ~ Octopress and El Capitan</a></p>
+
+<p>原因是OS-X升级到10.11，需要的ruby版本已经不是2.0.0了。执行<code>ruby -v</code>查看ruby版本：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>tripleCC:~ songruiwang$ ruby -v
+</span><span class='line'>ruby 2.0.0p645 (2015-04-13 revision 50299) [universal.x86_64-darwin15]</span></code></pre></td></tr></table></div></figure>
+
+
+<p>下载2.2.3即可以解决问题。</p>
+
+<p>总体的步骤如下：<br></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// 下载homebrow
+</span><span class='line'>ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+</span><span class='line'>// 下载rbenv
+</span><span class='line'>brew update
+</span><span class='line'>brew install rbenv ruby-build
+</span><span class='line'>// 下载ruby2.2.3版本
+</span><span class='line'>rbenv install 2.2.3</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后参考的博客中执行以下命令</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// 在Octopress的根目录下执行，会生成.ruby-version 
+</span><span class='line'>rbenv local 2.2.3
+</span><span class='line'>// 然后查看ruby版本
+</span><span class='line'>ruby --version</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里我的还是2.0.0，但是博客作者就直接是2.2.3了。可以是更新的ruby没有直接替换掉原来的ruby版本。我进入ruby的安装目录看下，的确还是2.0.0版本。<br></p>
+
+<p>最后我就修改了<code>.bash_profile</code>（没有的话需要创建，MAC系统本来时没有这个文件的，Linux本身就有）</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>PATH=/Users/songruiwang/.rbenv/versions/2.2.3/bin:$PATH  </span></code></pre></td></tr></table></div></figure>
+
+
+<p>把下载的ruby执行路径放在系统环境变量之前，这样执行对应命令时，就会先去指定的目录中查找bin文件了，而不是系统老的ruby版本。<br>
+接下来执行以下命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>gem install bundler
+</span><span class='line'>rbenv rehash
+</span><span class='line'>bundle install</span></code></pre></td></tr></table></div></figure>
+
+
+<p>我在执行上面命令时，还出现了一个错误，改一下Gemfile的source即可：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// http改成https了
+</span><span class='line'>source "http://ruby.taobao.org" =&gt;
+</span><span class='line'>source "https://ruby.taobao.org"</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后就可以正常使用博客了。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[iOS知识碎片二]]></title>
@@ -2476,6 +2562,8 @@ PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
 </span><span class='line'>    <span class="n">_timer</span> <span class="o">=</span> <span class="n">timer</span><span class="p">;</span>
 </span></code></pre></td></tr></table></div></figure>
 
+
+<p>最后一点需要说明的是，SDWebImage框架的下载图片业务中也使用到了RunLoop，老确保图片下载成功后才关闭任务子线程</p>
 ]]></content>
   </entry>
   
