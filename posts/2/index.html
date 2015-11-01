@@ -9,11 +9,10 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="学习工作中总会有那么几个注意点和困惑点，这些琐碎的知识点容易让我迷惑，所以决定做这么一个纪录，希望能持之以恒，积少成多 解决同时设置阴影和裁剪，阴影消失问题
-swift中使用字符串创建类及错误处理
-swift中回调函数设置作用域注意
-可视化界面调整图片拉伸
-AFNetworking出现SSL错误 &hellip;">
+  <meta name="description" content="目录 Block底层解析 什么是block？ block编译转换结构
+block实际结构 block的类型 NSConcreteGlobalBlock和NSConcreteStackBlock
+NSConcreteMallocBlock 捕捉变量对block结构的影响 局部变量
+全局变量 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -75,7 +74,7 @@ AFNetworking出现SSL错误 &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015-09-06-ioszhi-shi-sui-pian-%5B%3F%5D/">iOS知识碎片一</a></h1>
+      <h1 class="entry-title"><a href="/blog/2015-07-19-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a></h1>
     
     
       <p class="meta">
@@ -84,212 +83,79 @@ AFNetworking出现SSL错误 &hellip;">
 
 
 
-<time class='entry-date' datetime='2015-09-06T00:04:36+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:04 am</span></time>
+<time class='entry-date' datetime='2015-07-19T20:17:10+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>19</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:17 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>学习工作中总会有那么几个注意点和困惑点，这些琐碎的知识点容易让我迷惑，所以决定做这么一个纪录，希望能持之以恒，积少成多</p>
-
-<ol>
-<li>解决同时设置阴影和裁剪，阴影消失问题</li>
-<li>swift中使用字符串创建类及错误处理</li>
-<li>swift中回调函数设置作用域注意</li>
-<li>可视化界面调整图片拉伸</li>
-<li>AFNetworking出现SSL错误</li>
-</ol>
-
-
-<h1>解决同时设置阴影和裁剪，阴影消失问题</h1>
-
-<h3>阴影注意点</h3>
+  <div class="entry-content"><h1>目录</h1>
 
 <ul>
-<li>图层的阴影是根据<code>内容外形</code>确定，不是根据边界和角半径确定</li>
-<li>阴影通常在layer的边界之外</li>
+<li>Block底层解析
+
+<ul>
+<li>什么是block？
+
+<ul>
+<li>block编译转换结构</li>
+<li>block实际结构</li>
+</ul>
+</li>
+<li>block的类型
+
+<ul>
+<li>NSConcreteGlobalBlock和NSConcreteStackBlock</li>
+<li>NSConcreteMallocBlock</li>
+</ul>
+</li>
+<li>捕捉变量对block结构的影响
+
+<ul>
+<li>局部变量</li>
+<li>全局变量</li>
+<li>局部静态变量</li>
+<li>__block修饰的变量</li>
+<li>self隐式循环引用</li>
+</ul>
+</li>
+<li>不同类型block的复制
+
+<ul>
+<li>栈block</li>
+<li>堆block</li>
+<li>全局block</li>
+</ul>
+</li>
+<li>block辅助函数
+
+<ul>
+<li>__block修饰的基本类型的辅助函数</li>
+<li>对象的辅助函数</li>
+</ul>
+</li>
+<li>ARC中block的工作
+
+<ul>
+<li>block试验</li>
+<li>block作为参数传递</li>
+<li>block作为返回值</li>
+<li>block属性</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>参考博文</li>
 </ul>
 
 
-<h3>裁剪注意点</h3>
-
-<ul>
-<li>所有从图层中突出的内容都会被裁剪掉</li>
-</ul>
-
-
-<h3>引出问题</h3>
-
-<ul>
-<li>同时设置视图masksToBounds和图层的阴影，图层的阴影效果可能会失效。<br></li>
-<li>原因是：图层阴影被裁剪掉了。</li>
-</ul>
-
-
-<h3>解决方案</h3>
-
-<p>使用一个只画阴影的空视图，成为需要裁剪视图的父控件</p>
-
-<p>原理：</p>
-
-<ul>
-<li>内部子控件进行裁剪后，外部父视图的内容就只有被裁剪的子控件，所以会在子控件周围绘制阴影，而子控件只对它以及它的子控件进行了裁剪</li>
-</ul>
-
-
-<h1>在Swift中使用字符串创建类</h1>
-
-<p>在swift中有了命名空间这个概念（namespace），使用.self打印类名，会发现对应的类名带有namespace前缀如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">&lt;</span><span class="n">SwiftWB</span><span class="p">.</span><span class="nl">HomeViewController</span><span class="p">:</span> <span class="mh">0x7fbf81f4e5e0</span><span class="o">&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Swift还在不断改进，所以这里只针对Xcode7 Beta5（在beta4写出来貌似在这个测试版本上会出错）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">path</span> <span class="o">=</span> <span class="bp">NSBundle</span><span class="p">.</span><span class="n">mainBundle</span><span class="p">().</span><span class="n">pathForResource</span><span class="p">(</span><span class="s">&quot;MainVCSettings&quot;</span><span class="p">,</span> <span class="nl">ofType</span><span class="p">:</span> <span class="s">&quot;json&quot;</span><span class="p">)</span>
-</span><span class='line'><span class="k">if</span> <span class="n">let</span> <span class="n">jsonPath</span> <span class="o">=</span> <span class="n">path</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">do</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">let</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">NSData</span><span class="p">(</span><span class="nl">contentsOfFile</span><span class="p">:</span> <span class="n">jsonPath</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">let</span> <span class="n">dataArr</span> <span class="o">=</span> <span class="n">try</span> <span class="bp">NSJSONSerialization</span><span class="p">.</span><span class="n">JSONObjectWithData</span><span class="p">(</span><span class="n">data</span><span class="o">!</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">.</span><span class="n">MutableContainers</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 命名空间名</span>
-</span><span class='line'>        <span class="n">let</span> <span class="n">prefixStr</span> <span class="o">=</span> <span class="bp">NSBundle</span><span class="p">.</span><span class="n">mainBundle</span><span class="p">().</span><span class="n">infoDictionary</span><span class="o">!</span><span class="p">[</span><span class="s">&quot;CFBundleExecutable&quot;</span><span class="p">]</span> <span class="n">as</span><span class="o">!</span> <span class="n">String</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">for</span> <span class="n">object</span> <span class="k">in</span> <span class="n">dataArr</span> <span class="n">as</span><span class="o">!</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">let</span> <span class="nl">cls</span><span class="p">:</span> <span class="n">AnyClass</span><span class="o">?</span> <span class="o">=</span> <span class="n">NSClassFromString</span><span class="p">(</span><span class="n">prefixStr</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;vcName&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="c1">// 读取的名称不一定有对应的控制器，所以在这里做一个动态绑定</span>
-</span><span class='line'>            <span class="k">if</span> <span class="n">let</span> <span class="n">vcCls</span> <span class="o">=</span> <span class="n">cls</span> <span class="n">as</span><span class="o">?</span> <span class="bp">UIViewController</span><span class="p">.</span><span class="n">Type</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">let</span> <span class="n">vc</span> <span class="o">=</span> <span class="n">vcCls</span><span class="p">.</span><span class="n">init</span><span class="p">()</span>
-</span><span class='line'>                <span class="n">addChildViewController</span><span class="p">(</span><span class="n">vc</span><span class="p">,</span> <span class="nl">title</span><span class="p">:</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;title&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">,</span> <span class="nl">imageName</span><span class="p">:</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;imageName&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">)</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span> <span class="n">catch</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">addChildViewController</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>上面代码从MainVCSettings文件读取控制器的关联信息，并创建对应的控制器，详细信息已在注释中表明</p>
-
-<p>从上面代码还可以看出，swift对于错误的处理有了一定的变化。在Objective-C中，对应的JSON解析是通过参数传出错误的方式来进行处理的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSJSONSerialization</span> <span class="nl">dataWithJSONObject</span><span class="p">:(</span><span class="kt">id</span><span class="p">)</span> <span class="nl">options</span><span class="p">:(</span><span class="n">NSJSONWritingOptions</span><span class="p">)</span> <span class="nl">error</span><span class="p">:(</span><span class="bp">NSError</span> <span class="o">*</span><span class="k">__autoreleasing</span> <span class="o">*</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>而swift中采用了抛出异常的方式：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">public</span> <span class="k">class</span> <span class="n">func</span> <span class="n">JSONObjectWithData</span><span class="p">(</span><span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span><span class="p">,</span> <span class="n">options</span> <span class="nl">opt</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">AnyObject</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>模式的写法如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">do</span> <span class="p">{</span>
-</span><span class='line'>  <span class="p">...</span>
-</span><span class='line'>  <span class="c1">// 注意需要使用try</span>
-</span><span class='line'>    <span class="n">let</span> <span class="n">dataArr</span> <span class="o">=</span> <span class="n">try</span> <span class="bp">NSJSONSerialization</span><span class="p">.</span><span class="n">JSONObjectWithData</span><span class="p">(</span><span class="n">data</span><span class="o">!</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">.</span><span class="n">MutableContainers</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">...</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span> <span class="n">catch</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 错误处理</span>
-</span><span class='line'>  <span class="p">...</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h1>swift中回调函数设置作用域注意</h1>
-
-<p>在swift中，存在private修饰符，表示私有变量或者私有方法。一般只在本类中使用的，不暴露给外界的方法都会加上这个修饰符。<br>
-但是在添加按钮点击回调函数时，却不能这么做。如果给按钮的回调函方法添加了private修饰符，程序会抛出找不到实例方法错误。<br>
-原因如下：<br>
-首先，在回调方法中添加一个断点：<br></p>
-
-<p><img src="/images/Snip20150908_2.png" alt="" /></p>
-
-<p>然后运行程序，会崩溃后会出现以下函数调用栈：<br>
-<img src="/images/Snip20150908_1.png" alt="" /></p>
-
-<p>可以看到，按钮的点击事件是通过<code>运行循环</code>进行监听，并且以Source0的形式让RunLoop执行处理(<a href="http://triplecc.github.io/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">RunLoop基础元素解析</a>)。然后以<code>消息机制</code>传递，对方法进行调用，所以按钮的回调方法不能设置为private，否则外界会找不到对应的方法。</p>
-
-<h1>可视化界面调整图片拉伸</h1>
-
-<p>发现最近个版本的Xcode在调整图片拉伸情况时，还可以使用一种可视化界面调整。</p>
-
-<p>详细步骤如下：<br></p>
-
-<p>一般打开的图片显示如下:<br>
-<img src="/images/Snip20150909_2.png" alt="" /><br></p>
-
-<p>更改显示方式<br>
-<img src="/images/Snip20150909_4.png" alt="" /></p>
-
-<p>可视化调整拉伸方式<br>
-<img src="/images/Snip20150909_5.png" alt="" /></p>
-
-<p>开始拉伸<br>
-<img src="/images/Snip20150909_6.png" alt="" /></p>
-
-<p>调整对应的线来对局部进行拉伸
-<img src="/images/Snip20150909_7.png" alt="" /></p>
-
-<h1>AFNetworking出现SSL错误</h1>
-
-<p>获取优酷视频信息数据时出现问题。</p>
-
-<p>加载HTTPS网络数据时出现以下错误：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSURLSession</span><span class="o">/</span><span class="bp">NSURLConnection</span> <span class="n">HTTP</span> <span class="n">load</span> <span class="n">failed</span> <span class="p">(</span><span class="n">kCFStreamErrorDomainSSL</span><span class="p">,</span> <span class="o">-</span><span class="mi">9824</span><span class="p">)</span>
-</span><span class='line'><span class="n">Error</span> <span class="n">Domain</span><span class="o">=</span><span class="n">NSURLErrorDomain</span> <span class="n">Code</span><span class="o">=-</span><span class="mi">1200</span> <span class="s">&quot;An SSL error has occurred and a secure connection to the server cannot be made.&quot;</span> <span class="n">UserInfo</span><span class="o">=</span><span class="p">{</span><span class="n">_kCFStreamErrorCodeKey</span><span class="o">=-</span><span class="mi">9824</span><span class="p">,</span> <span class="n">NSLocalizedRecoverySuggestion</span><span class="o">=</span><span class="n">Would</span> <span class="n">you</span> <span class="n">like</span> <span class="n">to</span> <span class="n">connect</span> <span class="n">to</span> <span class="n">the</span> <span class="n">server</span> <span class="n">anyway</span><span class="o">?</span><span class="p">,</span> <span class="n">NSUnderlyingError</span><span class="o">=</span><span class="mh">0x7fbdf1e2e870</span> <span class="p">{</span><span class="n">Error</span> <span class="n">Domain</span><span class="o">=</span><span class="n">kCFErrorDomainCFNetwork</span> <span class="n">Code</span><span class="o">=-</span><span class="mi">1200</span> <span class="s">&quot;(null)&quot;</span> <span class="n">UserInfo</span><span class="o">=</span><span class="p">{</span><span class="n">_kCFStreamPropertySSLClientCertificateState</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">_kCFNetworkCFStreamSSLErrorOriginalValue</span><span class="o">=-</span><span class="mi">9824</span><span class="p">,</span> <span class="n">_kCFStreamErrorDomainKey</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">_kCFStreamErrorCodeKey</span><span class="o">=-</span><span class="mi">9824</span><span class="p">}},</span> <span class="n">NSLocalizedDescription</span><span class="o">=</span><span class="n">An</span> <span class="n">SSL</span> <span class="n">error</span> <span class="n">has</span> <span class="n">occurred</span> <span class="n">and</span> <span class="n">a</span> <span class="n">secure</span> <span class="n">connection</span> <span class="n">to</span> <span class="n">the</span> <span class="n">server</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">made</span><span class="p">.,</span> <span class="n">NSErrorFailingURLKey</span><span class="o">=</span><span class="nl">https</span><span class="p">:</span><span class="c1">//openapi.youku.com/v2/videos/by_category.json?client_id=693bf79be3aee68f, NSErrorFailingURLStringKey=https://openapi.youku.com/v2/videos/by_category.json?client_id=693bf79be3aee68f, _kCFStreamErrorDomainKey=3}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在info.plist中添加以下字段就可以解决：</p>
-
-<p><img src="/images/Snip20150915_1.png" alt="" /></p>
 </div>
   
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-07-19-blockji-qiao-yu-di-ceng-jie-xi/">阅读全文 &rarr;</a>
+    </footer>
   
 
 
@@ -300,7 +166,7 @@ AFNetworking出现SSL错误 &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">RunLoop基础元素解析</a></h1>
+      <h1 class="entry-title"><a href="/blog/2015-07-14-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a></h1>
     
     
       <p class="meta">
@@ -309,761 +175,21 @@ AFNetworking出现SSL错误 &hellip;">
 
 
 
-<time class='entry-date' datetime='2015-09-04T21:58:21+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:58 pm</span></time>
+<time class='entry-date' datetime='2015-07-14T14:53:13+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>2:53 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p><a href="http://blog.ibireme.com">深入理解RunLoop</a>这篇文章写的很好！</p>
+  <div class="entry-content"><p>最近用到了sunnyxx的forkingdog系列(<a href="https://github.com/forkingdog/UIView-FDCollapsibleConstraints">UIView-FDCollapsibleConstraints</a>)，纪录下关联对象和MethodSwizzling在实际场景中的应用。</p>
 
-<h2>简介</h2>
-
-<p>RunLoop顾名思义，就是<code>运行循环</code>的意思。<br>
-基本作用：</p>
-
-<ul>
-<li>保持程序的持续运行</li>
-<li>处理App中的各类事件（触摸事件、定时器事件、Selector事件）</li>
-<li>节省CPU资源，提高程序性能：没有事件时就进行睡眠状态</li>
-</ul>
-
-
-<p>内部实现：</p>
-
-<ul>
-<li>do-while循环，在这个循环内部不断地处理各种任务（Source\Timeer\Observer）</li>
-</ul>
-
-
-<p>注意点：</p>
-
-<ul>
-<li>一个线程对应一个RunLoop（采用字典存储，<code>线程号为key，RunLoop为value</code>）</li>
-<li>主线程的RunLoop默认已经启动，子线程的RunLoop需要手动启动</li>
-<li><p>RunLoop只能选择一个Mode启动，如果当前Mode没有任何Source、Timer、Observer，那么就不会进入RunLoop</p>
-
-<ul>
-<li>RunLoop的主要函数调用顺序为：<code>CFRunLoopRun-&gt;CFRunLoopRunSpecific-&gt;__CFRunLoopRun</code>
-<img src="/images/Snip20150713_2.png" alt="" /><br></li>
-<li><code>注意特殊情况</code>，事实上，在<code>只有</code>Observer的情况，也不一定会进入循环，因为源代码里面只会显式地检测两个东西：<code>Source和Timer</code>(这两个是主动向RunLoop发送消息的)；Observer是被动接收消息的<br>
-<img src="/images/Snip20150713_11.png" alt="" /></li>
-</ul>
-</li>
-<li><p>RunLoop在<code>第一次获取时创建</code>，在<code>线程结束时销毁</code></p></li>
-</ul>
-
-
-<p>RunLoop循环示意图:(针对上面的<code>__CFRunLoopRun</code>函数，Mode已经判断非空前提)</p>
-
-<ul>
-<li>图1<br><img src="/images/Snip20150712_39.png" alt="RunLoop循环示意图" /><br></li>
-<li>图2<br><img src="/images/Snip20150713_3.png" alt="" /><br></li>
-</ul>
-
-
-<p>接触过微处理器编程的基本上都知道，在编写微处理器程序时，我通常会在main函数中写一个无限循环，然后在这个循环里面对外部事件进行监听，比如外部中断，一些传感器的数据等，在没有外部中断时，就让CPU进入低功耗模式。如果接收到了外部中断，就恢复到正常模式，对中断进行处理。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 根据中断决定是否切换模式执行任务</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="c1">// 或者</span>
-</span><span class='line'><span class="k">for</span> <span class="p">(;;)</span> <span class="p">{</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>RunLoop和这个相似，也是在线程的main中增加了一个循环：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kt">BOOL</span> <span class="n">running</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">do</span> <span class="p">{</span>
-</span><span class='line'>        <span class="c1">// 执行各种任务，处理各种事件</span>
-</span><span class='line'>             <span class="c1">// ......</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="n">running</span><span class="p">);</span>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>所以线程在这种情况下，便不会退出。<br>
-关于<code>MainRunLoop</code>：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">@autoreleasepool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">UIApplicationMain</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="nb">nil</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">AppDelegate</span> <span class="k">class</span><span class="p">]));</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在viewDidLoad中设置断电，然后得到以下主线程栈信息：<br>
-<img src="/images/Snip20150712_40.png" alt="" /><br>
-可以看到，UIApplicationMain内部启动了一个和主线程相关联的RunLoop（_CFRunLoopRun）。在这里也可以推断，程序进入UIApplicationMain就不会退出了。我稍微对主函数进行了如下修改，并在return语句上打印了断点：<br>
-<img src="/images/Snip20150712_41.png" alt="" /><br>
-运行程序后，并不会在断点处停下，证实了上面的推断。</p>
-
-<p>上面涉及了一个_CFRunLoopRun函数，接下来说明下iOS中访问和使用RunLoop的API：</p>
-
-<ul>
-<li>Foundation&ndash;NSRunLoop</li>
-<li>Core Foundation&ndash;CFRunLoopRef(开源)</li>
-</ul>
-
-
-<p>因为后者是开源的，且前者是在后者上针对OC的封装，所以一般是对CFRunLoopRef进行研究。<br>
-两套API对应获取RunLoop对象的方式：</p>
-
-<ul>
-<li>Foundation
-
-<ul>
-<li>[NSRunLoop currentRunLoop]; // 当前runloop</li>
-<li>[NSRunLoop mainRunLoop];// 主线程runloop</li>
-</ul>
-</li>
-<li>Core Foundation
-
-<ul>
-<li>CFRunLoopGetCurrent();// 当前runloop</li>
-<li>CFRunLoopGetMain();// 主线程runloop</li>
-</ul>
-</li>
-</ul>
-
-
-<p>值得注意的是，获取当前RunLoop都是进行懒加载的，也就是调用时自动创建线程对应的RunLoop。<br></p>
-
-<h3>RunLoop相关类：</h3>
-
-<ul>
-<li>CFRunLoopRef</li>
-<li>CFRunLoopModeRef</li>
-<li>CFRunLoopSourceRef</li>
-<li>CFRunLoopTimerRef</li>
-<li>CFRunLoopObserverRef</li>
-</ul>
-
-
-<p><img src="/images/Snip20150712_43.png" alt="类之间关系" /><br>
-以上图片说明了各个类之间的关系。<br>
-<code>CFRunLoopModeRef</code>说明：</p>
-
-<ul>
-<li>代表RunLoop的运行模式，一个RunLoop可以包含多个Mode，每个Mode可以包含多个Source、Timer、Observer</li>
-<li>每次RunLoop启动时，只能指定其中一个Mode，这个Mode就变成了CurrentMode</li>
-<li>当启动RunLoop时，如果所在Mode中没有Source、Timer、Observer，那么将不会进入RunLoop，会直接结束</li>
-<li>如果要切换Mode，只能退出Loop，再重新制定一个Mode进入</li>
-</ul>
-
-
-<p>系统默认注册了5个Mode:</p>
-
-<ul>
-<li><code>NSDefaultRunLoopMode</code>：App的默认Mode，通常主线程是在这个Mode下运行</li>
-<li><code>UITrackingRunLoopMode</code>：界面跟踪 Mode，用于 ScrollView 追踪触摸滑动，保证界面滑动时不受其他 Mode 影响</li>
-<li>UIInitializationRunLoopMode: 在刚启动 App 时第进入的第一个 Mode，启动完成后就不再使用</li>
-<li>GSEventReceiveRunLoopMode: 接受系统事件的内部 Mode，通常用不到</li>
-<li><code>NSRunLoopCommonModes</code>: 这是一个占位用的Mode，不是一种真正的Mode</li>
-</ul>
-
-
-<p>关于<code>NSRunLoopCommonModes</code>：</p>
-
-<ul>
-<li>一个Mode可以将自己标记为“Common”属性，每当 RunLoop 的内容发生变化时，RunLoop会对标记有“Common”属性的Mode进行相适应的切换，并同步Source/Observer/Timer</li>
-<li>在主线程中，kCFRunLoopDefaultMode 和 UITrackingRunLoopMode这两个Mode都是被默认标记为“Common”属性的，从输出的主线程RunLoop可以查看。<br><img src="/images/Snip20150712_42.png" alt="“Common”属性" /><br>
-－ 结合上面两点，当使用NSRunLoopCommonModes占位时，会表明使用标记为“Common”属性的Mode，在一定层度上，可以说是“拥有了两个Mode”，可以在这两个Mode中的其中任意一个进行工作</li>
-</ul>
-
-
-<p><code>CFRunLoopTimerRef</code>说明：</p>
-
-<ul>
-<li>CFRunLoopTimerRef是基于时间的触发器，它包含了一个时间长度和一个回调函数指针。当它加入到RunLoop时，RunLoop会注册对应的时间点，当时间点到时，RunLoop会被唤醒以执行那个回调</li>
-<li>CFRunLoopTimerRef大部分指的是NSTimer，它受RunLoop的Mode影响</li>
-<li><p>由于NSTimer在RunLoop中处理，所以受其影响较大，有时可能会不准确。还有一种定时器是GCD定时器，它并不在RunLoop中，所以不受其影响，也就比较精确
-接下来说明各种Mode下，NSTimer的工作情况：</p></li>
-<li><p>情况1</p>
-
-<ul>
-<li>在对创建的定时器进行模式修改前，scheduledTimerWithTimeInterval创建的定时器只在NSDefaultRunLoopMode模式下可以正常运行，当滚动UIScroolView时，模式转换成UITrackingRunLoopMode，定时器就失效了。</li>
-<li>修改成NSRunLoopCommonModes后，定时器在两个模式下都可以正常运行</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 创建的定时器默认添加到当前的RunLoop中（没有就创建），而且是NSDefaultRunLoopMode模式</span>
-</span><span class='line'><span class="bp">NSTimer</span> <span class="o">*</span><span class="n">timer</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSTimer</span> <span class="nl">scheduledTimerWithTimeInterval</span><span class="p">:</span><span class="mf">1.0</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">repeats</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 可以通过以下方法对模型进行修改</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">mainRunLoop</span><span class="p">]</span> <span class="nl">addTimer</span><span class="p">:</span><span class="n">timer</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">NSRunLoopCommonModes</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>情况2
-
-<ul>
-<li>timerWithTimeInterval创建的定时器并没有手动添加进RunLoop，所以需要手动进行添加。当添加为以下模式时，定时器只在UITrackingRunLoopMode模式下进行工作，也就是滑动UIScrollView时就会工作，停止滑动时就不工作</li>
-<li>如果把UITrackingRunLoopMode换成NSDefaultRunLoopMode，那么效果就和情况1没修改Mode前的效果一样</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSTimer</span> <span class="o">*</span><span class="n">timer</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSTimer</span> <span class="nl">timerWithTimeInterval</span><span class="p">:</span><span class="mf">1.0</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">repeats</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 在UITrackingRunLoopMode模式下定时器才会运行</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">mainRunLoop</span><span class="p">]</span> <span class="nl">addTimer</span><span class="p">:</span><span class="n">timer</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">UITrackingRunLoopMode</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p><code>CFRunLoopSourceRef</code>说明：</p>
-
-<ul>
-<li>Source分类
-
-<ul>
-<li>按官方文档
-
-<ul>
-<li>Port-Based Sources</li>
-<li>Custom Input Sources</li>
-<li>Cocoa Perform Selector Sources</li>
-</ul>
-</li>
-<li>按照函数调用栈
-
-<ul>
-<li>Source0：非基于Port的
-
-<ul>
-<li>Source0本身不能主动触发事件，只包含了一个回调函数指针</li>
-</ul>
-</li>
-<li>Source1：基于Port的，通过内核和其他线程通信，接收、分发系统事件
-
-<ul>
-<li>包含了mach_port和一个回调函数指针，接收到相关消息后，会分发给Source0进行处理</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-
-<p><code>CFRunLoopObserverRef</code>说明：
-- CFRunLoopObserverRef是观察者，能够监听RunLoop的状态改变
-- 能够监听的状态</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">typedef</span> <span class="nf">CF_OPTIONS</span><span class="p">(</span><span class="n">CFOptionFlags</span><span class="p">,</span> <span class="n">CFRunLoopActivity</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">kCFRunLoopEntry</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">0</span><span class="p">),</span>        <span class="c1">// 进入RunLoop</span>
-</span><span class='line'>        <span class="n">kCFRunLoopBeforeTimers</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">),</span> <span class="c1">//即将处理timer</span>
-</span><span class='line'>        <span class="n">kCFRunLoopBeforeSources</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">),</span><span class="c1">//即将处理Sources</span>
-</span><span class='line'>        <span class="n">kCFRunLoopBeforeWaiting</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span><span class="p">),</span><span class="c1">//即将进入休眠</span>
-</span><span class='line'>        <span class="n">kCFRunLoopAfterWaiting</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span><span class="p">),</span> <span class="c1">//即将唤醒</span>
-</span><span class='line'>        <span class="n">kCFRunLoopExit</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1UL</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">),</span>         <span class="c1">//即将退出RunLoop</span>
-</span><span class='line'>        <span class="n">kCFRunLoopAllActivities</span> <span class="o">=</span> <span class="mh">0x0FFFFFFFU</span><span class="c1">//所有活动</span>
-</span><span class='line'>    <span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>添加监听者步骤</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 创建监听着</span>
-</span><span class='line'><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span> <span class="o">=</span> <span class="n">CFRunLoopObserverCreateWithHandler</span><span class="p">(</span><span class="n">CFAllocatorGetDefault</span><span class="p">(),</span> <span class="n">kCFRunLoopBeforeTimers</span><span class="p">,</span> <span class="nb">YES</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">^</span><span class="p">(</span><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span><span class="p">,</span> <span class="n">CFRunLoopActivity</span> <span class="n">activity</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="n">activity</span><span class="p">);</span>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//    [[NSRunLoop currentRunLoop] getCFRunLoop]</span>
-</span><span class='line'><span class="c1">// 向当前runloop添加监听者</span>
-</span><span class='line'><span class="n">CFRunLoopAddObserver</span><span class="p">(</span><span class="n">CFRunLoopGetCurrent</span><span class="p">(),</span> <span class="n">observer</span><span class="p">,</span> <span class="n">kCFRunLoopDefaultMode</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 释放内存</span>
-</span><span class='line'><span class="n">CFRelease</span><span class="p">(</span><span class="n">observer</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>CF的内存管理（Core Foundation）：</p>
-
-<ul>
-<li>1.凡是带有Create、Copy、Retain等字眼的函数，创建出来的对象，都需要在最后做一次release</li>
-<li>比如CFRunLoopObserverCreate</li>
-<li>2.release函数：CFRelease(对象);</li>
-</ul>
-
-
-<h3>自动释放池释放的时间和RunLoop的关系：</h3>
-
-<ul>
-<li>注意，这里的自动释放池指的是<code>主线程的自动释放池</code>，我们看不见它的创建和销毁。自己<code>手动创建@autoreleasepool {}</code>是<code>根据代码块来的</code>，<code>出了这个代码块就释放了</code>。</li>
-<li> App启动后，苹果在主线程 RunLoop 里注册了两个 Observer，其回调都是 <code>_wrapRunLoopWithAutoreleasePoolHandler()</code>。</li>
-<li>第一个 Observer 监视的事件是 Entry(<code>即将进入Loop</code>)，其回调内会调用 _objc_autoreleasePoolPush() <code>创建自动释放池</code>。其 order 是-2147483647，优先级最高，保证创建释放池发生在其他所有回调之前。
-<br><img src="/images/Snip20150713_5.png" alt="" /></li>
-<li>第二个 Observer 监视了两个事件： BeforeWaiting(<code>准备进入休眠</code>) 时调用<em>objc_autoreleasePoolPop() 和 </em>objc_autoreleasePoolPush() <code>释放旧的池并创建新池</code>；Exit(<code>即将退出Loop</code>) 时调用 _objc_autoreleasePoolPop() 来<code>释放自动释放池</code>。这个 Observer 的 order 是 2147483647，优先级最低，保证其释放池子发生在其他所有回调之后。
-<br><img src="/images/Snip20150713_4.png" alt="" /></li>
-<li>在主线程执行的代码，通常是写在诸如事件回调、Timer回调内的。这些回调会被 RunLoop 创建好的 AutoreleasePool 环绕着，所以不会出现内存泄漏，开发者也不必显示创建 Pool 了。</li>
-<li>在<code>自己创建线程</code>时，需要<code>手动创建</code>自动释放池<code>AutoreleasePool</code></li>
-</ul>
-
-
-<p>综合上面，可以得到以下结论：<br>
-<img src="/images/Snip20150713_12.png" alt="" /></p>
-
-<h3>@autoreleasepool {}内部实现</h3>
-
-<p>有以下代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">@autoreleasepool</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>查看编译转换后的代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-</span><span class='line'>    <span class="cm">/* @autoreleasepool */</span> <span class="p">{</span> <span class="n">__AtAutoreleasePool</span> <span class="n">__autoreleasepool</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>__AtAutoreleasePool是什么呢？找到其定义：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">struct</span> <span class="n">__AtAutoreleasePool</span> <span class="p">{</span>
-</span><span class='line'>  <span class="n">__AtAutoreleasePool</span><span class="p">()</span> <span class="p">{</span><span class="n">atautoreleasepoolobj</span> <span class="o">=</span> <span class="n">objc_autoreleasePoolPush</span><span class="p">();}</span>
-</span><span class='line'>  <span class="o">~</span><span class="n">__AtAutoreleasePool</span><span class="p">()</span> <span class="p">{</span><span class="n">objc_autoreleasePoolPop</span><span class="p">(</span><span class="n">atautoreleasepoolobj</span><span class="p">);}</span>
-</span><span class='line'>  <span class="kt">void</span> <span class="o">*</span> <span class="n">atautoreleasepoolobj</span><span class="p">;</span>
-</span><span class='line'><span class="p">};</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>可以看到__AtAutoreleasePool是一个类：
-  - 其构造函数使用objc_autoreleasePoolPush创建了一个线程池，并保存给成员变量atautoreleasepoolobj。
-  - 其析构函数使用objc_autoreleasePoolPop销毁了线程池</p>
-
-<p>结合以上信息，main函数里面的__autoreleasepool是一个局部变量。当其创建时，会调用构造函数创建线程池，出了{}代码块时，局部变量被销毁，调用其析构函数销毁线程池。</p>
-
-<h2>RunLoop实际应用</h2>
-
-<h3>常驻线程</h3>
-
-<p>当创建一个线程，并且希望它一直存在时，就需要使用到RunLoop，否则线程一执行完任务就会停止。
-要向线程存在，需要有强指针引用他，其他的代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 属性</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSThread</span> <span class="o">*</span><span class="kr">thread</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 创建线程</span>
-</span><span class='line'><span class="n">_thread</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="nl">object</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'><span class="p">[</span><span class="n">_thread</span> <span class="n">start</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">touchesBegan:</span><span class="p">(</span><span class="bp">NSSet</span> <span class="o">*</span><span class="p">)</span><span class="nv">touches</span> <span class="nf">withEvent:</span><span class="p">(</span><span class="bp">UIEvent</span> <span class="o">*</span><span class="p">)</span><span class="nv">event</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="c1">// 点击时使线程_thread执行test方法</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:</span><span class="n">_thread</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">test</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;__test__&quot;</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>就单单以上代码，是不起效果的，因为线程没有RunLoop，执行完test后就停止了，无法再让其执行任务（强制start会崩溃）。<br>
-通过在<code>子线程中给RunLoop添加监听者</code>，可以了解下<code>performSelector:onThread:</code>内部做的事情：</p>
-
-<ul>
-<li>调用performSelector:onThread: 时，实际上它会创建一个<code>Source0</code>加到<code>对应线程的RunLoop</code>里去，所以，如果对应的线程没有RunLoop，这个方法就会失效<br>
-<img src="/images/Snip20150716_5.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 这句在主线程中调用</span>
-</span><span class='line'><span class="c1">// _thread就是下面的线程</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:</span><span class="n">_thread</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>performSelecter:afterDelay:也是一样的内部操作方法，只是创建的<code>Timer</code>添加到<code>当前线程</code>的RunLoop中了<br>
-<img src="/images/Snip20150716_6.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 创建RunLoop即将唤醒监听者</span>
-</span><span class='line'><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span> <span class="o">=</span> <span class="n">CFRunLoopObserverCreateWithHandler</span><span class="p">(</span><span class="n">CFAllocatorGetDefault</span><span class="p">(),</span> <span class="n">kCFRunLoopBeforeTimers</span><span class="p">,</span> <span class="nb">YES</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">^</span><span class="p">(</span><span class="n">CFRunLoopObserverRef</span> <span class="n">observer</span><span class="p">,</span> <span class="n">CFRunLoopActivity</span> <span class="n">activity</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 打印唤醒前的RunLoop</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%ld--%@&quot;</span><span class="p">,</span> <span class="n">activity</span><span class="p">,</span> <span class="p">[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]);</span>
-</span><span class='line'><span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 向当前runloop添加监听者</span>
-</span><span class='line'><span class="n">CFRunLoopAddObserver</span><span class="p">(</span><span class="n">CFRunLoopGetCurrent</span><span class="p">(),</span> <span class="n">observer</span><span class="p">,</span> <span class="n">kCFRunLoopDefaultMode</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 释放内存</span>
-</span><span class='line'><span class="n">CFRelease</span><span class="p">(</span><span class="n">observer</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">setView</span><span class="p">:)</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">afterDelay</span><span class="p">:</span><span class="mf">2.0</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="c1">// 使model不为空</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]</span> <span class="nl">addPort</span><span class="p">:[</span><span class="bp">NSPort</span> <span class="n">port</span><span class="p">]</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">NSDefaultRunLoopMode</span><span class="p">];</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]</span> <span class="n">run</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>综合上面的解释，可以知道performSelector:onThread:没有起作用，是因为_thread线程内部没有RunLoop，所以需要在线程内部创建RunLoop。<br>
-创建RunLoop并使对应线程成为常驻线程的常见方式有2:</p>
-
-<ul>
-<li>方式1
-
-<ul>
-<li><p>向创建的RunLoop添加NSPort（Sources），让Mode不为空，RunLoop能进入循环不会退出</p>
-
-<pre><code class="objc">[[NSRunLoop currentRunLoop] addPort:[NSPort port] forMode:NSDefaultRunLoopMode];
-[[NSRunLoop currentRunLoop] run];
-</code></pre></li>
-</ul>
-</li>
-<li>方式2
-
-<ul>
-<li><p>让RunLoop一直尝试运行，判断Mode是否为空，不是为空就进入RunLoop循环</p>
-
-<pre><code class="objc">while (1) {
-    [[NSRunLoop currentRunLoop] run];
-}
-</code></pre></li>
-</ul>
-</li>
-</ul>
-
-
-<p><code>AFNetWorking</code>就使用到了常驻线程：</p>
-
-<ul>
-<li>创建常驻线程</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">networkRequestThreadEntryPoint:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">__unused</span> <span class="n">object</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">@autoreleasepool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">currentThread</span><span class="p">]</span> <span class="nl">setName</span><span class="p">:</span><span class="s">@&quot;AFNetworking&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 创建RunLoop并向Mode添加NSMachPort，使RunLoop不会退出</span>
-</span><span class='line'>        <span class="bp">NSRunLoop</span> <span class="o">*</span><span class="n">runLoop</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">runLoop</span> <span class="nl">addPort</span><span class="p">:[</span><span class="bp">NSMachPort</span> <span class="n">port</span><span class="p">]</span> <span class="nl">forMode</span><span class="p">:</span><span class="n">NSDefaultRunLoopMode</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">runLoop</span> <span class="n">run</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">+</span> <span class="p">(</span><span class="bp">NSThread</span> <span class="o">*</span><span class="p">)</span><span class="n">networkRequestThread</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">static</span> <span class="bp">NSThread</span> <span class="o">*</span><span class="n">_networkRequestThread</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">oncePredicate</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">oncePredicate</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
-</span><span class='line'>        <span class="n">_networkRequestThread</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">networkRequestThreadEntryPoint</span><span class="p">:)</span> <span class="nl">object</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">_networkRequestThread</span> <span class="n">start</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">_networkRequestThread</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>使用常驻线程</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">start</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">lock</span> <span class="n">lock</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="nb">self</span> <span class="n">isCancelled</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">cancelConnection</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:[[</span><span class="nb">self</span> <span class="k">class</span><span class="p">]</span> <span class="n">networkRequestThread</span><span class="p">]</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span> <span class="nl">modes</span><span class="p">:[</span><span class="nb">self</span><span class="p">.</span><span class="n">runLoopModes</span> <span class="n">allObjects</span><span class="p">]];</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">([</span><span class="nb">self</span> <span class="n">isReady</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">AFOperationExecutingState</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">operationDidStart</span><span class="p">)</span> <span class="nl">onThread</span><span class="p">:[[</span><span class="nb">self</span> <span class="k">class</span><span class="p">]</span> <span class="n">networkRequestThread</span><span class="p">]</span> <span class="nl">withObject</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">waitUntilDone</span><span class="p">:</span><span class="nb">NO</span> <span class="nl">modes</span><span class="p">:[</span><span class="nb">self</span><span class="p">.</span><span class="n">runLoopModes</span> <span class="n">allObjects</span><span class="p">]];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">lock</span> <span class="n">unlock</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>给子线程开启定时器</h3>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">_thread</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSThread</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTarget</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">test</span><span class="p">)</span> <span class="nl">object</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'><span class="p">[</span><span class="n">_thread</span> <span class="n">start</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 子线程添加定时器</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">subTimer</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="c1">// 默认创建RunLoop并向其model添加timer，所以后续只需要让RunLoop run起来即可</span>
-</span><span class='line'>    <span class="p">[</span><span class="bp">NSTimer</span> <span class="nl">scheduledTimerWithTimeInterval</span><span class="p">:</span><span class="mf">1.0</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">selector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">repeats</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 貌似source1不为空，source0就不为空</span>
-</span><span class='line'><span class="c1">//    [[NSRunLoop currentRunLoop] addPort:[NSPort port] forMode:NSDefaultRunLoopMode];</span>
-</span><span class='line'>    <span class="p">[[</span><span class="bp">NSRunLoop</span> <span class="n">currentRunLoop</span><span class="p">]</span> <span class="n">run</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>让某些事件（行为、任务）在特定模式下执行</h3>
-
-<p>比如图片的设置，在UIScrollView滚动的情况下，我不希望设置图片，等停止滚动了再设置图片，可以用以下代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 图片只在NSDefaultRunLoopMode模式下会进行设置显示</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageView</span> <span class="nl">performSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">setImage</span><span class="p">:)</span> <span class="nl">withObject</span><span class="p">:[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;Snip20150712_39&quot;</span><span class="p">]</span> <span class="nl">afterDelay</span><span class="p">:</span><span class="mf">2.0</span> <span class="nl">inModes</span><span class="p">:</span><span class="l">@[</span><span class="n">NSDefaultRunLoopMode</span><span class="l">]</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>先设置任务在NSDefaultRunLoopMode模式在执行，这样，在滚动使RunLoop进入UITrackingRunLoopMode时，就不会进行图片的设置了。</p>
-
-<h3>控制定时器在特定模式下执行</h3>
-
-<p>上文的《<code>CFRunLoopTimerRef</code>说明：》中已经指出</p>
-
-<h3>添加Observer监听RunLoop的状态</h3>
-
-<p>监听点击事件的处理（在所有点击事件之前做一些事情）<br>
-具体步骤在《<code>CFRunLoopObserverRef</code>说明：》中已写明</p>
-
-<h1>GCD定时器</h1>
-
-<p>注意：</p>
-
-<ul>
-<li>dispatch_source_t是个类，这点比较特殊</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//    dispatch_source_t timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());</span>
-</span><span class='line'>    <span class="kt">dispatch_source_t</span> <span class="n">timer</span> <span class="o">=</span> <span class="n">dispatch_source_create</span><span class="p">(</span><span class="n">DISPATCH_SOURCE_TYPE_TIMER</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">));</span>
-</span><span class='line'>    <span class="n">dispatch_source_set_timer</span><span class="p">(</span><span class="n">timer</span><span class="p">,</span> <span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">,</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">NSEC_PER_SEC</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">dispatch_source_set_event_handler</span><span class="p">(</span><span class="n">timer</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;__&quot;</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span> <span class="p">[</span><span class="bp">NSThread</span> <span class="n">currentThread</span><span class="p">]);</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">static</span> <span class="bp">NSInteger</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">count</span><span class="o">++</span> <span class="o">==</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="c1">// 为什么dispatch_cancel不能用_timer?/</span>
-</span><span class='line'>            <span class="c1">// Controlling expression type &#39;__strong dispatch_source_t&#39; (aka &#39;NSObject&lt;OS_dispatch_source&gt; *__strong&#39;) not compatible with any generic association type</span>
-</span><span class='line'>            <span class="c1">// 类型错误，可能dispatch_cancel是宏定义，需要的就是方法调用，而不是变量</span>
-</span><span class='line'><span class="c1">//            dispatch_cancel(self.timer);</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="n">dispatch_source_cancel</span><span class="p">(</span><span class="n">_timer</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">});</span>
-</span><span class='line'>    <span class="c1">// 定时器默认是停止的，需要手动恢复</span>
-</span><span class='line'>    <span class="n">dispatch_resume</span><span class="p">(</span><span class="n">timer</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 需要一个强引用保证timer不被释放</span>
-</span><span class='line'>    <span class="n">_timer</span> <span class="o">=</span> <span class="n">timer</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>最后一点需要说明的是，SDWebImage框架的下载图片业务中也使用到了RunLoop，老确保图片下载成功后才关闭任务子线程</p>
 </div>
   
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-07-14-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">阅读全文 &rarr;</a>
+    </footer>
   
 
 
@@ -1074,7 +200,7 @@ AFNetworking出现SSL错误 &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015-09-01-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧滚动标签</a></h1>
+      <h1 class="entry-title"><a href="/blog/2015-07-12-chang-yong-runtimehan-shu/">常用Runtime函数</a></h1>
     
     
       <p class="meta">
@@ -1083,196 +209,21 @@ AFNetworking出现SSL错误 &hellip;">
 
 
 
-<time class='entry-date' datetime='2015-09-01T20:30:39+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2015</span></span> <span class='time'>8:30 pm</span></time>
+<time class='entry-date' datetime='2015-07-12T11:28:20+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>11:28 am</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>看到有些APP在tableView右侧增加了一个滚动标签，并且显示滑条所指向的cell的部分数据。这里写下自己的想法，实现还是简单的。</p>
-
-<h4>效果图</h4>
-
-<p><img src="/images/2015-08-29%2021_16_47.gif" alt="" /><br></p>
-
-<h4>需求</h4>
-
-<p>需求点大意是在tableView的右侧实现一个类似标签索引的东西，标签索引显示对应cell的时间。</p>
-
-<h4>解决方法</h4>
-
-<p>想到的方法一：</p>
-
-<ul>
-<li>刚开始打算自己创建一个UILabel索引标签，然后监听tableView的contentOffset来实现索引标签的移动：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 在这里根据scrollView.contentOffset.y来改变标签索引的坐标</span>
-</span><span class='line'>  <span class="c1">// contentSize的高度，和屏幕高度是成固定比例的，所以可以计算出来</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>后来感觉这样太麻烦，于是就打算监听scrollview内部的导航view决定索引标签的移动。由于是scrollView的内部控件，所以就通过断点的方式获取控件的成员变量名:<br>
-<img src="/images/Snip20150829_4.png" alt="" /></p>
-
-<p>看出成员变量名如下：<br>
-<img src="/images/Snip20150829_3.png" alt="" /></p>
-
-<p>由此可以引出方法二和三。</p>
-
-<p>方法二：</p>
-
-<ul>
-<li>还是采用创建UILabel，不过是加到控制器的view上，然后根据其中的_verticalScrollIndicator的左边，来进行相应的移动。</li>
-</ul>
-
-
-<p>由于此标签索引不需要交互，所以我采用了方法三。<br>
-方法三：</p>
-
-<ul>
-<li>将创建的UILabel添加到<em>verticalScrollIndicator上，成为它的子控件。然后通过indexPathForRowAtPoint:获取对应的cell的行号。因为</em>verticalScrollIndicator本身是和tableView在同一个坐标系，所以也不需要做转换。</li>
-</ul>
-
-
-<p>主要代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">ViewController</span> <span class="p">()</span> <span class="o">&lt;</span><span class="bp">UITableViewDataSource</span><span class="p">,</span> <span class="bp">UITableViewDelegate</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">IBOutlet</span> <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">UIView</span> <span class="o">*</span><span class="n">scrollIndicator</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">static</span> <span class="bp">NSString</span> <span class="o">*</span><span class="k">const</span> <span class="n">reuseIndentifier</span> <span class="o">=</span> <span class="s">@&quot;testCell&quot;</span><span class="p">;</span>
-</span><span class='line'><span class="k">@implementation</span> <span class="nc">ViewController</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">tableView</span><span class="p">.</span><span class="n">rowHeight</span> <span class="o">=</span> <span class="mi">150</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">numberOfRowsInSection:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">section</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">200</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="bp">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">dequeueReusableCellWithIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">cell</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">cell</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableViewCell</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithStyle</span><span class="p">:</span><span class="n">UITableViewCellStyleDefault</span> <span class="nl">reuseIdentifier</span><span class="p">:</span><span class="n">reuseIndentifier</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">backgroundColor</span>  <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="nl">colorWithRed</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">green</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">blue</span><span class="p">:</span><span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span> <span class="nl">alpha</span><span class="p">:</span><span class="mf">0.5</span><span class="p">];</span>
-</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;just a function test--%ld!&quot;</span><span class="p">,</span> <span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewDidScroll:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span> <span class="o">=</span> <span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="n">scrollView</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 在这里根据_verticalScrollIndicator的中点，来获取对应的cell行号，从而可以获取对应行的数据来进行显示</span>
-</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">tableView</span> <span class="nl">indexPathForRowAtPoint</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">center</span><span class="p">].</span><span class="n">row</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">scrollViewWillBeginDragging:</span><span class="p">(</span><span class="bp">UIScrollView</span> <span class="o">*</span><span class="p">)</span><span class="nv">scrollView</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 这里注意要在点击时获取，如果在view加载完成时设置标签索引的中点，那么获取的_verticalScrollIndicator的frame是不对的</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">tableView</span> <span class="nl">valueForKey</span><span class="p">:</span><span class="s">@&quot;verticalScrollIndicator&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="bp">UILabel</span> <span class="o">*</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UILabel</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="o">-</span><span class="mi">50</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">)];</span>
-</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">backgroundColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">orangeColor</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="bp">CGPoint</span> <span class="n">center</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span><span class="p">;</span>
-</span><span class='line'>        <span class="n">center</span><span class="p">.</span><span class="n">y</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="mf">0.5</span><span class="p">;</span>
-</span><span class='line'>        <span class="n">indicatorView</span><span class="p">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">center</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">scrollIndicator</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">indicatorView</span><span class="p">];</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">indicatorView</span> <span class="o">=</span> <span class="n">indicatorView</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
+  <div class="entry-content"><p>这里主要纪录一些常用的函数：</p>
 
 </div>
   
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-07-12-chang-yong-runtimehan-shu/">阅读全文 &rarr;</a>
+    </footer>
   
 
 
@@ -1283,7 +234,7 @@ AFNetworking出现SSL错误 &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015-07-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a></h1>
+      <h1 class="entry-title"><a href="/blog/2015-07-11-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a></h1>
     
     
       <p class="meta">
@@ -1292,244 +243,31 @@ AFNetworking出现SSL错误 &hellip;">
 
 
 
-<time class='entry-date' datetime='2015-07-27T20:17:49+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>27</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:17 pm</span></time>
+<time class='entry-date' datetime='2015-07-11T20:16:13+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>11</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:16 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><p>最终设置UITextField的placeholder效果：<br></p>
-
-<p><img src="/images/2015-07-28%2016_46_41.gif" alt="" /><br></p>
-
-<p>有需求1如下：</p>
+  <div class="entry-content"><p>runtime可以以底层的角度来对一些实现方式进行更改，比如说KVC<br>
+首先，先来了解下KVC的底层原理:<br>
+key : value</p>
 
 <ul>
-<li>未点击时UITextField的placeholder为浅灰色</li>
-<li>点击后，还未进行输入时，UITextField的placeholder变为深灰色</li>
+<li>1.去模型中查找有没有setValue:，直接调用这个对象setValue:赋值</li>
+<li>2.如果没有setValue:，就在模型中查找_value属性</li>
+<li>3.如果没有_value属性，就查找value属性</li>
+<li>4.如果还没有就报错</li>
 </ul>
 
 
-<p>这个实现并不难：</p>
-
-<ul>
-<li>通过通知或者重写UITextField的响应者处理方法，都可以实现捕获点击时间</li>
-<li>UITextField设置placeholder可以使用以下属性：
-
-<ul>
-<li>通过设置这个富文本属性，可以得到丰富多彩的placeholder<br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">@</span><span class="bp">NSCopying</span> <span class="k">var</span> <span class="nl">attributedPlaceholder</span><span class="p">:</span> <span class="bp">NSAttributedString</span><span class="o">?</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 附带光标颜色属性</span>
-</span><span class='line'><span class="k">var</span> <span class="nl">tintColor</span><span class="p">:</span> <span class="bp">UIColor</span><span class="o">!</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>但是需求2加了点东西：</p>
-
-<ul>
-<li>点击后，还未进行输入时，UITextField的placeholder文字左右进行小幅度抖动<br></li>
-</ul>
-
-
-<p>可以看到通过设置attributedPlaceholder，可以改变一些静态的属性，如颜色和文字大小。<br>
-但是如果需要里面的文字做一些简单的抖动效果貌似就不行了，UITextField没有提供相关属性，我们也不知道placeholder是在何种控件中显示的。<br>
-既然不知道laceholder是在何种控件中显示，那就通过以下代码打印出UITextField中所有的成员变量（函数参考<a href="http://triplecc.github.io/blog/2015-01-10-runtimeji-chu/">runtime基础元素解析</a>），看看是否会有什么发现：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">([</span><span class="bp">UITextField</span> <span class="k">class</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">outCount</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">Ivar</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivars</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%s&quot;</span><span class="p">,</span> <span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">));</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">free</span><span class="p">(</span><span class="n">ivars</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>截取关键部分如下：<br></p>
-
-<p><img src="/images/Snip20150728_2.png" alt="" /><br></p>
-
-<p>从字面上看，上面的<code>_placeholderLabel</code>是否就是显示placeholder的控件？<br>
-测试实际结果的确是显示placeholder的控件。<br>
-只要有了这个控件，那要做一些小抖动的动画那就没什么问题了，先获取这个UILabel:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">var</span> <span class="nl">tpcPlaceholderLabel</span><span class="p">:</span><span class="bp">UILabel</span><span class="o">?</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kr">get</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">valueForKey</span><span class="p">(</span><span class="s">&quot;_placeholderLabel&quot;</span><span class="p">)</span> <span class="kt">as</span><span class="o">?</span> <span class="bp">UILabel</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后重写UITextField的响应者处理函数：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 成为第一响应者</span>
-</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">becomeFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 存储正常颜色</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">normalColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">normalColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="c1">// 存储选中颜色</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">selectedColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">selectedColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">selectedColor</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 执行placeholder动画函数</span>
-</span><span class='line'>    <span class="n">placeholderLabelDoAnimationWithType</span><span class="p">(</span><span class="n">animationType</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">becomeFirstResponder</span><span class="p">()</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 放弃第一响应者</span>
-</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">resignFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">switch</span> <span class="n">animationType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeUpDown</span> <span class="p">:</span>
-</span><span class='line'>        <span class="k">fallthrough</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeBlowUp</span> <span class="p">:</span>
-</span><span class='line'>        <span class="k">fallthrough</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeLeftRight</span> <span class="p">:</span>
-</span><span class='line'>        <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">CGAffineTransformIdentity</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeEasyInOut</span> <span class="p">:</span>
-</span><span class='line'>        <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
-</span><span class='line'>            <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span>
-</span><span class='line'>        <span class="p">})</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeNone</span> <span class="p">:</span>
-</span><span class='line'>        <span class="k">break</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">operate</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 设置为初始颜色</span>
-</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">normalColor</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">resignFirstResponder</span><span class="p">()</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后通过以下函数，传入相应的动作就可以得到抖动的效果了</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">func</span> <span class="nf">doAnimation</span><span class="p">(</span><span class="nl">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
-</span><span class='line'>    <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">delay</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nl">usingSpringWithDamping</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nl">initialSpringVelocity</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">UIViewAnimationOptions</span><span class="p">.</span><span class="n">CurveEaseInOut</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
-</span><span class='line'>        <span class="n">action</span><span class="p">()</span>
-</span><span class='line'>        <span class="p">},</span> <span class="nl">completion</span><span class="p">:</span> <span class="nb">nil</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>还有一点，根据上面打印的UITextField成员变量，看到了<code>_displayLabel</code>，这个就是在键盘输入后显示文字的UILabel了。这个属性可以用来干嘛？<br>
-我想，<code>可能会有这么一种需求（不过可能没有），就是用户输入错误时，UITextField中已经输入的文字做左右抖动，以间接的形式，辅助提醒用户，这一栏输错了，而不是弹出一个HUB</code>。<br>
-由于UITextField内部做了某些处理，所以无法在成为第一响应者时做一些动作，那么，就在放弃第一响应者函数中。<br></p>
-
-<p>相关代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 设置一个在放弃第一响应者的闭包属性</span>
-</span><span class='line'><span class="k">var</span> <span class="nl">operateWhenResignFirstResponder</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="p">())</span><span class="o">?</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 在func resignFirstResponder() -&gt; Bool函数中调用</span>
-</span><span class='line'><span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">operate</span><span class="p">()</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h4>代码地址</h4>
-
-<p><a href="https://github.com/tripleCC/TPCDynamicTextFiled/blob/master/README.md">UITextFiled文字抖动效果</a></p>
 </div>
   
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-07-11-runtimeying-yong-zhi-kvc/">阅读全文 &rarr;</a>
+    </footer>
   
 
 
@@ -1540,7 +278,7 @@ AFNetworking出现SSL错误 &hellip;">
       
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2015-07-23-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a></h1>
+      <h1 class="entry-title"><a href="/blog/2015-07-10-runtimeji-chu/">Runtime基础</a></h1>
     
     
       <p class="meta">
@@ -1549,172 +287,15 @@ AFNetworking出现SSL错误 &hellip;">
 
 
 
-<time class='entry-date' datetime='2015-07-23T20:17:32+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>23</span><span class='date-suffix'>rd</span>, <span class='date-year'>2015</span></span> <span class='time'>8:17 pm</span></time>
+<time class='entry-date' datetime='2015-07-10T20:14:17+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>10</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:14 pm</span></time>
         
       </p>
     
   </header>
 
 
-  <div class="entry-content"><h2>UINavigationBar属性</h2>
-
-<ul>
-<li>如果想统一设置，可以通过以下方法，获取当前类下的所有对象的导航条，然后进行设置</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景图片<br>
-<img src="/images/Snip20150724_4.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// barMetrics需要设置成UIBarMetricsDefault</span>
-</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setBackgroundimages</span><span class="p">:(</span><span class="n">UIimages</span> <span class="o">*</span><span class="p">)</span><span class="n">backgroundimages</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景阴影图片<br>
-<img src="/images/Snip20150724_5.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">shadowimages</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景颜色<br>
-<img src="/images/Snip20150724_6.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">barTintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题文字属性<br>
-<img src="/images/Snip20150724_10.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">titleTextAttributes</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>系统类型按钮文字颜色<br>
-<img src="/images/Snip20150724_9.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">tintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>返回按钮图片<br>
-<img src="/images/Snip20150724_11.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 必须要两个都设置，并且图片要设置成不渲染</span>
-</span><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorimages</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorTransitionMaskimages</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题垂直偏移<br>
-<img src="/images/Snip20150724_12.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setTitleVerticalPositionAdjustment</span><span class="p">:(</span><span class="n">CGFloat</span><span class="p">)</span><span class="n">adjustment</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>返回按钮更改</h2>
-
-<p>系统原装效果:<br>
-<img src="/images/Snip20150724_13.png" alt="" /><br></p>
-
-<p>如果有以下需求:</p>
-
-<ul>
-<li>去除上面返回按钮上“我是标题”字样，并设置返回图片为白色</li>
-</ul>
-
-
-<h6>分析</h6>
-
-<ul>
-<li>图片修改
-
-<ul>
-<li>方式1：设置返回图片颜色</li>
-<li>方式2：直接设置返回图片</li>
-<li>方式3：使用按钮覆盖返回图片(这种方式会使返回箭头图片和左边距离加大，但可以用取巧的方式调整)</li>
-</ul>
-</li>
-<li>文字修改
-
-<ul>
-<li>方式1：设置控制器navigationItem的backBarButtonItem显示文字为""</li>
-<li>方式2：设置返回按钮文字偏移量，使其移出屏幕</li>
-<li>方式3：采用控制器navigationItem的leftBarButtonItem进行覆盖</li>
-</ul>
-</li>
-</ul>
-
-
-<h6>解决</h6>
-
-<p>综合以上说明，这里给出三种方式(都是针对的自定义UINavigationController)：</p>
-
-<ul>
-<li>方式1:在<code>-pushViewController:animated:</code>中设置文字 ，在<code>+initialize</code>方法中设置返回图片或改变返回图片颜色
-
-<ul>
-<li>注意导航栏对图片的渲染</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">pushViewController</span><span class="p">:(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">animated</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">backBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTitle</span><span class="p">:</span><span class="s">@&quot;&quot;</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">action</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
+  <div class="entry-content"><p>Objective-C的runtime语言使它具备了动态语言的特性，也就是平时所说的“运行时”。在runtime的基础上，可以做很多平时难以想到事，或者化简原先 较为繁杂的解决方案。<br>
+相对于静态语言，比如C以下程序</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -1723,119 +304,110 @@ AFNetworking出现SSL错误 &hellip;">
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取特定类的所有导航条</span>
-</span><span class='line'><span class="bp">UINavigationBar</span> <span class="o">*</span><span class="n">navigationBar</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式1：使用自己的图片替换原来的返回图片</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorTransitionMaskImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式2：设置返回图片颜色</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">whiteColor</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式2:在<code>+initialize</code>方法中设置所有返回按钮文字的偏移量，其他设置和方式1一致</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">appearance</span><span class="p">]</span> <span class="nl">setBackButtonTitlePositionAdjustment</span><span class="p">:</span><span class="n">UIOffsetMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="nl">forBarMetrics</span><span class="p">:</span><span class="n">UIBarMetricsDefault</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式3.重写<code>-pushViewController:animated:</code>方法,使用控制器的<code>navigationItem的leftBarButtonItem</code>覆盖返回按钮
-
-<ul>
-<li>需要判断是否为根控制器，如果是根控制器就不添加
-
-<ul>
-<li>导航控制器的<code>viewControllers.count</code>不为0即表示传入的为非根控制器</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">pushViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#include &lt;stdio.h&gt;</span>
+</span><span class='line'><span class="kt">void</span> <span class="nf">run</span><span class="p">()</span>
+</span><span class='line'><span class="p">{}</span>
+</span><span class='line'><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
 </span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">viewControllers</span><span class="p">.</span><span class="n">count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithImage</span><span class="p">:[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">]</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">action</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">back</span><span class="p">)];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
+</span><span class='line'>  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span><span class='line'><span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
 
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">back</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">popViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>方案对比</h6>
-
-<ul>
-<li>方案1和方案2改动较小，对系统自带的返回功能无影响。<br></li>
-<li>方式3灵活性最高，但是会<code>使系统的滑动返回失效</code>，需要自己实现，具体实现参照<a href="https://github.com/forkingdog/FDFullscreenPopGesture">forkingdog全屏手势分类</a><br></li>
-<li>方式3还会使按钮更加偏向右边：</li>
-</ul>
-
-
-<p><img src="/images/Snip20150722_10.png" alt="" /><br>
-通过以下方式可以使按钮向左边靠：
-<img src="/images/Snip20150722_11.png" alt="" /><br>
-- 采用customView，<code>添加自己定义的UIButton</code><br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="c1">// 返回按钮内容左靠</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentHorizontalAlignment</span> <span class="o">=</span> <span class="n">UIControlContentHorizontalAlignmentLeft</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 让返回按钮内容继续向左边偏移10</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentEdgeInsets</span> <span class="o">=</span> <span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-</span><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithCustomView</span><span class="p">:</span><span class="n">button</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
 
 </div>
   
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-07-10-runtimeji-chu/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-06-29-uiimagetu-pian-wu-xian-gun-dong-de-shi-xian/">UIImage图片无限滚动的实现</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-06-29T20:34:41+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:34 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>当app需要切换显示的图片少时，可以使用创建多个UIImageView，来实现多个图片切换显示；但是在图片较多时，这种做法显得很耗内存。所以以下总结了一下自己知道的几个方法与实现，并做了一个简易的封装。</p>
+
+<p><a href="https://github.com/tripleCC/TPCPageScrollView">获取演示代码</a></p>
+
+<p><a href="https://github.com/tripleCC/GiftPick">封装轮播控件的应用</a>（图片从网络加载）：<br>
+<img src="/images/2015-09-13%2010_54_13.gif" alt="" /></p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-06-29-uiimagetu-pian-wu-xian-gun-dong-de-shi-xian/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/">新浪微博iOS底部功能按钮简单实现</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-06-29T20:31:41+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>8:31 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><img src="/images/2015-09-08%2001_23_36.gif" alt="效果图" /></p>
+
+<h2>以上效果主要涉及点</h2>
+
+<ul>
+<li><p>1.九宫格布局</p></li>
+<li><p>2.形变动画</p></li>
+<li><p>3.UIView动画</p></li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/">阅读全文 &rarr;</a>
+    </footer>
   
 
 
     </article>
   
   <div class="pagination">
-    
-      <a class="prev" href="/posts/3">&larr; Older</a>
     
     <a href="/blog/archives">Blog Archives</a>
     
@@ -1873,54 +445,6 @@ AFNetworking出现SSL错误 &hellip;">
     
       <li class="post">
         <a href="/blog/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/">翻译篇：实现Twitter个人详情动态效果</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-09-06-ioszhi-shi-sui-pian-%5B%3F%5D/">iOS知识碎片一</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">RunLoop基础元素解析</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-09-01-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧滚动标签</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-07-27-uitextfiledwen-zi-dou-dong-xiao-guo/">UITextFiled文字抖动效果</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-07-23-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/">UINavigationBar属性小结及返回按钮更改</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-07-19-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-07-14-runtimeying-yong-zhi-guan-lian-dui-xiang-he-methodswizzling/">Runtime应用之关联对象和MethodSwizzling</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-07-12-chang-yong-runtimehan-shu/">常用Runtime函数</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-07-11-runtimeying-yong-zhi-kvc/">Runtime应用之KVC</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-07-10-runtimeji-chu/">Runtime基础</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-06-29-uiimagetu-pian-wu-xian-gun-dong-de-shi-xian/">UIImage图片无限滚动的实现</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/">新浪微博iOS底部功能按钮简单实现</a>
       </li>
     
   </ul>
