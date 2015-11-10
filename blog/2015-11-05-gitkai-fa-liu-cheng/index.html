@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Git开发流程 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="使用Git开发总结 现在很多互联网公司都是通过Git进行代码管理，SVN则逐渐被淘汰了。以下就是自己在Git开发中的流程与注意点：
+1、所有人fork一份 project, 在自己的repository上开发，开发完成后向 project 提 pull request. 2、 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2015-11-05-gitkai-fa-liu-cheng/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Git开发流程</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-11-05T18:44:59+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:44 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><h2>使用Git开发总结</h2>
+
+<p>现在很多互联网公司都是通过Git进行代码管理，SVN则逐渐被淘汰了。以下就是自己在Git开发中的流程与注意点：<br>
+1、所有人fork一份 project, 在自己的repository上开发，开发完成后向 project 提 pull request.</p>
+
+<p>2、如果遇到需要多人共同开发的比较大的项目，可以细分为个人完成的小项目，在各自 repository 上完成后 pull request.</p>
+
+<p>3、尽量保持每天至少 pull request 一次。如果功能一天不能完成，则每天抓取 project最新的版本 merge 并解决冲突，保证每次最终 pull request 的冲突减到最少。</p>
+
+<p>4、尽量保证提交前能看一遍每行改动 (如果使用 SourceTree, 可以看到对于每一行的改动，并选择是否提交/回滚这行的改动)，确保每行都是必要的。</p>
+
+<p>5、另外，iOS 项目中有一些 .gitignore 也无法忽略的文件，比如 project.pbxproj 和 *.xcodecheckout，需要每次手动来忽略其中的改动，务必确保这些文件内所有改动的行都是必要的，除非特殊情况不要提交其中的 PROVISIONING_PROFILE 和 Build Settings 相关的改动。</p>
+
+<h4>默认工作流程</h4>
+
+<ul>
+<li>把 project fork 一份到 yourname/project,并clone到本地</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd ~/git/
+</span><span class='line'>git clone https://github.com/yourname/project.git</span></code></pre></td></tr></table></div></figure>
+
+
+<p>保持代码是和主线同步的，假设主线名称为main</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git remote add upstream https://github.com/main/matcha-ios.git
+</span><span class='line'>git checkout master
+</span><span class='line'>git fetch upstream 
+</span><span class='line'>git merge upstream/master</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在项目目录新建一个 .gitignore 来忽略一些不该提交的东西 <a href="https://github.com/github/gitignore.git">gitignore参考</a></p>
+
+<ul>
+<li>提交一次修改</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git add new.m git add new.h
+</span><span class='line'>git diff
+</span><span class='line'>git commit -m ‘add Class new’</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git push origin</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>解决可能有的冲突：</li>
+</ul>
+
+
+<p>务必在这个阶段解决各种可能的冲突，减少 pull request merge 到 main/project 时的成本。SourceTree 的处理过程也是类似的。(这里命令行可以执行 git mergetool 来调用冲突处理工具来处理，用 SourceTree 可以直接打开 Xcode 自带的冲突处理工具处理)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout master
+</span><span class='line'>git fetch upstream && git merge upstream/master</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// 解决冲突后
+</span><span class='line'>git commit -m "XXXX"
+</span><span class='line'>git push origin</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>提交Pull Request</li>
+</ul>
+
+
+<p>最后你需要做的，就是打开 <a href="https://github.com/yourname/project">https://github.com/yourname/project</a> ，提交一个Pull Request，并assign给某人帮你review.Pull Request的名称尽量取的有意义，比如<code>优化cell性能</code>等词语</p>
+
+<h2>Git学习资料</h2>
+
+<p>基本操作和概念： Try Git： <a href="http://try.github.com/">http://try.github.com/</a>
+图解Git 了解Git的一些特性：<a href="http://marklodato.github.com/visual-git-guide/index-zh-cn.html">http://marklodato.github.com/visual-git-guide/index-zh-cn.html</a>
+[推荐]一堆实用技巧，让你爱上命令行： <a href="http://blog.jobbole.com/25808/">http://blog.jobbole.com/25808/</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-11-05T18:44:59+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>6:44 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015-11-01-octopressyin-wei-rubyban-ben-chu-xian-pushbu-sheng-xiao-wen-ti/" title="Previous Post: Octopress因为Ruby版本出现push不生效问题">&laquo; Octopress因为Ruby版本出现push不生效问题</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 喜欢技术，喜欢Ubuntu，喜欢字符终端，热衷底层，涉略微处理器、Linux，最终加入移动大家庭 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc" style="color: coral"> 访问我的简书 </a><br>
+  <a href="https://github.com/tripleCC" style="color: coral"> 访问我的github </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-11-05-gitkai-fa-liu-cheng/">Git开发流程</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-11-01-octopressyin-wei-rubyban-ben-chu-xian-pushbu-sheng-xiao-wen-ti/">Octopress因为Ruby版本出现push不生效问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-09-30-ioszhi-shi-sui-pian-er/">iOS知识碎片二</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-09-26-phphou-tai-bian-cheng-chu-tan/">PHP后台编程初探</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-09-26-ioszhi-shi-sui-pian-er/">关于这一周总结</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
