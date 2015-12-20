@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2015-12-15T22:22:14+08:00</updated>
+  <updated>2015-12-20T22:53:46+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -14,7 +14,16 @@
 
   
   <entry>
-    <title type="html"><![CDATA[swift源码阅读Runtime]]></title>
+    <title type="html"><![CDATA[Swift源码阅读URL]]></title>
+    <link href="http://triplecc.github.io/blog/2015-12-15-swiftyuan-ma-yue-du-url/"/>
+    <updated>2015-12-15T22:23:08+08:00</updated>
+    <id>http://triplecc.github.io/blog/swiftyuan-ma-yue-du-url</id>
+    <content type="html"><![CDATA[
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Swift源码阅读Runtime]]></title>
     <link href="http://triplecc.github.io/blog/2015-12-07-swiftyuan-ma-yue-du-runtime/"/>
     <updated>2015-12-07T21:46:23+08:00</updated>
     <id>http://triplecc.github.io/blog/swiftyuan-ma-yue-du-runtime</id>
@@ -335,7 +344,8 @@
     <link href="http://triplecc.github.io/blog/2015-12-07-ioszhi-shi-sui-pian-san/"/>
     <updated>2015-12-07T17:10:05+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-san</id>
-    <content type="html"><![CDATA[<p>1、NSSetUncaughtExceptionHandler注册捕获错误无法调用<br></p>
+    <content type="html"><![CDATA[<p>1、NSSetUncaughtExceptionHandler注册捕获错误无法调用<br>
+2、自定义提示宏</p>
 
 <!--more-->
 
@@ -345,6 +355,30 @@
 <p>原因是老代码中集成了友盟分析，并且没有关闭友盟错误收集机制。友盟内部的错误收集方式也是采用这个方式，所以自己注册的错误处理函数被友盟覆盖，因此不会被执行。</p>
 
 <p>同理，多种第三方的错误日志应该是不能同时实现捕获的。也是看到了友盟的文件夹才想到这点，stackoverflow上面说的都不是很符合这种情况。</p>
+
+<h2>自动提示宏</h2>
+
+<ul>
+<li>什么情况下需要用到自动提示宏
+
+<ul>
+<li>使用KVO，KVC时使用</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>keyPath(objc, keyPath) @(((void)objc.keyPath, #keyPath))
+</span><span class='line'>// void 去警告
+</span><span class='line'>// # 表示转成c字符串
+</span><span class='line'>// , 逗号表达式，取最右的值
+</span><span class='line'>// @() 基本类型转oc类型</span></code></pre></td></tr></table></div></figure>
+
 ]]></content>
   </entry>
   
@@ -9312,59 +9346,6 @@ key : value</p>
 <h2>总结</h2>
 
 <p>对于前面两种方法，我使用了UIImageView的tag来记录对应图片的下标，所以也省去了一个变量。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[新浪微博iOS底部功能按钮简单实现]]></title>
-    <link href="http://triplecc.github.io/blog/2015-06-29-xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian/"/>
-    <updated>2015-06-29T20:31:41+08:00</updated>
-    <id>http://triplecc.github.io/blog/xin-lang-wei-bo-iosdi-bu-gong-neng-an-niu-jian-dan-shi-xian</id>
-    <content type="html"><![CDATA[<p><img src="http://triplecc.github.io/images/2015-09-08%2001_23_36.gif" alt="效果图" /></p>
-
-<h2>以上效果主要涉及点</h2>
-
-<ul>
-<li><p>1.九宫格布局</p></li>
-<li><p>2.形变动画</p></li>
-<li><p>3.UIView动画</p></li>
-</ul>
-
-
-<!--more-->
-
-
-<p>首先，考虑图片的效果，初步采用使用modal控制器来实现，但是考虑到modal最后会移除modal他的控制器的view，所以，还是使用自定义UIView来实现这个功能。</p>
-
-<p>做这种功能，首先实现的是按钮出现位置，后面在实现动画就容易了。</p>
-
-<ul>
-<li><p>1.首先进行九宫格布局，创建模型传入指定数量的按钮，并且使用形变，将所有的按钮移动到看不见的坐标</p></li>
-<li><p>2.点击底部按钮后，设置形变至屏幕区域（这里直接设置成CGAffineTransformIdentity）</p></li>
-<li><p>3.对功能按钮的点击和松开进行监听（实现touches方法也可），按钮点击功能菜单按钮后，使用形变设置按钮变大，松开时，再设置形变变大，并且使其透明度为0</p></li>
-<li><p>4.再点击底部按钮后，设置形变至不可见区域</p></li>
-</ul>
-
-
-<p>明确几个功能点后，动画效果就好说了。</p>
-
-<ul>
-<li>1.点击底部按钮后，使用UIView弹性动画，每个按钮设置不同的delay，这样就实现了弹簧与时间间隔效果了。</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">animateWithDuration:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">duration</span> <span class="nf">delay:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">delay</span> <span class="nf">usingSpringWithDamping:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">dampingRatio</span> <span class="nf">initialSpringVelocity:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">velocity</span> <span class="nf">options:</span><span class="p">(</span><span class="n">UIViewAnimationOptions</span><span class="p">)</span><span class="nv">options</span> <span class="nf">animations:</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">void</span><span class="p">))</span><span class="nv">animations</span> <span class="nf">completion:</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">BOOL</span> <span class="n">finished</span><span class="p">))</span><span class="nv">completion</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><p>2.点击功能菜单后，在点击时使用普通UIView动画，使按钮变大，松开时，再次使用UIView，让按钮变大的同时渐渐消失</p></li>
-<li><p>3.再次点击底部按钮后，使用普通的UIView动画，倒序隐藏并缩小按钮</p></li>
-</ul>
-
-
-<p>github：<a href="https://github.com/tripleCC/TPCSpringMenu">代码地址</a></p>
 ]]></content>
   </entry>
   
