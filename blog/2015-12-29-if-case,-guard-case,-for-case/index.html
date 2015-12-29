@@ -1,0 +1,404 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>If-case、guard-case、for-case - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="Swift在2.0版本之后，对if、guard、for的匹配进行了一定的加强，其中case匹配模式感觉还是挺新奇的。 参照Swift官方手册，可以知道，这种模式在针对可选值进行处理时，可以获得额外的便利： 1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+let someOptional: Int? = &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2015-12-29-if-case,-guard-case,-for-case/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">If-case、guard-case、for-case</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-12-29T17:15:29+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:15 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Swift在2.0版本之后，对if、guard、for的匹配进行了一定的加强，其中case匹配模式感觉还是挺新奇的。</p>
+
+<p>参照Swift官方手册，可以知道，这种模式在针对可选值进行处理时，可以获得额外的便利：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>let someOptional: Int? = 42
+</span><span class='line'>// Match using an enumeration case pattern
+</span><span class='line'>if case .Some(let x) = someOptional {
+</span><span class='line'>    print(x)
+</span><span class='line'>}
+</span><span class='line'> 
+</span><span class='line'>// Match using an optional pattern
+</span><span class='line'>if case let x? = someOptional {
+</span><span class='line'>    print(x)
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>x?是.Some(let x)的简写方式。单从以上代码段，可能还看不出有什么特别之处，相反还比以前的实现繁琐：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>if let x = someOptional {
+</span><span class='line'>    print(x)
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过官方手册体现其便利的是for关键字，if还需要另一种场景来体现其带来的便利：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>let arrayOfOptionalInts: [Int?] = [nil, 2, 3, nil, 5]
+</span><span class='line'>// Match only non-nil values
+</span><span class='line'>for case let number? in arrayOfOptionalInts {
+</span><span class='line'>    print("Found a \(number)")
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// 输出
+</span><span class='line'>// Found a 2
+</span><span class='line'>// Found a 3
+</span><span class='line'>// Found a 5</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，在遍历可选值数组的场景下，这种方式确实减少了一些代码，要是以前，我可能会这样实现：</p>
+
+<!--more-->
+
+
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// 1
+</span><span class='line'>for x in arrayOfOptionalInts {
+</span><span class='line'>    if let x = x {
+</span><span class='line'>        print(x)
+</span><span class='line'>    }
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// 2
+</span><span class='line'>arrayOfOptionalInts.flatMap{$0}.map{ print($0) }</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Alarmfire以及Swift开源Foundation的NSSet类中，都使用到了这个特性：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// Alarmfire
+</span><span class='line'>public enum ValidationResult {
+</span><span class='line'>    case Success
+</span><span class='line'>    case Failure(NSError)
+</span><span class='line'>}
+</span><span class='line'>public func validate(validation: Validation) -&gt; Self {
+</span><span class='line'>    delegate.queue.addOperationWithBlock {
+</span><span class='line'>        if let
+</span><span class='line'>            response = self.response where self.delegate.error == nil,
+</span><span class='line'>            case let .Failure(error) = validation(self.request, response)
+</span><span class='line'>        {
+</span><span class='line'>            self.delegate.error = error
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>
+</span><span class='line'>    return self
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// NSSet 
+</span><span class='line'>public func isSubsetOfSet(otherSet: Set&lt;NSObject&gt;) -&gt; Bool {
+</span><span class='line'>    for case let obj as NSObject in allObjects where !otherSet.contains(obj) {
+</span><span class='line'>        return false
+</span><span class='line'>    }
+</span><span class='line'>    return true
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>按照我的思路编写的话，在老版本中，我会这样实现上面两个方法：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// Alarmfire
+</span><span class='line'>public func wvalidate(validation: Validation) -&gt; Self {
+</span><span class='line'>    delegate.queue.addOperationWithBlock {
+</span><span class='line'>        if let response = self.response where self.delegate.error == nil {
+</span><span class='line'>            switch validation(self.request, response) {
+</span><span class='line'>            case let .Failure(error):
+</span><span class='line'>                self.delegate.error = error
+</span><span class='line'>            default :
+</span><span class='line'>                break
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>    return self
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// NSSet
+</span><span class='line'>public func isSubsetOfSet(otherSet: Set&lt;NSObject&gt;) -&gt; Bool {
+</span><span class='line'>    for obj in allObjects where !otherSet.contains(obj) {
+</span><span class='line'>        if let obj = obj as? NSObject {
+</span><span class='line'>            return false
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>    return true
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在第一个实现中，我不得不添加了default分支，即使在这个分支里面不进行任何操作，从而可见case匹配模式可以在这类场景下简化switch语句（如果只需要确认enum中的一个类型，就可以选择性地用if-case替换switch）。<br>
+在第二个实现中，因为编译器的原因，我不得不将一般转换as改成可选转换as?，然后增加if语句进行判断。(针对类型转换，if-case可以缩减代码量)<br></p>
+
+<p>此外，case匹配模式在针对<code>值绑定</code>，<code>元组</code>，<code>类型转换</code>都带来了一定便利，<a href="http://appventure.me/2015/08/20/swift-pattern-matching-in-detail/#sec-9">Match Me if you can: Swift Pattern Matching in Detail.</a>这篇文章中，对这几种情况进行了非常讲解，并列举了一些实际应用的例子，推荐阅读。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2015-12-29T17:15:29+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:15 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2015-12-24-zai-swiftshi-xian-gui-dang-struct/" title="Previous Post: 在Swift实现Struct归档">&laquo; 在Swift实现Struct归档</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 喜欢技术，喜欢Ubuntu，喜欢字符终端，热衷底层，涉略微处理器、Linux，最终加入移动大家庭 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc" style="color: coral"> 访问我的简书 </a><br>
+  <a href="https://github.com/tripleCC" style="color: coral"> 访问我的github </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2015-12-29-if-case,-guard-case,-for-case/">If-case、guard-case、for-case</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-12-24-zai-swiftshi-xian-gui-dang-struct/">在Swift实现Struct归档</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-12-20-xcodekuai-jie-jian/">Xcode快捷键</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-12-07-swiftyuan-ma-yue-du-runtime/">Swift源码阅读Runtime</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-12-07-ioszhi-shi-sui-pian-san/">iOS知识碎片三</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
