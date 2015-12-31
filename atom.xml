@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2015-12-30T07:52:34+08:00</updated>
+  <updated>2015-12-31T18:19:57+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -414,7 +414,6 @@
 <li>control + i = control + [  代码对齐</li>
 <li>option + 单击文件  文件显示在辅助窗口</li>
 <li>control + shift + 左击  显示IB中所有控件</li>
-<li>command + shift + o  输入查找文件</li>
 <li>command + shift + option + 左/右 隐藏/显示方法内容</li>
 </ul>
 
@@ -776,8 +775,9 @@
     <updated>2015-12-07T17:10:05+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-san</id>
     <content type="html"><![CDATA[<p>1、NSSetUncaughtExceptionHandler注册捕获错误无法调用<br>
-2、自定义提示宏
-3、frame和bounds</p>
+2、自定义提示宏<br>
+3、frame和bounds<br>
+4、Swift中inout和C/C++中指针/引用的区别</p>
 
 <!--more-->
 
@@ -790,13 +790,10 @@
 
 <h2>自动提示宏</h2>
 
-<ul>
-<li>什么情况下需要用到自动提示宏
+<p>什么情况下需要用到自动提示宏</p>
 
 <ul>
-<li>使用KVO，KVC时使用</li>
-</ul>
-</li>
+<li>使用KVO，KVC时使用(归档的时候也可以使用，这样就不用设置一堆宏了)</li>
 </ul>
 
 
@@ -814,7 +811,7 @@
 
 <h2>frame和bounds</h2>
 
-<p>今天要实现图片浏览器中的一个需求，然后就遇到了这个问题，后来google了一些资料，有一篇<a href="https://www.objc.io/issues/3-views/scroll-view/">UIScrollView原理</a>解决了我的问题。</p>
+<p>今天要实现图片浏览器中的一个需求，然后就遇到了这个问题，需要明确两者之间的区别。后来google了一些资料，有一篇<a href="https://www.objc.io/issues/3-views/scroll-view/">UIScrollView原理</a>解决了我的问题。</p>
 
 <p>里面对于我最重要的就是这句话了：</p>
 
@@ -851,6 +848,109 @@
 
 
 <p>所以改变视图的transform，实际上是改变其layer的bounds。</p>
+
+<h2>Swift中inout和C/C++中指针/引用的区别</h2>
+
+<p>首先明确概念：</p>
+
+<ul>
+<li>inout是passed-in-passed-back形式</li>
+<li>C/C++中是引用形式</li>
+</ul>
+
+
+<p>关于inout关键字，Swift的一些官方文档给出了很详细的一些回答，如下:<br>
+<img src="http://triplecc.github.io/images/Snip20151231_1.png" alt="" /><br>
+<img src="http://triplecc.github.io/images/Snip20151231_3.png" alt="" /><br>
+<img src="http://triplecc.github.io/images/Snip20151231_4.png" alt="" /><br>
+<img src="http://triplecc.github.io/images/Snip20151231_5.png" alt="" /><br>
+从这么多篇幅的解释中，可以很清楚地知道inout的作用方式：<br>
+1、函数被调用，拷贝实参<br>
+2、拷贝在函数中被修改<br>
+3、函数返回，拷贝被赋给源参<br>
+并且一旦相应的函数返回，上面步骤就结束了，剩下的操作便无法改变源参。以下代码段都不会改变传入的参数：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/// 1
+</span><span class='line'>func increment(inout n: Int) -&gt; () -&gt; Int {
+</span><span class='line'>    return { ++n }
+</span><span class='line'>}
+</span><span class='line'>var x = 0
+</span><span class='line'>let i = increment(&x)
+</span><span class='line'>print(x)   // 0
+</span><span class='line'>print(i()) // 1
+</span><span class='line'>
+</span><span class='line'>/// 2
+</span><span class='line'>func increment(inout n: Int) {
+</span><span class='line'>    dispatch_async(dispatch_get_global_queue(0, 0)) { () -&gt; Void in
+</span><span class='line'>        // 假设在子线程执行前就已经return
+</span><span class='line'>        ++n
+</span><span class='line'>    }
+</span><span class='line'>}
+</span><span class='line'>var x = 0
+</span><span class='line'>increment(&x)
+</span><span class='line'>print(x) // 0</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在Swift中，如果想改变上面代码段传入的参数，可以使用UnsafeMutablePointer指针（只是例子，实际并不推荐这么做，这种方式是不安全的）:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>/// 1
+</span><span class='line'>func increment(n: UnsafeMutablePointer&lt;Int&gt;) -&gt; () -&gt; Int {
+</span><span class='line'>    return { ++n.memory }
+</span><span class='line'>}
+</span><span class='line'>var x = 0
+</span><span class='line'>increment(&x)()
+</span><span class='line'>print(x)
+</span><span class='line'>
+</span><span class='line'>/// 2
+</span><span class='line'>func increment(n: UnsafeMutablePointer&lt;Int&gt;) {
+</span><span class='line'>    dispatch_async(dispatch_get_global_queue(0, 0)) { () -&gt; Void in
+</span><span class='line'>        // 假设在子线程执行前就已经return
+</span><span class='line'>        ++n.memory
+</span><span class='line'>    }
+</span><span class='line'>}
+</span><span class='line'>var x = 0
+</span><span class='line'>increment(&x)
+</span><span class='line'>sleep(1)
+</span><span class='line'>print(x)</span></code></pre></td></tr></table></div></figure>
+
 ]]></content>
   </entry>
   
