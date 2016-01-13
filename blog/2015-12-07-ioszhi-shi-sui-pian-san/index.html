@@ -112,16 +112,17 @@
 </ul>
 
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>keyPath(objc, keyPath) @(((void)objc.keyPath, #keyPath))
-</span><span class='line'>// void 去警告
-</span><span class='line'>// # 表示转成c字符串
-</span><span class='line'>// , 逗号表达式，取最右的值
-</span><span class='line'>// @() 基本类型转oc类型</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">keyPath</span><span class="p">(</span><span class="n">objc</span><span class="p">,</span> <span class="n">keyPath</span><span class="p">)</span> <span class="l">@(</span><span class="p">((</span><span class="kt">void</span><span class="p">)</span><span class="n">objc</span><span class="p">.</span><span class="n">keyPath</span><span class="p">,</span> <span class="err">#</span><span class="n">keyPath</span><span class="p">)</span><span class="l">)</span>
+</span><span class='line'><span class="c1">// void 去警告</span>
+</span><span class='line'><span class="c1">// # 表示转成c字符串</span>
+</span><span class='line'><span class="c1">// , 逗号表达式，取最右的值</span>
+</span><span class='line'><span class="c1">// @() 基本类型转oc类型</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>frame和bounds</h2>
@@ -130,13 +131,14 @@
 
 <p>里面对于我最重要的就是这句话了：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>This is, in fact, exactly how a scroll view works when you set its contentOffset property: it changes the origin of the scroll view’s bounds</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">This</span> <span class="n">is</span><span class="p">,</span> <span class="k">in</span> <span class="n">fact</span><span class="p">,</span> <span class="n">exactly</span> <span class="n">how</span> <span class="n">a</span> <span class="n">scroll</span> <span class="n">view</span> <span class="n">works</span> <span class="n">when</span> <span class="n">you</span> <span class="n">set</span> <span class="n">its</span> <span class="n">contentOffset</span> <span class="nl">property</span><span class="p">:</span> <span class="n">it</span> <span class="n">changes</span> <span class="n">the</span> <span class="n">origin</span> <span class="n">of</span> <span class="n">the</span> <span class="n">scroll</span> <span class="n">view</span><span class="err">’</span><span class="n">s</span> <span class="n">bounds</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>所以UIScrollView的偏移是通过设置bounds的origin来实现的。看了一些MWPhotoBrowser源码也确实使用UIScrollView的bounds来改变对应子视图的frame：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -144,22 +146,24 @@
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>- (void)layoutSubviews {
-</span><span class='line'>  ....
-</span><span class='line'>  // Update tap view frame
-</span><span class='line'>  _tapView.frame = self.bounds;
-</span><span class='line'>  ....
-</span><span class='line'>  [super layoutSubviews];
-</span><span class='line'>  ....
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">layoutSubviews</span> <span class="p">{</span>
+</span><span class='line'>  <span class="p">....</span>
+</span><span class='line'>  <span class="c1">// Update tap view frame</span>
+</span><span class='line'>  <span class="n">_tapView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">bounds</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">....</span>
+</span><span class='line'>  <span class="p">[</span><span class="nb">super</span> <span class="n">layoutSubviews</span><span class="p">];</span>
+</span><span class='line'>  <span class="p">....</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>然后忽然又想到了另一个问题，在这里记录备忘：<code>CGAffineTransform实际改变的是bounds</code>。</p>
 
 <p><a href="https://github.com/AttackOnDobby/iOS-Core-Animation-Advanced-Techniques">iOS-Core-Animation-Advanced-Techniques</a>中有一句：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>frame并不是一个非常清晰的属性，它其实是一个虚拟属性，是根据bounds，position和transform计算而来</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">frame</span><span class="err">并不是一个非常清晰的属性，它其实是一个虚拟属性，是根据</span><span class="n">bounds</span><span class="err">，</span><span class="n">position</span><span class="err">和</span><span class="n">transform</span><span class="err">计算而来</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>所以改变视图的transform，实际上是改变其layer的bounds。</p>
@@ -185,7 +189,7 @@
 3、函数返回，拷贝被赋给源参<br>
 并且一旦相应的函数返回，上面步骤就结束了，剩下的操作便无法改变源参。以下代码段都不会改变传入的参数：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -204,30 +208,31 @@
 <span class='line-number'>17</span>
 <span class='line-number'>18</span>
 <span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>/// 1
-</span><span class='line'>func increment(inout n: Int) -&gt; () -&gt; Int {
-</span><span class='line'>    return { ++n }
-</span><span class='line'>}
-</span><span class='line'>var x = 0
-</span><span class='line'>let i = increment(&x)
-</span><span class='line'>print(x)   // 0
-</span><span class='line'>print(i()) // 1
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">/// 1</span>
+</span><span class='line'><span class="n">func</span> <span class="nf">increment</span><span class="p">(</span><span class="k">inout</span> <span class="nl">n</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Int</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">{</span> <span class="o">++</span><span class="n">n</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="n">var</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="n">let</span> <span class="n">i</span> <span class="o">=</span> <span class="n">increment</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="p">)</span>
+</span><span class='line'><span class="n">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>   <span class="c1">// 0</span>
+</span><span class='line'><span class="n">print</span><span class="p">(</span><span class="n">i</span><span class="p">())</span> <span class="c1">// 1</span>
 </span><span class='line'>
-</span><span class='line'>/// 2
-</span><span class='line'>func increment(inout n: Int) {
-</span><span class='line'>    dispatch_async(dispatch_get_global_queue(0, 0)) { () -&gt; Void in
-</span><span class='line'>        // 假设在子线程执行前就已经return
-</span><span class='line'>        ++n
-</span><span class='line'>    }
-</span><span class='line'>}
-</span><span class='line'>var x = 0
-</span><span class='line'>increment(&x)
-</span><span class='line'>print(x) // 0</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'><span class="c1">/// 2</span>
+</span><span class='line'><span class="n">func</span> <span class="n">increment</span><span class="p">(</span><span class="k">inout</span> <span class="nl">n</span><span class="p">:</span> <span class="n">Int</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">dispatch_async</span><span class="p">(</span><span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>        <span class="c1">// 假设在子线程执行前就已经return</span>
+</span><span class='line'>        <span class="o">++</span><span class="n">n</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="n">var</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="n">increment</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="p">)</span>
+</span><span class='line'><span class="n">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="c1">// 0</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>在Swift中，如果想改变上面代码段传入的参数，可以使用UnsafeMutablePointer指针（只是例子，实际并不推荐这么做，这种方式是不安全的）:</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -246,63 +251,67 @@
 <span class='line-number'>17</span>
 <span class='line-number'>18</span>
 <span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>/// 1
-</span><span class='line'>func increment(n: UnsafeMutablePointer&lt;Int&gt;) -&gt; () -&gt; Int {
-</span><span class='line'>    return { ++n.memory }
-</span><span class='line'>}
-</span><span class='line'>var x = 0
-</span><span class='line'>increment(&x)()
-</span><span class='line'>print(x)
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">/// 1</span>
+</span><span class='line'><span class="n">func</span> <span class="nf">increment</span><span class="p">(</span><span class="nl">n</span><span class="p">:</span> <span class="n">UnsafeMutablePointer</span><span class="o">&lt;</span><span class="n">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Int</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">{</span> <span class="o">++</span><span class="n">n</span><span class="p">.</span><span class="n">memory</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="n">var</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="n">increment</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="p">)()</span>
+</span><span class='line'><span class="n">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 </span><span class='line'>
-</span><span class='line'>/// 2
-</span><span class='line'>func increment(n: UnsafeMutablePointer&lt;Int&gt;) {
-</span><span class='line'>    dispatch_async(dispatch_get_global_queue(0, 0)) { () -&gt; Void in
-</span><span class='line'>        // 假设在子线程执行前就已经return
-</span><span class='line'>        ++n.memory
-</span><span class='line'>    }
-</span><span class='line'>}
-</span><span class='line'>var x = 0
-</span><span class='line'>increment(&x)
-</span><span class='line'>sleep(1)
-</span><span class='line'>print(x)</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'><span class="c1">/// 2</span>
+</span><span class='line'><span class="n">func</span> <span class="n">increment</span><span class="p">(</span><span class="nl">n</span><span class="p">:</span> <span class="n">UnsafeMutablePointer</span><span class="o">&lt;</span><span class="n">Int</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">dispatch_async</span><span class="p">(</span><span class="n">dispatch_get_global_queue</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>        <span class="c1">// 假设在子线程执行前就已经return</span>
+</span><span class='line'>        <span class="o">++</span><span class="n">n</span><span class="p">.</span><span class="n">memory</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="n">var</span> <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="n">increment</span><span class="p">(</span><span class="o">&amp;</span><span class="n">x</span><span class="p">)</span>
+</span><span class='line'><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span class='line'><span class="n">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>获取UICollectionView的高度</h2>
 
 <p>UICollectionView的高度通过其布局属性，也就是以下属性进行获取：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>@property (nonatomic, strong) UICollectionViewLayout *collectionViewLayout;</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">strong</span><span class="p">)</span> <span class="bp">UICollectionViewLayout</span> <span class="o">*</span><span class="n">collectionViewLayout</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>布局属性有个获取Size的方法：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>- (CGSize)collectionViewContentSize;</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nf">collectionViewContentSize</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>需要注意的是这个方法UICollectionViewLayout的子类必须进行重写（流水布局已经重写了）。<br>
 这样就可以在UICollectionView的子类中重写sizeToFit方法进行自适应了：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>- (void)sizeToFit {
-</span><span class='line'>    [super sizeToFit];
-</span><span class='line'>    _collectionView.frame = (CGRect){
-</span><span class='line'>        .origin = _collectionView.frame.origin,
-</span><span class='line'>        .size = _collectionView.collectionViewLayout.collectionViewContentSize
-</span><span class='line'>    };
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">sizeToFit</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">sizeToFit</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">){</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">origin</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">frame</span><span class="p">.</span><span class="n">origin</span><span class="p">,</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">size</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">collectionViewLayout</span><span class="p">.</span><span class="n">collectionViewContentSize</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>同理，如果是一个视图的子视图，也可以同时设置父视图的frame：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -310,14 +319,15 @@
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
 <span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>- (void)sizeToFit {
-</span><span class='line'>    [super sizeToFit];
-</span><span class='line'>    _collectionView.frame = (CGRect){
-</span><span class='line'>        .origin = _collectionView.frame.origin,
-</span><span class='line'>        .size = _collectionView.collectionViewLayout.collectionViewContentSize
-</span><span class='line'>    };
-</span><span class='line'>    self.frame = _collectionView.bounds;
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">sizeToFit</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">sizeToFit</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">_collectionView</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="p">(</span><span class="bp">CGRect</span><span class="p">){</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">origin</span> <span class="o">=</span> <span class="n">_collectionView</span><span class="p">.</span><span class="n">frame</span><span class="p">.</span><span class="n">origin</span><span class="p">,</span>
+</span><span class='line'>        <span class="p">.</span><span class="n">size</span> <span class="o">=</span> <span class="n">_collectionView</span><span class="p">.</span><span class="n">collectionViewLayout</span><span class="p">.</span><span class="n">collectionViewContentSize</span>
+</span><span class='line'>    <span class="p">};</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">frame</span> <span class="o">=</span> <span class="n">_collectionView</span><span class="p">.</span><span class="n">bounds</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>这样以来就可以很方便地对UICollectionView进行一些操作了，比如在UITableView中嵌入一个流水布局的UICollectionView就可以利用上面的方法进行操作。<a href="https://github.com/tripleCC/TPCSkillTagView">实际业务的应用</a></p>
