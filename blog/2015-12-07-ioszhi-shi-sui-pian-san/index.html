@@ -12,7 +12,8 @@
   <meta name="description" content="1、NSSetUncaughtExceptionHandler注册捕获错误无法调用
 2、自定义提示宏
 3、frame和bounds
-4、Swift中inout和C/C++中指针/引用的区别 NSSetUncaughtExceptionHandler注册捕获错误无法调用 原因是老代码中集成了友盟分析 &hellip;">
+4、Swift中inout和C/C++中指针/引用的区别
+5、获取UICollectionView的高度 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -90,7 +91,8 @@
 <div class="entry-content"><p>1、NSSetUncaughtExceptionHandler注册捕获错误无法调用<br>
 2、自定义提示宏<br>
 3、frame和bounds<br>
-4、Swift中inout和C/C++中指针/引用的区别</p>
+4、Swift中inout和C/C++中指针/引用的区别
+5、获取UICollectionView的高度</p>
 
 <!--more-->
 
@@ -264,6 +266,61 @@
 </span><span class='line'>sleep(1)
 </span><span class='line'>print(x)</span></code></pre></td></tr></table></div></figure>
 
+
+<h2>获取UICollectionView的高度</h2>
+
+<p>UICollectionView的高度通过其布局属性，也就是以下属性进行获取：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@property (nonatomic, strong) UICollectionViewLayout *collectionViewLayout;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>布局属性有个获取Size的方法：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (CGSize)collectionViewContentSize;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需要注意的是这个方法UICollectionViewLayout的子类必须进行重写（流水布局已经重写了）。<br>
+这样就可以在UICollectionView的子类中重写sizeToFit方法进行自适应了：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (void)sizeToFit {
+</span><span class='line'>    [super sizeToFit];
+</span><span class='line'>    _collectionView.frame = (CGRect){
+</span><span class='line'>        .origin = _collectionView.frame.origin,
+</span><span class='line'>        .size = _collectionView.collectionViewLayout.collectionViewContentSize
+</span><span class='line'>    };
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>同理，如果是一个视图的子视图，也可以同时设置父视图的frame：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (void)sizeToFit {
+</span><span class='line'>    [super sizeToFit];
+</span><span class='line'>    _collectionView.frame = (CGRect){
+</span><span class='line'>        .origin = _collectionView.frame.origin,
+</span><span class='line'>        .size = _collectionView.collectionViewLayout.collectionViewContentSize
+</span><span class='line'>    };
+</span><span class='line'>    self.frame = _collectionView.bounds;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样以来就可以很方便地对UICollectionView进行一些操作了，比如在UITableView中嵌入一个流水布局的UICollectionView就可以利用上面的方法进行操作。<a href="https://github.com/tripleCC/TPCSkillTagView">实际业务的应用</a></p>
 </div>
 
 
