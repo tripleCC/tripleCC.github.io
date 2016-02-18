@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>关于Locksmith－一个keychain封装库 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。 iOS系统中有5种keychain类型：generic passwords, internet passwords, certificates, keys,以及 identities。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2016-02-05-locksmithmian-xiang-xie-yi-ku/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">关于Locksmith－一个keychain封装库</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-02-05T14:57:48+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>2:57 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。<br></p>
+
+<p>iOS系统中有5种keychain类型：generic passwords, internet passwords, certificates, keys,以及 identities。并且针对每个类型都有4种操作：create, read, update,以及 delete。<br></p>
+
+<p>对于以上复杂的逻辑关系，Cocoa采用了一系列字符串常量以及对应的key/value进行操作。只是对于Swift来说，这种方式过于冗余而且难以记忆，并没有充分利用到其语言特性。<br></p>
+
+<p>Locksmith作者采用了protocol来解决原生方案过于复杂的问题。就像乐高玩具一样，可以随意组装不同的组件来达到不同的视觉效果，Locksmith可以让使用者遵守特定的protocol来获取对应的功能，比如需要delete功能，那么就遵循DeleteableSecureStorable协议；需要read功能，那么就遵守ReadableSecureStorable协议。而在对应的模型中，不需要额外添加函数，协议内部通过extension已经实现了对应的功能函数。开发者直接调用deleteFromKeychain或者readFromKeychain即可实现想要的功能。</p>
+
+<!--more-->
+
+
+<p>并且，Locksmith还通过protocol提供了更加友好的Result类型。通过遵守GenericPasswordSecureStorable或者InternetPasswordSecureStorable，就可以
+读取不同的结果类型GenericPasswordResult或者InternetPasswordResult，而后面这两个结构体又分别遵守了GenericPasswordSecureStorableResultType和InternetPasswordSecureStorableResultType协议，这两个协议又针对结构体中的结果分别进行了以下处理：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// InternetPasswordSecureStorableResultType
+</span><span class='line'>public protocol InternetPasswordSecureStorableResultType: AccountBasedSecureStorableResultType, DescribableSecureStorableResultType, CommentableSecureStorableResultType, CreatorDesignatableSecureStorableResultType, TypeDesignatableSecureStorableResultType, IsInvisibleAssignableSecureStorableResultType, IsNegativeAssignableSecureStorableResultType {}
+</span><span class='line'>
+</span><span class='line'>public extension InternetPasswordSecureStorableResultType {
+</span><span class='line'>    private func stringFromResultDictionary(key: CFString) -&gt; String? {
+</span><span class='line'>        return resultDictionary[String(key)] as? String
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    var server: String {
+</span><span class='line'>        return stringFromResultDictionary(kSecAttrServer)!
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    var port: Int {
+</span><span class='line'>        return resultDictionary[String(kSecAttrPort)] as! Int
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    var internetProtocol: LocksmithInternetProtocol {
+</span><span class='line'>        return LocksmithInternetProtocol(rawValue: stringFromResultDictionary(kSecAttrProtocol)!)!
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    var authenticationType: LocksmithInternetAuthenticationType {
+</span><span class='line'>        return LocksmithInternetAuthenticationType(rawValue:  stringFromResultDictionary(kSecAttrAuthenticationType)!)!
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    var securityDomain: String? {
+</span><span class='line'>        return stringFromResultDictionary(kSecAttrSecurityDomain)
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    var path: String? {
+</span><span class='line'>        return stringFromResultDictionary(kSecAttrPath)
+</span><span class='line'>    }
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// GenericPasswordSecureStorableResultType
+</span><span class='line'>public protocol GenericPasswordSecureStorableResultType: GenericPasswordSecureStorable, SecureStorableResultType, AccountBasedSecureStorableResultType, DescribableSecureStorableResultType, CommentableSecureStorableResultType, CreatorDesignatableSecureStorableResultType, LabellableSecureStorableResultType, TypeDesignatableSecureStorableResultType, IsInvisibleAssignableSecureStorableResultType, IsNegativeAssignableSecureStorableResultType {}
+</span><span class='line'>
+</span><span class='line'>public extension GenericPasswordSecureStorableResultType {
+</span><span class='line'>    var service: String {
+</span><span class='line'>        return resultDictionary[String(kSecAttrService)] as! String
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    var generic: NSData? {
+</span><span class='line'>        return resultDictionary[String(kSecAttrGeneric)] as? NSData
+</span><span class='line'>    }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，最终的版本的协议遵守了很多组件协议。从上面代码块中，初步可见protocol extension的强大之处了。不过还没完，最后还要通过extension的where子句，完成读取结果的统一接口：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>public extension ReadableSecureStorable where Self : GenericPasswordSecureStorable {
+</span><span class='line'>    func readFromSecureStore() -&gt; GenericPasswordSecureStorableResultType? {
+</span><span class='line'>        do {
+</span><span class='line'>            if let result = try performSecureStorageAction(performReadRequestClosure, secureStoragePropertyDictionary: asReadableSecureStoragePropertyDictionary) {
+</span><span class='line'>                return GenericPasswordResult(resultDictionary: result)
+</span><span class='line'>            } else {
+</span><span class='line'>                return nil
+</span><span class='line'>            }
+</span><span class='line'>        } catch {
+</span><span class='line'>            return nil
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>public extension ReadableSecureStorable where Self : InternetPasswordSecureStorable {
+</span><span class='line'>    func readFromSecureStore() -&gt; InternetPasswordSecureStorableResultType? {
+</span><span class='line'>        do {
+</span><span class='line'>            if let result = try performSecureStorageAction(performReadRequestClosure, secureStoragePropertyDictionary: asReadableSecureStoragePropertyDictionary) {
+</span><span class='line'>                return InternetPasswordResult(resultDictionary: result)
+</span><span class='line'>            } else {
+</span><span class='line'>                return nil
+</span><span class='line'>            }
+</span><span class='line'>        } catch {
+</span><span class='line'>            return nil
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>通过以上实现方式，开发者最终面向的就是协议，不管是返回的查询结果还是遵循的增删改查组件协议。而结构体在这个框架中基本起数据中转作用，比如以下结构体：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// 网络结果
+</span><span class='line'>struct InternetPasswordResult: InternetPasswordSecureStorableResultType {
+</span><span class='line'>    var resultDictionary: [String: AnyObject]
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// 通用结果
+</span><span class='line'>struct GenericPasswordResult: GenericPasswordSecureStorableResultType {
+</span><span class='line'>    var resultDictionary: [String: AnyObject]
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面两个结构体给ReadableSecureStorable的readFromSecureStore做读取数据的存储中转，最终我们想要的数据还是需要分别到InternetPasswordSecureStorableResultType或者GenericPasswordSecureStorableResultType对应的属性中获取。<br></p>
+
+<p>Locksmith中大量应用了protocol的extension特性，暂且不论其做法是否真的可取，但也算是面向协议编程强大之处的一种体现。</p>
+
+<h2>参考文章</h2>
+
+<p><a href="http://matthewpalmer.net/blog/2015/08/30/protocol-oriented-programming-in-the-real-world/">protocol-oriented-programming-in-the-real-world</a><br>
+为现有类型添加新功能/解藕以增加灵活性与可测试性/方便同步快速发展的API/更少的代码更多的功能<br>
+<a href="https://github.com/matthewpalmer/Locksmith">Locksmith源码－有更详细的使用说明</a></p>
+
+<h2>一些其它关于面向协议编程应用文章</h2>
+
+<p><a href="http://code.tutsplus.com/tutorials/protocol-oriented-programming-in-swift-2--cms-24979">Protocol-Oriented Programming in Swift 2</a><br>
+解决多继承/协议扩展/Classes的重要性<br>
+<a href="http://www.captechconsulting.com/blogs/ios-9-tutorial-series-protocol-oriented-programming-with-uikit">iOS 9 Tutorial Series: Protocol-Oriented Programming with UIKit</a><br>
+现有文章示例代码大多为人为创造的情景下工作/面向协议真对UIKit 的应用/Swift协议的好处与限制/不能给Objective-C协议中的方法提供默认实现/可以给Objective-C协议添加新方法/协议for模型,数据格式,UI风格/协议及其扩展适合在添加共享、范性功能时使用，并不很切合UI<br>
+<a href="http://www.capitalone.io/blog/improved-protocol-oriented-programming-untyped-type-aliases/">Improved Protocol-Oriented Programming with Untyped Type Aliases</a><br></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-02-05T14:57:48+08:00'><span class='date'><span class='date-month'>Feb</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>2:57 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016-02-02-ioszhi-shi-sui-pian-si/" title="Previous Post: iOS知识碎片四">&laquo; iOS知识碎片四</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 喜欢技术，喜欢Ubuntu，喜欢字符终端，热衷底层，涉略微处理器、Linux，最终加入移动大家庭 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc" style="color: coral"> 访问我的简书 </a><br>
+  <a href="https://github.com/tripleCC" style="color: coral"> 访问我的github </a><br>
+  <a href="https://twitter.com/tripleCCBrian" style="color: coral"> 我的twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016-02-05-locksmithmian-xiang-xie-yi-ku/">关于Locksmith－一个keychain封装库</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-02-02-ioszhi-shi-sui-pian-si/">iOS知识碎片四</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-01-14-lldbchang-jian-ming-ling/">工具速查博客</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-01-05-zai-ubuntuxia-bian-yi-swift/">在Ubuntu下编译Swift</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015-12-29-if-case,-guard-case,-for-case/">Swift2.0中的case匹配</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
