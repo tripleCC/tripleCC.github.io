@@ -9,8 +9,9 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1、显示CoreData执行的SQL语句 显示CoreData执行的SQL语句 设置步骤: 打印结果： 在获得对应的表后，可以通过sqlite3命令进行打印： 1
-$ sqlite3 /Users/songruiwang/Desktop/1.sqlite 执行help查询对应的命令： 1 &hellip;">
+  <meta name="description" content="1、显示CoreData执行的SQL语句
+2、监听UITextView键盘的发送按钮 显示CoreData执行的SQL语句 设置步骤(-com.apple.CoreData.SQLDebug 1): 打印结果： 在获得对应的表后，可以通过sqlite3命令进行打印： 1
+$ sqlite3 / &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -85,14 +86,15 @@ $ sqlite3 /Users/songruiwang/Desktop/1.sqlite 执行help查询对应的命令：
   </header>
 
 
-<div class="entry-content"><p>1、显示CoreData执行的SQL语句<br></p>
+<div class="entry-content"><p>1、显示CoreData执行的SQL语句<br>
+2、监听UITextView键盘的发送按钮</p>
 
 <!--more-->
 
 
 <h2>显示CoreData执行的SQL语句</h2>
 
-<p>设置步骤: <br>
+<p>设置步骤(<code>-com.apple.CoreData.SQLDebug 1</code>): <br>
 <img src="/images/Snip20160202_1.png" alt="" /><br></p>
 
 <p><img src="/images/Snip20160202_2.png" alt="" /><br>
@@ -132,6 +134,38 @@ $ sqlite3 /Users/songruiwang/Desktop/1.sqlite 执行help查询对应的命令：
 
 
 <p>更多详细的操作可以通过help查看。</p>
+
+<h2>监听UITextView键盘的发送按钮</h2>
+
+<p>UITextField有代理方法监听是否点击了发送按钮：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (BOOL)textFieldShouldReturn:(UITextField *)textField;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过UITextView因为可以输入多行的关系，所以没有类似的代理方法。那么在作为聊天输入框的时候，就必须利用其它代理方法来实现：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text {
+</span><span class='line'>    if ([text isEqualToString:@"\n"]) {
+</span><span class='line'>        [self publish];
+</span><span class='line'>        return NO;
+</span><span class='line'>    } else {
+</span><span class='line'>        [self adjustSubviewsWithTextView:textView];
+</span><span class='line'>    }
+</span><span class='line'>    return YES;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面的代码块就是一种实现方式，只是需要去除输入换行的功能，不过作为聊天输入框，舍弃这个功能也是可以接受的。</p>
 </div>
 
 
@@ -199,11 +233,11 @@ $ sqlite3 /Users/songruiwang/Desktop/1.sqlite 执行help查询对应的命令：
       </li>
     
       <li class="post">
-        <a href="/blog/2016-01-05-zai-ubuntuxia-bian-yi-swift/">在Ubuntu下编译Swift</a>
+        <a href="/blog/2016-01-14-swifthan-shu-shi-bian-cheng/">Swift函数式编程</a>
       </li>
     
       <li class="post">
-        <a href="/blog/2015-12-29-if-case,-guard-case,-for-case/">Swift2.0中的case匹配</a>
+        <a href="/blog/2016-01-05-zai-ubuntuxia-bian-yi-swift/">在Ubuntu下编译Swift</a>
       </li>
     
   </ul>

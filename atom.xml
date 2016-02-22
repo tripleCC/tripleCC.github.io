@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-02-18T17:54:44+08:00</updated>
+  <updated>2016-02-22T10:57:17+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -234,14 +234,15 @@
     <link href="http://triplecc.github.io/blog/2016-02-02-ioszhi-shi-sui-pian-si/"/>
     <updated>2016-02-02T15:57:22+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-si</id>
-    <content type="html"><![CDATA[<p>1、显示CoreData执行的SQL语句<br></p>
+    <content type="html"><![CDATA[<p>1、显示CoreData执行的SQL语句<br>
+2、监听UITextView键盘的发送按钮</p>
 
 <!--more-->
 
 
 <h2>显示CoreData执行的SQL语句</h2>
 
-<p>设置步骤: <br>
+<p>设置步骤(<code>-com.apple.CoreData.SQLDebug 1</code>): <br>
 <img src="http://triplecc.github.io/images/Snip20160202_1.png" alt="" /><br></p>
 
 <p><img src="http://triplecc.github.io/images/Snip20160202_2.png" alt="" /><br>
@@ -281,6 +282,38 @@
 
 
 <p>更多详细的操作可以通过help查看。</p>
+
+<h2>监听UITextView键盘的发送按钮</h2>
+
+<p>UITextField有代理方法监听是否点击了发送按钮：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (BOOL)textFieldShouldReturn:(UITextField *)textField;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过UITextView因为可以输入多行的关系，所以没有类似的代理方法。那么在作为聊天输入框的时候，就必须利用其它代理方法来实现：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text {
+</span><span class='line'>    if ([text isEqualToString:@"\n"]) {
+</span><span class='line'>        [self publish];
+</span><span class='line'>        return NO;
+</span><span class='line'>    } else {
+</span><span class='line'>        [self adjustSubviewsWithTextView:textView];
+</span><span class='line'>    }
+</span><span class='line'>    return YES;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面的代码块就是一种实现方式，只是需要去除输入换行的功能，不过作为聊天输入框，舍弃这个功能也是可以接受的。</p>
 ]]></content>
   </entry>
   
@@ -306,6 +339,40 @@
 <a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html">常用 Git 命令清单</a><br>
 <a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html">Git 工作流程</a><br>
 <a href="http://www.ruanyifeng.com/blog/2016/01/commit_message_change_log.html">Git Commit规范</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Swift函数式编程]]></title>
+    <link href="http://triplecc.github.io/blog/2016-01-14-swifthan-shu-shi-bian-cheng/"/>
+    <updated>2016-01-14T17:57:04+08:00</updated>
+    <id>http://triplecc.github.io/blog/swifthan-shu-shi-bian-cheng</id>
+    <content type="html"><![CDATA[<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">func</span> <span class="nf">assertStringPairsMatchInDictionary</span><span class="p">(</span><span class="nl">dictionary</span><span class="p">:</span> <span class="bp">NSDictionary</span><span class="p">,</span> <span class="nl">pairs</span><span class="p">:</span> <span class="p">[(</span><span class="nl">key</span><span class="p">:</span> <span class="n">CFString</span><span class="p">,</span> <span class="nl">expectedOutput</span><span class="p">:</span> <span class="n">String</span><span class="p">)])</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">for</span> <span class="n">pair</span> <span class="k">in</span> <span class="n">pairs</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">a</span> <span class="o">=</span> <span class="n">dictionary</span><span class="p">[</span><span class="n">String</span><span class="p">(</span><span class="n">pair</span><span class="mf">.0</span><span class="p">)]</span> <span class="kt">as</span><span class="o">!</span> <span class="n">CFStringRef</span>
+</span><span class='line'>        <span class="n">XCTAssertEqual</span><span class="p">(</span><span class="n">a</span> <span class="kt">as</span> <span class="n">String</span><span class="p">,</span> <span class="n">pair</span><span class="mf">.1</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">func</span> <span class="nf">assertStringPairsMatchInDictionary</span><span class="p">(</span><span class="nl">dictionary</span><span class="p">:</span> <span class="bp">NSDictionary</span><span class="p">,</span> <span class="nl">pairs</span><span class="p">:</span> <span class="p">[(</span><span class="nl">key</span><span class="p">:</span> <span class="n">CFString</span><span class="p">,</span> <span class="nl">expectedOutput</span><span class="p">:</span> <span class="n">String</span><span class="p">)])</span> <span class="p">{</span>
+</span><span class='line'>  <span class="n">pairs</span><span class="p">.</span><span class="n">forEach</span> <span class="p">{</span> <span class="n">XCTAssertEqual</span><span class="p">(</span><span class="n">dictionary</span><span class="p">[</span><span class="n">String</span><span class="p">(</span><span class="err">$</span><span class="mf">0.0</span><span class="p">)].</span><span class="n">flatMap</span> <span class="p">{</span> <span class="err">$</span><span class="mi">0</span> <span class="kt">as</span><span class="o">?</span> <span class="n">String</span> <span class="p">},</span> <span class="err">$</span><span class="mf">0.1</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>参考</h2>
+
+<p><a href="http://five.agency/functional-programming-in-swift/">Functional Programming in Swift</a></p>
 ]]></content>
   </entry>
   
@@ -4666,333 +4733,6 @@ PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
 <h4>代码地址</h4>
 
 <p><a href="https://github.com/tripleCC/TPCDynamicTextFiled/blob/master/README.md">UITextFiled文字抖动效果</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[UINavigationBar属性小结及返回按钮更改]]></title>
-    <link href="http://triplecc.github.io/blog/2015-07-23-uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai/"/>
-    <updated>2015-07-23T20:17:32+08:00</updated>
-    <id>http://triplecc.github.io/blog/uinavigationbarshu-xing-xiao-jie-ji-fan-hui-an-niu-geng-gai</id>
-    <content type="html"><![CDATA[<h2>UINavigationBar属性</h2>
-
-<ul>
-<li>如果想统一设置，可以通过以下方法，获取当前类下的所有对象的导航条，然后进行设置</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景图片<br>
-<img src="http://triplecc.github.io/images/Snip20150724_4.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// barMetrics需要设置成UIBarMetricsDefault</span>
-</span><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setBackgroundimages</span><span class="p">:(</span><span class="n">UIimages</span> <span class="o">*</span><span class="p">)</span><span class="n">backgroundimages</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景阴影图片<br>
-<img src="http://triplecc.github.io/images/Snip20150724_5.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">shadowimages</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<!--more-->
-
-
-<ul>
-<li>隐藏底部1px下划线（<a href="http://stackoverflow.com/questions/19226965/how-to-hide-ios7-uinavigationbar-1px-bottom-line">详细讨论</a>）<br>
-<img src="http://triplecc.github.io/images/Snip20151116_1.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 注意，阴影生效，必须要有背景图片</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">navigationController</span><span class="p">.</span><span class="n">navigationBar</span> <span class="nl">setBackgroundImage</span><span class="p">:[[</span><span class="bp">UIImage</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">]</span> <span class="nl">forBarMetrics</span><span class="p">:</span><span class="n">UIBarMetricsDefault</span><span class="p">];</span>
-</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">navigationController</span><span class="p">.</span><span class="n">navigationBar</span><span class="p">.</span><span class="n">shadowImage</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIImage</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以下方法可以在不设置背景图片的情况下实现：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 传入navigationBar可以找出下划线控件</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UIImageView</span> <span class="o">*</span><span class="p">)</span><span class="nf">findHairlineImageViewUnder:</span><span class="p">(</span><span class="bp">UIView</span> <span class="o">*</span><span class="p">)</span><span class="nv">view</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">view</span> <span class="nl">isKindOfClass</span><span class="p">:</span><span class="bp">UIImageView</span><span class="p">.</span><span class="k">class</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="n">view</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="p">(</span><span class="bp">UIImageView</span> <span class="o">*</span><span class="p">)</span><span class="n">view</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="bp">UIView</span> <span class="o">*</span><span class="n">subview</span> <span class="k">in</span> <span class="n">view</span><span class="p">.</span><span class="n">subviews</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="bp">UIImageView</span> <span class="o">*</span><span class="n">imageView</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">findHairlineImageViewUnder</span><span class="p">:</span><span class="n">subview</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">imageView</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="n">imageView</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>背景颜色<br>
-<img src="http://triplecc.github.io/images/Snip20150724_6.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">barTintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题文字属性<br>
-<img src="http://triplecc.github.io/images/Snip20150724_10.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">copy</span><span class="p">)</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">titleTextAttributes</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>系统类型按钮文字颜色<br>
-<img src="http://triplecc.github.io/images/Snip20150724_9.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="bp">UIColor</span> <span class="o">*</span><span class="n">tintColor</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>返回按钮图片<br>
-<img src="http://triplecc.github.io/images/Snip20150724_11.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="c1">// 必须要两个都设置，并且图片要设置成不渲染</span>
-</span><span class='line'>  <span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorimages</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span><span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span><span class="k">retain</span><span class="p">)</span> <span class="n">UIimages</span> <span class="o">*</span><span class="n">backIndicatorTransitionMaskimages</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>标题垂直偏移<br>
-<img src="http://triplecc.github.io/images/Snip20150724_12.png" alt="" /></li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">setTitleVerticalPositionAdjustment</span><span class="p">:(</span><span class="n">CGFloat</span><span class="p">)</span><span class="n">adjustment</span> <span class="nl">forBarMetrics</span><span class="p">:(</span><span class="n">UIBarMetrics</span><span class="p">)</span><span class="n">barMetrics</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>返回按钮更改</h2>
-
-<p>系统原装效果:<br>
-<img src="http://triplecc.github.io/images/Snip20150724_13.png" alt="" /><br></p>
-
-<p>如果有以下需求:</p>
-
-<ul>
-<li>去除上面返回按钮上“我是标题”字样，并设置返回图片为白色</li>
-</ul>
-
-
-<h6>分析</h6>
-
-<ul>
-<li>图片修改
-
-<ul>
-<li>方式1：设置返回图片颜色</li>
-<li>方式2：直接设置返回图片</li>
-<li>方式3：使用按钮覆盖返回图片(这种方式会使返回箭头图片和左边距离加大，但可以用取巧的方式调整)</li>
-</ul>
-</li>
-<li>文字修改
-
-<ul>
-<li>方式1：设置控制器navigationItem的backBarButtonItem显示文字为""</li>
-<li>方式2：设置返回按钮文字偏移量，使其移出屏幕</li>
-<li>方式3：采用控制器navigationItem的leftBarButtonItem进行覆盖</li>
-</ul>
-</li>
-</ul>
-
-
-<h6>解决</h6>
-
-<p>综合以上说明，这里给出三种方式(都是针对的自定义UINavigationController)：</p>
-
-<ul>
-<li>方式1:在<code>-pushViewController:animated:</code>中设置文字 ，在<code>+initialize</code>方法中设置返回图片或改变返回图片颜色
-
-<ul>
-<li>注意导航栏对图片的渲染</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">pushViewController</span><span class="p">:(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:(</span><span class="kt">BOOL</span><span class="p">)</span><span class="n">animated</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">backBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithTitle</span><span class="p">:</span><span class="s">@&quot;&quot;</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">nil</span> <span class="nl">action</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 获取特定类的所有导航条</span>
-</span><span class='line'><span class="bp">UINavigationBar</span> <span class="o">*</span><span class="n">navigationBar</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UINavigationBar</span> <span class="nl">appearanceWhenContainedIn</span><span class="p">:</span><span class="nb">self</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式1：使用自己的图片替换原来的返回图片</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">backIndicatorTransitionMaskImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 方式2：设置返回图片颜色</span>
-</span><span class='line'><span class="n">navigationBar</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">whiteColor</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式2:在<code>+initialize</code>方法中设置所有返回按钮文字的偏移量，其他设置和方式1一致</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'>  <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">appearance</span><span class="p">]</span> <span class="nl">setBackButtonTitlePositionAdjustment</span><span class="p">:</span><span class="n">UIOffsetMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">100</span><span class="p">)</span> <span class="nl">forBarMetrics</span><span class="p">:</span><span class="n">UIBarMetricsDefault</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>方式3.重写<code>-pushViewController:animated:</code>方法,使用控制器的<code>navigationItem的leftBarButtonItem</code>覆盖返回按钮
-
-<ul>
-<li>需要判断是否为根控制器，如果是根控制器就不添加
-
-<ul>
-<li>导航控制器的<code>viewControllers.count</code>不为0即表示传入的为非根控制器</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">pushViewController:</span><span class="p">(</span><span class="bp">UIViewController</span> <span class="o">*</span><span class="p">)</span><span class="nv">viewController</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">viewControllers</span><span class="p">.</span><span class="n">count</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithImage</span><span class="p">:[</span><span class="bp">UIImage</span> <span class="nl">imageNamed</span><span class="p">:</span><span class="s">@&quot;NavBack&quot;</span><span class="p">]</span> <span class="nl">style</span><span class="p">:</span><span class="n">UIBarButtonItemStyleDone</span> <span class="nl">target</span><span class="p">:</span><span class="nb">self</span> <span class="nl">action</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">back</span><span class="p">)];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">[</span><span class="nb">super</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">viewController</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">back</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">popViewControllerAnimated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>方案对比</h6>
-
-<ul>
-<li>方案1和方案2改动较小，对系统自带的返回功能无影响。<br></li>
-<li>方式3灵活性最高，但是会<code>使系统的滑动返回失效</code>，需要自己实现，具体实现参照<a href="https://github.com/forkingdog/FDFullscreenPopGesture">forkingdog全屏手势分类</a><br></li>
-<li>方式3还会使按钮更加偏向右边：</li>
-</ul>
-
-
-<p><img src="http://triplecc.github.io/images/Snip20150722_10.png" alt="" /><br>
-通过以下方式可以使按钮向左边靠：
-<img src="http://triplecc.github.io/images/Snip20150722_11.png" alt="" /><br>
-- 采用customView，<code>添加自己定义的UIButton</code><br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="c1">// 返回按钮内容左靠</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentHorizontalAlignment</span> <span class="o">=</span> <span class="n">UIControlContentHorizontalAlignmentLeft</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 让返回按钮内容继续向左边偏移10</span>
-</span><span class='line'><span class="n">button</span><span class="p">.</span><span class="n">contentEdgeInsets</span> <span class="o">=</span> <span class="n">UIEdgeInsetsMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-</span><span class='line'><span class="p">...</span>
-</span><span class='line'><span class="n">viewController</span><span class="p">.</span><span class="n">navigationItem</span><span class="p">.</span><span class="n">leftBarButtonItem</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UIBarButtonItem</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithCustomView</span><span class="p">:</span><span class="n">button</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
 ]]></content>
   </entry>
   
