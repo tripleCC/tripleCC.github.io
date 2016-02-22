@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-02-22T10:57:17+08:00</updated>
+  <updated>2016-02-22T13:28:09+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -235,7 +235,8 @@
     <updated>2016-02-02T15:57:22+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-si</id>
     <content type="html"><![CDATA[<p>1、显示CoreData执行的SQL语句<br>
-2、监听UITextView键盘的发送按钮</p>
+2、监听UITextView键盘的发送按钮<br>
+3、设置CoreData实体唯一约束<br></p>
 
 <!--more-->
 
@@ -314,6 +315,143 @@
 
 
 <p>上面的代码块就是一种实现方式，只是需要去除输入换行的功能，不过作为聊天输入框，舍弃这个功能也是可以接受的。</p>
+
+<h2>设置CoreData实体唯一约束</h2>
+
+<p>在iOS9以前，不希望CoreData中出现相同的实体可以通过先查询后判断的形式实现。在iOS9以后，iOS提供了另外的设置，可以直接达到这个目的。设置步骤如下：</p>
+
+<p>首先需要在CoreData配置实体属性中添加作为唯一标识的属性：</p>
+
+<p><img src="http://triplecc.github.io/images/Snip20160222_1.png" alt="" /></p>
+
+<p>然后在managedObjectContext上下文中添加合并策略，以便在遇到相同实体时进行更新：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">lazy</span> <span class="k">var</span> <span class="nl">managedObjectContext</span><span class="p">:</span> <span class="bp">NSManagedObjectContext</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Returns the managed object context for the application (which is already bound to the persistent store coordinator for the application.) This property is optional since there are legitimate error conditions that could cause the creation of the context to fail.</span>
+</span><span class='line'>    <span class="k">let</span> <span class="n">coordinator</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">persistentStoreCoordinator</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">managedObjectContext</span> <span class="o">=</span> <span class="bp">NSManagedObjectContext</span><span class="p">(</span><span class="nl">concurrencyType</span><span class="p">:</span> <span class="p">.</span><span class="n">MainQueueConcurrencyType</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">managedObjectContext</span><span class="p">.</span><span class="n">persistentStoreCoordinator</span> <span class="o">=</span> <span class="n">coordinator</span>
+</span><span class='line'>    <span class="c1">// 添加合并策略（更新为内存中的属性值）</span>
+</span><span class='line'>    <span class="n">managedObjectContext</span><span class="p">.</span><span class="n">mergePolicy</span> <span class="o">=</span> <span class="n">NSMergeByPropertyObjectTrumpMergePolicy</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">managedObjectContext</span>
+</span><span class='line'><span class="p">}()</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样当执行以下测试代码时：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 模型</span>
+</span><span class='line'><span class="k">class</span> <span class="nl">Person</span><span class="p">:</span> <span class="bp">NSManagedObject</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">class</span> <span class="k">var</span> <span class="nl">entityName</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">String</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">context</span><span class="p">:</span> <span class="bp">NSManagedObjectContext</span><span class="p">,</span>
+</span><span class='line'>        <span class="nl">name</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">let</span> <span class="n">entity</span> <span class="o">=</span> <span class="bp">NSEntityDescription</span><span class="p">.</span><span class="n">entityForName</span><span class="p">(</span><span class="n">Person</span><span class="p">.</span><span class="n">entityName</span><span class="p">,</span> <span class="nl">inManagedObjectContext</span><span class="p">:</span> <span class="n">context</span><span class="p">)</span><span class="o">!</span>
+</span><span class='line'>            <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">(</span><span class="nl">entity</span><span class="p">:</span> <span class="n">entity</span><span class="p">,</span> <span class="nl">insertIntoManagedObjectContext</span><span class="p">:</span> <span class="n">context</span><span class="p">)</span>
+</span><span class='line'>            <span class="nb">self</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">@</span><span class="n">objc</span>
+</span><span class='line'>    <span class="n">private</span> <span class="kr">override</span> <span class="k">init</span><span class="p">(</span><span class="nl">entity</span><span class="p">:</span> <span class="bp">NSEntityDescription</span><span class="p">,</span> <span class="n">insertIntoManagedObjectContext</span> <span class="nl">context</span><span class="p">:</span> <span class="bp">NSManagedObjectContext</span><span class="o">?</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">(</span><span class="nl">entity</span><span class="p">:</span> <span class="n">entity</span><span class="p">,</span> <span class="nl">insertIntoManagedObjectContext</span><span class="p">:</span> <span class="n">context</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 控制器</span>
+</span><span class='line'><span class="k">var</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="k">var</span> <span class="nl">persons</span><span class="p">:</span> <span class="p">[</span><span class="n">Person</span><span class="p">]</span><span class="o">!</span>
+</span><span class='line'><span class="c1">// 按键回调</span>
+</span><span class='line'><span class="k">func</span> <span class="n">add</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">let</span> <span class="n">delegate</span> <span class="o">=</span> <span class="bp">UIApplication</span><span class="p">.</span><span class="n">sharedApplication</span><span class="p">().</span><span class="n">delegate</span> <span class="kt">as</span><span class="o">!</span> <span class="n">AppDelegate</span>
+</span><span class='line'>    <span class="n">delegate</span><span class="p">.</span><span class="n">managedObjectContext</span><span class="p">.</span><span class="n">performBlock</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">person</span> <span class="o">=</span> <span class="n">Person</span><span class="p">(</span><span class="nl">context</span><span class="p">:</span> <span class="n">delegate</span><span class="p">.</span><span class="n">managedObjectContext</span><span class="p">,</span> <span class="nl">name</span><span class="p">:</span> <span class="s">&quot;\(self.i++ % 4)&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">person</span><span class="p">.</span><span class="n">age</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">i</span> <span class="o">%</span> <span class="mi">5</span>
+</span><span class='line'>        <span class="n">delegate</span><span class="p">.</span><span class="n">saveContext</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">request</span> <span class="o">=</span> <span class="bp">NSFetchRequest</span><span class="p">(</span><span class="nl">entityName</span><span class="p">:</span> <span class="n">Person</span><span class="p">.</span><span class="n">entityName</span><span class="p">)</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">persons</span> <span class="o">=</span> <span class="n">try</span><span class="o">!</span> <span class="n">delegate</span><span class="p">.</span><span class="n">managedObjectContext</span><span class="p">.</span><span class="n">executeFetchRequest</span><span class="p">(</span><span class="n">request</span><span class="p">)</span> <span class="kt">as</span><span class="o">!</span> <span class="p">[</span><span class="n">Person</span><span class="p">]</span>
+</span><span class='line'>        <span class="n">print</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">persons</span><span class="p">.</span><span class="n">last</span><span class="o">?</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">persons</span><span class="p">.</span><span class="n">count</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">persons</span><span class="p">.</span><span class="n">last</span><span class="o">?</span><span class="p">.</span><span class="n">age</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>会输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到最后一个实体在不断地更新，并没有添加新的实体到sqlite中。</p>
 ]]></content>
   </entry>
   
