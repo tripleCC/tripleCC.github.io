@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-03-01T18:43:46+08:00</updated>
+  <updated>2016-03-08T13:20:22+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,24 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[CoreData后台堆栈的使用]]></title>
+    <link href="http://triplecc.github.io/blog/2016-03-06-coredatahou-tai-dui-zhan-de-shi-yong/"/>
+    <updated>2016-03-06T00:36:21+08:00</updated>
+    <id>http://triplecc.github.io/blog/coredatahou-tai-dui-zhan-de-shi-yong</id>
+    <content type="html"><![CDATA[<h2>参考资料</h2>
+
+<p><a href="http://objccn.io/issue-10-5/">Core Data 网络应用实例</a><br>
+<a href="http://blog.zachorr.com/post/129785280807/core-data-unique-constraints">
+Core Data Unique Constraints</a><br>
+<a href="https://www.objc.io/issues/10-syncing-data/icloud-core-data/">iCloud and Core Data</a><br>
+<a href="https://www.objc.io/issues/2-concurrency/common-background-practices/">Common Background Practices</a><br>
+<a href="https://developer.apple.com/library/tvos/documentation/CoreData/Reference/NSFetchedResultsController_Class/index.html">NSFetchedResultsController Class Reference</a><br>
+<a href="https://www.cocoanetics.com/2012/07/multi-context-coredata/">multi-context-coredata</a><br>
+<a href="https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/CoreData/Concurrency.html#//apple_ref/doc/uid/TP40001075-CH24-SW1">Concurrency</a><br></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[关于keychain封装库Locksmith]]></title>
@@ -237,7 +255,8 @@
     <content type="html"><![CDATA[<p>1、显示CoreData执行的SQL语句<br>
 2、监听UITextView键盘的发送按钮<br>
 3、设置CoreData实体唯一约束<br>
-4、iOS9关于canOpenURL不生效</p>
+4、iOS9关于canOpenURL不生效<br>
+5、OC变参函数</p>
 
 <!--more-->
 
@@ -454,6 +473,10 @@
 
 <p>可以看到最后一个实体在不断地更新，并没有添加新的实体到sqlite中。</p>
 
+<p>不过需要注意的一点是当执行save操作后，<code>后面创建的约束值相同的实体会被清为default</code>，即除了第一个person，后面的person实体都会被清为default。</p>
+
+<p>还有唯一约束一般结合NSFetchedResultsController使用，由NSFetchedResultsController来管理实体，就不用担心自己已经存储的有值的实体被清为defalut了（这里可以用先查后创建的方式避免，不过这样的话代码逻辑就和没有用这个约束一样了），因为在约束值相同的情况下，NSFetchedResultsController根本不会将其存入，进而不会触发对应的刷新代理方法。</p>
+
 <h2>iOS9关于canOpenURL不生效</h2>
 
 <p>系统在iOS9之后加强了隐私保护，需要在info.plist中设置<code>LSApplicationQueriesSchemes</code>来添加要跳转的对应URL scheme，canOpenURL才会生效。</p>
@@ -461,6 +484,40 @@
 <p>详细地址:</p>
 
 <p><a href="https://developer.apple.com/videos/play/wwdc2015/703/">session 703 privacy and your app</a></p>
+
+<h2>OC变参函数</h2>
+
+<p>一个项目中各个API的host可能并不一样，所以最好有一个方法能够预置对应API的host，除了宏，变参函数是个很好的选择，如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">jobURLStringWithPath:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">format</span><span class="p">,</span> <span class="p">...</span> <span class="n">NS_FORMAT_FUNCTION</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">){</span>
+</span><span class='line'>    <span class="bp">NSString</span> <span class="o">*</span><span class="n">contents</span> <span class="o">=</span> <span class="n">JOB_HOST</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">va_list</span> <span class="n">args</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">va_start</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">format</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">contents</span> <span class="o">=</span> <span class="p">[</span><span class="n">contents</span> <span class="nl">stringByAppendingString</span><span class="p">:[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat</span><span class="p">:</span><span class="n">format</span> <span class="nl">arguments</span><span class="p">:</span><span class="n">args</span><span class="p">]];</span>
+</span><span class='line'>    <span class="n">va_end</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">contents</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样就可以进行以下调用来获取url字符串：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">[</span><span class="n">BaseAPI</span> <span class="nl">jobURLStringWithPath</span><span class="p">:</span><span class="s">@&quot;/deliveries.json&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="n">BaseAPI</span> <span class="nl">jobURLStringWithPath</span><span class="p">:</span><span class="s">@&quot;/user/%@/job.json&quot;</span><span class="p">,</span> <span class="n">userId</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>相对来说还是比较方便的。</p>
 ]]></content>
   </entry>
   
@@ -4666,246 +4723,6 @@ PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
 
 
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[UITextFiled文字抖动效果]]></title>
-    <link href="http://triplecc.github.io/blog/2015-07-27-uitextfiledwen-zi-dou-dong-xiao-guo/"/>
-    <updated>2015-07-27T20:17:49+08:00</updated>
-    <id>http://triplecc.github.io/blog/uitextfiledwen-zi-dou-dong-xiao-guo</id>
-    <content type="html"><![CDATA[<p>最终设置UITextField的placeholder效果：<br></p>
-
-<p><img src="http://triplecc.github.io/images/2015-07-28%2016_46_41.gif" alt="" /><br></p>
-
-<p>有需求1如下：</p>
-
-<ul>
-<li>未点击时UITextField的placeholder为浅灰色</li>
-<li>点击后，还未进行输入时，UITextField的placeholder变为深灰色</li>
-</ul>
-
-
-<!--more-->
-
-
-<p>这个实现并不难：</p>
-
-<ul>
-<li>通过通知或者重写UITextField的响应者处理方法，都可以实现捕获点击时间</li>
-<li>UITextField设置placeholder可以使用以下属性：
-
-<ul>
-<li>通过设置这个富文本属性，可以得到丰富多彩的placeholder<br></li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">@</span><span class="bp">NSCopying</span> <span class="k">var</span> <span class="nl">attributedPlaceholder</span><span class="p">:</span> <span class="bp">NSAttributedString</span><span class="o">?</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 附带光标颜色属性</span>
-</span><span class='line'><span class="k">var</span> <span class="nl">tintColor</span><span class="p">:</span> <span class="bp">UIColor</span><span class="o">!</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>但是需求2加了点东西：</p>
-
-<ul>
-<li>点击后，还未进行输入时，UITextField的placeholder文字左右进行小幅度抖动<br></li>
-</ul>
-
-
-<p>可以看到通过设置attributedPlaceholder，可以改变一些静态的属性，如颜色和文字大小。<br>
-但是如果需要里面的文字做一些简单的抖动效果貌似就不行了，UITextField没有提供相关属性，我们也不知道placeholder是在何种控件中显示的。<br>
-既然不知道laceholder是在何种控件中显示，那就通过以下代码打印出UITextField中所有的成员变量（函数参考<a href="http://triplecc.github.io/blog/2015-01-10-runtimeji-chu/">runtime基础元素解析</a>），看看是否会有什么发现：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Ivar</span> <span class="o">*</span><span class="n">ivars</span> <span class="o">=</span> <span class="n">class_copyIvarList</span><span class="p">([</span><span class="bp">UITextField</span> <span class="k">class</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">outCount</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">Ivar</span> <span class="n">ivar</span> <span class="o">=</span> <span class="n">ivars</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%s&quot;</span><span class="p">,</span> <span class="n">ivar_getName</span><span class="p">(</span><span class="n">ivar</span><span class="p">));</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">free</span><span class="p">(</span><span class="n">ivars</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>截取关键部分如下：<br></p>
-
-<p><img src="http://triplecc.github.io/images/Snip20150728_2.png" alt="" /><br></p>
-
-<p>从字面上看，上面的<code>_placeholderLabel</code>是否就是显示placeholder的控件？<br>
-测试实际结果的确是显示placeholder的控件。<br>
-只要有了这个控件，那要做一些小抖动的动画那就没什么问题了，先获取这个UILabel:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">var</span> <span class="nl">tpcPlaceholderLabel</span><span class="p">:</span><span class="bp">UILabel</span><span class="o">?</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kr">get</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">valueForKey</span><span class="p">(</span><span class="s">&quot;_placeholderLabel&quot;</span><span class="p">)</span> <span class="kt">as</span><span class="o">?</span> <span class="bp">UILabel</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后重写UITextField的响应者处理函数：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 成为第一响应者</span>
-</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">becomeFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 存储正常颜色</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">normalColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">normalColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="c1">// 存储选中颜色</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">selectedColor</span> <span class="o">==</span> <span class="nb">nil</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">selectedColor</span> <span class="o">=</span> <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">selectedColor</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 执行placeholder动画函数</span>
-</span><span class='line'>    <span class="n">placeholderLabelDoAnimationWithType</span><span class="p">(</span><span class="n">animationType</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">becomeFirstResponder</span><span class="p">()</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 放弃第一响应者</span>
-</span><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">resignFirstResponder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">switch</span> <span class="n">animationType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeUpDown</span> <span class="p">:</span>
-</span><span class='line'>        <span class="k">fallthrough</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeBlowUp</span> <span class="p">:</span>
-</span><span class='line'>        <span class="k">fallthrough</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeLeftRight</span> <span class="p">:</span>
-</span><span class='line'>        <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">CGAffineTransformIdentity</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeEasyInOut</span> <span class="p">:</span>
-</span><span class='line'>        <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
-</span><span class='line'>            <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span>
-</span><span class='line'>        <span class="p">})</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">TPCAnimationTypeNone</span> <span class="p">:</span>
-</span><span class='line'>        <span class="k">break</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">operate</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="c1">// 设置为初始颜色</span>
-</span><span class='line'>    <span class="n">tpcPlaceholderLabel</span><span class="o">?</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="n">normalColor</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">super</span><span class="p">.</span><span class="n">resignFirstResponder</span><span class="p">()</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后通过以下函数，传入相应的动作就可以得到抖动的效果了</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">func</span> <span class="nf">doAnimation</span><span class="p">(</span><span class="nl">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
-</span><span class='line'>    <span class="bp">UIView</span><span class="p">.</span><span class="n">animateWithDuration</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="nl">delay</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nl">usingSpringWithDamping</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="nl">initialSpringVelocity</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">UIViewAnimationOptions</span><span class="p">.</span><span class="n">CurveEaseInOut</span><span class="p">,</span> <span class="nl">animations</span><span class="p">:</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
-</span><span class='line'>        <span class="n">action</span><span class="p">()</span>
-</span><span class='line'>        <span class="p">},</span> <span class="nl">completion</span><span class="p">:</span> <span class="nb">nil</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>还有一点，根据上面打印的UITextField成员变量，看到了<code>_displayLabel</code>，这个就是在键盘输入后显示文字的UILabel了。这个属性可以用来干嘛？<br>
-我想，<code>可能会有这么一种需求（不过可能没有），就是用户输入错误时，UITextField中已经输入的文字做左右抖动，以间接的形式，辅助提醒用户，这一栏输错了，而不是弹出一个HUB</code>。<br>
-由于UITextField内部做了某些处理，所以无法在成为第一响应者时做一些动作，那么，就在放弃第一响应者函数中。<br></p>
-
-<p>相关代码如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 设置一个在放弃第一响应者的闭包属性</span>
-</span><span class='line'><span class="k">var</span> <span class="nl">operateWhenResignFirstResponder</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="p">())</span><span class="o">?</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// 在func resignFirstResponder() -&gt; Bool函数中调用</span>
-</span><span class='line'><span class="k">if</span> <span class="k">let</span> <span class="n">operate</span> <span class="o">=</span> <span class="n">operateWhenResignFirstResponder</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">operate</span><span class="p">()</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h4>代码地址</h4>
-
-<p><a href="https://github.com/tripleCC/TPCDynamicTextFiled/blob/master/README.md">UITextFiled文字抖动效果</a></p>
 ]]></content>
   </entry>
   

@@ -12,7 +12,8 @@
   <meta name="description" content="1、显示CoreData执行的SQL语句
 2、监听UITextView键盘的发送按钮
 3、设置CoreData实体唯一约束
-4、iOS9关于canOpenURL不生效 显示CoreData执行的SQL语句 设置步骤(-com.apple.CoreData.SQLDebug 1): 打印结果： &hellip;">
+4、iOS9关于canOpenURL不生效
+5、OC变参函数 显示CoreData执行的SQL语句 设置步骤(-com.apple.CoreData.SQLDebug 1 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -90,7 +91,8 @@
 <div class="entry-content"><p>1、显示CoreData执行的SQL语句<br>
 2、监听UITextView键盘的发送按钮<br>
 3、设置CoreData实体唯一约束<br>
-4、iOS9关于canOpenURL不生效</p>
+4、iOS9关于canOpenURL不生效<br>
+5、OC变参函数</p>
 
 <!--more-->
 
@@ -307,6 +309,10 @@
 
 <p>可以看到最后一个实体在不断地更新，并没有添加新的实体到sqlite中。</p>
 
+<p>不过需要注意的一点是当执行save操作后，<code>后面创建的约束值相同的实体会被清为default</code>，即除了第一个person，后面的person实体都会被清为default。</p>
+
+<p>还有唯一约束一般结合NSFetchedResultsController使用，由NSFetchedResultsController来管理实体，就不用担心自己已经存储的有值的实体被清为defalut了（这里可以用先查后创建的方式避免，不过这样的话代码逻辑就和没有用这个约束一样了），因为在约束值相同的情况下，NSFetchedResultsController根本不会将其存入，进而不会触发对应的刷新代理方法。</p>
+
 <h2>iOS9关于canOpenURL不生效</h2>
 
 <p>系统在iOS9之后加强了隐私保护，需要在info.plist中设置<code>LSApplicationQueriesSchemes</code>来添加要跳转的对应URL scheme，canOpenURL才会生效。</p>
@@ -314,6 +320,40 @@
 <p>详细地址:</p>
 
 <p><a href="https://developer.apple.com/videos/play/wwdc2015/703/">session 703 privacy and your app</a></p>
+
+<h2>OC变参函数</h2>
+
+<p>一个项目中各个API的host可能并不一样，所以最好有一个方法能够预置对应API的host，除了宏，变参函数是个很好的选择，如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">jobURLStringWithPath:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">format</span><span class="p">,</span> <span class="p">...</span> <span class="n">NS_FORMAT_FUNCTION</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">){</span>
+</span><span class='line'>    <span class="bp">NSString</span> <span class="o">*</span><span class="n">contents</span> <span class="o">=</span> <span class="n">JOB_HOST</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">va_list</span> <span class="n">args</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">va_start</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">format</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">contents</span> <span class="o">=</span> <span class="p">[</span><span class="n">contents</span> <span class="nl">stringByAppendingString</span><span class="p">:[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat</span><span class="p">:</span><span class="n">format</span> <span class="nl">arguments</span><span class="p">:</span><span class="n">args</span><span class="p">]];</span>
+</span><span class='line'>    <span class="n">va_end</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">contents</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样就可以进行以下调用来获取url字符串：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">[</span><span class="n">BaseAPI</span> <span class="nl">jobURLStringWithPath</span><span class="p">:</span><span class="s">@&quot;/deliveries.json&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="n">BaseAPI</span> <span class="nl">jobURLStringWithPath</span><span class="p">:</span><span class="s">@&quot;/user/%@/job.json&quot;</span><span class="p">,</span> <span class="n">userId</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>相对来说还是比较方便的。</p>
 </div>
 
 
@@ -369,6 +409,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016-03-06-coredatahou-tai-dui-zhan-de-shi-yong/">CoreData后台堆栈的使用</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016-02-05-locksmithmian-xiang-xie-yi-ku/">关于keychain封装库Locksmith</a>
       </li>
     
@@ -382,10 +426,6 @@
     
       <li class="post">
         <a href="/blog/2016-01-14-swifthan-shu-shi-bian-cheng/">Swift函数式编程</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-01-05-zai-ubuntuxia-bian-yi-swift/">在Ubuntu下编译Swift</a>
       </li>
     
   </ul>
