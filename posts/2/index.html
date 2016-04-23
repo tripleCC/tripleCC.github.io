@@ -9,11 +9,12 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1、NSSetUncaughtExceptionHandler注册捕获错误无法调用
-2、自定义提示宏
-3、frame和bounds
-4、Swift中inout和C/C++中指针/引用的区别
-5、获取UICollectionView的高度 ">
+  <meta name="description" content="1
+2
+3
+4
+struct AboutMe { var detail: String var links: [[String : String]]
+} 在Swift中，Struct类型是无法进行归档操作的，只有继承自NSObject并且遵守了NSCoding协议的类才可以进行相应的归档操作。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +70,197 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-12-24-zai-swiftshi-xian-gui-dang-struct/">在Swift实现Struct归档</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-12-24T15:08:29+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>3:08 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">struct</span> <span class="n">AboutMe</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">detail</span><span class="p">:</span> <span class="n">String</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">links</span><span class="p">:</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在Swift中，Struct类型是无法进行归档操作的，只有继承自NSObject并且遵守了NSCoding协议的类才可以进行相应的归档操作。也就是将上面结构体改成类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="nl">AboutMe</span><span class="p">:</span> <span class="bp">NSObject</span><span class="p">,</span> <span class="bp">NSCoding</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">detail</span><span class="p">:</span> <span class="n">String</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">links</span><span class="p">:</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span>
+</span><span class='line'>    <span class="n">required</span> <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">coder</span> <span class="nl">aDecoder</span><span class="p">:</span> <span class="bp">NSCoder</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">aDecoder</span><span class="p">.</span><span class="n">decodeObjectForKey</span><span class="p">(</span><span class="s">&quot;detail&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">aDecoder</span><span class="p">.</span><span class="n">decodeObjectForKey</span><span class="p">(</span><span class="s">&quot;links&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">func</span> <span class="n">encodeWithCoder</span><span class="p">(</span><span class="nl">aCoder</span><span class="p">:</span> <span class="bp">NSCoder</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">aCoder</span><span class="p">.</span><span class="n">encodeObject</span><span class="p">(</span><span class="n">detail</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">aCoder</span><span class="p">.</span><span class="n">encodeObject</span><span class="p">(</span><span class="n">links</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是如果要对Struct进行归档，可以转换思维，使用按照以下步骤实现。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-12-24-zai-swiftshi-xian-gui-dang-struct/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-12-20-xcodekuai-jie-jian/">Xcode快捷键</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-12-20T23:02:11+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>11:02 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><ul>
+<li>command + shift + o 快速定位文件</li>
+<li>command + shift + y 隐藏下方debug框</li>
+<li>command + shift + c 聚焦下方debug框</li>
+<li>command + option + 0 右方工具框</li>
+<li>command + 0 左方工具框</li>
+<li>command + option + [ 代码上调</li>
+<li>command + [ 代码左调</li>
+<li>shift + commad + j 将文件目录切换到打开的文件</li>
+<li>control + 1 选中要查看的方法名，按下快捷键后，点击celler，可以查看哪些方法调用了此方法</li>
+<li>esc 枚举显示自动补全</li>
+<li>command + d storyboard中复制拷贝控件</li>
+<li>option + shift 可以移动仿真器中的手指</li>
+<li>control + i = control + [  代码对齐</li>
+<li>option + 单击文件  文件显示在辅助窗口</li>
+<li>control + shift + 左击  显示IB中所有控件</li>
+<li>command + shift + option + 左/右 隐藏/显示方法内容</li>
+</ul>
+
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-12-20-xcodekuai-jie-jian/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-12-07-swiftyuan-ma-yue-du-runtime/">Swift源码阅读Runtime</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-12-07T21:46:23+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>7</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:46 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Swift开源之后，虽然大部分代码对于作为应用程序猿的我来说，花费大量时间去阅读，性价比有点不高，但是阅读下Foundation，学习学习Swift的编码范式还是不错的。</p>
+
+<h5>NSEnumerator.swift</h5>
+
+<h6>1.遵循多个约束<br></h6>
+
+<p>其中范型NSGeneratorEnumerator定义如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">internal</span> <span class="k">class</span> <span class="n">NSGeneratorEnumerator</span><span class="o">&lt;</span><span class="nl">Base</span> <span class="p">:</span> <span class="n">GeneratorType</span> <span class="k">where</span> <span class="n">Base</span><span class="p">.</span><span class="nl">Element</span> <span class="p">:</span> <span class="n">AnyObject</span><span class="o">&gt;</span> <span class="o">:</span> <span class="bp">NSEnumerator</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">generator</span> <span class="p">:</span> <span class="n">Base</span>
+</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="n">_</span> <span class="nl">generator</span><span class="p">:</span> <span class="n">Base</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">generator</span> <span class="o">=</span> <span class="n">generator</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kr">override</span> <span class="k">func</span> <span class="n">nextObject</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">AnyObject</span><span class="o">?</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">generator</span><span class="p">.</span><span class="n">next</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面有一点，就是范型类型的约束：遵守协议GeneratorType，并且是AnyObject类型。这个上次写的时候忘了，刚好这次记下这种写法。</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-12-07-swiftyuan-ma-yue-du-runtime/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -358,140 +550,6 @@
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-09-06-ioszhi-shi-sui-pian-yi/">iOS知识碎片一</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-09-06T00:04:36+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:04 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>学习工作中总会有那么几个注意点和困惑点，这些琐碎的知识点容易让我迷惑，所以决定做这么一个纪录，希望能持之以恒，积少成多</p>
-
-<ol>
-<li>解决同时设置阴影和裁剪，阴影消失问题</li>
-<li>swift中使用字符串创建类及错误处理</li>
-<li>swift中回调函数设置作用域注意</li>
-<li>可视化界面调整图片拉伸</li>
-<li>AFNetworking出现SSL错误</li>
-</ol>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015-09-06-ioszhi-shi-sui-pian-yi/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">RunLoop基础元素解析</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-09-04T21:58:21+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>4</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>9:58 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p><a href="http://blog.ibireme.com">深入理解RunLoop</a>这篇文章写的很好！</p>
-
-<h2>简介</h2>
-
-<p>RunLoop顾名思义，就是<code>运行循环</code>的意思。<br>
-基本作用：</p>
-
-<ul>
-<li>保持程序的持续运行</li>
-<li>处理App中的各类事件（触摸事件、定时器事件、Selector事件）</li>
-<li>节省CPU资源，提高程序性能：没有事件时就进行睡眠状态</li>
-</ul>
-
-
-<p>内部实现：</p>
-
-<ul>
-<li>do-while循环，在这个循环内部不断地处理各种任务（Source\Timeer\Observer）</li>
-</ul>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-09-01-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">UITableView右侧滚动标签</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-09-01T20:30:39+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2015</span></span> <span class='time'>8:30 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>看到有些APP在tableView右侧增加了一个滚动标签，并且显示滑条所指向的cell的部分数据。这里写下自己的想法，实现还是简单的。</p>
-
-<h4>效果图</h4>
-
-<p><img src="/images/2015-08-29%2021_16_47.gif" alt="" /><br></p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015-09-01-tableviewyou-ce-biao-qian-suo-yin-xu-qiu/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/3">&larr; Older</a>
@@ -516,23 +574,23 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/">更加快速地设置Frame</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/">SDWebImage设置大尺寸图片崩溃问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-03-09-ioszhi-shi-sui-pian-wu/">iOS知识碎片五</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016-03-06-coredatahou-tai-dui-zhan-de-shi-yong/">CoreData后台堆栈的使用</a>
       </li>
     
       <li class="post">
         <a href="/blog/2016-02-05-locksmithmian-xiang-xie-yi-ku/">关于keychain封装库Locksmith</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-02-02-ioszhi-shi-sui-pian-si/">iOS知识碎片四</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-01-14-lldbchang-jian-ming-ling/">工具速查博客</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-01-14-swifthan-shu-shi-bian-cheng/">Swift函数式编程</a>
       </li>
     
   </ul>

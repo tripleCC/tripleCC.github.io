@@ -1,0 +1,471 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>SDWebImage设置大尺寸图片崩溃问题 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="昨天产品在teambition上提了一个bug：点击特定的页面app闪退。
+我很是纳闷，因为通过其它类型索引进入的详情页面都不会出现这样的情况，为什么偏偏是这个页面？还是因为memory warning而闪退？而且内存不是慢慢增加，而是从80M左右激增到600M＋ &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">SDWebImage设置大尺寸图片崩溃问题</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-03-17T18:41:01+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>6:41 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>昨天产品在teambition上提了一个bug：点击特定的页面app闪退。<br>
+我很是纳闷，因为通过其它类型索引进入的详情页面都不会出现这样的情况，为什么偏偏是这个页面？还是因为memory warning而闪退？而且内存不是慢慢增加，而是从80M左右激增到600M＋<br>
+接着我查看了进入这个页面时获取的json，仔细观察后，发现并没有特别的地方。于是我决定使用instruments的Allocations查看到底是什么操作占用了如此庞大的内存。<br>
+进入界面之后，展示的界面如下图：</p>
+
+<!--more-->
+
+
+<p><img src="images/Snip20160317_2.png" alt="" /></p>
+
+<p>追踪到底是哪个函数调用申请了这么多内存：</p>
+
+<p><img src="images/Snip20160317_4.png" alt="" /></p>
+
+<p>根据经验，考虑到SDWebImage是直接使用原图进行渲染，所以初步可以断定是图片渲染导致内存的问题。<br>
+于是我查看了这个界面唯一的图片：</p>
+
+<p><img src="images/Snip20160317_1.png" alt="" /></p>
+
+<p><img src="images/Snip20160317_5.png" alt="" /></p>
+
+<p>&hellip;WTF&hellip;<br>
+问了后台，这个图片是企业上传的，最大不超过2M，而且给App的图片并没有经过压缩处理。接着我又查看了安卓端，发现他们并没有显示出这一张logo。。。<br></p>
+
+<p>虽然图片只有1.8M，但是像素为15497*10166，iOS解压到内存并显示所需要的内存通过以下公式计算出：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>#define bytesPerMB 1048576.0f 
+</span><span class='line'>// 这里针对32色来说 (32 / 8)
+</span><span class='line'>#define bytesPerPixel 4.0f
+</span><span class='line'>#define pixelsPerMB ( bytesPerMB / bytesPerPixel )
+</span><span class='line'>
+</span><span class='line'> Width x Height / pixelsPerMB</span></code></pre></td></tr></table></div></figure>
+
+
+<p>所以大概可以计算出这张图片需要600M左右的内存进行解码显示。</p>
+
+<p>google了下，最多的解决方式是利用UIGraphicsBeginImageContext对图片进行裁剪后渲染：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>UIGraphicsBeginImageContext(size);
+</span><span class='line'>CGContextRef context = UIGraphicsGetCurrentContext();
+</span><span class='line'>CGContextClearRect(context, CGRectMake(0, 0, size.width, size.height));
+</span><span class='line'>
+</span><span class='line'>CGContextSetInterpolationQuality(context, 0.8);
+</span><span class='line'>
+</span><span class='line'>[self drawInRect:drawRect blendMode:kCGBlendModeNormal alpha:1];
+</span><span class='line'>
+</span><span class='line'>UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+</span><span class='line'>UIGraphicsEndImageContext();
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>虽然这样做最终会让内存稳定在80M左右，但是在回落之前，内存会有一小段时间上升至300M左右。也就是说，这种方法在处理10000*10000px的图片时，还是有崩溃的危险的。<br></p>
+
+<p>然后我又尝试了苹果提供的使用ImageIO进行缩小图片的方法：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>CGImageRef MyCreateThumbnailImageFromData (NSData * data, int imageSize)
+</span><span class='line'>{
+</span><span class='line'>    CGImageRef        myThumbnailImage = NULL;
+</span><span class='line'>    CGImageSourceRef  myImageSource;
+</span><span class='line'>    CFDictionaryRef   myOptions = NULL;
+</span><span class='line'>    CFStringRef       myKeys[3];
+</span><span class='line'>    CFTypeRef         myValues[3];
+</span><span class='line'>    CFNumberRef       thumbnailSize;
+</span><span class='line'>    
+</span><span class='line'>    // Create an image source from NSData; no options.
+</span><span class='line'>    myImageSource = CGImageSourceCreateWithData((CFDataRef)data,
+</span><span class='line'>                                                NULL);
+</span><span class='line'>    // Make sure the image source exists before continuing.
+</span><span class='line'>    if (myImageSource == NULL){
+</span><span class='line'>        fprintf(stderr, "Image source is NULL.");
+</span><span class='line'>        return  NULL;
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    // Package the integer as a  CFNumber object. Using CFTypes allows you
+</span><span class='line'>    // to more easily create the options dictionary later.
+</span><span class='line'>    thumbnailSize = CFNumberCreate(NULL, kCFNumberIntType, &imageSize);
+</span><span class='line'>    
+</span><span class='line'>    // Set up the thumbnail options.
+</span><span class='line'>    myKeys[0] = kCGImageSourceCreateThumbnailWithTransform;
+</span><span class='line'>    myValues[0] = (CFTypeRef)kCFBooleanTrue;
+</span><span class='line'>    myKeys[1] = kCGImageSourceCreateThumbnailFromImageIfAbsent;
+</span><span class='line'>    myValues[1] = (CFTypeRef)kCFBooleanTrue;
+</span><span class='line'>    myKeys[2] = kCGImageSourceThumbnailMaxPixelSize;
+</span><span class='line'>    myValues[2] = (CFTypeRef)thumbnailSize;
+</span><span class='line'>    
+</span><span class='line'>    myOptions = CFDictionaryCreate(NULL, (const void **) myKeys,
+</span><span class='line'>                                   (const void **) myValues, 2,
+</span><span class='line'>                                   &kCFTypeDictionaryKeyCallBacks,
+</span><span class='line'>                                   & kCFTypeDictionaryValueCallBacks);
+</span><span class='line'>    
+</span><span class='line'>    // Create the thumbnail image using the specified options.
+</span><span class='line'>    myThumbnailImage = CGImageSourceCreateThumbnailAtIndex(myImageSource,
+</span><span class='line'>                                                           0,
+</span><span class='line'>                                                           myOptions);
+</span><span class='line'>    // Release the options dictionary and the image source
+</span><span class='line'>    // when you no longer need them.
+</span><span class='line'>    CFRelease(thumbnailSize);
+</span><span class='line'>    CFRelease(myOptions);
+</span><span class='line'>    CFRelease(myImageSource);
+</span><span class='line'>    
+</span><span class='line'>    // Make sure the thumbnail image exists before continuing.
+</span><span class='line'>    if (myThumbnailImage == NULL){
+</span><span class='line'>        fprintf(stderr, "Thumbnail image not created from image source.");
+</span><span class='line'>        return NULL;
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    return myThumbnailImage;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>结果和使用UIGraphicsBeginImageContext一样，会有一个内存波峰。<br></p>
+
+<p>最终还是通过苹果找到了对应的解决方案：
+<a href="https://developer.apple.com/library/ios/samplecode/LargeImageDownsizing/">LargeImageDownsizing</a>(最终尝试后只对jpg有效)<br>
+在stackoverflow上用蹩脚的书面英文也获取了对应的方案：
+<a href="http://stackoverflow.com/questions/36031808/app-crashed-when-i-display-a-large-image-by-uiimageview/36032154#36032154">App crashed when I display a large image by UIImageView</a></p>
+
+<p>不过最终我还是采用了和安卓端一样的处理方法（考虑到后台以后会进行图片裁剪）。因为是针对所有显示图片的地方，所以我给UIImageView添加了一个分类来对图片大小进行限制：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@implementation UIImageView (Extension)
+</span><span class='line'>+ (void)load
+</span><span class='line'>{
+</span><span class='line'>    static dispatch_once_t onceToken;
+</span><span class='line'>    dispatch_once(&onceToken, ^{
+</span><span class='line'>        Class class = [self class];
+</span><span class='line'>        
+</span><span class='line'>        SEL origionSel = @selector(setImage:);
+</span><span class='line'>        SEL swizzlingSel = @selector(bq_setImage:);
+</span><span class='line'>        Method origionMethod = class_getInstanceMethod(class, origionSel);
+</span><span class='line'>        Method swizzlingMethod = class_getInstanceMethod(class, swizzlingSel);
+</span><span class='line'>        
+</span><span class='line'>        BOOL hasAdded = class_addMethod(class, origionSel, method_getImplementation(swizzlingMethod), method_getTypeEncoding(swizzlingMethod));
+</span><span class='line'>        
+</span><span class='line'>        if (hasAdded) {
+</span><span class='line'>            class_replaceMethod(class, swizzlingSel, method_getImplementation(origionMethod), method_getTypeEncoding(origionMethod));
+</span><span class='line'>        } else {
+</span><span class='line'>            method_exchangeImplementations(origionMethod, swizzlingMethod);
+</span><span class='line'>        }
+</span><span class='line'>    });
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>- (void)bq_setImage:(UIImage *)image {
+</span><span class='line'>    CGFloat maxImageWH = 3000;
+</span><span class='line'>    if (image.size.width &gt; maxImageWH || image.size.height &gt; maxImageWH) {
+</span><span class='line'>        image = self.placeholder;
+</span><span class='line'>    }
+</span><span class='line'>    [self bq_setImage:image];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>- (void)setPlaceholder:(UIImage *)placeholder {
+</span><span class='line'>    objc_setAssociatedObject(self, @selector(placeholder), placeholder, OBJC_ASSOCIATION_RETAIN);
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>- (UIImage *)placeholder {
+</span><span class='line'>    return objc_getAssociatedObject(self, _cmd);
+</span><span class='line'>}
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在宽度或者高度可能超过3000的地方，提前设置placeholder，否则显示的将是一个空白UIImageView。<br>
+对于苹果提供的那种方法，后面再继续研究下，和<a href="https://github.com/ibireme/YYWebImage">YYWebImage</a>的显示方式有点像，都是进行逐步显示，而不是直接对整个原图进行渲染。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-03-17T18:41:01+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>6:41 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016-03-09-ioszhi-shi-sui-pian-wu/" title="Previous Post: iOS知识碎片五">&laquo; iOS知识碎片五</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/" title="Next Post: 更加快速地设置Frame">更加快速地设置Frame &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 喜欢技术，喜欢Ubuntu，喜欢字符终端，热衷底层，涉略微处理器、Linux，最终加入移动大家庭 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc" style="color: coral"> 访问我的简书 </a><br>
+  <a href="https://github.com/tripleCC" style="color: coral"> 访问我的github </a><br>
+  <a href="https://twitter.com/tripleCCBrian" style="color: coral"> 我的twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/">更加快速地设置Frame</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/">SDWebImage设置大尺寸图片崩溃问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-03-09-ioszhi-shi-sui-pian-wu/">iOS知识碎片五</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-03-06-coredatahou-tai-dui-zhan-de-shi-yong/">CoreData后台堆栈的使用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-02-05-locksmithmian-xiang-xie-yi-ku/">关于keychain封装库Locksmith</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
