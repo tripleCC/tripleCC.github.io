@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-05-29T12:44:38+08:00</updated>
+  <updated>2016-06-16T10:44:28+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,595 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[YYModel阅读小记]]></title>
+    <link href="http://triplecc.github.io/blog/2016-06-05-yymodelyue-du-xiao-ji/"/>
+    <updated>2016-06-05T22:22:15+08:00</updated>
+    <id>http://triplecc.github.io/blog/yymodelyue-du-xiao-ji</id>
+    <content type="html"><![CDATA[<p>YYModel是由ibireme开发的一套小而精美的模型转换框架，采用分类的形式，无需继承框架的某个基类就可以方便得完成模型的转换，且内部做了自动类型转换和安全处理，可以有效地防止因模型类型和后台的的数据不一样而产生的奔溃问题。<br>
+近些天抽空拜读了一下其源码，果然是思维严谨，考虑的一些细节也很到位，让人自叹弗如。虽然作者说这个框架是花了两个周末的时间完成的，但是其代码质量还是非常让人惊艳的，值得仔细阅读。</p>
+
+<h4>基本结构</h4>
+
+<p>YYModel总共由5个文件组成，其中核心文件只有以下四个：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>YYClassInfo.h
+</span><span class='line'>YYClassInfo.m
+</span><span class='line'>NSObject+YYModel.h
+</span><span class='line'>NSObject+YYModel.m</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>YYClassInfo</code>主要将成员变量、方法、成员属性以及类这四类信息，从C层面的函数调用抽象成OC的类。这个文件主要的类有以下四个：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>YYClassInfo          // 类
+</span><span class='line'>YYClassPropertyInfo       // 成员属性 
+</span><span class='line'>YYClassMethodInfo     // 方法   
+</span><span class='line'>YYClassIvarInfo           // 成员变量</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>YYClassInfo</code>包含三个以后三者的<code>name</code>为键，以后三者为值的字典。由于YYModel使用遍历属性的方式来达到模型转换的目的，所以其中的<code>propertyInfos</code>起比较重要的作用。</p>
+
+<p>该文件还包含一个枚举类型：<code>YYEncodingType</code>，列举了各类编码信息，包括值类型、方法限定类型、属性修饰类型。<code>YYEncodingType</code>使用掩码的方式对这三类不同的枚举信息进行分类，各占据1个字节：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>YYEncodingTypeMask               = 0xFF      //值类型
+</span><span class='line'>YYEncodingTypeQualifierMask         = 0xFF00      //方法限定类型
+</span><span class='line'>YYEncodingTypePropertyMask      = 0xFF0000        //属性修饰类型</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>YYEncodingTypeQualifierMask</code>和<code>YYEncodingTypePropertyMask</code>可以进行逻辑与操作，来表示被多个修饰符修饰或限定的属性或方法。<br>
+详细的编码信息可以从以下链接获取：<br>
+<a href="https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtPropertyIntrospection.html">Declared Properties</a><br>
+<a href="https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html">Type Encodings</a><br></p>
+
+<h3>核心代码</h3>
+
+<p>模型转换的核心功能无非两种：model->json、json->model，所以这里主要纪录下框架中这两个主要功能的阅读笔记。</p>
+
+<h4>json->model</h4>
+
+<p><code>yy_modelWithJSON</code>是json转模型的入口，可以先从这个方法入手。</p>
+
+<pre><code class="`"> + (instancetype)yy_modelWithJSON:(id)json {
+    NSDictionary *dic = [self _yy_dictionaryWithJSON:json];
+    return [self yy_modelWithDictionary:dic];
+}
+</code></pre>
+
+<p> 以上代码通过<code>_yy_dictionaryWithJSON</code>将json转换成了字典，再调用<code>yy_modelWithDictionary</code>对字典进行转换，事实上，真正的对外转换方法应该是<code>yy_modelWithDictionary</code>，所有对集合内部模型的转换，最终都使用了这个方法。<br>
+ 这里有一个小技巧，就是对方法的命名，对内方法/函数添加'_&lsquo;前缀，对外去处此前缀，这种做法在CoreFoundation里面也比较常见。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>+ (instancetype)yy_modelWithDictionary:(NSDictionary *)dictionary {
+</span><span class='line'>    if (!dictionary || dictionary == (id)kCFNull) return nil;
+</span><span class='line'>    if (![dictionary isKindOfClass:[NSDictionary class]]) return nil;
+</span><span class='line'>    
+</span><span class='line'>    Class cls = [self class];
+</span><span class='line'>    _YYModelMeta *modelMeta = [_YYModelMeta metaWithClass:cls];
+</span><span class='line'>    if (modelMeta-&gt;_hasCustomClassFromDictionary) {
+</span><span class='line'>        cls = [cls modelCustomClassForDictionary:dictionary] ?: cls;
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    NSObject *one = [cls new];
+</span><span class='line'>    if ([one yy_modelSetWithDictionary:dictionary]) return one;
+</span><span class='line'>    return nil;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>获取字典之后，就可以生成调用实例所属类信息了。这里关于类<code>_YYModelMeta</code>作者注释的已经非常详细了:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface _YYModelMeta : NSObject {
+</span><span class='line'>    @package  // 表示在同一个包内可见，这个倒是比较少用
+</span><span class='line'>    YYClassInfo *_classInfo;
+</span><span class='line'>    /// Key:mapped key and key path, Value:_YYModelPropertyMeta.
+</span><span class='line'>    NSDictionary *_mapper;
+</span><span class='line'>    /// Array&lt;_YYModelPropertyMeta&gt;, all property meta of this model.
+</span><span class='line'>    NSArray *_allPropertyMetas;
+</span><span class='line'>    /// Array&lt;_YYModelPropertyMeta&gt;, property meta which is mapped to a key path.
+</span><span class='line'>    NSArray *_keyPathPropertyMetas;
+</span><span class='line'>    /// Array&lt;_YYModelPropertyMeta&gt;, property meta which is mapped to multi keys.
+</span><span class='line'>    NSArray *_multiKeysPropertyMetas;
+</span><span class='line'>    /// The number of mapped key (and key path), same to _mapper.count.
+</span><span class='line'>    NSUInteger _keyMappedCount;
+</span><span class='line'>    /// Model class type.
+</span><span class='line'>    YYEncodingNSType _nsType;
+</span><span class='line'>    
+</span><span class='line'>    // 这几个布尔用来纪录用户是否实现了对应的自定义方法
+</span><span class='line'>    BOOL _hasCustomWillTransformFromDictionary;
+</span><span class='line'>    BOOL _hasCustomTransformFromDictionary;
+</span><span class='line'>    BOOL _hasCustomTransformToDictionary;
+</span><span class='line'>    BOOL _hasCustomClassFromDictionary;
+</span><span class='line'>}
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>_mapper</code>为所有映射信息，以key为键(最原始的)，以<code>_YYModelPropertyMeta</code>实例为值;要注意的是这里的key还没有被拆分成keyPath数组，还是原始的形式:@&ldquo;key1.key2"，而且在属性映射到一个数组时，这里的key便是一个数组<br>
+<code>_allPropertyMetas</code>为当前模型所有属性的信息<br>
+<code>_keyPathPropertyMetas</code>为映射到keyPath属性的信息<br>
+<code>_multiKeysPropertyMetas</code>为映射到一个数组的属性信息<br>
+<code>_YYModelMeta</code>只存储到属性<code>_YYModelPropertyMeta</code>层面的信息，更加细化的信息，比如拆分成数组的keyPath，属性映射到的数组等信息，都是交由<code>_YYModelPropertyMeta</code>进行存储，<code>_YYModelMeta</code>存储的只是最原始的key信息。<br>
+关于<code>_YYModelPropertyMeta</code>：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface _YYModelPropertyMeta : NSObject {
+</span><span class='line'>    @package
+</span><span class='line'>    NSString *_name;             ///&lt; property's name
+</span><span class='line'>    YYEncodingType _type;        ///&lt; property's type
+</span><span class='line'>    YYEncodingNSType _nsType;    ///&lt; property's Foundation type
+</span><span class='line'>    BOOL _isCNumber;             ///&lt; is c number type
+</span><span class='line'>    Class _cls;                  ///&lt; property's class, or nil
+</span><span class='line'>    Class _genericCls;           ///&lt; container's generic class, or nil if threr's no generic class
+</span><span class='line'>    SEL _getter;                 ///&lt; getter, or nil if the instances cannot respond
+</span><span class='line'>    SEL _setter;                 ///&lt; setter, or nil if the instances cannot respond
+</span><span class='line'>    BOOL _isKVCCompatible;       ///&lt; YES if it can access with key-value coding
+</span><span class='line'>    BOOL _isStructAvailableForKeyedArchiver; ///&lt; YES if the struct can encoded with keyed archiver/unarchiver
+</span><span class='line'>    BOOL _hasCustomClassFromDictionary; ///&lt; class/generic class implements +modelCustomClassForDictionary:
+</span><span class='line'>    
+</span><span class='line'>    /*
+</span><span class='line'>     property-&gt;key:       _mappedToKey:key     _mappedToKeyPath:nil            _mappedToKeyArray:nil
+</span><span class='line'>     property-&gt;keyPath:   _mappedToKey:keyPath _mappedToKeyPath:keyPath(array) _mappedToKeyArray:nil
+</span><span class='line'>     property-&gt;keys:      _mappedToKey:keys[0] _mappedToKeyPath:nil/keyPath    _mappedToKeyArray:keys(array)
+</span><span class='line'>     */
+</span><span class='line'>    NSString *_mappedToKey;      ///&lt; the key mapped to
+</span><span class='line'>    NSArray *_mappedToKeyPath;   ///&lt; the key path mapped to (nil if the name is not key path)
+</span><span class='line'>    NSArray *_mappedToKeyArray;  ///&lt; the key(NSString) or keyPath(NSArray) array (nil if not mapped to multiple keys)
+</span><span class='line'>    YYClassPropertyInfo *_info;  ///&lt; property's info
+</span><span class='line'>    _YYModelPropertyMeta *_next; ///&lt; next meta if there are multiple properties mapped to the same key.
+</span><span class='line'>}
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>_mappedToKey</code>映射到的key(@{property : key})<br>
+<code>_mappedToKeyPath</code>映射到的keyPath(@{property : key1.key2})<br>
+<code>_mappedToKeyArray</code>映射到的数组(@{property : @[key1, key2]})<br>
+每个<code>_YYModelPropertyMeta</code>中，这三者只有其中一个会有值。有了这三个属性，就可以获取需要转化的对应字典的value了。<br>
+这里记录下<code>_YYModelMeta</code>的init方法执行流程:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>1、根据Class获取YYClassInfo实例
+</span><span class='line'>2、获取需要被忽略的属性（用户提供）
+</span><span class='line'>3、获取白名单（除了白名单，其它属性都被忽略，用户提供）
+</span><span class='line'>4、获取类型为集合的属性中存储的类类型（用户提供）
+</span><span class='line'>5、循环获取所有的属性信息，并生成`_YYModelPropertyMeta`实例，存储至allPropertyMetas、keyPathPropertyMetas、multiKeysPropertyMetas
+</span><span class='line'>6、设置属性映射关系_mapper（用户提供）
+</span><span class='line'>7、设置属性映射关系_mapper（原生属性，非用户自定义映射）
+</span><span class='line'>8、设置用户是否实现转换相关自定义方法布尔属性</span></code></pre></td></tr></table></div></figure>
+
+
+<p>一些基本的信息类设置完成后，就开始设置实例的属性了：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// 设置前对传入的字典进行更改
+</span><span class='line'>if (modelMeta-&gt;_hasCustomWillTransformFromDictionary) {
+</span><span class='line'>    dic = [((id&lt;YYModel&gt;)self) modelCustomWillTransformFromDictionary:dic];
+</span><span class='line'>    if (![dic isKindOfClass:[NSDictionary class]]) return NO;
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// 集合上下文
+</span><span class='line'>ModelSetContext context = {0};
+</span><span class='line'>context.modelMeta = (__bridge void *)(modelMeta);
+</span><span class='line'>context.model = (__bridge void *)(self);
+</span><span class='line'>context.dictionary = (__bridge void *)(dic);
+</span><span class='line'>
+</span><span class='line'>if (modelMeta-&gt;_keyMappedCount &gt;= CFDictionaryGetCount((CFDictionaryRef)dic)) {
+</span><span class='line'>    CFDictionaryApplyFunction((CFDictionaryRef)dic, ModelSetWithDictionaryFunction, &context);
+</span><span class='line'>    if (modelMeta-&gt;_keyPathPropertyMetas) {
+</span><span class='line'>        CFArrayApplyFunction((CFArrayRef)modelMeta-&gt;_keyPathPropertyMetas,
+</span><span class='line'>                             CFRangeMake(0, CFArrayGetCount((CFArrayRef)modelMeta-&gt;_keyPathPropertyMetas)),
+</span><span class='line'>                             ModelSetWithPropertyMetaArrayFunction,
+</span><span class='line'>                             &context);
+</span><span class='line'>    }
+</span><span class='line'>    if (modelMeta-&gt;_multiKeysPropertyMetas) {
+</span><span class='line'>        CFArrayApplyFunction((CFArrayRef)modelMeta-&gt;_multiKeysPropertyMetas,
+</span><span class='line'>                             CFRangeMake(0, CFArrayGetCount((CFArrayRef)modelMeta-&gt;_multiKeysPropertyMetas)),
+</span><span class='line'>                             ModelSetWithPropertyMetaArrayFunction,
+</span><span class='line'>                             &context);
+</span><span class='line'>    }
+</span><span class='line'>} else {
+</span><span class='line'>    CFArrayApplyFunction((CFArrayRef)modelMeta-&gt;_allPropertyMetas,
+</span><span class='line'>                         CFRangeMake(0, modelMeta-&gt;_keyMappedCount),
+</span><span class='line'>                         ModelSetWithPropertyMetaArrayFunction,
+</span><span class='line'>                         &context);
+</span><span class='line'>}
+</span><span class='line'>// 设置后对实例的属性进行更改
+</span><span class='line'>if (modelMeta-&gt;_hasCustomTransformFromDictionary) {
+</span><span class='line'>    return [((id&lt;YYModel&gt;)self) modelCustomTransformFromDictionary:dic];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当<code>modelMeta-&gt;_keyMappedCount</code>大于等于<code>CFDictionaryGetCount((CFDictionaryRef)dic)</code>时，
+执行以下步骤：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>1、遍历字典，并以字典为基准，设置模型中与字典相对应的属性
+</span><span class='line'>2、通过_keyPathPropertyMetas，设置映射到keyPath的属性
+</span><span class='line'>3、通过_multiKeysPropertyMetas，设置映射到数组的属性</span></code></pre></td></tr></table></div></figure>
+
+
+<p>否则直接通过<code>_allPropertyMetas</code>设置所有属性。<br>
+字典回调函数的如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static void ModelSetWithDictionaryFunction(const void *_key, const void *_value, void *_context) {
+</span><span class='line'>    ModelSetContext *context = _context;
+</span><span class='line'>    __unsafe_unretained _YYModelMeta *meta = (__bridge _YYModelMeta *)(context-&gt;modelMeta);
+</span><span class='line'>    __unsafe_unretained _YYModelPropertyMeta *propertyMeta = [meta-&gt;_mapper objectForKey:(__bridge id)(_key)];
+</span><span class='line'>    __unsafe_unretained id model = (__bridge id)(context-&gt;model);
+</span><span class='line'>    while (propertyMeta) {
+</span><span class='line'>        // 映射到同个key之后，这里循环赋给属性相同的值
+</span><span class='line'>        if (propertyMeta-&gt;_setter) {
+</span><span class='line'>            ModelSetValueForProperty(model, (__bridge __unsafe_unretained id)_value, propertyMeta);
+</span><span class='line'>        }
+</span><span class='line'>        propertyMeta = propertyMeta-&gt;_next;
+</span><span class='line'>    };
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在遍历字典时，回调函数会根据字典的key从<code>_mapper</code>中获取对应的<code>_YYModelPropertyMeta</code>，
+然后通过<code>ModelSetValueForProperty</code>设置属性值。如果<code>propertyMeta</code>的<code>_next</code>不为空，即表示有多个属性被映射到了同一个key。<br>
+这样做的好处是只需要从字典中取一次value，就可以设置被映射到同一个key的所有属性；而通过<code>_allPropertyMetas</code>设置时，则需要对每个属性
+都对字典做一次取值操作。作者在<a href="http://blog.ibireme.com/2015/10/23/ios_model_framework_benchmark/">优化Tip</a>的第8点中也提到：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>8. 减少遍历的循环次数
+</span><span class='line'>在 JSON 和 Model 转换前，Model 的属性个数和 JSON 的属性个数都是已知的，这时选择数量较少的那一方进行遍历，会节省很多时间。</span></code></pre></td></tr></table></div></figure>
+
+
+<p>数组的回调函数如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static void ModelSetWithPropertyMetaArrayFunction(const void *_propertyMeta, void *_context) {
+</span><span class='line'>    ModelSetContext *context = _context;
+</span><span class='line'>    __unsafe_unretained NSDictionary *dictionary = (__bridge NSDictionary *)(context-&gt;dictionary);
+</span><span class='line'>    __unsafe_unretained _YYModelPropertyMeta *propertyMeta = (__bridge _YYModelPropertyMeta *)(_propertyMeta);
+</span><span class='line'>    if (!propertyMeta-&gt;_setter) return;
+</span><span class='line'>    id value = nil;
+</span><span class='line'>    
+</span><span class='line'>    if (propertyMeta-&gt;_mappedToKeyArray) {
+</span><span class='line'>      // 映射到多个key
+</span><span class='line'>        value = YYValueForMultiKeys(dictionary, propertyMeta-&gt;_mappedToKeyArray);
+</span><span class='line'>    } else if (propertyMeta-&gt;_mappedToKeyPath) {
+</span><span class='line'>      // 映射到keyPath
+</span><span class='line'>        value = YYValueForKeyPath(dictionary, propertyMeta-&gt;_mappedToKeyPath);
+</span><span class='line'>    } else {
+</span><span class='line'>      // 映射到一个key
+</span><span class='line'>        value = [dictionary objectForKey:propertyMeta-&gt;_mappedToKey];
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    if (value) {
+</span><span class='line'>        __unsafe_unretained id model = (__bridge id)(context-&gt;model);
+</span><span class='line'>        ModelSetValueForProperty(model, value, propertyMeta);
+</span><span class='line'>    }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>YYValueForMultiKeys</code>代码如下:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static force_inline id YYValueForMultiKeys(__unsafe_unretained NSDictionary *dic, __unsafe_unretained NSArray *multiKeys) {
+</span><span class='line'>    id value = nil;
+</span><span class='line'>    for (NSString *key in multiKeys) {
+</span><span class='line'>        // 只要对上了dic中的一个key，就退出
+</span><span class='line'>        if ([key isKindOfClass:[NSString class]]) {
+</span><span class='line'>            value = dic[key];
+</span><span class='line'>            if (value) break;
+</span><span class='line'>        } else {
+</span><span class='line'>            // key不是NSString，为NSArray，使用keyPath取值
+</span><span class='line'>            value = YYValueForKeyPath(dic, (NSArray *)key);
+</span><span class='line'>            if (value) break;
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>    return value;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在一个属性被映射到多个key时，只取第一个匹配成功的key，后续的key将会被略过。
+<code>YYValueForKeyPath</code>的代码如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static force_inline id YYValueForKeyPath(__unsafe_unretained NSDictionary *dic, __unsafe_unretained NSArray *keyPaths) {
+</span><span class='line'>    id value = nil;
+</span><span class='line'>    for (NSUInteger i = 0, max = keyPaths.count; i &lt; max; i++) {
+</span><span class='line'>        value = dic[keyPaths[i]];
+</span><span class='line'>        if (i + 1 &lt; max) {
+</span><span class='line'>            if ([value isKindOfClass:[NSDictionary class]]) {
+</span><span class='line'>                dic = value;
+</span><span class='line'>            } else {
+</span><span class='line'>                return nil;
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    return value;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>作者为了优化代码性能，将映射的<code>keyPath</code>以<code>.</code>为分隔符拆分成多个字符串，并以数组的形式存储，最终用循环获取<code>value</code>的方式代替<code>valueForKeyPath:</code>，也解决了从非字典取<code>value</code>时的崩溃问题。当然在不考虑性能的情况下，也可以用以下方式实现:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSString *keyPath = [keyPaths componentsJoinedByString:@"."];
+</span><span class='line'>@try {
+</span><span class='line'>  value = [dic valueForKeyPath:keyPath];
+</span><span class='line'>} @catch (NSException *exception) { }</span></code></pre></td></tr></table></div></figure>
+
+
+<p>设置属性值通过方法<code>ModelSetValueForProperty</code>实现。首先，函数把属性分为了三种类型：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>C数值类型
+</span><span class='line'>NS系统自带类类型
+</span><span class='line'>自定义列类型</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>C数值类型</code>判断如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static force_inline BOOL YYEncodingTypeIsCNumber(YYEncodingType type) {
+</span><span class='line'>    switch (type & YYEncodingTypeMask) {
+</span><span class='line'>        case YYEncodingTypeBool:
+</span><span class='line'>        case YYEncodingTypeInt8:
+</span><span class='line'>        case YYEncodingTypeUInt8:
+</span><span class='line'>        case YYEncodingTypeInt16:
+</span><span class='line'>        case YYEncodingTypeUInt16:
+</span><span class='line'>        case YYEncodingTypeInt32:
+</span><span class='line'>        case YYEncodingTypeUInt32:
+</span><span class='line'>        case YYEncodingTypeInt64:
+</span><span class='line'>        case YYEncodingTypeUInt64:
+</span><span class='line'>        case YYEncodingTypeFloat:
+</span><span class='line'>        case YYEncodingTypeDouble:
+</span><span class='line'>        case YYEncodingTypeLongDouble: return YES;
+</span><span class='line'>        default: return NO;
+</span><span class='line'>    }
+</span><span class='line'>}
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>NS系统自带类类型</code>判断如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static force_inline YYEncodingNSType YYClassGetNSType(Class cls) {
+</span><span class='line'>    if (!cls) return YYEncodingTypeNSUnknown;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSMutableString class]]) return YYEncodingTypeNSMutableString;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSString class]]) return YYEncodingTypeNSString;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSDecimalNumber class]]) return YYEncodingTypeNSDecimalNumber;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSNumber class]]) return YYEncodingTypeNSNumber;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSValue class]]) return YYEncodingTypeNSValue;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSMutableData class]]) return YYEncodingTypeNSMutableData;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSData class]]) return YYEncodingTypeNSData;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSDate class]]) return YYEncodingTypeNSDate;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSURL class]]) return YYEncodingTypeNSURL;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSMutableArray class]]) return YYEncodingTypeNSMutableArray;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSArray class]]) return YYEncodingTypeNSArray;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSMutableDictionary class]]) return YYEncodingTypeNSMutableDictionary;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSDictionary class]]) return YYEncodingTypeNSDictionary;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSMutableSet class]]) return YYEncodingTypeNSMutableSet;
+</span><span class='line'>    if ([cls isSubclassOfClass:[NSSet class]]) return YYEncodingTypeNSSet;
+</span><span class='line'>    return YYEncodingTypeNSUnknown;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需要注意的是<code>mutable</code>类型一般都继承于<code>immutable</code>类型，所以需要先判断是否为<code>mutable</code>。由于类簇的原因，我们是无法在<code>runtime</code>时获取属性是否时<code>mutable</code>的，所以只能进行静态的判断，这也是<code>_YYModelPropertyMeta</code>的<code>_nsType</code>存在的意义。(PS: 函数<code>ModelSetValueForProperty</code>关于类簇的问题似乎还没有从YYModel主线合入到YYKit的YYModel中。在YYKit那个版本的YYModel，使用<code>isKindOfClass</code>来分辨<code>NSMutableString</code>和<code>NSString</code>，导致属性是<code>NSMutableString</code>的情况下获得的还是<code>immutable</code>版本)<br>
+更多关于类簇的资料可以参考:<br><a href="http://blog.sunnyxx.com/2014/12/18/class-cluster/">从NSArray看类簇</a><br><a href="https://developer.apple.com/library/ios/documentation/General/Conceptual/CocoaEncyclopedia/ClassClusters/ClassClusters.html">ClassClusters</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[MQTT使用小记]]></title>
@@ -1472,7 +2061,8 @@ Connect报文的可变报头中分为四个部分:协议名，协议级别，连
     <updated>2016-03-09T15:31:32+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-wu</id>
     <content type="html"><![CDATA[<p>1、iOS中文斜体<br>
-2、Swift中替代#ifdef以及关于Target管理</p>
+2、Swift中替代#ifdef以及关于Target管理
+3、UIRefreshControl下拉抖动问题</p>
 
 <!--more-->
 
@@ -1502,6 +2092,86 @@ Connect报文的可变报头中分为四个部分:协议名，协议级别，连
 <p>复制Target：</p>
 
 <p><a href="http://stackoverflow.com/questions/27283716/xcode-6-how-to-rename-copied-target">xcode-6-how-to-rename-copied-target</a></p>
+
+<h2>UIRefreshControl下拉抖动问题</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">Because</span> <span class="n">the</span> <span class="n">refresh</span> <span class="n">control</span> <span class="n">is</span> <span class="n">specifically</span> <span class="n">designed</span> <span class="k">for</span> <span class="n">use</span> <span class="k">in</span> <span class="n">a</span> <span class="n">table</span> <span class="n">view</span> <span class="n">that</span><span class="err">&#39;</span><span class="n">s</span> <span class="n">managed</span> <span class="n">by</span> <span class="n">a</span> <span class="n">table</span> <span class="n">view</span> <span class="n">controller</span><span class="p">,</span> <span class="n">using</span> <span class="n">it</span> <span class="k">in</span> <span class="n">a</span> <span class="n">different</span> <span class="n">context</span> <span class="n">can</span> <span class="n">result</span> <span class="k">in</span> <span class="n">undefined</span> <span class="n">behavior</span><span class="p">.</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上是文档中对UIRefreshControl的部分描述，可见其是专门针对UITableViewController的，用在其它地方容易出现不可知的问题。</p>
+
+<p>错误情况：<br>
+在UIViewController中添加UIScrollView(或者任何子类)，再把UIRefreshControl作为其子控件。<br>
+AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/">自定义PullRefresh的文章</a>，因为其实现原理和以下一致，最终的效果也会有这种问题。当然，我的<a href="https://github.com/tripleCC/GanHuoCode">干货</a>下拉参考的就是这篇文章，所以也会存在这种瑕疵。让我比较郁闷的是TestFlight，苹果自家的App也会出现这种情况。<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">@</span><span class="kt">IBOutlet</span> <span class="k">weak</span> <span class="n">var</span> <span class="nl">scrollView</span><span class="p">:</span> <span class="bp">UIScrollView</span><span class="o">!</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">rride</span> <span class="n">func</span> <span class="n">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nb">super</span><span class="p">.</span><span class="n">viewDidLoad</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">let</span> <span class="n">refresh</span> <span class="o">=</span> <span class="bp">UIRefreshControl</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">refresh</span><span class="p">.</span><span class="n">addTarget</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="nl">action</span><span class="p">:</span> <span class="err">#</span><span class="n">selector</span><span class="p">(</span><span class="n">refreshAction</span><span class="p">),</span> <span class="nl">forControlEvents</span><span class="p">:</span> <span class="p">.</span><span class="n">ValueChanged</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">addSubview</span><span class="p">(</span><span class="n">refresh</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">func</span> <span class="n">refreshAction</span><span class="p">(</span><span class="nl">sender</span><span class="p">:</span> <span class="n">AnyObject</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">dispatch_after</span><span class="p">(</span><span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="n">Int64</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">Double</span><span class="p">(</span><span class="n">NSEC_PER_SEC</span><span class="p">))),</span> <span class="n">dispatch_get_main_queue</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">(</span><span class="n">sender</span> <span class="n">as</span><span class="o">?</span> <span class="bp">UIRefreshControl</span><span class="p">)</span><span class="o">?</span><span class="p">.</span><span class="n">endRefreshing</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://triplecc.github.io/images/pull_refreshing_error" alt="" /><br></p>
+
+<p>正确情况：<br>
+在UITableViewController中将UIRefreshControl赋给refreshControl</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">override</span> <span class="n">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nb">super</span><span class="p">.</span><span class="n">viewDidLoad</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">refreshControl</span> <span class="o">=</span> <span class="bp">UIRefreshControl</span><span class="p">()</span>
+</span><span class='line'>  <span class="n">refreshControl</span><span class="o">?</span><span class="p">.</span><span class="n">addTarget</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="nl">action</span><span class="p">:</span> <span class="err">#</span><span class="n">selector</span><span class="p">(</span><span class="n">refreshAction</span><span class="p">),</span> <span class="nl">forControlEvents</span><span class="p">:</span> <span class="p">.</span><span class="n">ValueChanged</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">func</span> <span class="nf">refreshAction</span><span class="p">(</span><span class="nl">sender</span><span class="p">:</span> <span class="n">AnyObject</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">dispatch_after</span><span class="p">(</span><span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="n">Int64</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">Double</span><span class="p">(</span><span class="n">NSEC_PER_SEC</span><span class="p">))),</span> <span class="n">dispatch_get_main_queue</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">(</span><span class="n">sender</span> <span class="n">as</span><span class="o">?</span> <span class="bp">UIRefreshControl</span><span class="p">)</span><span class="o">?</span><span class="p">.</span><span class="n">endRefreshing</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://triplecc.github.io/images/pull_refreshing_right" alt="" /><br></p>
 ]]></content>
   </entry>
   
@@ -5035,218 +5705,6 @@ PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
 <p>以上计算逻辑主要为：透明度最大值必须为1，模糊效果必须在黑色Label到达Header控件时出现，在白色Label停止后停止加深模糊。<br></p>
 
 <p><a href="https://github.com/ariok/TB_TwitterUI">源码地址</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[iOS知识碎片一]]></title>
-    <link href="http://triplecc.github.io/blog/2015-09-06-ioszhi-shi-sui-pian-yi/"/>
-    <updated>2015-09-06T00:04:36+08:00</updated>
-    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-yi</id>
-    <content type="html"><![CDATA[<p>学习工作中总会有那么几个注意点和困惑点，这些琐碎的知识点容易让我迷惑，所以决定做这么一个纪录，希望能持之以恒，积少成多</p>
-
-<ol>
-<li>解决同时设置阴影和裁剪，阴影消失问题</li>
-<li>swift中使用字符串创建类及错误处理</li>
-<li>swift中回调函数设置作用域注意</li>
-<li>可视化界面调整图片拉伸</li>
-<li>AFNetworking出现SSL错误</li>
-</ol>
-
-
-<!--more-->
-
-
-<h1>解决同时设置阴影和裁剪，阴影消失问题</h1>
-
-<h3>阴影注意点</h3>
-
-<ul>
-<li>图层的阴影是根据<code>内容外形</code>确定，不是根据边界和角半径确定</li>
-<li>阴影通常在layer的边界之外</li>
-</ul>
-
-
-<h3>裁剪注意点</h3>
-
-<ul>
-<li>所有从图层中突出的内容都会被裁剪掉</li>
-</ul>
-
-
-<h3>引出问题</h3>
-
-<ul>
-<li>同时设置视图masksToBounds和图层的阴影，图层的阴影效果可能会失效。<br></li>
-<li>原因是：图层阴影被裁剪掉了。</li>
-</ul>
-
-
-<h3>解决方案</h3>
-
-<p>使用一个只画阴影的空视图，成为需要裁剪视图的父控件</p>
-
-<p>原理：</p>
-
-<ul>
-<li>内部子控件进行裁剪后，外部父视图的内容就只有被裁剪的子控件，所以会在子控件周围绘制阴影，而子控件只对它以及它的子控件进行了裁剪</li>
-</ul>
-
-
-<h1>在Swift中使用字符串创建类</h1>
-
-<p>在swift中有了命名空间这个概念（namespace），使用.self打印类名，会发现对应的类名带有namespace前缀如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="o">&lt;</span><span class="n">SwiftWB</span><span class="p">.</span><span class="nl">HomeViewController</span><span class="p">:</span> <span class="mh">0x7fbf81f4e5e0</span><span class="o">&gt;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Swift还在不断改进，所以这里只针对Xcode7 Beta5（在beta4写出来貌似在这个测试版本上会出错）</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">path</span> <span class="o">=</span> <span class="bp">NSBundle</span><span class="p">.</span><span class="n">mainBundle</span><span class="p">().</span><span class="n">pathForResource</span><span class="p">(</span><span class="s">&quot;MainVCSettings&quot;</span><span class="p">,</span> <span class="nl">ofType</span><span class="p">:</span> <span class="s">&quot;json&quot;</span><span class="p">)</span>
-</span><span class='line'><span class="k">if</span> <span class="n">let</span> <span class="n">jsonPath</span> <span class="o">=</span> <span class="n">path</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">do</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">let</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">NSData</span><span class="p">(</span><span class="nl">contentsOfFile</span><span class="p">:</span> <span class="n">jsonPath</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">let</span> <span class="n">dataArr</span> <span class="o">=</span> <span class="n">try</span> <span class="bp">NSJSONSerialization</span><span class="p">.</span><span class="n">JSONObjectWithData</span><span class="p">(</span><span class="n">data</span><span class="o">!</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">.</span><span class="n">MutableContainers</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="c1">// 命名空间名</span>
-</span><span class='line'>        <span class="n">let</span> <span class="n">prefixStr</span> <span class="o">=</span> <span class="bp">NSBundle</span><span class="p">.</span><span class="n">mainBundle</span><span class="p">().</span><span class="n">infoDictionary</span><span class="o">!</span><span class="p">[</span><span class="s">&quot;CFBundleExecutable&quot;</span><span class="p">]</span> <span class="n">as</span><span class="o">!</span> <span class="n">String</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">for</span> <span class="n">object</span> <span class="k">in</span> <span class="n">dataArr</span> <span class="n">as</span><span class="o">!</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">let</span> <span class="nl">cls</span><span class="p">:</span> <span class="n">AnyClass</span><span class="o">?</span> <span class="o">=</span> <span class="n">NSClassFromString</span><span class="p">(</span><span class="n">prefixStr</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;vcName&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="c1">// 读取的名称不一定有对应的控制器，所以在这里做一个动态绑定</span>
-</span><span class='line'>            <span class="k">if</span> <span class="n">let</span> <span class="n">vcCls</span> <span class="o">=</span> <span class="n">cls</span> <span class="n">as</span><span class="o">?</span> <span class="bp">UIViewController</span><span class="p">.</span><span class="n">Type</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">let</span> <span class="n">vc</span> <span class="o">=</span> <span class="n">vcCls</span><span class="p">.</span><span class="n">init</span><span class="p">()</span>
-</span><span class='line'>                <span class="n">addChildViewController</span><span class="p">(</span><span class="n">vc</span><span class="p">,</span> <span class="nl">title</span><span class="p">:</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;title&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">,</span> <span class="nl">imageName</span><span class="p">:</span> <span class="n">object</span><span class="p">[</span><span class="s">&quot;imageName&quot;</span><span class="p">]</span><span class="o">!</span><span class="p">)</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span> <span class="n">catch</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">addChildViewController</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>上面代码从MainVCSettings文件读取控制器的关联信息，并创建对应的控制器，详细信息已在注释中表明</p>
-
-<p>从上面代码还可以看出，swift对于错误的处理有了一定的变化。在Objective-C中，对应的JSON解析是通过参数传出错误的方式来进行处理的：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSJSONSerialization</span> <span class="nl">dataWithJSONObject</span><span class="p">:(</span><span class="kt">id</span><span class="p">)</span> <span class="nl">options</span><span class="p">:(</span><span class="n">NSJSONWritingOptions</span><span class="p">)</span> <span class="nl">error</span><span class="p">:(</span><span class="bp">NSError</span> <span class="o">*</span><span class="k">__autoreleasing</span> <span class="o">*</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>而swift中采用了抛出异常的方式：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">public</span> <span class="k">class</span> <span class="n">func</span> <span class="n">JSONObjectWithData</span><span class="p">(</span><span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span><span class="p">,</span> <span class="n">options</span> <span class="nl">opt</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">AnyObject</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>模式的写法如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">do</span> <span class="p">{</span>
-</span><span class='line'>  <span class="p">...</span>
-</span><span class='line'>  <span class="c1">// 注意需要使用try</span>
-</span><span class='line'>    <span class="n">let</span> <span class="n">dataArr</span> <span class="o">=</span> <span class="n">try</span> <span class="bp">NSJSONSerialization</span><span class="p">.</span><span class="n">JSONObjectWithData</span><span class="p">(</span><span class="n">data</span><span class="o">!</span><span class="p">,</span> <span class="nl">options</span><span class="p">:</span> <span class="n">NSJSONReadingOptions</span><span class="p">.</span><span class="n">MutableContainers</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">...</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span> <span class="n">catch</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 错误处理</span>
-</span><span class='line'>  <span class="p">...</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h1>swift中回调函数设置作用域注意</h1>
-
-<p>在swift中，存在private修饰符，表示私有变量或者私有方法。一般只在本类中使用的，不暴露给外界的方法都会加上这个修饰符。<br>
-但是在添加按钮点击回调函数时，却不能这么做。如果给按钮的回调函方法添加了private修饰符，程序会抛出找不到实例方法错误。<br>
-原因如下：<br>
-首先，在回调方法中添加一个断点：<br></p>
-
-<p><img src="http://triplecc.github.io/images/Snip20150908_2.png" alt="" /></p>
-
-<p>然后运行程序，会崩溃后会出现以下函数调用栈：<br>
-<img src="http://triplecc.github.io/images/Snip20150908_1.png" alt="" /></p>
-
-<p>可以看到，按钮的点击事件是通过<code>运行循环</code>进行监听，并且以Source0的形式让RunLoop执行处理(<a href="http://triplecc.github.io/blog/2015-09-04-runloopji-chu-yuan-su-jie-xi/">RunLoop基础元素解析</a>)。然后以<code>消息机制</code>传递，对方法进行调用，所以按钮的回调方法不能设置为private，否则外界会找不到对应的方法。</p>
-
-<h1>可视化界面调整图片拉伸</h1>
-
-<p>发现最近个版本的Xcode在调整图片拉伸情况时，还可以使用一种可视化界面调整。</p>
-
-<p>详细步骤如下：<br></p>
-
-<p>一般打开的图片显示如下:<br>
-<img src="http://triplecc.github.io/images/Snip20150909_2.png" alt="" /><br></p>
-
-<p>更改显示方式<br>
-<img src="http://triplecc.github.io/images/Snip20150909_4.png" alt="" /></p>
-
-<p>可视化调整拉伸方式<br>
-<img src="http://triplecc.github.io/images/Snip20150909_5.png" alt="" /></p>
-
-<p>开始拉伸<br>
-<img src="http://triplecc.github.io/images/Snip20150909_6.png" alt="" /></p>
-
-<p>调整对应的线来对局部进行拉伸
-<img src="http://triplecc.github.io/images/Snip20150909_7.png" alt="" /></p>
-
-<h1>AFNetworking出现SSL错误</h1>
-
-<p>获取优酷视频信息数据时出现问题。</p>
-
-<p>加载HTTPS网络数据时出现以下错误：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSURLSession</span><span class="o">/</span><span class="bp">NSURLConnection</span> <span class="n">HTTP</span> <span class="n">load</span> <span class="n">failed</span> <span class="p">(</span><span class="n">kCFStreamErrorDomainSSL</span><span class="p">,</span> <span class="o">-</span><span class="mi">9824</span><span class="p">)</span>
-</span><span class='line'><span class="n">Error</span> <span class="n">Domain</span><span class="o">=</span><span class="n">NSURLErrorDomain</span> <span class="n">Code</span><span class="o">=-</span><span class="mi">1200</span> <span class="s">&quot;An SSL error has occurred and a secure connection to the server cannot be made.&quot;</span> <span class="n">UserInfo</span><span class="o">=</span><span class="p">{</span><span class="n">_kCFStreamErrorCodeKey</span><span class="o">=-</span><span class="mi">9824</span><span class="p">,</span> <span class="n">NSLocalizedRecoverySuggestion</span><span class="o">=</span><span class="n">Would</span> <span class="n">you</span> <span class="n">like</span> <span class="n">to</span> <span class="n">connect</span> <span class="n">to</span> <span class="n">the</span> <span class="n">server</span> <span class="n">anyway</span><span class="o">?</span><span class="p">,</span> <span class="n">NSUnderlyingError</span><span class="o">=</span><span class="mh">0x7fbdf1e2e870</span> <span class="p">{</span><span class="n">Error</span> <span class="n">Domain</span><span class="o">=</span><span class="n">kCFErrorDomainCFNetwork</span> <span class="n">Code</span><span class="o">=-</span><span class="mi">1200</span> <span class="s">&quot;(null)&quot;</span> <span class="n">UserInfo</span><span class="o">=</span><span class="p">{</span><span class="n">_kCFStreamPropertySSLClientCertificateState</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">_kCFNetworkCFStreamSSLErrorOriginalValue</span><span class="o">=-</span><span class="mi">9824</span><span class="p">,</span> <span class="n">_kCFStreamErrorDomainKey</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">_kCFStreamErrorCodeKey</span><span class="o">=-</span><span class="mi">9824</span><span class="p">}},</span> <span class="n">NSLocalizedDescription</span><span class="o">=</span><span class="n">An</span> <span class="n">SSL</span> <span class="n">error</span> <span class="n">has</span> <span class="n">occurred</span> <span class="n">and</span> <span class="n">a</span> <span class="n">secure</span> <span class="n">connection</span> <span class="n">to</span> <span class="n">the</span> <span class="n">server</span> <span class="n">cannot</span> <span class="n">be</span> <span class="n">made</span><span class="p">.,</span> <span class="n">NSErrorFailingURLKey</span><span class="o">=</span><span class="nl">https</span><span class="p">:</span><span class="c1">//openapi.youku.com/v2/videos/by_category.json?client_id=693bf79be3aee68f, NSErrorFailingURLStringKey=https://openapi.youku.com/v2/videos/by_category.json?client_id=693bf79be3aee68f, _kCFStreamErrorDomainKey=3}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在info.plist中添加以下字段就可以解决：</p>
-
-<p><img src="http://triplecc.github.io/images/Snip20150915_1.png" alt="" /></p>
-
-<p>最新的版本：</p>
-
-<p><img src="http://triplecc.github.io/images/Snip20151101-1.png" alt="" /></p>
 ]]></content>
   </entry>
   

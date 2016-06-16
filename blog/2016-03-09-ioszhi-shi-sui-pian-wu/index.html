@@ -10,10 +10,11 @@
 
   
   <meta name="description" content="1、iOS中文斜体
-2、Swift中替代#ifdef以及关于Target管理 iOS中文斜体 iOS系统UIFont中的斜体对中文并不支持，所以需要用另一种方式实现： 1
+2、Swift中替代#ifdef以及关于Target管理
+3、UIRefreshControl下拉抖动问题 iOS中文斜体 iOS系统UIFont中的斜体对中文并不支持，所以需要用另一种方式实现： 1
 2
 3
-CGAffineTransform matrix = CGAffineTransformMake(1, 0, tanf &hellip;">
+CGAffineTransform matrix = &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -89,7 +90,8 @@ CGAffineTransform matrix = CGAffineTransformMake(1, 0, tanf &hellip;">
 
 
 <div class="entry-content"><p>1、iOS中文斜体<br>
-2、Swift中替代#ifdef以及关于Target管理</p>
+2、Swift中替代#ifdef以及关于Target管理
+3、UIRefreshControl下拉抖动问题</p>
 
 <!--more-->
 
@@ -119,6 +121,86 @@ CGAffineTransform matrix = CGAffineTransformMake(1, 0, tanf &hellip;">
 <p>复制Target：</p>
 
 <p><a href="http://stackoverflow.com/questions/27283716/xcode-6-how-to-rename-copied-target">xcode-6-how-to-rename-copied-target</a></p>
+
+<h2>UIRefreshControl下拉抖动问题</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">Because</span> <span class="n">the</span> <span class="n">refresh</span> <span class="n">control</span> <span class="n">is</span> <span class="n">specifically</span> <span class="n">designed</span> <span class="k">for</span> <span class="n">use</span> <span class="k">in</span> <span class="n">a</span> <span class="n">table</span> <span class="n">view</span> <span class="n">that</span><span class="err">&#39;</span><span class="n">s</span> <span class="n">managed</span> <span class="n">by</span> <span class="n">a</span> <span class="n">table</span> <span class="n">view</span> <span class="n">controller</span><span class="p">,</span> <span class="n">using</span> <span class="n">it</span> <span class="k">in</span> <span class="n">a</span> <span class="n">different</span> <span class="n">context</span> <span class="n">can</span> <span class="n">result</span> <span class="k">in</span> <span class="n">undefined</span> <span class="n">behavior</span><span class="p">.</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上是文档中对UIRefreshControl的部分描述，可见其是专门针对UITableViewController的，用在其它地方容易出现不可知的问题。</p>
+
+<p>错误情况：<br>
+在UIViewController中添加UIScrollView(或者任何子类)，再把UIRefreshControl作为其子控件。<br>
+AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/">自定义PullRefresh的文章</a>，因为其实现原理和以下一致，最终的效果也会有这种问题。当然，我的<a href="https://github.com/tripleCC/GanHuoCode">干货</a>下拉参考的就是这篇文章，所以也会存在这种瑕疵。让我比较郁闷的是TestFlight，苹果自家的App也会出现这种情况。<br></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">@</span><span class="kt">IBOutlet</span> <span class="k">weak</span> <span class="n">var</span> <span class="nl">scrollView</span><span class="p">:</span> <span class="bp">UIScrollView</span><span class="o">!</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">rride</span> <span class="n">func</span> <span class="n">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nb">super</span><span class="p">.</span><span class="n">viewDidLoad</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">let</span> <span class="n">refresh</span> <span class="o">=</span> <span class="bp">UIRefreshControl</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">refresh</span><span class="p">.</span><span class="n">addTarget</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="nl">action</span><span class="p">:</span> <span class="err">#</span><span class="n">selector</span><span class="p">(</span><span class="n">refreshAction</span><span class="p">),</span> <span class="nl">forControlEvents</span><span class="p">:</span> <span class="p">.</span><span class="n">ValueChanged</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">scrollView</span><span class="p">.</span><span class="n">addSubview</span><span class="p">(</span><span class="n">refresh</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">func</span> <span class="n">refreshAction</span><span class="p">(</span><span class="nl">sender</span><span class="p">:</span> <span class="n">AnyObject</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">dispatch_after</span><span class="p">(</span><span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="n">Int64</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">Double</span><span class="p">(</span><span class="n">NSEC_PER_SEC</span><span class="p">))),</span> <span class="n">dispatch_get_main_queue</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">(</span><span class="n">sender</span> <span class="n">as</span><span class="o">?</span> <span class="bp">UIRefreshControl</span><span class="p">)</span><span class="o">?</span><span class="p">.</span><span class="n">endRefreshing</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="/images/pull_refreshing_error" alt="" /><br></p>
+
+<p>正确情况：<br>
+在UITableViewController中将UIRefreshControl赋给refreshControl</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">override</span> <span class="n">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="nb">super</span><span class="p">.</span><span class="n">viewDidLoad</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">refreshControl</span> <span class="o">=</span> <span class="bp">UIRefreshControl</span><span class="p">()</span>
+</span><span class='line'>  <span class="n">refreshControl</span><span class="o">?</span><span class="p">.</span><span class="n">addTarget</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="nl">action</span><span class="p">:</span> <span class="err">#</span><span class="n">selector</span><span class="p">(</span><span class="n">refreshAction</span><span class="p">),</span> <span class="nl">forControlEvents</span><span class="p">:</span> <span class="p">.</span><span class="n">ValueChanged</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">func</span> <span class="nf">refreshAction</span><span class="p">(</span><span class="nl">sender</span><span class="p">:</span> <span class="n">AnyObject</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">dispatch_after</span><span class="p">(</span><span class="n">dispatch_time</span><span class="p">(</span><span class="n">DISPATCH_TIME_NOW</span><span class="p">,</span> <span class="n">Int64</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">Double</span><span class="p">(</span><span class="n">NSEC_PER_SEC</span><span class="p">))),</span> <span class="n">dispatch_get_main_queue</span><span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">(</span><span class="n">sender</span> <span class="n">as</span><span class="o">?</span> <span class="bp">UIRefreshControl</span><span class="p">)</span><span class="o">?</span><span class="p">.</span><span class="n">endRefreshing</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="/images/pull_refreshing_right" alt="" /><br></p>
 </div>
 
 
@@ -174,6 +256,10 @@ CGAffineTransform matrix = CGAffineTransformMake(1, 0, tanf &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016-06-05-yymodelyue-du-xiao-ji/">YYModel阅读小记</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016-05-12-mqttshi-yong-xiao-ji/">MQTT使用小记</a>
       </li>
     
@@ -187,10 +273,6 @@ CGAffineTransform matrix = CGAffineTransformMake(1, 0, tanf &hellip;">
     
       <li class="post">
         <a href="/blog/2016-03-09-ioszhi-shi-sui-pian-wu/">iOS知识碎片五</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-02-05-locksmithmian-xiang-xie-yi-ku/">关于keychain封装库Locksmith</a>
       </li>
     
   </ul>
