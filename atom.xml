@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-06-16T10:48:59+08:00</updated>
+  <updated>2016-06-16T19:04:36+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -18,8 +18,11 @@
     <link href="http://triplecc.github.io/blog/2016-06-05-yymodelyue-du-xiao-ji/"/>
     <updated>2016-06-05T22:22:15+08:00</updated>
     <id>http://triplecc.github.io/blog/yymodelyue-du-xiao-ji</id>
-    <content type="html"><![CDATA[<p>YYModel是由ibireme开发的一套小而精美的模型转换框架，采用分类的形式，无需继承框架的某个基类就可以方便得完成模型的转换，且内部做了自动类型转换和安全处理，可以有效地防止因模型类型和后台的的数据不一样而产生的奔溃问题。<br>
+    <content type="html"><![CDATA[<p>YYModel是由ibireme开发的一套小而精美的模型转换框架，采用分类的形式，无需继承框架的某个基类就可以方便地完成模型的转换，且内部做了自动类型转换和安全处理，可以有效地防止因模型类型和后台给的数据类型不一样而产生的崩溃问题。<br>
 近些天抽空拜读了一下其源码，果然是思维严谨，考虑的一些细节也很到位，让人自叹弗如。虽然作者说这个框架是花了两个周末的时间完成的，但是其代码质量还是非常让人惊艳的，值得仔细阅读。</p>
+
+<!--more-->
+
 
 <h4>基本结构</h4>
 
@@ -506,14 +509,22 @@
 </span><span class='line'>} @catch (NSException *exception) { }</span></code></pre></td></tr></table></div></figure>
 
 
-<p>设置属性值通过方法<code>ModelSetValueForProperty</code>实现。首先，函数把属性分为了三种类型：</p>
+<p>YYModel采用<code>objc_msgSend</code>直接调用<code>Getter/Setter</code>，替代了使用KVC对属性进行取值/设置。作者的优化Tip3就说明了避免 KVC:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>3. 避免 KVC
+</span><span class='line'>Key-Value Coding 使用起来非常方便，但性能上要差于直接调用 Getter/Setter，所以如果能避免 KVC 而用 Getter/Setter 代替，性能会有较大提升。</span></code></pre></td></tr></table></div></figure>
+
+
+<p>设置属性值通过方法<code>ModelSetValueForProperty</code>实现。首先，函数把属性分为了三类类型进行处理：</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 </pre></td><td class='code'><pre><code class=''><span class='line'>C数值类型
-</span><span class='line'>NS系统自带类类型
-</span><span class='line'>自定义列类型</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>NS系统自带基本类类型
+</span><span class='line'>非常规类型</span></code></pre></td></tr></table></div></figure>
 
 
 <p>其中<code>C数值类型</code>判断如下：</p>
@@ -597,8 +608,106 @@
 </span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
 
 
-<p>需要注意的是<code>mutable</code>类型一般都继承于<code>immutable</code>类型，所以需要先判断是否为<code>mutable</code>。由于类簇的原因，我们是无法在<code>runtime</code>时获取属性是否时<code>mutable</code>的，所以只能进行静态的判断，这也是<code>_YYModelPropertyMeta</code>的<code>_nsType</code>存在的意义。(PS: 函数<code>ModelSetValueForProperty</code>关于类簇的问题似乎还没有从YYModel主线合入到YYKit的YYModel中。在YYKit那个版本的YYModel，使用<code>isKindOfClass</code>来分辨<code>NSMutableString</code>和<code>NSString</code>，导致属性是<code>NSMutableString</code>的情况下获得的还是<code>immutable</code>版本)<br>
-更多关于类簇的资料可以参考:<br><a href="http://blog.sunnyxx.com/2014/12/18/class-cluster/">从NSArray看类簇</a><br><a href="https://developer.apple.com/library/ios/documentation/General/Conceptual/CocoaEncyclopedia/ClassClusters/ClassClusters.html">ClassClusters</a></p>
+<p>需要注意的是<code>mutable</code>类型一般都继承于<code>immutable</code>类型，所以需要先判断是否为<code>mutable</code>。由于类簇的原因，我们是无法在<code>runtime</code>时获取属性是否是<code>mutable</code>的，所以只能进行静态判断，这也是<code>_YYModelPropertyMeta</code>的<code>_nsType</code>存在的意义。(PS: 在函数<code>ModelSetValueForProperty</code>中，关于类簇的问题似乎还没有从YYModel主线合入到YYKit的YYModel中。YYKit的YYModel版本，使用了<code>isKindOfClass</code>来分区分<code>NSMutableString</code>和<code>NSString</code>，导致属性类型是<code>NSMutableString</code>的情况下，获得的还是<code>immutable</code>版本)<br>
+更多关于类簇的资料可以参考:<a href="http://blog.sunnyxx.com/2014/12/18/class-cluster/">从NSArray看类簇</a>、<a href="https://developer.apple.com/library/ios/documentation/General/Conceptual/CocoaEncyclopedia/ClassClusters/ClassClusters.html">ClassClusters</a>。<br></p>
+
+<p>当属性为集合类型时，赋值稍微要麻烦些。比如针对<code>YYEncodingTypeNSArray</code>，有如下处理代码:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>if (meta-&gt;_genericCls) {
+</span><span class='line'>    NSArray *valueArr = nil;
+</span><span class='line'>    if ([value isKindOfClass:[NSArray class]]) valueArr = value;
+</span><span class='line'>    else if ([value isKindOfClass:[NSSet class]]) valueArr = ((NSSet *)value).allObjects;
+</span><span class='line'>    if (valueArr) {
+</span><span class='line'>        NSMutableArray *objectArr = [NSMutableArray new];
+</span><span class='line'>        for (id one in valueArr) {
+</span><span class='line'>            // 已经是所要对象了
+</span><span class='line'>            if ([one isKindOfClass:meta-&gt;_genericCls]) {
+</span><span class='line'>                [objectArr addObject:one];
+</span><span class='line'>            } else if ([one isKindOfClass:[NSDictionary class]]) {
+</span><span class='line'>                // 给的是字典，要自己构造
+</span><span class='line'>                Class cls = meta-&gt;_genericCls;
+</span><span class='line'>                if (meta-&gt;_hasCustomClassFromDictionary) {
+</span><span class='line'>                    // 由字典返回对应的类(透传) &lt;&lt;&lt; 由开发者实现
+</span><span class='line'>                    cls = [cls modelCustomClassForDictionary:one];
+</span><span class='line'>                    if (!cls) cls = meta-&gt;_genericCls; // for xcode code coverage
+</span><span class='line'>                }
+</span><span class='line'>                NSObject *newOne = [cls new];
+</span><span class='line'>                // 根据获得的类，创建实例
+</span><span class='line'>                [newOne yy_modelSetWithDictionary:one];
+</span><span class='line'>                if (newOne) [objectArr addObject:newOne];
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>        ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model, meta-&gt;_setter, objectArr);
+</span><span class='line'>    }
+</span><span class='line'>} else {
+</span><span class='line'>    if ([value isKindOfClass:[NSArray class]]) {
+</span><span class='line'>        if (meta-&gt;_nsType == YYEncodingTypeNSArray) {
+</span><span class='line'>            ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model, meta-&gt;_setter, value);
+</span><span class='line'>        } else {
+</span><span class='line'>            ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model,
+</span><span class='line'>                                                           meta-&gt;_setter,
+</span><span class='line'>                                                           ((NSArray *)value).mutableCopy);
+</span><span class='line'>        }
+</span><span class='line'>    } else if ([value isKindOfClass:[NSSet class]]) {
+</span><span class='line'>        if (meta-&gt;_nsType == YYEncodingTypeNSArray) {
+</span><span class='line'>            ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model, meta-&gt;_setter, ((NSSet *)value).allObjects);
+</span><span class='line'>        } else {
+</span><span class='line'>            ((void (*)(id, SEL, id))(void *) objc_msgSend)((id)model,
+</span><span class='line'>                                                           meta-&gt;_setter,
+</span><span class='line'>                                                           ((NSSet *)value).allObjects.mutableCopy);
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在使用者没有通过<code>modelContainerPropertyGenericClass</code>或者和<a href="https://github.com/ibireme/YYModel/issues/79">类型同名的<code>protocols</code></a>指定集合中的类型时，<code>_genericCls</code>是为nil的，所以如果<code>value</code>是NSArray或者NSSet类型，那么YYModel将<code>value</code>直接赋给属性，并没有做多余的解析。<br>
+在使用者已经指定了集合中元素类型的情况下，第一个分支就会对每个元素进行解析并构造成相应的实例。<br>
+YYModel给使用者提供了极强的扩展性。在解析的过程中，使用者可以根据在<code>modelCustomClassForDictionary:</code>方法中传入的字典，决定想要生成实例的类型。如果集合元素依然是一个字典，那么就会调用<code>yy_modelSetWithDictionary</code>嵌套解析。</p>
 ]]></content>
   </entry>
   
