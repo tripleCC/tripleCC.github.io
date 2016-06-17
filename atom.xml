@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-06-16T19:09:43+08:00</updated>
+  <updated>2016-06-17T11:11:04+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -728,6 +728,198 @@
 在使用者已经指定了集合中元素类型的情况下，第一个分支就会对每个元素进行解析并构造成相应的实例。如果集合元素依然是一个字典，那么就会调用<code>yy_modelSetWithDictionary</code>嵌套解析。
 <br>
 YYModel给使用者提供了极强的扩展性。在解析的过程中，使用者可以根据在<code>modelCustomClassForDictionary:</code>方法中传入的字典，决定想要生成实例的类型。</p>
+
+<h4>model->json</h4>
+
+<p>model->json的入口方法为<code>yy_modelToJSONObject</code> ：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">yy_modelToJSONObject</span> <span class="p">{</span>
+</span><span class='line'>    <span class="cm">/*</span>
+</span><span class='line'><span class="cm">     Apple said:</span>
+</span><span class='line'><span class="cm">     The top level object is an NSArray or NSDictionary.</span>
+</span><span class='line'><span class="cm">     All objects are instances of NSString, NSNumber, NSArray, NSDictionary, or NSNull.</span>
+</span><span class='line'><span class="cm">     All dictionary keys are instances of NSString.</span>
+</span><span class='line'><span class="cm">     Numbers are not NaN or infinity.</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">jsonObject</span> <span class="o">=</span> <span class="n">ModelToJSONObjectRecursive</span><span class="p">(</span><span class="nb">self</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">jsonObject</span> <span class="nl">isKindOfClass</span><span class="p">:[</span><span class="bp">NSArray</span> <span class="k">class</span><span class="p">]])</span> <span class="k">return</span> <span class="n">jsonObject</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">jsonObject</span> <span class="nl">isKindOfClass</span><span class="p">:[</span><span class="bp">NSDictionary</span> <span class="k">class</span><span class="p">]])</span> <span class="k">return</span> <span class="n">jsonObject</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>主要是利用<code>ModelToJSONObjectRecursive</code>对model进行嵌套包装，最终生成只包含<code>NSArray/NSDictionary/NSString/NSNumber/NSNull</code>的JSON对象。<code>ModelToJSONObjectRecursive</code>的执行逻辑如下:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="mi">1</span><span class="err">、如果是基本类型</span><span class="o">:</span><span class="n">kCFNull</span><span class="err">、</span><span class="bp">NSString</span><span class="err">、</span><span class="bp">NSNumber</span><span class="err">或者</span><span class="nb">nil</span><span class="err">，直接返回</span>
+</span><span class='line'><span class="mi">2</span><span class="err">、如果是</span><span class="bp">NSDictionary</span><span class="err">，能</span><span class="n">JSON</span><span class="err">化就直接返回，否则调用</span><span class="n">ModelToJSONObjectRecursive</span><span class="err">嵌套解析，最后添加到字典中</span>
+</span><span class='line'><span class="mi">3</span><span class="err">、如果是</span><span class="bp">NSSet</span><span class="err">、</span><span class="bp">NSArray</span><span class="err">，并且元素是基本类型就直接添加到数组中，否则调用</span><span class="n">ModelToJSONObjectRecursive</span><span class="err">嵌套解析成基本类型，然后添加到数组中</span>
+</span><span class='line'><span class="mi">4</span><span class="err">、如果是</span><span class="bp">NSURL</span><span class="err">、</span><span class="bp">NSAttributedString</span><span class="err">、</span><span class="bp">NSDate</span><span class="err">类型，转成字符串返回。是</span><span class="bp">NSData</span><span class="err">就返回</span><span class="nb">nil</span>
+</span><span class='line'><span class="mi">5</span><span class="err">、剩下的基本就是自定义的类了，需要遍历对应的</span><span class="n">_mapper</span><span class="err">进行处理</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>第五步遍历_mapper的代码主要由两部分组成：1、获取属性值；2、构造字典<br>
+获取属性值的代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_getter</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">id</span> <span class="n">value</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="c1">// 这里是获取属性对应的值(转化成NSString或者NSNumber的)</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_isCNumber</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">value</span> <span class="o">=</span> <span class="n">ModelCreateNumberFromProperty</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">propertyMeta</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_nsType</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">id</span> <span class="n">v</span> <span class="o">=</span> <span class="p">((</span><span class="kt">id</span> <span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span> <span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)</span><span class="n">model</span><span class="p">,</span> <span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_getter</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">value</span> <span class="o">=</span> <span class="n">ModelToJSONObjectRecursive</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">switch</span> <span class="p">(</span><span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_type</span> <span class="o">&amp;</span> <span class="n">YYEncodingTypeMask</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">case</span> <span class="nl">YYEncodingTypeObject</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kt">id</span> <span class="n">v</span> <span class="o">=</span> <span class="p">((</span><span class="kt">id</span> <span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span> <span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)</span><span class="n">model</span><span class="p">,</span> <span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_getter</span><span class="p">);</span>
+</span><span class='line'>            <span class="c1">// 属性是自定义的对象，嵌套解析</span>
+</span><span class='line'>            <span class="n">value</span> <span class="o">=</span> <span class="n">ModelToJSONObjectRecursive</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">value</span> <span class="o">==</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="n">kCFNull</span><span class="p">)</span> <span class="n">value</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">case</span> <span class="nl">YYEncodingTypeClass</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kt">Class</span> <span class="n">v</span> <span class="o">=</span> <span class="p">((</span><span class="kt">Class</span> <span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span> <span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)</span><span class="n">model</span><span class="p">,</span> <span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_getter</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">value</span> <span class="o">=</span> <span class="n">v</span> <span class="o">?</span> <span class="n">NSStringFromClass</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">:</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">case</span> <span class="nl">YYEncodingTypeSEL</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>            <span class="kt">SEL</span> <span class="n">v</span> <span class="o">=</span> <span class="p">((</span><span class="kt">SEL</span> <span class="p">(</span><span class="o">*</span><span class="p">)(</span><span class="kt">id</span><span class="p">,</span> <span class="kt">SEL</span><span class="p">))(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span> <span class="n">objc_msgSend</span><span class="p">)((</span><span class="kt">id</span><span class="p">)</span><span class="n">model</span><span class="p">,</span> <span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_getter</span><span class="p">);</span>
+</span><span class='line'>            <span class="n">value</span> <span class="o">=</span> <span class="n">v</span> <span class="o">?</span> <span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">:</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">default</span><span class="o">:</span> <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">value</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>总体来说和<code>ModelSetValueForProperty</code>的处理较为类似，也是分的三种大类。<br>
+构造字典的代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 这里是根据map构造字典</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_mappedToKeyPath</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="bp">NSMutableDictionary</span> <span class="o">*</span><span class="n">superDic</span> <span class="o">=</span> <span class="n">dic</span><span class="p">;</span>
+</span><span class='line'>    <span class="bp">NSMutableDictionary</span> <span class="o">*</span><span class="n">subDic</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="bp">NSUInteger</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max</span> <span class="o">=</span> <span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_mappedToKeyPath</span><span class="p">.</span><span class="n">count</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">max</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="bp">NSString</span> <span class="o">*</span><span class="n">key</span> <span class="o">=</span> <span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_mappedToKeyPath</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">==</span> <span class="n">max</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// end  { ext = { d = Apple; }; }, 最后的key才赋值, 即superDic[@&quot;d&quot;] = @&quot;Apple&quot;</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">superDic</span><span class="p">[</span><span class="n">key</span><span class="p">])</span> <span class="n">superDic</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">subDic</span> <span class="o">=</span> <span class="n">superDic</span><span class="p">[</span><span class="n">key</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">subDic</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 说明这一层字典已经有键值对了</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">([</span><span class="n">subDic</span> <span class="nl">isKindOfClass</span><span class="p">:[</span><span class="bp">NSDictionary</span> <span class="k">class</span><span class="p">]])</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// 拷贝成可变的（没这一句也可，因为刚开始时创建的都是NSMutableDictionary), 方便i + 1 == max时进行赋值</span>
+</span><span class='line'>                <span class="n">subDic</span> <span class="o">=</span> <span class="n">subDic</span><span class="p">.</span><span class="n">mutableCopy</span><span class="p">;</span>
+</span><span class='line'>                <span class="n">superDic</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">subDic</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// key下没有value，创建可变字典赋给当前的key</span>
+</span><span class='line'>            <span class="n">subDic</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableDictionary</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'>            <span class="n">superDic</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">subDic</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="c1">// 最顶层的字典(@{@&quot;a&quot; : @{@&quot;b&quot; : @&quot;c&quot;}}，即字典@{@&quot;b&quot; : @&quot;c&quot;})</span>
+</span><span class='line'>        <span class="n">superDic</span> <span class="o">=</span> <span class="n">subDic</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">subDic</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">dic</span><span class="p">[</span><span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_mappedToKey</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">dic</span><span class="p">[</span><span class="n">propertyMeta</span><span class="o">-&gt;</span><span class="n">_mappedToKey</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>小结</h3>
+
+<p>很粗略地记录下部分阅读过程。YYModel有不少值得学习的地方，不管是代码风格还是考虑问题的全面性，这些都需要通过阅读源码来了解。</p>
 ]]></content>
   </entry>
   
