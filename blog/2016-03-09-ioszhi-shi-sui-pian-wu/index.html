@@ -12,10 +12,8 @@
   <meta name="description" content="1、iOS中文斜体
 2、Swift中替代#ifdef以及关于Target管理
 3、UIRefreshControl下拉抖动
-4、聊天界面输入框换行抖动 iOS中文斜体 iOS系统UIFont中的斜体对中文并不支持，所以需要用另一种方式实现： 1
-2
-3
-CGAffineTransform &hellip;">
+4、聊天界面输入框换行抖动
+5、UITapGestureRecognizer与tableView:didSelectRowAtIndexPath: iOS中文斜体 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -93,7 +91,8 @@ CGAffineTransform &hellip;">
 <div class="entry-content"><p>1、iOS中文斜体<br>
 2、Swift中替代#ifdef以及关于Target管理<br>
 3、UIRefreshControl下拉抖动<br>
-4、聊天界面输入框换行抖动<br></p>
+4、聊天界面输入框换行抖动<br>
+5、UITapGestureRecognizer与tableView:didSelectRowAtIndexPath:<br></p>
 
 <!--more-->
 
@@ -213,8 +212,66 @@ AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/
 <p>以下是微信效果：<br>
 <img src="/images/wei_xin.gif" alt="" /><br></p>
 
-<p>可以看出前面两者在换行时有明显的抖动情况，结合自身项目的开发出现的bug，前两者应该是<code>监听UITextViewTextDidChangeNotification</code>或者<code>使用UITextView代理方法</code>的方式实现UITextView以及输入框frame的改变。<br>
+<p>可以看出前面两者在换行时有明显的抖动情况，结合自身项目的开发情况，前两者应该是<code>监听UITextViewTextDidChangeNotification</code>或者<code>使用UITextView代理方法</code>的方式实现UITextView以及输入框frame的改变。<br>
 正确做法：使用观察者监听UITextView的<code>contentSize</code>，利用contentSize的改变设置UITextView以及输入框的frame。</p>
+
+<h2>UITapGestureRecognizer与tableView:didSelectRowAtIndexPath:</h2>
+
+<p>假设以下View层级关系(->表示右边为左边的子控件)：</p>
+
+<ul>
+<li>UIView(1)->UIView(2)->UITabelView(3)</li>
+</ul>
+
+
+<p>那么，当给控件1/2添加<code>UITapGestureRecognizer</code>后，3的<code>tableView:didSelectRowAtIndexPath:</code>将无法执行。</p>
+
+<p>解决方式：</p>
+
+<ul>
+<li>方式1、将<code>tapGesture</code>的<code>cancelsTouchesInView</code>设置为NO
+
+<ul>
+<li>这样做<code>tableView:didSelectRowAtIndexPath:</code>和<code>tapGesture的回调</code>都会调用</li>
+</ul>
+</li>
+<li>方式2、设置<code>tapGesture</code>的代理，实现以下方法：</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldReceiveTouch:</span><span class="p">(</span><span class="bp">UITouch</span> <span class="o">*</span><span class="p">)</span><span class="nv">touch</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span>  <span class="o">!</span><span class="p">[</span><span class="n">NSStringFromClass</span><span class="p">([</span><span class="n">touch</span><span class="p">.</span><span class="n">view</span> <span class="k">class</span><span class="p">])</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="s">@&quot;UITableViewCellContentView&quot;</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>stackoverflow上的解决方式：<a href="http://stackoverflow.com/questions/8192480/uitapgesturerecognizer-breaks-uitableview-didselectrowatindexpath">uitapgesturerecognizer-breaks-uitableview-didselectrowatindexpath</a><br></p>
+
+<p>另：关于子控件拦截父控件的<code>UIGestureRecognizer</code>事件</p>
+
+<p>子控件在可以接收交互事件的前提下(比如UIView)，默认无法拦截父控件的<code>UIGestureRecognizer</code>事件(和touchxxxx系列不一样，后者是可以被拦截的)。<br></p>
+
+<p>需要进行拦截，有两种方法：</p>
+
+<ul>
+<li><p>在子控件中添加和父控件相同的手势</p></li>
+<li><p>在父控件中的实现以下代理方法，如果点击点在子控件范围内，就不接收事件</p></li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldReceiveTouch:</span><span class="p">(</span><span class="bp">UITouch</span> <span class="o">*</span><span class="p">)</span><span class="nv">touch</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">gestureRecognizer:</span><span class="p">(</span><span class="bp">UIGestureRecognizer</span> <span class="o">*</span><span class="p">)</span><span class="nv">gestureRecognizer</span> <span class="nf">shouldReceivePress:</span><span class="p">(</span><span class="n">UIPress</span> <span class="o">*</span><span class="p">)</span><span class="nv">press</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
 </div>
 
 
