@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-08-10T19:01:20+08:00</updated>
+  <updated>2016-08-10T21:45:17+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,323 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[iOS知识碎片六]]></title>
+    <link href="http://triplecc.github.io/blog/2016-08-10-ioszhi-shi-sui-pian-liu/"/>
+    <updated>2016-08-10T21:23:43+08:00</updated>
+    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-liu</id>
+    <content type="html"><![CDATA[<p>1、dispatch_after及NSTimer造成对象无法释放<br>
+2、宏定义<code>##</code>与<code>#</code><br>
+3、Swift实现原子属性<br>
+4、Xcode图像化调试错误<br>
+5、UITabBarController调用viewDidLoad的时机<br></p>
+
+<!--more-->
+
+
+<h2>dispatch_after及NSTimer造成对象无法释放</h2>
+
+<p>dispatch_after：<br></p>
+
+<ul>
+<li>由于dispatch_after会持有block内的对象，所以会使这个对象延迟释放。使用时最好能确保block内的对象都是weak的，这样不容易出问题。</li>
+</ul>
+
+
+<p>NSTimer:</p>
+
+<ul>
+<li>NSTimer在手动停止或截止时间点到达前，是不会释放的。所以为了能让使用NSTimer的对象能够顺利释放自身，最好对NSTimer使用<strong>__weak</strong>关键字，并且在dealloc时，手动停止NSTimer。如下：</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">...</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">__weak</span> <span class="bp">NSTimer</span> <span class="o">*</span><span class="n">_timer</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">dealloc</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="n">_timer</span> <span class="n">invalidate</span><span class="p">]</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>宏定义<code>##</code>与<code>#</code></h2>
+
+<ul>
+<li><code>##</code>链接符
+
+<ul>
+<li>将两个字串连接起来
+
+<ul>
+<li><p>“##”是一种分隔连接方式，它的作用是先分隔，然后进行强制连接。</p></li>
+<li><p>预处理器一般把<code>空格</code>解释成分段标志，对于每一段和前面比较，相同的就被替换。这样做的结果是， 被替换段之间存在一些空格。如果我们不希望出现这些空格，就可以通过添加一些 ##来替代空格。</p></li>
+<li><p>另外一些分隔标志是，包括操作符，比如 +, -, *, /, [,], …，</p></li>
+<li><p>强制连接的作用是，去掉和前面的字符串之间的空格，而把两者连接起来</p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#define A1(name, type) type name_##type##_type </span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#define A2(name, type) type name##_##type##_type</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">A1</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span> <span class="cm">/* 等价于: int name_int_type; */</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">A2</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span> <span class="cm">/* 等价于: int a1_int_type; */</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">1</span><span class="p">)</span> <span class="err">在第一个宏定义中，”</span><span class="n">name</span><span class="err">”和第一个”</span><span class="n">_</span><span class="err">”之间，以及第</span><span class="mi">2</span><span class="err">个”</span><span class="n">_</span><span class="err">”和第二个</span>
+</span><span class='line'>
+</span><span class='line'> <span class="err">”</span><span class="n">type</span><span class="err">”之间没有被分隔，所以预处理器会把</span><span class="n">name_</span><span class="err">##</span><span class="n">type</span><span class="err">##</span><span class="n">_type</span><span class="err">解释成</span><span class="mi">3</span><span class="err">段：</span>
+</span><span class='line'>
+</span><span class='line'> <span class="err">“</span><span class="n">name_</span><span class="err">”、“</span><span class="n">type</span><span class="err">”、以及“</span><span class="n">_type</span><span class="err">”，这中间只有“</span><span class="n">type</span><span class="err">”是在宏前面出现过</span>
+</span><span class='line'>
+</span><span class='line'> <span class="err">的，所以它可以被宏替换。</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">2</span><span class="p">)</span> <span class="err">而在第二个宏定义中，“</span><span class="n">name</span><span class="err">”和第一个“</span><span class="n">_</span><span class="err">”之间也被分隔了，所以</span>
+</span><span class='line'>
+</span><span class='line'> <span class="err">预处理器会把</span><span class="n">name</span><span class="err">##</span><span class="n">_</span><span class="err">##</span><span class="n">type</span><span class="err">##</span><span class="n">_type</span><span class="err">解释成</span><span class="mi">4</span><span class="err">段：“</span><span class="n">name</span><span class="err">”、“</span><span class="n">_</span><span class="err">”、“</span><span class="n">type</span><span class="err">”</span>
+</span><span class='line'>
+</span><span class='line'> <span class="err">以及“</span><span class="n">_type</span><span class="err">”，这其间，就有两个可以被宏替换了。</span>
+</span><span class='line'>
+</span><span class='line'><span class="mi">3</span><span class="p">)</span> <span class="n">A1</span><span class="err">和</span><span class="n">A2</span><span class="err">的定义也可以如下：</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#define A1(name, type) type name_ ##type ##_type</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="err">##前面随意加上一些空格</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cp">#define A2(name, type) type name ##_ ##type ##_type</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">结果是##</span> <span class="err">会把前面的空格去掉完成强连接，得到和上面结果相同的宏定义</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p><code>#</code></p>
+
+<ul>
+<li>对这个变量替换后，添加双引号</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 在打印枚举名时很好用</span>
+</span><span class='line'><span class="cp">#define BQ_PUSH_MESSAGE_TYPE_ELEMENT(key) @(key) : @#key</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">BQPushMessageTypeStringsMap</span> <span class="o">=</span> <span class="l">@{</span>
+</span><span class='line'>                                    <span class="n">BQ_PUSH_MESSAGE_TYPE_ELEMENT</span><span class="p">(</span><span class="n">BQPushMessageTypeChat</span><span class="p">),</span>
+</span><span class='line'>                                    <span class="n">BQ_PUSH_MESSAGE_TYPE_ELEMENT</span><span class="p">(</span><span class="n">BQPushMessageTypeSystem</span><span class="p">),</span>
+</span><span class='line'>                                    <span class="n">BQ_PUSH_MESSAGE_TYPE_ELEMENT</span><span class="p">(</span><span class="n">BQPushMessageTypeLive</span><span class="p">),</span>
+</span><span class='line'>                                    <span class="l">}</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Swift实现原子属性</h4>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">struct</span> <span class="n">SafeForm</span> <span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">lock</span><span class="p">:</span> <span class="n">AnyObject</span><span class="o">!</span>
+</span><span class='line'>     <span class="n">public</span> <span class="k">var</span> <span class="nl">value</span><span class="p">:</span> <span class="n">U</span>
+</span><span class='line'>     <span class="n">public</span> <span class="k">var</span> <span class="nl">safeValue</span><span class="p">:</span> <span class="n">U</span> <span class="p">{</span>
+</span><span class='line'>         <span class="kr">get</span> <span class="p">{</span>
+</span><span class='line'>             <span class="k">return</span> <span class="n">withLock</span> <span class="p">{</span>
+</span><span class='line'>               <span class="k">return</span> <span class="n">value</span>
+</span><span class='line'>             <span class="p">}</span>
+</span><span class='line'>         <span class="p">}</span>
+</span><span class='line'>         <span class="kr">set</span> <span class="p">{</span>
+</span><span class='line'>             <span class="n">withLock</span> <span class="p">{</span>
+</span><span class='line'>                 <span class="n">value</span> <span class="o">=</span> <span class="n">newValue</span>
+</span><span class='line'>             <span class="p">}</span>
+</span><span class='line'>         <span class="p">}</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'>     <span class="cm">/* 不可与safeValue混用 */</span>
+</span><span class='line'>     <span class="n">public</span> <span class="k">func</span> <span class="n">sync_enter</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>         <span class="n">objc_sync_enter</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'>     <span class="n">public</span> <span class="k">func</span> <span class="n">sync_exit</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>         <span class="n">objc_sync_exit</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'>     <span class="n">private</span> <span class="k">func</span> <span class="n">withLock</span><span class="o">&lt;</span><span class="n">R</span><span class="o">&gt;</span><span class="p">(@</span><span class="n">noescape</span> <span class="nl">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span> <span class="p">{</span>
+</span><span class='line'>         <span class="n">objc_sync_enter</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
+</span><span class='line'>         <span class="k">let</span> <span class="n">result</span> <span class="o">=</span> <span class="n">action</span><span class="p">()</span>
+</span><span class='line'>         <span class="n">objc_sync_exit</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
+</span><span class='line'>         <span class="k">return</span> <span class="n">result</span>
+</span><span class='line'>     <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>实际上感觉原子属性的作用并不是很明显，对一个多步操作，还是需要自己手动加锁。</p>
+
+<h2>Xcode图像化调试错误</h2>
+
+<p>报错：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Assertion</span> <span class="n">failure</span> <span class="k">in</span> <span class="o">-</span><span class="p">[</span><span class="bp">UITextView</span> <span class="n">_firstBaselineOffsetFromTop</span><span class="p">],</span> <span class="o">/</span><span class="n">BuildRoot</span><span class="o">/</span><span class="n">Library</span><span class="o">/</span><span class="n">Caches</span><span class="o">/</span><span class="n">com</span><span class="p">.</span><span class="n">apple</span><span class="p">.</span><span class="n">xbs</span><span class="o">/</span><span class="n">Sources</span><span class="o">/</span><span class="n">UIKit_Sim</span><span class="o">/</span><span class="n">UIKit</span><span class="o">-</span><span class="mf">3512.60.7</span><span class="o">/</span><span class="bp">UITextView</span><span class="p">.</span><span class="nl">m</span><span class="p">:</span><span class="mi">1683</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>添加以下代码即可：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="bp">UITextView</span><span class="nl">(MYTextView)</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="bp">UITextView</span> <span class="nl">(MYTextView)</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">_firstBaselineOffsetFromTop</span> <span class="p">{</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">_baselineOffsetFromBottom</span> <span class="p">{</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>或者</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">extension</span>
+</span><span class='line'>
+</span><span class='line'><span class="bp">UITextView</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">func</span> <span class="n">_firstBaselineOffsetFromTop</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">func</span> <span class="n">_baselineOffsetFromBottom</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>UITabBarController调用viewDidLoad的时机</h2>
+
+<p>继承UITabBarController后，从外部调用init创建，即使没有加载它的view，它也会调用viewDidLoad，这点和UIViewController不一样 <br>
+所以在使用Swift时，需要注意在UITableBarController中声明为!类型的属性，容易造成强制解包崩溃的问题</p>
+
+<p>详细信息</p>
+
+<ul>
+<li><a href="http://www.andrewmonshizadeh.com/2015/02/23/uitabbarcontroller-is-different/">UITabBarController is Different</a></li>
+</ul>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[YYModel阅读小记]]></title>
@@ -4420,6 +4737,26 @@ AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/
 <p><a href="https://segmentfault.com/q/1010000000430041">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></p>
 
 <p><a href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E8%A1%8D%E5%90%88">Git-分支-分支的衍合</a></p>
+
+<h2>找回commit</h2>
+
+<p>rebase掉的commit通过以下方式找回：</p>
+
+<ul>
+<li><p>进入<strong>.git/logs/refs/heads/</strong>，打开对应分支文件，查看提交记录。</p></li>
+<li><p>获得所要提交记录的sha1</p></li>
+<li><p>根据sha1，新开一个分支</p></li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>git checkout -b branch-recovery sha1
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样这个branch-recovery就有所有提交记录了。</p>
 ]]></content>
   </entry>
   
@@ -5866,232 +6203,6 @@ PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
 <p>事实上，我花了肯定不止1小时来完成这个任务，但是这种分块技巧让我受益匪浅，知道了将每一步要做些什么具象出来，而不是想到哪里写哪里。</p></li>
 </ul>
 
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[翻译篇：实现Twitter个人详情动态效果]]></title>
-    <link href="http://triplecc.github.io/blog/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/"/>
-    <updated>2015-09-08T01:32:07+08:00</updated>
-    <id>http://triplecc.github.io/blog/fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo</id>
-    <content type="html"><![CDATA[<p>原文由<a href="https://github.com/ariok">ariok</a>发表，地址是<a href="http://www.thinkandbuild.it/implementing-the-twitter-ios-app-ui/">implementing-the-twitter-ios-app-ui</a></p>
-
-<p>效果图如下：<br>
-<img src="http://triplecc.github.io/images/2015-09-08%2014_55_03.gif" alt="" /></p>
-
-<p>原来作者的代码会存在一个Bug：<br></p>
-
-<blockquote><p>当快速下拉时，个人头像并不会立刻显示在HeaderView上方，我已经向作者提交了Pull requests</p></blockquote>
-
-<p>编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。</p>
-
-<!--more-->
-
-
-<h2>结构描述</h2>
-
-<p>在编码之前，我将对UI的结构做一个简单的介绍。<br></p>
-
-<p>打开Main.storyboard文件。在唯一的一个控制器view中，你可以发现两个主要的对象。第一个是显示Header的视图，第二个是一个包含个人头像(我们叫它Avatar)和其他与账号相关，比如用户名、follow按钮的ScrollView。Sizer控件只是用来确认ScrollView内容是否能进行垂直滚动。<br></p>
-
-<p>就像你所看到的，这个结构非常简单。需要的注意的是，我将Header放在ScrollView外面，而不是把它和其他ScrollView子控件放在一起。因为这样做可以让这个结构具备更好的扩展性。<br></p>
-
-<h2>开始编码</h2>
-
-<p>如果你仔细看完动画，你会注意到你可以管理两个不同的动作：<br></p>
-
-<p>1) 用户下拉（当ScrollView内容已经在屏幕的顶部时）<br></p>
-
-<p>2) 用户上/下滚动<br></p>
-
-<p>这个动作可以分解成四步：<br></p>
-
-<p>2.1) 向上滚动，Header控件缩小直到它的尺寸和导航栏默认尺寸相等，然后这个Header控件就会粘在屏幕的上方<br></p>
-
-<p>2.2) 向上滚动， Avatar（头像）逐渐变小<br></p>
-
-<p>2.3) 当Header控件和ScrollView的子控件重叠时，Avatar（头像）在Header控件底部<br></p>
-
-<p>2.4) 当用户名Label的顶部和Header控件底部重叠时，一个新的白色Label将会从Header控件的中底部显示。并且Header控件的图片变模糊。<br></p>
-
-<p>打开ViewController.swift，让我们一步一步地实现这些功能<br></p>
-
-<h2>设置控制器</h2>
-
-<p>第一件需要去做的事是获取ScrollView的offset信息。通过实现UIScrollViewDelegate协议的scrollViewDidScroll方法，我们可以很容易地做到这一点。<br></p>
-
-<p>一种最简单的展示一个view上变化的方式是使用CoreAnimation三维变换，并且设置新值给layer.transform属性。<br></p>
-
-<p>这个关于CoreAnimation的教程可能会让它变得简便：<br>
-<a href="http://www.thinkandbuild.it/playing-around-with-core-graphics-core-animation-and-touch-events-part-1/.">http://www.thinkandbuild.it/playing-around-with-core-graphics-core-animation-and-touch-events-part-1/.</a></p>
-
-<p>以下是scrollViewDidScroll方法的第一部分：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">scrollView</span><span class="p">.</span><span class="n">contentOffset</span><span class="p">.</span><span class="n">y</span>
-</span><span class='line'><span class="n">var</span> <span class="n">avatarTransform</span> <span class="o">=</span> <span class="n">CATransform3DIdentity</span>
-</span><span class='line'><span class="n">var</span> <span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DIdentity</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>我们可以在这个方法里面获取当前的竖直偏移，并且初始化两个将要在方法后面设置的转换信息。</p>
-
-<h2>下拉</h2>
-
-<p>让我们对下拉动作进行处理：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">let</span> <span class="nl">headerScaleFactor</span><span class="p">:</span><span class="n">CGFloat</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span> <span class="o">/</span> <span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span>
-</span><span class='line'>    <span class="n">let</span> <span class="n">headerSizevariation</span> <span class="o">=</span> <span class="p">((</span><span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">headerScaleFactor</span><span class="p">))</span> <span class="o">-</span> <span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span><span class="p">)</span><span class="o">/</span><span class="mf">2.0</span>
-</span><span class='line'>    <span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DTranslate</span><span class="p">(</span><span class="n">headerTransform</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">headerSizevariation</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DScale</span><span class="p">(</span><span class="n">headerTransform</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">headerScaleFactor</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">headerScaleFactor</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">headerTransform</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>首先，我们检查偏移量是否为负数，即ScrollView是否已出现弹性区域。<br></p>
-
-<p>剩下的代码是一些简单的数学运算。<br></p>
-
-<p>这个Header控件需要放大来保持它的上边缘和屏幕顶部相对固定，并且这个图片是从底部开始放大的。<br></p>
-
-<p>总的来说，这个变换主要由缩放，然后转化view的尺寸变化为到顶部的距离构成。事实上，你可以朝屏幕顶端移动ImageView图层的中点并且进行缩放来相同的效果。<br></p>
-
-<p><img src="http://triplecc.github.io/images/Snip20150908_3.png" alt="" /></p>
-
-<p>使用一个属性来对头部缩放比例进行计算。我们希望Header控件参照偏移量进行适当的缩放。换种说法：当偏移量为Header视图控件的两倍时，头部缩放比例应该设置为2.0。<br></p>
-
-<p>我们需要处理的第二个动作是上下滚动。让我们看看如何一步一步地完成主要视图的变换。<br></p>
-
-<h2>Header（第一阶段）</h2>
-
-<p>当前的偏移量应该大于0。Header控件应该根据以下的偏移量来进行竖直移动，直到它到达指定高度（我们下面将会对Header模糊进行讲解）。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">headerTransform</span> <span class="o">=</span> <span class="n">CATransform3DTranslate</span><span class="p">(</span><span class="n">headerTransform</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="n">offset_HeaderStop</span><span class="p">,</span> <span class="o">-</span><span class="n">offset</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这段代码真的是很简单。我们只需要设置Header控件偏移一个最小值，Header控件将会在offset_HeaderStop这个点停止移动。<br></p>
-
-<p>因为我比较懒，所以我写死了一些数值，比如offset_HeaderStop。我们可以通过更加优雅的方式，比如计算UI控件的位置来实现相同的效果。或许在下一次我会试试。<br></p>
-
-<h2>AVATAR（头像）</h2>
-
-<p>这个头像（图片）以和下拉相同的逻辑进行缩放，只是在这种情况下，图片是和底部贴合而不是顶部。这段代码和上面比较相似，除了减小缩放的比例为1.4。<br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">avatarScaleFactor</span> <span class="o">=</span> <span class="p">(</span><span class="n">min</span><span class="p">(</span><span class="n">offset_HeaderStop</span><span class="p">,</span> <span class="n">offset</span><span class="p">))</span> <span class="o">/</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span> <span class="o">/</span> <span class="mf">1.4</span> <span class="c1">// Slow down the animation</span>
-</span><span class='line'><span class="n">let</span> <span class="n">avatarSizeVariation</span> <span class="o">=</span> <span class="p">((</span><span class="n">avatarImage</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">avatarScaleFactor</span><span class="p">))</span> <span class="o">-</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">bounds</span><span class="p">.</span><span class="n">height</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span>
-</span><span class='line'><span class="n">avatarTransform</span> <span class="o">=</span> <span class="n">CATransform3DTranslate</span><span class="p">(</span><span class="n">avatarTransform</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">avatarSizeVariation</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'><span class="n">avatarTransform</span> <span class="o">=</span> <span class="n">CATransform3DScale</span><span class="p">(</span><span class="n">avatarTransform</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">avatarScaleFactor</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">avatarScaleFactor</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>就像你看到的，当Header控件停止变化时，我们通过min函数来停止对个人头像的缩放（offset_HeaderStop）。<br></p>
-
-<p>此时，我们根据当前的偏移量来设置最顶层的图层。除非偏移量大于等于offset_HeaderStop，否则顶部图层始终是个人头像。当偏移量大于offset_HeaderStop，这个图层就变成了Header控件。<br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;=</span> <span class="n">offset_HeaderStop</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">&lt;</span> <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span><span class="p">{</span>
-</span><span class='line'>        <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span><span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="n">avatarImage</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">&gt;=</span> <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span><span class="p">{</span>
-</span><span class='line'>        <span class="n">header</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">zPosition</span> <span class="o">=</span> <span class="mi">2</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>白色Label</h2>
-
-<p>以下是白色Label执行动画的代码：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">let</span> <span class="n">labelTransform</span> <span class="o">=</span> <span class="n">CATransform3DMakeTranslation</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="n">distance_W_LabelHeader</span><span class="p">,</span> <span class="n">offset_B_LabelHeader</span> <span class="o">-</span> <span class="n">offset</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
-</span><span class='line'><span class="n">headerLabel</span><span class="p">.</span><span class="n">layer</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">labelTransform</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这里介绍两个新的变量：当偏移量等于offset_B_LabelHeader时，这个黑色的用户名Label刚好到达Header视图的底部。<br></p>
-
-<p><img src="http://triplecc.github.io/images/Snip20150908_4.png" alt="" /><br></p>
-
-<p>distance_W_LabelHeader是Header控件的底部和Header中的白色Label中点的距离。<br>
-<img src="http://triplecc.github.io/images/Snip20150908_5.png" alt="" /><br></p>
-
-<p>这个转换通过以下逻辑进行计算：黑色Label一旦喝Header控件相交，白色Label就立即显示，并且白色Label到达Header控件的中点时停止。所以使用以下代码来创建Y的偏移：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">max</span><span class="p">(</span><span class="o">-</span><span class="n">distance_W_LabelHeader</span><span class="p">,</span> <span class="n">offset_B_LabelHeader</span> <span class="o">-</span> <span class="n">offset</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>模糊</h2>
-
-<p>最后一个效果是模糊Header控件。为了得到合适的解决方案，我使用了三个不同的库&hellip;我还尝试创建自己的OpenGL ES，但是实时更新模糊效果总是非常迟缓。<br></p>
-
-<p>我了解到我可以只对模糊进行一次计算，让模糊和非模糊的图片进行重叠，并且改变透明度值。我很确定，这就是Twitter采用的方法。<br></p>
-
-<p>在viewDidAppear中我们计算模糊的Header并且通过设置透明度为0来进行隐藏。<br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">headerBlurImageView</span> <span class="o">=</span> <span class="bp">UIImageView</span><span class="p">(</span><span class="nl">frame</span><span class="p">:</span> <span class="n">header</span><span class="p">.</span><span class="n">bounds</span><span class="p">)</span>
-</span><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">image</span> <span class="o">=</span> <span class="bp">UIImage</span><span class="p">(</span><span class="nl">named</span><span class="p">:</span> <span class="s">&quot;header_bg&quot;</span><span class="p">)</span><span class="o">?</span><span class="p">.</span><span class="n">blurredImageWithRadius</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="nl">iterations</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nl">tintColor</span><span class="p">:</span> <span class="bp">UIColor</span><span class="p">.</span><span class="n">clearColor</span><span class="p">())</span>
-</span><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">contentMode</span> <span class="o">=</span> <span class="n">UIViewContentMode</span><span class="p">.</span><span class="n">ScaleAspectFill</span>
-</span><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.0</span>
-</span><span class='line'><span class="n">header</span><span class="p">.</span><span class="n">insertSubview</span><span class="p">(</span><span class="n">headerBlurImageView</span><span class="p">,</span> <span class="nl">belowSubview</span><span class="p">:</span> <span class="n">headerLabel</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>模糊的view可以使用<a href="https://github.com/nicklockwood/FXBlurView">FXBlurView</a>得到。<br></p>
-
-<p>在scrollViewDidScroll方法中，我们只需要根据偏移量来更新透明度就行了。<br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">headerBlurImageView</span><span class="o">?</span><span class="p">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">min</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="p">(</span><span class="n">offset</span> <span class="o">-</span> <span class="n">offset_B_LabelHeader</span><span class="p">)</span><span class="o">/</span><span class="n">distance_W_LabelHeader</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以上计算逻辑主要为：透明度最大值必须为1，模糊效果必须在黑色Label到达Header控件时出现，在白色Label停止后停止加深模糊。<br></p>
-
-<p><a href="https://github.com/ariok/TB_TwitterUI">源码地址</a></p>
 ]]></content>
   </entry>
   
