@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-08-10T21:47:47+08:00</updated>
+  <updated>2016-09-11T16:13:08+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,1170 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[使用AssetsLibrary和PhotoKit做一个简易的相片选择器]]></title>
+    <link href="http://triplecc.github.io/blog/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-%5B%3F%5D-ge-xiang-pian-xuan-ze-qi/"/>
+    <updated>2016-09-10T21:25:36+08:00</updated>
+    <id>http://triplecc.github.io/blog/shi-yong-assetslibraryhe-photokitzuo-[?]-ge-xiang-pian-xuan-ze-qi</id>
+    <content type="html"><![CDATA[<p>iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业务时，可以更加得心应手。github上的开发者针对PhotoKit做了一层很优秀的封装<a href="https://github.com/chiunam/CTAssetsPickerController">CTAssetsPickerController</a>，如果只需要支持iOS8+，那么可定制程度非常高的<a href="https://github.com/chiunam/CTAssetsPickerController">CTAssetsPickerController</a>是个不错的选择。<br>
+但是由于现有的业务还是需要支持iOS7，所以并不能完全舍弃使用<code>AssetsLibrary</code>的方式来访问相册。因此也就需要自己封装一套兼容iOS7的相册管理器。</p>
+
+<p>本文涉及代码：<a href="https://github.com/tobevoid/TBVAssetsPicker">TBVAssetsPicker</a></p>
+
+<h3>统一asset以及collection</h3>
+
+<table>
+<thead>
+<tr>
+<th style="text-align:left;"> AssetsLibrary </th>
+<th style="text-align:left;"> PhotoKit </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;"> ALAssetsGroup </td>
+<td style="text-align:left;"> PHAssetCollection </td>
+</tr>
+<tr>
+<td style="text-align:left;"> ALAsset </td>
+<td style="text-align:left;"> PHAsset </td>
+</tr>
+<tr>
+<td style="text-align:left;"> TBVAsset </td>
+<td style="text-align:left;"> TBVCollection </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>相片选择器最终需要向外部提供统一的标识相片的结构。同样，统一结构能让相片选择器更加逻辑优雅地实现内部逻辑。所以这里我声明了两个对应的类：<code>TBVAsset</code>、<code>TBVCollection</code>，并提供一些最基本的功能。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface TBVAsset : NSObject
+</span><span class='line'>/**
+</span><span class='line'> *  PHAsset or ALAsset
+</span><span class='line'> */
+</span><span class='line'>@property (strong, nonatomic) NSObject  *asset;
+</span><span class='line'>
+</span><span class='line'>+ (instancetype)assetWithOriginAsset:(NSObject *)asset;
+</span><span class='line'>/** 本地标识 */
+</span><span class='line'>- (NSString *)assetLocalIdentifer;
+</span><span class='line'>/** 源照片尺寸 */
+</span><span class='line'>- (CGSize)assetPixelSize;
+</span><span class='line'>@end
+</span><span class='line'>
+</span><span class='line'>@interface TBVCollection : NSObject
+</span><span class='line'>/**
+</span><span class='line'> *  ALAssetsGroup or PHAssetCollection
+</span><span class='line'> */
+</span><span class='line'>@property (strong, nonatomic) NSObject  *collection;
+</span><span class='line'>
+</span><span class='line'>+ (instancetype)collectionWithOriginCollection:(NSObject *)aCollection;
+</span><span class='line'>/** 相簿名 */
+</span><span class='line'>- (NSString *)collectionTitle;
+</span><span class='line'>/** 估算的相簿相片个数 */
+</span><span class='line'>- (NSInteger)collectionEstimatedAssetCount;
+</span><span class='line'>/** 精确的相簿相片个数 */
+</span><span class='line'>- (NSInteger)collectionAccurateAssetCountWithFetchOptions:(id)filterOptions;
+</span><span class='line'>- (NSInteger)collectionAccurateAssetCountWithMediaType:(TBVAssetsPickerMediaType)mediaType;
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>有了这些最基本的功能，在实现相册选择器时，就可以方便地对资源进行操作了。<br>
+其实对于这部分的兼容处理，主要就是对两个不同的库进行封装，使其呈现同样的外观，后续的几步大体也是围绕这个目标进行。</p>
+
+<h3>封装manager</h3>
+
+<p>由于是两个不同版本的库，并且AssetsLibrary已经在iOS9时被弃用，使用时会产生<code>deprecated</code>警告，所以我分别对<code>ALAssetsLibrary</code>和<code>PHCachingImageManager</code>进行了封装，然后通过统一的接口<code>TBVAssetsManagerProtocol</code>暴露其功能。</p>
+
+<p>一般相册选择器具有如下页面及对应功能（UI展示）：</p>
+
+<ul>
+<li>首页
+
+<ul>
+<li>相簿名</li>
+<li>相簿缩略图</li>
+<li>相簿拥有相片数</li>
+</ul>
+</li>
+<li>预览页
+
+<ul>
+<li>相片缩略图</li>
+<li>选中相片大小</li>
+</ul>
+</li>
+<li>浏览页
+
+<ul>
+<li>相片大图</li>
+<li>选中相片大小</li>
+</ul>
+</li>
+</ul>
+
+
+<p>所以我提供的接口如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>//====================================
+</span><span class='line'>//              image
+</span><span class='line'>//====================================
+</span><span class='line'>
+</span><span class='line'>/** requestImage返回都是一个RACTuple，first是Image，second是是否为degraded */
+</span><span class='line'>
+</span><span class='line'>/** 请求特定大小的图片 */
+</span><span class='line'>- (RACSignal *)requestImageForAsset:(TBVAsset *)asset
+</span><span class='line'>                         targetSize:(CGSize)targetSize
+</span><span class='line'>                        contentMode:(TBVAssetsPickerContentMode)contentMode;
+</span><span class='line'>/** 请求相簿缩略图 */
+</span><span class='line'>- (RACSignal *)requestPosterImageForCollection:(TBVCollection *)collection
+</span><span class='line'>                                     mediaType:(TBVAssetsPickerMediaType)mediaType;
+</span><span class='line'>
+</span><span class='line'>/** 请求相片缩略图 */
+</span><span class='line'>- (RACSignal *)requestPosterImageForAsset:(TBVAsset *)asset;
+</span><span class='line'>
+</span><span class='line'>/** 请求相片原图 */
+</span><span class='line'>- (RACSignal *)requestFullResolutionImageForAsset:(TBVAsset *)asset;
+</span><span class='line'>
+</span><span class='line'>//====================================
+</span><span class='line'>//              asset / collection
+</span><span class='line'>//====================================
+</span><span class='line'>
+</span><span class='line'>/** 请求相片资源大小 */
+</span><span class='line'>- (RACSignal *)requestSizeForAssets:(NSArray &lt;TBVAsset *&gt; *)assets;
+</span><span class='line'>
+</span><span class='line'>/** 请求所有相簿 */
+</span><span class='line'>- (RACSignal *)requestAllCollections;
+</span><span class='line'>
+</span><span class='line'>/** 请求所有相片资源 */
+</span><span class='line'>- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection
+</span><span class='line'>                                mediaType:(TBVAssetsPickerMediaType)mediaType;
+</span><span class='line'>
+</span><span class='line'>/** 请求相机胶卷相簿（针对一般业务首先进入相机胶卷的预览页） */
+</span><span class='line'>- (RACSignal *)requestCameraRollCollection;
+</span><span class='line'>
+</span><span class='line'>//====================================
+</span><span class='line'>//              video
+</span><span class='line'>//====================================
+</span><span class='line'>
+</span><span class='line'>/** 请求AVPlayerItem */
+</span><span class='line'>- (RACSignal *)requestVideoForAsset:(TBVAsset *)asset;
+</span><span class='line'>
+</span><span class='line'>/** 请求AVURLAsset */
+</span><span class='line'>- (RACSignal *)requestURLAssetForAsset:(TBVAsset *)asset;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>实现以上接口，一般相册选择器的功能点就已经完成大半了。<br></p>
+
+<h2>TBVAssetsPickerManager</h2>
+
+<p>由于自定义的相册manager都遵守<code>TBVAssetsManagerProtocol</code>，<code>TBVAssetsPickerManager</code>
+的实现就变得相对简单，没有一大串令人厌烦的<code>if-else</code>。当然<code>TBVAssetsPickerManager</code>本身也是遵守<code>TBVAssetsManagerProtocol</code>的。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface TBVAssetsPickerManager() 
+</span><span class='line'>@property (strong, nonatomic) NSObject&lt;TBVAssetsManagerProtocol&gt; *realManager;
+</span><span class='line'>@property (strong, nonatomic) NSMutableArray *requestIdList;
+</span><span class='line'>@property (assign, nonatomic) BOOL photoKitAvailable;
+</span><span class='line'>@end
+</span><span class='line'>
+</span><span class='line'>#pragma mark life cycle
+</span><span class='line'>- (instancetype)init {
+</span><span class='line'>    self = [super init];
+</span><span class='line'>    if (self) {
+</span><span class='line'>        _photoKitAvailable = NSClassFromString(@"PHImageManager") != nil;
+</span><span class='line'>    }
+</span><span class='line'>    return self;
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>#pragma mark TBVAssetsManagerProtocol
+</span><span class='line'>....
+</span><span class='line'>
+</span><span class='line'>#pragma mark getter setter
+</span><span class='line'>- (NSObject *)realManager
+</span><span class='line'>{
+</span><span class='line'>    if (_realManager == nil) {
+</span><span class='line'>        if (self.photoKitAvailable) {
+</span><span class='line'>            _realManager = [[TBVCachingImageManager alloc] init];
+</span><span class='line'>        } else {
+</span><span class='line'>            _realManager = [[TBVAssetsLibrary alloc] init];
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    return _realManager;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样<code>_realManager</code>拿到的就是当前版本最新的相册manager了。</p>
+
+<h3>接口的实现</h3>
+
+<p>其实接口文档描述的还是非常清晰的，所以这里只是罗列了下代码，并没有针对每一步做解释，因为这些基本的操作进去头文件看看就全明白了。</p>
+
+<h6>- requestImageForAsset:targetSize:(CGSize)targetSize:contentMode:</h6>
+
+<p>这个接口主要用来获取非原图。</p>
+
+<ul>
+<li>TBVCachingImageManager
+
+<ul>
+<li>关于PHImageRequestOptions的deliveryMode，
+
+<ul>
+<li>设置为PHImageRequestOptionsDeliveryModeOpportunistic并且synchronous为NO时，请求可能会先返回一张缩略图，然后再返回一张大图，这个可以通过获取请求回调字典中PHImageResultIsDegradedKey对应value来判别</li>
+<li>PHImageRequestOptionsDeliveryModeHighQualityFormat和PHImageRequestOptionsDeliveryModeFastFormat都返回一张图片，只不过前者返回的图片的质量高于或等于请求的质量，而后者可能返回一张质量稍低的图片</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>TBVAssetsLibrary
+
+<ul>
+<li>由于AssetsLibrary并没有提供获取特定尺寸的相片接口，所以这里只是返回thumbnail、aspectRatioThumbnail、fullScreenImage中尺寸和目标大小最接近的一张图片。</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestImageForAsset:(TBVAsset *)asset
+</span><span class='line'>                         targetSize:(CGSize)targetSize
+</span><span class='line'>                        contentMode:(TBVAssetsPickerContentMode)contentMode {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        PHImageRequestID requestId = [self.imageManager
+</span><span class='line'>                                      requestImageForAsset:(PHAsset *)asset.asset
+</span><span class='line'>                                      targetSize:targetSize
+</span><span class='line'>                                      contentMode:[self contentModeForCustomContentMode:contentMode]
+</span><span class='line'>                                      options:self.defaultImageRequestOptions
+</span><span class='line'>                                      resultHandler:^(UIImage * _Nullable result,
+</span><span class='line'>                                                      NSDictionary * _Nullable info) {
+</span><span class='line'>                                          [subscriber sendNext:RACTuplePack(result, info[PHImageResultIsDegradedKey])];
+</span><span class='line'>                                          if (![info[PHImageResultIsDegradedKey] boolValue]) {
+</span><span class='line'>                                              [subscriber sendCompleted];
+</span><span class='line'>                                          }
+</span><span class='line'>                                      }];
+</span><span class='line'>        return [RACDisposable disposableWithBlock:^{
+</span><span class='line'>            [self.imageManager cancelImageRequest:requestId];
+</span><span class='line'>        }];
+</span><span class='line'>    }];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestImageForAsset:(TBVAsset *)aAsset
+</span><span class='line'>                         targetSize:(CGSize)targetSize
+</span><span class='line'>                        contentMode:(TBVAssetsPickerContentMode)contentMode {
+</span><span class='line'>    return [[[RACSignal return:aAsset.asset]
+</span><span class='line'>                deliverOn:[RACScheduler scheduler]]
+</span><span class='line'>                map:^id(ALAsset * asset) {
+</span><span class='line'>        CGImageRef resultImageRef = nil;
+</span><span class='line'>        
+</span><span class='line'>        BOOL degraded = NO;
+</span><span class='line'>        if (targetSize.width &lt; CGImageGetWidth(asset.thumbnail) &&
+</span><span class='line'>            targetSize.height &lt; CGImageGetHeight(asset.thumbnail)) {
+</span><span class='line'>            // TBVAssetsPickerContentModeFill
+</span><span class='line'>            resultImageRef = asset.thumbnail;
+</span><span class='line'>            degraded = YES;
+</span><span class='line'>        }
+</span><span class='line'>        if (!resultImageRef) {
+</span><span class='line'>            CGImageRef aspectRatioThumbnail = asset.aspectRatioThumbnail;
+</span><span class='line'>            if (targetSize.width &lt; CGImageGetWidth(aspectRatioThumbnail) &&
+</span><span class='line'>                targetSize.height &lt; CGImageGetHeight(aspectRatioThumbnail)) {
+</span><span class='line'>                // TBVAssetsPickerContentModeFit
+</span><span class='line'>                resultImageRef = aspectRatioThumbnail;
+</span><span class='line'>            }
+</span><span class='line'>            if (!resultImageRef) {
+</span><span class='line'>                ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
+</span><span class='line'>                resultImageRef = [assetRepresentation fullScreenImage];
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>        UIImage *resultImage = nil;
+</span><span class='line'>        if (resultImageRef) {
+</span><span class='line'>            resultImage = [UIImage imageWithCGImage:resultImageRef
+</span><span class='line'>                                              scale:BQAP_SCREEN_SCALE
+</span><span class='line'>                                        orientation:UIImageOrientationUp];
+</span><span class='line'>        }
+</span><span class='line'>        return RACTuplePack(resultImage, @(degraded));
+</span><span class='line'>    }];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestPosterImageForCollection:mediaType:</h6>
+
+<ul>
+<li>TBVCachingImageManager
+
+<ul>
+<li>通过-fetchKeyAssetsInAssetCollection:options:获取相簿keyAssets，最多可以返回三个</li>
+<li>最终还是通过requestPosterImageForAsset:获取缩略图</li>
+<li>获取keyAssets前，需要设置options对资源进行过滤：</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>+ (instancetype)tbv_fetchOptionsWithCustomMediaType:(TBVAssetsPickerMediaType)mediaType {
+</span><span class='line'>    NSArray *mediaTypes = [self tbv_mediaTypesWithCustonMediaType:mediaType];
+</span><span class='line'>    if (!mediaTypes.count) return nil;
+</span><span class='line'>    
+</span><span class='line'>    PHFetchOptions *options = [[PHFetchOptions alloc] init];
+</span><span class='line'>    NSMutableString *predicateString = [NSMutableString string];
+</span><span class='line'>    for (NSNumber *mediaType in mediaTypes) {
+</span><span class='line'>        [predicateString appendFormat:@"mediaType = %@", mediaType];
+</span><span class='line'>        if (![mediaType isEqual:mediaTypes.lastObject]) [predicateString appendString:@" || "];
+</span><span class='line'>    }
+</span><span class='line'>    options.predicate = [NSPredicate predicateWithFormat:predicateString];
+</span><span class='line'>    return options;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>TBVAssetsLibrary
+
+<ul>
+<li>ALAssetsGroup有posterImage属性，直接返回相簿缩略图</li>
+<li>和PhotoKit不同，AssetLibrary通过ALAssetsGroup的setAssetsFilter方法进行过滤</li>
+</ul>
+</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>[group setAssetsFilter:[ALAssetsFilter tbv_assetsFilterWithCustomMediaType:mediaType]];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样设置以后，后续针对group的操作都会在过滤的结果中进行了。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestPosterImageForCollection:(TBVCollection *)collection
+</span><span class='line'>                              mediaType:(TBVAssetsPickerMediaType)mediaType {
+</span><span class='line'>    return [[RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        PHFetchOptions *fetchOptions = [PHFetchOptions tbv_fetchOptionsWithCustomMediaType:mediaType];
+</span><span class='line'>        fetchOptions.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"creationDate"
+</span><span class='line'>                                                                       ascending:YES]];
+</span><span class='line'>        PHAssetCollection *realCollection = (PHAssetCollection *)collection.collection;
+</span><span class='line'>        /* fetchKeyAssetsInAssetCollection 获取至多三张 */
+</span><span class='line'>        PHFetchResult *result = [PHAsset fetchKeyAssetsInAssetCollection:realCollection
+</span><span class='line'>                                                                 options:fetchOptions];
+</span><span class='line'>        if (!result.count) {
+</span><span class='line'>            [subscriber sendNext:[RACSignal empty]];
+</span><span class='line'>            [subscriber sendCompleted];
+</span><span class='line'>            return nil;
+</span><span class='line'>        }
+</span><span class='line'>        
+</span><span class='line'>        TBVAsset *posterAsset = [TBVAsset assetWithOriginAsset:result.firstObject];
+</span><span class='line'>        [subscriber sendNext:[self requestPosterImageForAsset:posterAsset]];
+</span><span class='line'>        [subscriber sendCompleted];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }] switchToLatest];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection
+</span><span class='line'>                                mediaType:(TBVAssetsPickerMediaType)mediaType {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        NSMutableArray *assets = [NSMutableArray array];
+</span><span class='line'>        ALAssetsGroup *group = (ALAssetsGroup *)collection.collection;
+</span><span class='line'>        [group setAssetsFilter:[ALAssetsFilter tbv_assetsFilterWithCustomMediaType:mediaType]];
+</span><span class='line'>        [group enumerateAssetsUsingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
+</span><span class='line'>            if (result) {
+</span><span class='line'>                [assets addObject:[TBVAsset assetWithOriginAsset:result]];
+</span><span class='line'>            } else {
+</span><span class='line'>                [subscriber sendNext:assets];
+</span><span class='line'>                [subscriber sendCompleted];
+</span><span class='line'>            }
+</span><span class='line'>        }];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestPosterImageForAsset:</h6>
+
+<p>获取asset的缩略图，需要注意的一点就是：在获取缩略图的情况下，Fill比Fit获取的图片要清晰</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestPosterImageForAsset:(TBVAsset *)asset {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        CGSize posterSize = CGSizeMake(kBQPosterImageWidth * BQAP_SCREEN_SCALE,
+</span><span class='line'>                                       kBQPosterImageHeight * BQAP_SCREEN_SCALE);
+</span><span class='line'>        /* 在获取缩略图的情况下，Fill比Fit获取的图片要清晰 */
+</span><span class='line'>        PHImageRequestID requestId = [self.imageManager
+</span><span class='line'>                                      requestImageForAsset:(PHAsset *)asset.asset
+</span><span class='line'>                                      targetSize:posterSize
+</span><span class='line'>                                      contentMode:PHImageContentModeAspectFill
+</span><span class='line'>                                      options:self.defaultImageRequestOptions
+</span><span class='line'>                                      resultHandler:^(UIImage * _Nullable result,
+</span><span class='line'>                                                      NSDictionary * _Nullable info) {
+</span><span class='line'>                                          [subscriber sendNext:RACTuplePack(result, info[PHImageResultIsDegradedKey])];
+</span><span class='line'>                                          if (![info[PHImageResultIsDegradedKey] boolValue]) {
+</span><span class='line'>                                              [subscriber sendCompleted];
+</span><span class='line'>                                          }
+</span><span class='line'>                                      }];
+</span><span class='line'>        return [RACDisposable disposableWithBlock:^{
+</span><span class='line'>            [self.imageManager cancelImageRequest:requestId];
+</span><span class='line'>        }];
+</span><span class='line'>    }];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestPosterImageForAsset:(TBVAsset *)asset {
+</span><span class='line'>    return [[RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        CGSize posterSize = CGSizeMake(kBQPosterImageWidth * BQAP_SCREEN_SCALE,
+</span><span class='line'>                                       kBQPosterImageHeight * BQAP_SCREEN_SCALE);
+</span><span class='line'>        [subscriber sendNext:[self requestImageForAsset:asset
+</span><span class='line'>                                             targetSize:posterSize
+</span><span class='line'>                                            contentMode:TBVAssetsPickerContentModeFill]];
+</span><span class='line'>        [subscriber sendCompleted];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }] switchToLatest];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestFullResolutionImageForAsset:</h6>
+
+<p>获取原图时有一点很重要，就是尽量不要快速连续地获取原图，大图也可以列入这个范畴。连续地获取大图或者原图，设备的内存会急剧增高，甚至崩溃，这种情况通常在上传图片时比较常见。
+所以在上传图片时，尽量上传一张原图后再获取下一张原图进行上传，而不是全部获取完成之后再上传。</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestFullResolutionImageForAsset:(TBVAsset *)asset {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        self.defaultImageRequestOptions.networkAccessAllowed = YES;
+</span><span class='line'>        PHImageRequestID requestId = [self.imageManager
+</span><span class='line'>                                      requestImageForAsset:(PHAsset *)asset.asset
+</span><span class='line'>                                      targetSize:PHImageManagerMaximumSize
+</span><span class='line'>                                      contentMode:PHImageContentModeDefault
+</span><span class='line'>                                      options:self.defaultImageRequestOptions
+</span><span class='line'>                                      resultHandler:^(UIImage * _Nullable result,
+</span><span class='line'>                                                      NSDictionary * _Nullable info) {
+</span><span class='line'>                                          [subscriber sendNext:RACTuplePack(result, info[PHImageResultIsDegradedKey])];
+</span><span class='line'>                                          if (![info[PHImageResultIsDegradedKey] boolValue]) {
+</span><span class='line'>                                              [subscriber sendCompleted];
+</span><span class='line'>                                          }
+</span><span class='line'>                                      }];
+</span><span class='line'>        return [RACDisposable disposableWithBlock:^{
+</span><span class='line'>            [self.imageManager cancelImageRequest:requestId];
+</span><span class='line'>        }];
+</span><span class='line'>    }];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestFullResolutionImageForAsset:(TBVAsset *)asset {
+</span><span class='line'>    return [[[RACSignal return:asset.asset]
+</span><span class='line'>        deliverOn:[RACScheduler scheduler]]
+</span><span class='line'>        map:^id(ALAsset * asset) {
+</span><span class='line'>            ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];
+</span><span class='line'>            CGImageRef fullResolutionImage = [assetRepresentation fullResolutionImage];
+</span><span class='line'>            UIImage *resultImage = [UIImage imageWithCGImage:fullResolutionImage
+</span><span class='line'>                                                       scale:BQAP_SCREEN_SCALE
+</span><span class='line'>                                                 orientation:UIImageOrientationUp];
+</span><span class='line'>            
+</span><span class='line'>            return RACTuplePack(resultImage, @(NO));
+</span><span class='line'>        }];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestSizeForAssets:</h6>
+
+<p>请求大小是针对的图片，所以对非图片的asset进行了过滤</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestSizeForAssets:(NSArray&lt;TBVAsset *&gt; *)assets {
+</span><span class='line'>    RACSequence *requestSequence = [[assets.rac_sequence
+</span><span class='line'>        filter:^BOOL(TBVAsset *asset) {
+</span><span class='line'>            return ((PHAsset *)asset.asset).mediaType == PHAssetMediaTypeImage;
+</span><span class='line'>        }]
+</span><span class='line'>        map:^id(TBVAsset *asset) {
+</span><span class='line'>            return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>                self.defaultImageRequestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+</span><span class='line'>                PHImageRequestID requestId =[self.imageManager
+</span><span class='line'>                                             requestImageDataForAsset:(PHAsset *)asset.asset
+</span><span class='line'>                                             options:self.defaultImageRequestOptions
+</span><span class='line'>                                             resultHandler:^(NSData * _Nullable imageData,
+</span><span class='line'>                                                             NSString * _Nullable dataUTI,
+</span><span class='line'>                                                             UIImageOrientation orientation,
+</span><span class='line'>                                                             NSDictionary * _Nullable info) {
+</span><span class='line'>                                                 [subscriber sendNext:@(imageData.length)];
+</span><span class='line'>                                                 [subscriber sendCompleted];
+</span><span class='line'>                                             }];
+</span><span class='line'>                return [RACDisposable disposableWithBlock:^{
+</span><span class='line'>                    [self.imageManager cancelImageRequest:requestId];
+</span><span class='line'>                }];
+</span><span class='line'>            }];
+</span><span class='line'>        }];
+</span><span class='line'>    
+</span><span class='line'>    return [[RACSignal
+</span><span class='line'>        zip:requestSequence]
+</span><span class='line'>        map:^id(RACTuple *value) {
+</span><span class='line'>            return [value.rac_sequence foldLeftWithStart:@0 reduce:^id(id accumulator, id value) {
+</span><span class='line'>                return @([accumulator integerValue] + [value integerValue]);
+</span><span class='line'>            }];
+</span><span class='line'>        }];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestSizeForAssets:(NSArray&lt;TBVAsset *&gt; *)assets {
+</span><span class='line'>    return [RACSignal
+</span><span class='line'>        return:[[[[assets.rac_sequence
+</span><span class='line'>            map:^id(TBVAsset *asset) {
+</span><span class='line'>               return asset.asset;
+</span><span class='line'>            }]
+</span><span class='line'>            filter:^BOOL(ALAsset *asset) {
+</span><span class='line'>                return [asset valueForProperty:ALAssetPropertyType] == ALAssetTypePhoto;
+</span><span class='line'>            }]
+</span><span class='line'>            map:^id(ALAsset *asset) {
+</span><span class='line'>                return @([asset defaultRepresentation].size);
+</span><span class='line'>            }]
+</span><span class='line'>            foldLeftWithStart:@(0) reduce:^id(id accumulator, id value) {
+</span><span class='line'>                return @([accumulator integerValue] + [value integerValue]);
+</span><span class='line'>            }]];
+</span><span class='line'>    
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestAllCollections</h6>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestAllCollections {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        PHFetchResult *smartResult = [PHAssetCollection
+</span><span class='line'>                                      fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
+</span><span class='line'>                                      subtype:PHAssetCollectionSubtypeAlbumRegular
+</span><span class='line'>                                      options:nil];
+</span><span class='line'>        PHFetchResult *topLevelUserCollections = [PHCollectionList fetchTopLevelUserCollectionsWithOptions:nil];
+</span><span class='line'>        
+</span><span class='line'>        NSMutableArray *collections = [NSMutableArray array];
+</span><span class='line'>        for (PHAssetCollection *aCollection in smartResult) {
+</span><span class='line'>            TBVCollection *collection = [TBVCollection collectionWithOriginCollection:aCollection];
+</span><span class='line'>            [collections addObject:collection];
+</span><span class='line'>        }
+</span><span class='line'>        for (PHAssetCollection *aCollection in topLevelUserCollections) {
+</span><span class='line'>            TBVCollection *collection = [TBVCollection collectionWithOriginCollection:aCollection];
+</span><span class='line'>            [collections addObject:collection];
+</span><span class='line'>        }
+</span><span class='line'>        [subscriber sendNext:collections];
+</span><span class='line'>        [subscriber sendCompleted];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestAllCollections {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        NSMutableArray *collections = [NSMutableArray array];
+</span><span class='line'>        [self.assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupAll
+</span><span class='line'>                                          usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
+</span><span class='line'>            if (group) {
+</span><span class='line'>                TBVCollection *collection = [TBVCollection collectionWithOriginCollection:group];
+</span><span class='line'>                [collections addObject:collection];
+</span><span class='line'>            } else {
+</span><span class='line'>                [subscriber sendNext:collections];
+</span><span class='line'>                [subscriber sendCompleted];
+</span><span class='line'>            }
+</span><span class='line'>        } failureBlock:^(NSError *error) {
+</span><span class='line'>            [subscriber sendError:error];
+</span><span class='line'>        }];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestAssetsForCollection:mediaType:</h6>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection
+</span><span class='line'>                                mediaType:(TBVAssetsPickerMediaType)mediaType {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        PHFetchOptions *options = [PHFetchOptions tbv_fetchOptionsWithCustomMediaType:mediaType];
+</span><span class='line'>        PHFetchResult *fetchResult = [PHAsset fetchAssetsInAssetCollection:(PHAssetCollection *)collection.collection
+</span><span class='line'>                                                                   options:options];
+</span><span class='line'>        NSMutableArray *assets = [NSMutableArray arrayWithCapacity:fetchResult.count];
+</span><span class='line'>        for (PHAsset *asset in fetchResult) {
+</span><span class='line'>            [assets addObject:[TBVAsset assetWithOriginAsset:asset]];
+</span><span class='line'>        }
+</span><span class='line'>        [subscriber sendNext:assets];
+</span><span class='line'>        [subscriber sendCompleted];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection
+</span><span class='line'>                                mediaType:(TBVAssetsPickerMediaType)mediaType {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        NSMutableArray *assets = [NSMutableArray array];
+</span><span class='line'>        ALAssetsGroup *group = (ALAssetsGroup *)collection.collection;
+</span><span class='line'>        [group setAssetsFilter:[ALAssetsFilter tbv_assetsFilterWithCustomMediaType:mediaType]];
+</span><span class='line'>        [group enumerateAssetsUsingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
+</span><span class='line'>            if (result) {
+</span><span class='line'>                [assets addObject:[TBVAsset assetWithOriginAsset:result]];
+</span><span class='line'>            } else {
+</span><span class='line'>                [subscriber sendNext:assets];
+</span><span class='line'>                [subscriber sendCompleted];
+</span><span class='line'>            }
+</span><span class='line'>        }];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestCameraRollCollection</h6>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// TBVCachingImageManager
+</span><span class='line'>- (RACSignal *)requestCameraRollCollection {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        PHFetchResult *smartAlbums = [PHAssetCollection
+</span><span class='line'>                                      fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum
+</span><span class='line'>                                      subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary
+</span><span class='line'>                                      options:nil];
+</span><span class='line'>        [subscriber sendNext:[TBVCollection collectionWithOriginCollection:smartAlbums.firstObject]];
+</span><span class='line'>        [subscriber sendCompleted];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }];
+</span><span class='line'>}
+</span><span class='line'>
+</span><span class='line'>// TBVAssetsLibrary
+</span><span class='line'>- (RACSignal *)requestCameraRollCollection {
+</span><span class='line'>    return [RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        [self.assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
+</span><span class='line'>            [subscriber sendNext:[TBVCollection collectionWithOriginCollection:group]];
+</span><span class='line'>            [subscriber sendCompleted];
+</span><span class='line'>        } failureBlock:^(NSError *error) {
+</span><span class='line'>            [subscriber sendError:error];
+</span><span class='line'>        }];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>-requestVideoForAsset:和-requestURLAssetForAsset:</h6>
+
+<p>由于业务上没有视频的需求，所以这一块还没有去实现。</p>
+
+<h3>实现过程中的一些小坑</h3>
+
+<h6>用ALAssetsLibrary申请访问相册权限</h6>
+
+<p>这一点貌似有些代码用authorizationStatus就能实现，不过
+应用的时候还是发现不能出发请求权限alert，所以这里需要访问下相册的资源<a href="http://stackoverflow.com/questions/13572220/ask-permission-to-access-camera-roll">ask-permission-to-access-camera-roll</a>，
+来出发这个请求动作：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>+ (RACSignal *)tbv_forceTriggerPermissionAsking {
+</span><span class='line'>    return [[RACSignal createSignal:^RACDisposable *(id&lt;RACSubscriber&gt; subscriber) {
+</span><span class='line'>        void (^sendStatus)() = ^{
+</span><span class='line'>            [subscriber sendNext:@([self tbv_authorizationStatus])];
+</span><span class='line'>            [subscriber sendCompleted];
+</span><span class='line'>        };
+</span><span class='line'>        
+</span><span class='line'>        if ([self tbv_authorizationStatus] != BQAuthorizationStatusNotDetermined) {
+</span><span class='line'>            sendStatus();
+</span><span class='line'>            return nil;
+</span><span class='line'>        }
+</span><span class='line'>        ALAssetsLibrary *lib = [[ALAssetsLibrary alloc] init];
+</span><span class='line'>        [lib enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
+</span><span class='line'>            sendStatus();
+</span><span class='line'>            *stop = YES;
+</span><span class='line'>        } failureBlock:^(NSError *error) {
+</span><span class='line'>            sendStatus();
+</span><span class='line'>        }];
+</span><span class='line'>        return nil;
+</span><span class='line'>    }] deliverOnMainThread];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<h6>ALAssetsLibrary请求的ALAsset被置空问题</h6>
+
+<p>官方文档里面有这么一句：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>The lifetimes of objects you get back from a library instance are tied to the lifetime of the library instance.</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，在使用ALAssetsLibrary请求回来的资源时，是不能释放对应的ALAssetsLibrary对象的。在发送多图的场合，如果不注意保持住ALAssetsLibrary对象，很容易发生后面几张图片获取不到的情况。</p>
+
+<p>所以，要么在选择器返回选中的资源时，强引用对应的manager，要么这个manager由调用者传给相册选择器。</p>
+
+<h6>更改应用权限并切回前台</h6>
+
+<p>如果应用在后台时，更改了权限，当切回前台后，App会重新启动 。这里如果设置了断点，别以为是程序崩了。</p>
+
+<h3>不足</h3>
+
+<p>一个很明显的问题是使用了RAC的版本后，相册选择器滚动的性能会下降，没有以前通过回调来的顺畅。如果稍微快速一点滚动的话，CPU很容易就上100%。</p>
+
+<p>可能是使用RAC的方式不是很正确造成的，后续尽可能优化这一块。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[iOS知识碎片六]]></title>
@@ -6070,137 +7234,6 @@ PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
 </span><span class='line'>        <span class="k">return</span> <span class="k">false</span><span class="p">;</span>
 </span><span class='line'>    <span class="p">}</span>
 </span></code></pre></td></tr></table></div></figure>
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[关于这一周总结]]></title>
-    <link href="http://triplecc.github.io/blog/2015-09-26-ioszhi-shi-sui-pian-er/"/>
-    <updated>2015-09-26T11:47:49+08:00</updated>
-    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-er</id>
-    <content type="html"><![CDATA[<p>进入了一个新的创业公司，公司的人数不是很多，COO是少楠，一个我很尊敬的前产品经理，而技术全部由CEO一人完成。我是以iOS工程师的身份进去的，不过还是需要先进行将近一个月的后台编程学习，使用的语言工具是php。<br>
-刚进入公司，非常地累，并不是以往的那种累，一方面是来自CEO的压力，一方面是思想层面上的。CEO也不时指出我在开发过程中一些及其不好的习惯，还有一些思想层面上的东西，收获很多，虽然刚开始有点不习惯这种直白的方式吧，但是填的坑有点多了以后，发现其实这样也挺好，至少我记得更加深刻一些。<br>
-以下就是这一个星期自己每天所得：<br></p>
-
-<!--more-->
-
-
-<p>1、自己在以前开发或者学习过程中没有充分实现对工具的利用（快捷键）</p>
-
-<ul>
-<li>这点是在第一天去公司的还没超过一小时被指出的，因为以前做iOS，接触的大部分是Xcode上的快捷键，然后对safari的快捷键一点没有了解，而且最为致命的一点是，我在切换程序的时候习惯性地会用触控板点，没有用tab+command。其实因为我以前使用ubuntu，不敢说对快捷键很依赖，但是也算是很追求这个的吧，至少vim编辑器使用地还是相对不错的，大部分情况也会用终端开程序。不过在mac系统上还是大意了吧。</li>
-</ul>
-
-
-<p>2、自己在以前不善于总结，比如Git，以为相对比较了解了，但是距离能讲出来给完全不会的人听还是有差距</p>
-
-<ul>
-<li><p>这点是在CEO让我在一个小时内熟悉Git开发的通常流程过程中被指出的。说实在话，第一天刚开始就被震住了，脑子思考有点断片，因为自己混github也有段时间了，也用OSChina上面的Git代码托管合作过一个项目，但是对一些常规操作也说不清楚。后来CEO给我说了下，顿时醍醐灌顶。以前自己只是知道了怎么用，而不会关心到底为什么会这样，这次是吸取到教训了。当时画的图类似下面图片：<img src="http://triplecc.github.io/images/Snip20150926_1.png" alt="" />。<br></p>
-
-<ul>
-<li>可以看到主体分成了四块：Remote、Local、Cache、File。<br></li>
-<li>而平时我们Xcode打开的就是在File里面的，如果没有add进Cache里面，就会显示一个?符号。<br></li>
-<li>当时checkout没怎么用过，也就表述不清，其实主要就是在Local仓库里面可能存在ABC三个分支，而File终只会有一个分支的代码，所以通过checkout来切换不同分支的代码。<br></li>
-<li>还有一点，以前对pull request理解不是很清晰，其实就是给master Remote发送一个请求，请求master Remote对fork Remote进行pull。<br></li>
-<li>使用fetch+merge＝pull，使用前者的好处是可以多次fetch最新代码到本地，但是没有merge，也就不会有冲突产生，而使用pull就得每次都得解决冲突。<br></li>
-<li>抽象来说，这就是4个仓库，只不过是放在了不同的地方，他们之间的数据传输可以大体总结为两个方式pull+push。</li>
-</ul>
-</li>
-</ul>
-
-
-<p>3、遇到一些问题，尽量联想并结合以前相关的知识和代码进行解决</p>
-
-<ul>
-<li>这点是在php构造函数上面的一个疑问，代码如下
-
-<ul>
-<li>当时问的是为什么要另外弄一个init函数，而不是直接使用构造函数__construct，后来没有得到直接的回答。只是引导性的问我构造函数什么时候执行等等问题，后来得出的结论是这些问题其实我都知道，但是就没有联想到这个问题上面，就是init可能会在其他地方被调用，如果改为构造函数的话， 那就无法进行二次调用了。这就是“伸手党”。</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='php'><span class='line'> <span class="k">public</span> <span class="k">function</span> <span class="nf">init</span><span class="p">(</span><span class="nv">$options</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">table</span> <span class="o">=</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">&#39;table&#39;</span><span class="p">];</span>
-</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">columns</span> <span class="o">=</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">&#39;columns&#39;</span><span class="p">];</span>
-</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">key</span> <span class="o">=</span> <span class="nv">$options</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">];</span>
-</span><span class='line'>      <span class="nv">$this</span><span class="o">-&gt;</span><span class="na">reset</span><span class="p">();</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="o">-----------------</span><span class="nx">snip</span><span class="o">----------------</span>
-</span><span class='line'>
-</span><span class='line'>  <span class="k">function</span> <span class="nf">__construct</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>     <span class="nv">$options</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
-</span><span class='line'>         <span class="s1">&#39;table&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;babel_node&#39;</span><span class="p">,</span>
-</span><span class='line'>         <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;id&#39;</span><span class="p">,</span>
-</span><span class='line'>         <span class="s1">&#39;pkey&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pid&#39;</span><span class="p">,</span>
-</span><span class='line'>         <span class="s1">&#39;columns&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
-</span><span class='line'>             <span class="s1">&#39;id&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;node_id&#39;</span><span class="p">,</span>
-</span><span class='line'>             <span class="s1">&#39;pid&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;nod_pid&#39;</span><span class="p">,</span>
-</span><span class='line'>             <span class="s1">&#39;name&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;nod_title&#39;</span>
-</span><span class='line'>         <span class="p">));</span>
-</span><span class='line'>     <span class="k">parent</span><span class="o">::</span><span class="na">init</span><span class="p">(</span><span class="nv">$options</span><span class="p">);</span>
-</span><span class='line'> <span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>4、架构的本质是分层和抽象，代码的本质是路由</p>
-
-<ul>
-<li>其实只要有一种语言工具，能提供基本的表达式和if else就能编写几乎所有业务了。</li>
-</ul>
-
-
-<p>5、工作外的时间尽量用来总结，提炼本质，而不是学习新知识，去跨界的阅读</p>
-
-<ul>
-<li>这点还是有些意外的，因为当时说是自己平时可能会上appcoda上面看些小demo，然后就得到了这样的一个建议，说是知识是学不完了，不总结一些本质性的东西，会离世界上最先进的技术越来越远。怎么说呢，现在还是体会不到吧。后来推荐的一些读物：<a href="http://www.ruanyifeng.com/blog/">阮一峰</a> , <a href="http://www.cnblogs.com/weidagang2046/p/the-nature-of-meta.html">程序本质</a></li>
-</ul>
-
-
-<p>6、看函数要看本质，理解这个函数从根本上要做什么事情，而不是更具部分调用的上下文来判定
-7、如何对每个小任务按照知识点进行分块，每个分块应该如何进行学习或者设计，并且在这一步，分块的设计应该是面向接口的，而不是针对内部细节</p>
-
-<ul>
-<li><p>这一点真的是感触很深，因为以前可能只会对一些大任务进行模块的划分，而现在是要对一个小任务进行分块。比如现在有以下任务：给界面添加一个评论输入框，点击提交的时候将评论插入到数据库，然后界面更新出现评论。给10分钟进行分块。后来我的划分是这样的：</p>
-
-<ul>
-<li>1、针对界面，可能涉及到HTML的一些语句，还有与php传递数据的问题。因为这一块不是很熟悉，所以花20分钟进行学习</li>
-<li>2、针对数据库操作，给根Data添加一个insert函数，函数无入参，返回false/主键值。用15分钟
-
-<ul>
-<li>这里当时没事先设计好，只是说要创建一个插入函数，其实这里要做的是进行面向接口设计，不必去在意细节</li>
-</ul>
-</li>
-<li>3、最后花15分钟进行编码</li>
-</ul>
-
-
-<p>事实上，我花了肯定不止1小时来完成这个任务，但是这种分块技巧让我受益匪浅，知道了将每一步要做些什么具象出来，而不是想到哪里写哪里。</p></li>
-</ul>
 
 ]]></content>
   </entry>
