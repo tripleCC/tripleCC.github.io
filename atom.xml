@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-09-15T14:07:10+08:00</updated>
+  <updated>2016-09-15T14:20:24+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -18,7 +18,7 @@
     <link href="http://triplecc.github.io/blog/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/"/>
     <updated>2016-09-15T10:33:54+08:00</updated>
     <id>http://triplecc.github.io/blog/li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing</id>
-    <content type="html"><![CDATA[<p>关于图片浏览器，项目中比较常用的成熟框架有Objective-C版本的<a href="https://github.com/mwaterfall/MWPhotoBrowser">MWPhotoBrowser</a>，<a href="https://github.com/ideaismobile/IDMPhotoBrowser">IDMPhotoBrowser</a>或者Swift版本的<a href="https://github.com/suzuki-0000/SKPhotoBrowser">SKPhotoBrowser</a>。<br>
+    <content type="html"><![CDATA[<p>说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的<a href="https://github.com/mwaterfall/MWPhotoBrowser">MWPhotoBrowser</a>，<a href="https://github.com/ideaismobile/IDMPhotoBrowser">IDMPhotoBrowser</a>或者Swift版本的<a href="https://github.com/suzuki-0000/SKPhotoBrowser">SKPhotoBrowser</a>。<br>
 从核心功能来看，<a href="https://github.com/mwaterfall/MWPhotoBrowser">MWPhotoBrowser</a>，<a href="https://github.com/ideaismobile/IDMPhotoBrowser">IDMPhotoBrowser</a>这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，这在我看来这是他的优势，同时也是他的不足。<br>
 这样做的优势不言而喻，调用者只需要很少的几行代码，就可以集成一个图片浏览器框架，省时省力。以<a href="https://github.com/mwaterfall/MWPhotoBrowser">MWPhotoBrowser</a>为例，在不设置额外属性的情况下，只需要下面两行代码就可以创建：</p>
 
@@ -29,8 +29,9 @@
 
 
 <p>使用者只要关注如何提供MWPhotoBrowser所要展示资源就可以了，不需要做额外的操作，非常地简洁方便。<br>
-关于不足，由于MWPhotoBrowser内部实现了网络图片获取功能，在追求内部实现尽量精简的前提下，不可避免地要依赖下载网络图片的第三方库(SDWebImage)。如果原来项目并没有使用SDWebImage，而是用YYWebImage或者Kingfisher，那么使用MWPhotoBrowser便会引入冗余的框架，从而让项目额外增加了一种图片缓存机制，不利于内存以及磁盘使用率的优化。对于相册资源的访问，MWPhotoBrowser内部也实现了通过PHAsset或者ALAsset获取相片的功能。不过一般项目会有自己的一套相册选择器，进而会有相应的相册资源获取策略。所以以个人观点来看，如何获取相册资源，应该由使用者告知，而不是在框架内部自己实现一套，这样更加符合DRY。<br>
-接下来，我会针对上面的不足，实现一套兼容本地资源、相册资源、网络资源的图片浏览器的简易图片选择器。<br>
+关于不足，由于MWPhotoBrowser内部实现了获取网络图片功能，在追求内部实现尽量精简的前提下，不可避免地要依赖加载图片的第三方库(SDWebImage)。如果原来项目并没有使用SDWebImage，而是用YYWebImage或者Kingfisher，那么使用MWPhotoBrowser便会引入冗余的框架，从而让项目额外增加了一种图片缓存机制，不利于内存以及磁盘使用率的优化。<br>
+对于相册资源的访问，MWPhotoBrowser内部也实现了通过PHAsset或者ALAsset获取相片的功能。不过一般来说，项目会有自己的一套相册选择器，进而会有相应的相册资源获取策略。所以以个人观点来看，如何获取相册资源，应该由使用者告知，而不是在框架内部自己实现一套，这样更加符合DRY。<br>
+接下来，我会针对上面的不足，实现一套兼容本地资源、相册资源、网络资源的简易图片选择器。<br>
 本文章对应的所有代码在仓库<a href="https://github.com/tobevoid/TBVImageBrowser">TBVImageBrowser</a>中，欢迎交流。</p>
 
 <!--More-->
@@ -38,22 +39,22 @@
 
 <h3>框架概览</h3>
 
-<p>BVImageBrowser的主要组成如下：<br>
+<p>TBVImageBrowser的主要组成如下：<br>
 <img src="http://triplecc.github.io/images/Snip20160915_3.png" alt="图一" /><br>
 <img src="http://triplecc.github.io/images/Snip20160915_4.png" alt="图二" /><br></p>
 
 <p>从图一可以看出，TBVImageBrowserView持有了一个遵守TBVImageProviderManagerProtocol的对象。根据此持有的策略管理对象，可以通过抽象策略接口TBVImageProviderProtocol访问对应的具体策略类：TBVWebImageProvider、TBVLocalImageProvider、TBVAssetImageProvider和自定义的Provider。<br>
-实际上具体的策略都可以由使用者实现，也就是说图一中的TBVWebImageProvider、TBVLocalImageProvider、TBVAssetImageProvider都可以去除，只要提供遵守策略接口TBVImageProviderProtocol的具体策略类就行了。这样就做到了访问资源的策略由使用者提供，因为使用者知道自己实际的访问方式。<br>
+实际上具体的策略都可以由使用者实现，也就是说图一中的TBVWebImageProvider、TBVLocalImageProvider、TBVAssetImageProvider都可以去除，只要提供遵守策略接口TBVImageProviderProtocol的具体策略类就行了。一般来说，访问资源的策略由使用者提供，因为使用者知道自己实际的获取方式。<br>
 从图二中可以看出，TBVImageBrowserView持有的策略管理对象的内部组成。只要遵守TBVImageProviderManagerProtocol协议，都可以成为策略管理对象。</p>
 
-<p>除了以上几个协议，我还抽出了TBVImageProviderIdentifierProtocol、TBVImageElementProtocol以及TBVImageProgressPresenterProtocol。&lt;>
+<p>除了以上几个协议，我还抽出了TBVImageIdentifierProtocol、TBVImageElementProtocol以及TBVImageProgressPresenterProtocol协议。
 TBVImageProviderIdentifierProtocol的声明如下：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">TBVImageProviderIdentifierProtocol</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">TBVImageIdentifierProtocol</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span>
 </span><span class='line'><span class="k">@required</span>
 </span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">identifier</span><span class="p">;</span>
 </span><span class='line'><span class="k">@end</span>
@@ -70,7 +71,7 @@ TBVImageElementProtocol的声明如下：</p>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
 <span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">TBVImageElementProtocol</span> <span class="o">&lt;</span><span class="n">TBVImageProviderIdentifierProtocol</span><span class="o">&gt;</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">TBVImageElementProtocol</span> <span class="o">&lt;</span><span class="n">TBVImageIdentifierProtocol</span><span class="o">&gt;</span>
 </span><span class='line'><span class="k">@required</span>
 </span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSObject</span> <span class="o">*</span><span class="n">resource</span><span class="p">;</span>
 </span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="n">CGFloat</span> <span class="n">progress</span><span class="p">;</span>
@@ -213,7 +214,7 @@ TBVImageProgressPresenterProtocol的声明如下：</p>
 <h3>载入自定义loading progress控件</h3>
 
 <p>在加载一个loading progress控件时，我需要什么样的接口?<br>
-首先是控件本身，TBVImageBrowserView需要使用者创建这个控件的实体给TBVImageBrowserView，而控件的具体属性则由调用者在创建控件时一并设置。然后loading progress控件，理所当然地需要提供设置progress的接口。由这两个需求催生TBVImageProgressPresenterProtocol协议，来对使用者提供的loading progress控件进行限定。<br>
+首先是控件本身，TBVImageBrowserView需要使用者创建这个控件的实体给TBVImageBrowserView，而控件的具体属性则由调用者在创建控件时一并设置。然后因为是loading progress控件，理所当然地应该提供设置progress的接口。由这两个需求催生TBVImageProgressPresenterProtocol协议，来对使用者提供的loading progress控件进行限定。<br>
 有了满足要求的控件，如何在内部进行创建？TBVImageBrowserView需要使用者提供控件对应Class，然后在内部以以下方式进行添加：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -312,9 +313,9 @@ TBVImageProgressPresenterProtocol的声明如下：</p>
 
 <h3>总结</h3>
 
-<p><a href="https://github.com/tobevoid/TBVImageBrowser">TBVImageBrowser</a>是在自己做IM发送相册图片时造的轮子，由于后期项目本身并没有使用SDWebImage，并且有一套自己访问相册的策略，所以MWPhotoBrowser并不是很符合自己的需求。<br>
-<a href="https://github.com/tobevoid/TBVImageBrowser">TBVImageBrowser</a>遵循了一个原则：使用者应该知道自己如何得到资源，并向框架提供获取资源的方法，这样才能让框架具有更好的扩展性。<br>
-欢迎试用并一起完善这个项目。</p>
+<p>TBVImageBrowser是在自己做IM发送相册图片时造的轮子，由于后期项目本身并没有使用SDWebImage，并且有一套自己访问相册的策略，所以MWPhotoBrowser并不是很符合自己的需求。<br>
+TBVImageBrowser遵循了一个原则：使用者应该知道自己如何得到资源，并向框架提供获取资源的方法，这样才能让框架具有更好的扩展性。<br>
+详细的使用方法在<a href="https://github.com/tobevoid/TBVImageBrowser">仓库说明</a>中，欢迎试用并一起完善这个项目。</p>
 ]]></content>
   </entry>
   
