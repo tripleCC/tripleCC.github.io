@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-09-15T14:33:29+08:00</updated>
+  <updated>2016-09-23T13:58:58+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -3929,6 +3929,8 @@ Connect报文的可变报头中分为四个部分:协议名，协议级别，连
 <p>&hellip;WTF&hellip;<br>
 问了后台，这个图片是企业上传的，最大不超过2M，而且给App的图片并没有经过压缩处理。接着我又查看了安卓端，发现他们并没有显示出这一张logo。。。<br></p>
 
+<p><a href="http://cv.qiaobutang.com//uploads//company_logos//2014//12//12//20//548ae4240cf23e379a82db93//original.png">图片链接</a></p>
+
 <p>虽然图片只有1.8M，但是像素为15497*10166，iOS解压到内存并显示所需要的内存通过以下公式计算出：</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
@@ -4204,6 +4206,142 @@ Connect报文的可变报头中分为四个部分:协议名，协议级别，连
 
 
 <p>以上代码针对jpg是有效的，针对png会出现原来说的那种情况。</p>
+
+<h2>2016-9-23 新动态＝＝，我傻逼了！</h2>
+
+<p>嗯，苹果提供的方法是可行的，下面代码创建字典的时候漏了一个限定图片大小的键值对。＝＝|</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>CGImageRef MyCreateThumbnailImageFromData (NSData * data, int imageSize)
+</span><span class='line'>{
+</span><span class='line'>    CGImageRef        myThumbnailImage = NULL;
+</span><span class='line'>    CGImageSourceRef  myImageSource;
+</span><span class='line'>    CFDictionaryRef   myOptions = NULL;
+</span><span class='line'>    CFStringRef       myKeys[3];
+</span><span class='line'>    CFTypeRef         myValues[3];
+</span><span class='line'>    CFNumberRef       thumbnailSize;
+</span><span class='line'>    
+</span><span class='line'>    // Create an image source from NSData; no options.
+</span><span class='line'>    myImageSource = CGImageSourceCreateWithData((CFDataRef)data,
+</span><span class='line'>                                                NULL);
+</span><span class='line'>    // Make sure the image source exists before continuing.
+</span><span class='line'>    if (myImageSource == NULL){
+</span><span class='line'>        fprintf(stderr, "Image source is NULL.");
+</span><span class='line'>        return  NULL;
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    // Package the integer as a  CFNumber object. Using CFTypes allows you
+</span><span class='line'>    // to more easily create the options dictionary later.
+</span><span class='line'>    thumbnailSize = CFNumberCreate(NULL, kCFNumberIntType, &imageSize);
+</span><span class='line'>    
+</span><span class='line'>    // Set up the thumbnail options.
+</span><span class='line'>    myKeys[0] = kCGImageSourceCreateThumbnailWithTransform;
+</span><span class='line'>    myValues[0] = (CFTypeRef)kCFBooleanTrue;
+</span><span class='line'>    myKeys[1] = kCGImageSourceCreateThumbnailFromImageIfAbsent;
+</span><span class='line'>    myValues[1] = (CFTypeRef)kCFBooleanTrue;
+</span><span class='line'>    myKeys[2] = kCGImageSourceThumbnailMaxPixelSize;
+</span><span class='line'>    myValues[2] = (CFTypeRef)thumbnailSize;
+</span><span class='line'>    
+</span><span class='line'>    // 就是这里，numValues应该是3，不是2。＝＝
+</span><span class='line'>    myOptions = CFDictionaryCreate(NULL, (const void **) myKeys,
+</span><span class='line'>                                   (const void **) myValues, 3,
+</span><span class='line'>                                   &kCFTypeDictionaryKeyCallBacks,
+</span><span class='line'>                                   & kCFTypeDictionaryValueCallBacks);
+</span><span class='line'>    
+</span><span class='line'>    // Create the thumbnail image using the specified options.
+</span><span class='line'>    myThumbnailImage = CGImageSourceCreateThumbnailAtIndex(myImageSource,
+</span><span class='line'>                                                           0,
+</span><span class='line'>                                                           myOptions);
+</span><span class='line'>    // Release the options dictionary and the image source
+</span><span class='line'>    // when you no longer need them.
+</span><span class='line'>    CFRelease(thumbnailSize);
+</span><span class='line'>    CFRelease(myOptions);
+</span><span class='line'>    CFRelease(myImageSource);
+</span><span class='line'>    
+</span><span class='line'>    // Make sure the thumbnail image exists before continuing.
+</span><span class='line'>    if (myThumbnailImage == NULL){
+</span><span class='line'>        fprintf(stderr, "Thumbnail image not created from image source.");
+</span><span class='line'>        return NULL;
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    return myThumbnailImage;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>还有一篇关于这个的文章<a href="http://pulkitgoyal.in/resizing-high-resolution-images-on-ios-without-memory-issues/">resizing-high-resolution-images-on-ios-without-memory-issues</a>。</p>
+
+<p>大体的意思就是有以下几点:</p>
+
+<ul>
+<li>解码PNG占用了高内存</li>
+<li>CoreGraphic缩放图片时，还是会对图片进行解码</li>
+<li>需要在不解码的情况下对图片进行缩放</li>
+<li>ImageIO的ImageSource可以满足这一点，不解码并可以缩放</li>
+</ul>
+
+
+<p>这样的话，最终的解决方案差不多可以是这样的：</p>
+
+<ul>
+<li>用MethodSwizzling替换UIImageView的setImage方法</li>
+<li>然后判断当前图片大小，如果大于某个限制，就用上面的函数缩放图片</li>
+</ul>
+
+
+<p>嗯，就酱紫。还是要理解原理，然后细心点。</p>
 ]]></content>
   </entry>
   
