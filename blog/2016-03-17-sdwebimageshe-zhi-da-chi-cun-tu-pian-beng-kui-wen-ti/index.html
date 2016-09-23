@@ -113,25 +113,26 @@
 
 <p>虽然图片只有1.8M，但是像素为15497*10166，iOS解压到内存并显示所需要的内存通过以下公式计算出：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>#define bytesPerMB 1048576.0f 
-</span><span class='line'>// 这里针对32色来说 (32 / 8)
-</span><span class='line'>#define bytesPerPixel 4.0f
-</span><span class='line'>#define pixelsPerMB ( bytesPerMB / bytesPerPixel )
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#define bytesPerMB 1048576.0f </span>
+</span><span class='line'><span class="c1">// 这里针对32色来说 (32 / 8)</span>
+</span><span class='line'><span class="cp">#define bytesPerPixel 4.0f</span>
+</span><span class='line'><span class="cp">#define pixelsPerMB ( bytesPerMB / bytesPerPixel )</span>
 </span><span class='line'>
-</span><span class='line'> Width x Height / pixelsPerMB</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'> <span class="n">Width</span> <span class="n">x</span> <span class="n">Height</span> <span class="o">/</span> <span class="n">pixelsPerMB</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>所以大概可以计算出这张图片需要600M左右的内存进行解码显示。</p>
 
 <p>google了下，最多的解决方式是利用UIGraphicsBeginImageContext对图片进行裁剪后渲染：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -141,18 +142,16 @@
 <span class='line-number'>8</span>
 <span class='line-number'>9</span>
 <span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>
-</span><span class='line'>UIGraphicsBeginImageContext(size);
-</span><span class='line'>CGContextRef context = UIGraphicsGetCurrentContext();
-</span><span class='line'>CGContextClearRect(context, CGRectMake(0, 0, size.width, size.height));
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">UIGraphicsBeginImageContext</span><span class="p">(</span><span class="n">size</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGContextRef</span> <span class="n">context</span> <span class="o">=</span> <span class="n">UIGraphicsGetCurrentContext</span><span class="p">();</span>
+</span><span class='line'><span class="n">CGContextClearRect</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">));</span>
 </span><span class='line'>
-</span><span class='line'>CGContextSetInterpolationQuality(context, 0.8);
+</span><span class='line'><span class="n">CGContextSetInterpolationQuality</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">);</span>
 </span><span class='line'>
-</span><span class='line'>[self drawInRect:drawRect blendMode:kCGBlendModeNormal alpha:1];
+</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">drawRect</span> <span class="nl">blendMode</span><span class="p">:</span><span class="n">kCGBlendModeNormal</span> <span class="nl">alpha</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-</span><span class='line'>UIGraphicsEndImageContext();
+</span><span class='line'><span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="n">UIGraphicsGetImageFromCurrentImageContext</span><span class="p">();</span>
+</span><span class='line'><span class="n">UIGraphicsEndImageContext</span><span class="p">();</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
@@ -160,7 +159,7 @@
 
 <p>然后我又尝试了苹果提供的使用ImageIO进行缩小图片的方法：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -213,59 +212,60 @@
 <span class='line-number'>51</span>
 <span class='line-number'>52</span>
 <span class='line-number'>53</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>CGImageRef MyCreateThumbnailImageFromData (NSData * data, int imageSize)
-</span><span class='line'>{
-</span><span class='line'>    CGImageRef        myThumbnailImage = NULL;
-</span><span class='line'>    CGImageSourceRef  myImageSource;
-</span><span class='line'>    CFDictionaryRef   myOptions = NULL;
-</span><span class='line'>    CFStringRef       myKeys[3];
-</span><span class='line'>    CFTypeRef         myValues[3];
-</span><span class='line'>    CFNumberRef       thumbnailSize;
-</span><span class='line'>    
-</span><span class='line'>    // Create an image source from NSData; no options.
-</span><span class='line'>    myImageSource = CGImageSourceCreateWithData((CFDataRef)data,
-</span><span class='line'>                                                NULL);
-</span><span class='line'>    // Make sure the image source exists before continuing.
-</span><span class='line'>    if (myImageSource == NULL){
-</span><span class='line'>        fprintf(stderr, "Image source is NULL.");
-</span><span class='line'>        return  NULL;
-</span><span class='line'>    }
-</span><span class='line'>    
-</span><span class='line'>    // Package the integer as a  CFNumber object. Using CFTypes allows you
-</span><span class='line'>    // to more easily create the options dictionary later.
-</span><span class='line'>    thumbnailSize = CFNumberCreate(NULL, kCFNumberIntType, &imageSize);
-</span><span class='line'>    
-</span><span class='line'>    // Set up the thumbnail options.
-</span><span class='line'>    myKeys[0] = kCGImageSourceCreateThumbnailWithTransform;
-</span><span class='line'>    myValues[0] = (CFTypeRef)kCFBooleanTrue;
-</span><span class='line'>    myKeys[1] = kCGImageSourceCreateThumbnailFromImageIfAbsent;
-</span><span class='line'>    myValues[1] = (CFTypeRef)kCFBooleanTrue;
-</span><span class='line'>    myKeys[2] = kCGImageSourceThumbnailMaxPixelSize;
-</span><span class='line'>    myValues[2] = (CFTypeRef)thumbnailSize;
-</span><span class='line'>    
-</span><span class='line'>    myOptions = CFDictionaryCreate(NULL, (const void **) myKeys,
-</span><span class='line'>                                   (const void **) myValues, 2,
-</span><span class='line'>                                   &kCFTypeDictionaryKeyCallBacks,
-</span><span class='line'>                                   & kCFTypeDictionaryValueCallBacks);
-</span><span class='line'>    
-</span><span class='line'>    // Create the thumbnail image using the specified options.
-</span><span class='line'>    myThumbnailImage = CGImageSourceCreateThumbnailAtIndex(myImageSource,
-</span><span class='line'>                                                           0,
-</span><span class='line'>                                                           myOptions);
-</span><span class='line'>    // Release the options dictionary and the image source
-</span><span class='line'>    // when you no longer need them.
-</span><span class='line'>    CFRelease(thumbnailSize);
-</span><span class='line'>    CFRelease(myOptions);
-</span><span class='line'>    CFRelease(myImageSource);
-</span><span class='line'>    
-</span><span class='line'>    // Make sure the thumbnail image exists before continuing.
-</span><span class='line'>    if (myThumbnailImage == NULL){
-</span><span class='line'>        fprintf(stderr, "Thumbnail image not created from image source.");
-</span><span class='line'>        return NULL;
-</span><span class='line'>    }
-</span><span class='line'>    
-</span><span class='line'>    return myThumbnailImage;
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">CGImageRef</span> <span class="nf">MyCreateThumbnailImageFromData</span> <span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span> <span class="n">data</span><span class="p">,</span> <span class="kt">int</span> <span class="n">imageSize</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGImageRef</span>        <span class="n">myThumbnailImage</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGImageSourceRef</span>  <span class="n">myImageSource</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CFDictionaryRef</span>   <span class="n">myOptions</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CFStringRef</span>       <span class="n">myKeys</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">CFTypeRef</span>         <span class="n">myValues</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">CFNumberRef</span>       <span class="n">thumbnailSize</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Create an image source from NSData; no options.</span>
+</span><span class='line'>    <span class="n">myImageSource</span> <span class="o">=</span> <span class="n">CGImageSourceCreateWithData</span><span class="p">((</span><span class="n">CFDataRef</span><span class="p">)</span><span class="n">data</span><span class="p">,</span>
+</span><span class='line'>                                                <span class="nb">NULL</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// Make sure the image source exists before continuing.</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">myImageSource</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">){</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;Image source is NULL.&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span>  <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Package the integer as a  CFNumber object. Using CFTypes allows you</span>
+</span><span class='line'>    <span class="c1">// to more easily create the options dictionary later.</span>
+</span><span class='line'>    <span class="n">thumbnailSize</span> <span class="o">=</span> <span class="n">CFNumberCreate</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="n">kCFNumberIntType</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">imageSize</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Set up the thumbnail options.</span>
+</span><span class='line'>    <span class="n">myKeys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">kCGImageSourceCreateThumbnailWithTransform</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myValues</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">CFTypeRef</span><span class="p">)</span><span class="n">kCFBooleanTrue</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myKeys</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">kCGImageSourceCreateThumbnailFromImageIfAbsent</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myValues</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">CFTypeRef</span><span class="p">)</span><span class="n">kCFBooleanTrue</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myKeys</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">kCGImageSourceThumbnailMaxPixelSize</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myValues</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">CFTypeRef</span><span class="p">)</span><span class="n">thumbnailSize</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">myOptions</span> <span class="o">=</span> <span class="n">CFDictionaryCreate</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">**</span><span class="p">)</span> <span class="n">myKeys</span><span class="p">,</span>
+</span><span class='line'>                                   <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">**</span><span class="p">)</span> <span class="n">myValues</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span>
+</span><span class='line'>                                   <span class="o">&amp;</span><span class="n">kCFTypeDictionaryKeyCallBacks</span><span class="p">,</span>
+</span><span class='line'>                                   <span class="o">&amp;</span> <span class="n">kCFTypeDictionaryValueCallBacks</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Create the thumbnail image using the specified options.</span>
+</span><span class='line'>    <span class="n">myThumbnailImage</span> <span class="o">=</span> <span class="n">CGImageSourceCreateThumbnailAtIndex</span><span class="p">(</span><span class="n">myImageSource</span><span class="p">,</span>
+</span><span class='line'>                                                           <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>                                                           <span class="n">myOptions</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// Release the options dictionary and the image source</span>
+</span><span class='line'>    <span class="c1">// when you no longer need them.</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">thumbnailSize</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">myOptions</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">myImageSource</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Make sure the thumbnail image exists before continuing.</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">myThumbnailImage</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">){</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;Thumbnail image not created from image source.&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">myThumbnailImage</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>结果和使用UIGraphicsBeginImageContext一样，会有一个内存波峰。<br></p>
@@ -277,7 +277,7 @@
 
 <p>不过最终我还是采用了和安卓端一样的处理方法（考虑到后台以后会进行图片裁剪）。因为是针对所有显示图片的地方，所以我给UIImageView添加了一个分类来对图片大小进行限制：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -315,44 +315,45 @@
 <span class='line-number'>36</span>
 <span class='line-number'>37</span>
 <span class='line-number'>38</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>@implementation UIImageView (Extension)
-</span><span class='line'>+ (void)load
-</span><span class='line'>{
-</span><span class='line'>    static dispatch_once_t onceToken;
-</span><span class='line'>    dispatch_once(&onceToken, ^{
-</span><span class='line'>        Class class = [self class];
-</span><span class='line'>        
-</span><span class='line'>        SEL origionSel = @selector(setImage:);
-</span><span class='line'>        SEL swizzlingSel = @selector(bq_setImage:);
-</span><span class='line'>        Method origionMethod = class_getInstanceMethod(class, origionSel);
-</span><span class='line'>        Method swizzlingMethod = class_getInstanceMethod(class, swizzlingSel);
-</span><span class='line'>        
-</span><span class='line'>        BOOL hasAdded = class_addMethod(class, origionSel, method_getImplementation(swizzlingMethod), method_getTypeEncoding(swizzlingMethod));
-</span><span class='line'>        
-</span><span class='line'>        if (hasAdded) {
-</span><span class='line'>            class_replaceMethod(class, swizzlingSel, method_getImplementation(origionMethod), method_getTypeEncoding(origionMethod));
-</span><span class='line'>        } else {
-</span><span class='line'>            method_exchangeImplementations(origionMethod, swizzlingMethod);
-</span><span class='line'>        }
-</span><span class='line'>    });
-</span><span class='line'>}
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="bp">UIImageView</span> <span class="nl">(Extension)</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">load</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">onceToken</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">onceToken</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="kt">Class</span> <span class="k">class</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="k">class</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>- (void)bq_setImage:(UIImage *)image {
-</span><span class='line'>    CGFloat maxImageWH = 3000;
-</span><span class='line'>    if (image.size.width &gt; maxImageWH || image.size.height &gt; maxImageWH) {
-</span><span class='line'>        image = self.placeholder;
-</span><span class='line'>    }
-</span><span class='line'>    [self bq_setImage:image];
-</span><span class='line'>}
+</span><span class='line'>        <span class="kt">SEL</span> <span class="n">origionSel</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="nl">setImage</span><span class="p">:);</span>
+</span><span class='line'>        <span class="kt">SEL</span> <span class="n">swizzlingSel</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="nl">bq_setImage</span><span class="p">:);</span>
+</span><span class='line'>        <span class="n">Method</span> <span class="n">origionMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">origionSel</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">Method</span> <span class="n">swizzlingMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzlingSel</span><span class="p">);</span>
 </span><span class='line'>
-</span><span class='line'>- (void)setPlaceholder:(UIImage *)placeholder {
-</span><span class='line'>    objc_setAssociatedObject(self, @selector(placeholder), placeholder, OBJC_ASSOCIATION_RETAIN);
-</span><span class='line'>}
+</span><span class='line'>        <span class="kt">BOOL</span> <span class="n">hasAdded</span> <span class="o">=</span> <span class="n">class_addMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">origionSel</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">swizzlingMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">swizzlingMethod</span><span class="p">));</span>
 </span><span class='line'>
-</span><span class='line'>- (UIImage *)placeholder {
-</span><span class='line'>    return objc_getAssociatedObject(self, _cmd);
-</span><span class='line'>}
-</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">hasAdded</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">class_replaceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">swizzlingSel</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">));</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">origionMethod</span><span class="p">,</span> <span class="n">swizzlingMethod</span><span class="p">);</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">bq_setImage:</span><span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nv">image</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">CGFloat</span> <span class="n">maxImageWH</span> <span class="o">=</span> <span class="mi">3000</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">width</span> <span class="o">&gt;</span> <span class="n">maxImageWH</span> <span class="o">||</span> <span class="n">image</span><span class="p">.</span><span class="n">size</span><span class="p">.</span><span class="n">height</span> <span class="o">&gt;</span> <span class="n">maxImageWH</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">image</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">placeholder</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">bq_setImage</span><span class="p">:</span><span class="n">image</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setPlaceholder:</span><span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nv">placeholder</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">objc_setAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="k">@selector</span><span class="p">(</span><span class="n">placeholder</span><span class="p">),</span> <span class="n">placeholder</span><span class="p">,</span> <span class="n">OBJC_ASSOCIATION_RETAIN</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span><span class="p">)</span><span class="nf">placeholder</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">objc_getAssociatedObject</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">_cmd</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>在宽度或者高度可能超过3000的地方，提前设置placeholder，否则显示的将是一个空白UIImageView。<br>
@@ -360,7 +361,7 @@
 
 <h2>2016-9-12 新动态</h2>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -370,18 +371,16 @@
 <span class='line-number'>8</span>
 <span class='line-number'>9</span>
 <span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>
-</span><span class='line'>UIGraphicsBeginImageContext(size);
-</span><span class='line'>CGContextRef context = UIGraphicsGetCurrentContext();
-</span><span class='line'>CGContextClearRect(context, CGRectMake(0, 0, size.width, size.height));
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">UIGraphicsBeginImageContext</span><span class="p">(</span><span class="n">size</span><span class="p">);</span>
+</span><span class='line'><span class="n">CGContextRef</span> <span class="n">context</span> <span class="o">=</span> <span class="n">UIGraphicsGetCurrentContext</span><span class="p">();</span>
+</span><span class='line'><span class="n">CGContextClearRect</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="p">));</span>
 </span><span class='line'>
-</span><span class='line'>CGContextSetInterpolationQuality(context, 0.8);
+</span><span class='line'><span class="n">CGContextSetInterpolationQuality</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">);</span>
 </span><span class='line'>
-</span><span class='line'>[self drawInRect:drawRect blendMode:kCGBlendModeNormal alpha:1];
+</span><span class='line'><span class="p">[</span><span class="nb">self</span> <span class="nl">drawInRect</span><span class="p">:</span><span class="n">drawRect</span> <span class="nl">blendMode</span><span class="p">:</span><span class="n">kCGBlendModeNormal</span> <span class="nl">alpha</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-</span><span class='line'>UIGraphicsEndImageContext();
+</span><span class='line'><span class="bp">UIImage</span> <span class="o">*</span><span class="n">image</span> <span class="o">=</span> <span class="n">UIGraphicsGetImageFromCurrentImageContext</span><span class="p">();</span>
+</span><span class='line'><span class="n">UIGraphicsEndImageContext</span><span class="p">();</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
@@ -391,7 +390,7 @@
 
 <p>嗯，苹果提供的方法是可行的，下面代码创建字典的时候漏了一个限定图片大小的键值对。＝＝|</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -445,60 +444,61 @@
 <span class='line-number'>52</span>
 <span class='line-number'>53</span>
 <span class='line-number'>54</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>CGImageRef MyCreateThumbnailImageFromData (NSData * data, int imageSize)
-</span><span class='line'>{
-</span><span class='line'>    CGImageRef        myThumbnailImage = NULL;
-</span><span class='line'>    CGImageSourceRef  myImageSource;
-</span><span class='line'>    CFDictionaryRef   myOptions = NULL;
-</span><span class='line'>    CFStringRef       myKeys[3];
-</span><span class='line'>    CFTypeRef         myValues[3];
-</span><span class='line'>    CFNumberRef       thumbnailSize;
-</span><span class='line'>    
-</span><span class='line'>    // Create an image source from NSData; no options.
-</span><span class='line'>    myImageSource = CGImageSourceCreateWithData((CFDataRef)data,
-</span><span class='line'>                                                NULL);
-</span><span class='line'>    // Make sure the image source exists before continuing.
-</span><span class='line'>    if (myImageSource == NULL){
-</span><span class='line'>        fprintf(stderr, "Image source is NULL.");
-</span><span class='line'>        return  NULL;
-</span><span class='line'>    }
-</span><span class='line'>    
-</span><span class='line'>    // Package the integer as a  CFNumber object. Using CFTypes allows you
-</span><span class='line'>    // to more easily create the options dictionary later.
-</span><span class='line'>    thumbnailSize = CFNumberCreate(NULL, kCFNumberIntType, &imageSize);
-</span><span class='line'>    
-</span><span class='line'>    // Set up the thumbnail options.
-</span><span class='line'>    myKeys[0] = kCGImageSourceCreateThumbnailWithTransform;
-</span><span class='line'>    myValues[0] = (CFTypeRef)kCFBooleanTrue;
-</span><span class='line'>    myKeys[1] = kCGImageSourceCreateThumbnailFromImageIfAbsent;
-</span><span class='line'>    myValues[1] = (CFTypeRef)kCFBooleanTrue;
-</span><span class='line'>    myKeys[2] = kCGImageSourceThumbnailMaxPixelSize;
-</span><span class='line'>    myValues[2] = (CFTypeRef)thumbnailSize;
-</span><span class='line'>    
-</span><span class='line'>    // 就是这里，numValues应该是3，不是2。＝＝
-</span><span class='line'>    myOptions = CFDictionaryCreate(NULL, (const void **) myKeys,
-</span><span class='line'>                                   (const void **) myValues, 3,
-</span><span class='line'>                                   &kCFTypeDictionaryKeyCallBacks,
-</span><span class='line'>                                   & kCFTypeDictionaryValueCallBacks);
-</span><span class='line'>    
-</span><span class='line'>    // Create the thumbnail image using the specified options.
-</span><span class='line'>    myThumbnailImage = CGImageSourceCreateThumbnailAtIndex(myImageSource,
-</span><span class='line'>                                                           0,
-</span><span class='line'>                                                           myOptions);
-</span><span class='line'>    // Release the options dictionary and the image source
-</span><span class='line'>    // when you no longer need them.
-</span><span class='line'>    CFRelease(thumbnailSize);
-</span><span class='line'>    CFRelease(myOptions);
-</span><span class='line'>    CFRelease(myImageSource);
-</span><span class='line'>    
-</span><span class='line'>    // Make sure the thumbnail image exists before continuing.
-</span><span class='line'>    if (myThumbnailImage == NULL){
-</span><span class='line'>        fprintf(stderr, "Thumbnail image not created from image source.");
-</span><span class='line'>        return NULL;
-</span><span class='line'>    }
-</span><span class='line'>    
-</span><span class='line'>    return myThumbnailImage;
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">CGImageRef</span> <span class="nf">MyCreateThumbnailImageFromData</span> <span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span> <span class="n">data</span><span class="p">,</span> <span class="kt">int</span> <span class="n">imageSize</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">CGImageRef</span>        <span class="n">myThumbnailImage</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGImageSourceRef</span>  <span class="n">myImageSource</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CFDictionaryRef</span>   <span class="n">myOptions</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CFStringRef</span>       <span class="n">myKeys</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">CFTypeRef</span>         <span class="n">myValues</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">CFNumberRef</span>       <span class="n">thumbnailSize</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Create an image source from NSData; no options.</span>
+</span><span class='line'>    <span class="n">myImageSource</span> <span class="o">=</span> <span class="n">CGImageSourceCreateWithData</span><span class="p">((</span><span class="n">CFDataRef</span><span class="p">)</span><span class="n">data</span><span class="p">,</span>
+</span><span class='line'>                                                <span class="nb">NULL</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// Make sure the image source exists before continuing.</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">myImageSource</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">){</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;Image source is NULL.&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span>  <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Package the integer as a  CFNumber object. Using CFTypes allows you</span>
+</span><span class='line'>    <span class="c1">// to more easily create the options dictionary later.</span>
+</span><span class='line'>    <span class="n">thumbnailSize</span> <span class="o">=</span> <span class="n">CFNumberCreate</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="n">kCFNumberIntType</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">imageSize</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Set up the thumbnail options.</span>
+</span><span class='line'>    <span class="n">myKeys</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">kCGImageSourceCreateThumbnailWithTransform</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myValues</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">CFTypeRef</span><span class="p">)</span><span class="n">kCFBooleanTrue</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myKeys</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">kCGImageSourceCreateThumbnailFromImageIfAbsent</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myValues</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">CFTypeRef</span><span class="p">)</span><span class="n">kCFBooleanTrue</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myKeys</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">kCGImageSourceThumbnailMaxPixelSize</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">myValues</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">CFTypeRef</span><span class="p">)</span><span class="n">thumbnailSize</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 就是这里，numValues应该是3，不是2。＝＝</span>
+</span><span class='line'>    <span class="n">myOptions</span> <span class="o">=</span> <span class="n">CFDictionaryCreate</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">**</span><span class="p">)</span> <span class="n">myKeys</span><span class="p">,</span>
+</span><span class='line'>                                   <span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">**</span><span class="p">)</span> <span class="n">myValues</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span>
+</span><span class='line'>                                   <span class="o">&amp;</span><span class="n">kCFTypeDictionaryKeyCallBacks</span><span class="p">,</span>
+</span><span class='line'>                                   <span class="o">&amp;</span> <span class="n">kCFTypeDictionaryValueCallBacks</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Create the thumbnail image using the specified options.</span>
+</span><span class='line'>    <span class="n">myThumbnailImage</span> <span class="o">=</span> <span class="n">CGImageSourceCreateThumbnailAtIndex</span><span class="p">(</span><span class="n">myImageSource</span><span class="p">,</span>
+</span><span class='line'>                                                           <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>                                                           <span class="n">myOptions</span><span class="p">);</span>
+</span><span class='line'>    <span class="c1">// Release the options dictionary and the image source</span>
+</span><span class='line'>    <span class="c1">// when you no longer need them.</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">thumbnailSize</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">myOptions</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">myImageSource</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Make sure the thumbnail image exists before continuing.</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">myThumbnailImage</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">){</span>
+</span><span class='line'>        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&quot;Thumbnail image not created from image source.&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">myThumbnailImage</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>还有一篇关于这个的文章<a href="http://pulkitgoyal.in/resizing-high-resolution-images-on-ios-without-memory-issues/">resizing-high-resolution-images-on-ios-without-memory-issues</a>。</p>
