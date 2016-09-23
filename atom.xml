@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-09-23T14:01:52+08:00</updated>
+  <updated>2016-09-23T14:18:35+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -4331,6 +4331,37 @@ Connect报文的可变报头中分为四个部分:协议名，协议级别，连
 <li>需要在不解码的情况下对图片进行缩放</li>
 <li>ImageIO的ImageSource可以满足这一点，不解码并可以缩放</li>
 </ul>
+
+
+<p>代码差不多是这样：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">CGImageRef</span> <span class="nf">thumbnailImageWithData</span><span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span><span class="n">data</span><span class="p">,</span> <span class="bp">NSInteger</span> <span class="n">imageSize</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">CGImageSourceRef</span> <span class="n">imageSource</span> <span class="o">=</span> <span class="n">CGImageSourceCreateWithData</span><span class="p">((</span><span class="n">CFDataRef</span><span class="p">)</span><span class="n">data</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CFDictionaryRef</span> <span class="n">options</span> <span class="o">=</span>
+</span><span class='line'>        <span class="p">(</span><span class="k">__bridge</span> <span class="n">CFDictionaryRef</span><span class="p">)</span> <span class="l">@{</span>
+</span><span class='line'>                                     <span class="p">(</span><span class="kt">id</span><span class="p">)</span> <span class="nl">kCGImageSourceCreateThumbnailWithTransform</span> <span class="p">:</span> <span class="m">@YES</span><span class="p">,</span>
+</span><span class='line'>                                     <span class="p">(</span><span class="kt">id</span><span class="p">)</span> <span class="nl">kCGImageSourceCreateThumbnailFromImageAlways</span> <span class="p">:</span> <span class="m">@YES</span><span class="p">,</span>
+</span><span class='line'>                                     <span class="p">(</span><span class="kt">id</span><span class="p">)</span> <span class="nl">kCGImageSourceThumbnailMaxPixelSize</span> <span class="p">:</span> <span class="l">@(</span><span class="n">imageSize</span><span class="l">)</span>
+</span><span class='line'>                                     <span class="l">}</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">CGImageRef</span> <span class="n">thumbnail</span> <span class="o">=</span> <span class="n">CGImageSourceCreateThumbnailAtIndex</span><span class="p">(</span><span class="n">imageSource</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">options</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">CFRelease</span><span class="p">(</span><span class="n">imageSource</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">thumbnail</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>这样的话，最终的解决方案差不多可以是这样的：</p>
