@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-09-23T14:21:44+08:00</updated>
+  <updated>2016-09-25T15:21:18+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,68 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[iOS知识碎片七]]></title>
+    <link href="http://triplecc.github.io/blog/2016-09-24-ioszhi-shi-sui-pian-qi/"/>
+    <updated>2016-09-24T10:43:37+08:00</updated>
+    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-qi</id>
+    <content type="html"><![CDATA[<p>1、Xcode8日志及Pod的Swift3.0问题</p>
+
+<!--more-->
+
+
+<h2>Xcode8日志及Pod的Swift3.0问题</h2>
+
+<p>目前的Xcode8会打印多余的日志，需要进入对应scheme中的enviroment variables设置下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>OS_ACTIVITY_MODE    disable</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Pod更新Swift三方库后编译，会出现转换语法的错误，需要在podfile中添加以下语句再更新：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>post_install do |installer|
+</span><span class='line'>    installer.pods_project.targets.each do |target|
+</span><span class='line'>        target.build_configurations.each do |config|
+</span><span class='line'>            config.build_settings['SWIFT_VERSION'] = '3.0'
+</span><span class='line'>            config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
+</span><span class='line'>        end
+</span><span class='line'>    end
+</span><span class='line'>end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果还想使用2.3的话：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>post_install do |installer|
+</span><span class='line'>  installer.pods_project.targets.each do |target|
+</span><span class='line'>    target.build_configurations.each do |config|
+</span><span class='line'>      config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
+</span><span class='line'>      #### IT IS IMPORTANT TO SET IT TO 2.3
+</span><span class='line'>      config.build_settings['SWIFT_VERSION'] = '2.3' 
+</span><span class='line'>    end
+</span><span class='line'>  end
+</span><span class='line'>end</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[利用策略模式增强图片浏览器的扩展性]]></title>
@@ -1496,6 +1558,29 @@ TBVImageBrowser遵循了一个原则：使用者应该知道自己如何得到�
 <p>一个很明显的问题是使用了RAC的版本后，相册选择器滚动的性能会下降，没有以前通过回调来的顺畅。如果稍微快速一点滚动的话，CPU很容易就上100%。</p>
 
 <p>可能是使用RAC的方式不是很正确造成的，后续尽可能优化这一块。</p>
+
+<h2>2016-9-25补充</h2>
+
+<p>关于grid界面卡顿的原因:<br>
+因为这个界面的cell非常多，如果快速滚动时不对获取图片的信号进行throttle，那么CPU的占用率就会很高，从而界面就会变得卡顿。<br>
+在这里设置throttle为0.05左右就可以使界面变得比较顺畅，并且不会有太大的刷新延迟以至于影响用户体验。如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">RAC</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">contentImageView</span><span class="p">.</span><span class="n">image</span><span class="p">)</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">viewModel</span><span class="p">.</span><span class="n">contentImageSignal</span>
+</span><span class='line'>        <span class="nl">throttle</span><span class="p">:</span><span class="mf">0.05</span><span class="p">]</span>
+</span><span class='line'>        <span class="nl">takeUntil</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">rac_prepareForReuseSignal</span><span class="p">]</span>
+</span><span class='line'>        <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="n">RACTuple</span> <span class="o">*</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="p">[</span><span class="n">value</span> <span class="n">first</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
 ]]></content>
   </entry>
   
@@ -6529,225 +6614,6 @@ AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/
 
 
 <p>然后就可以正常使用博客了。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[iOS知识碎片二]]></title>
-    <link href="http://triplecc.github.io/blog/2015-09-30-ioszhi-shi-sui-pian-er/"/>
-    <updated>2015-09-30T23:08:45+08:00</updated>
-    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-er</id>
-    <content type="html"><![CDATA[<p>1、UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题<br>
-2、高德、百度地图定位不准确问题<br>
-3、tableView在Group模式下section从1开始<br>
-4、UIActionSheet和UIAlertView出现边角抖动情况<br>
-5、WKWebView开启新页面时无法跳转</p>
-
-<!--more-->
-
-
-<h2>UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题</h2>
-
-<p>今天解决了一个奇怪的问题。老代码使用UITableView来进行类似网易新闻首页的TitleIndex的切换（UITableView旋转90度，cell也相应旋转，主要说是因为这样不用计算contentSize；个人比较喜欢直接用UIScrollView或者UICollectionView），然后会存在一个奇怪的bug：<br></p>
-
-<p>当drag到顶部或者底部时，再drag一次或以上，然后点击对应的cell，会出现第一次点击没有效果（cell使用touchBegin可以捕获到），第二次才调用tableView: didSelectRowAtIndexPath:的情况。<br></p>
-
-<p>找了一下午，也在stackoverflow上找了一些答案，但是大都是说UIScrollView和UITableView混用造成，而且问题现象也有点区别。<br></p>
-
-<p>后来发现是因为设计了一个属性：bounces，UITableView设置了这个属性之后，就会出现以上现象，以下就是下午的DEMO：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">viewDidLoad</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">super</span> <span class="n">viewDidLoad</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="bp">UITableView</span> <span class="o">*</span><span class="n">tableView</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableView</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">500</span><span class="p">)];</span>
-</span><span class='line'>    <span class="n">tableView</span><span class="p">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">tableView</span><span class="p">.</span><span class="n">dataSource</span> <span class="o">=</span> <span class="nb">self</span><span class="p">;</span>
-</span><span class='line'>    <span class="c1">// 就是因为这一句</span>
-</span><span class='line'>    <span class="n">tableView</span><span class="p">.</span><span class="n">bounces</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">view</span> <span class="nl">addSubview</span><span class="p">:</span><span class="n">tableView</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">numberOfRowsInSection:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">section</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="mi">15</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">UITableViewCell</span> <span class="o">*</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">cellForRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">static</span> <span class="bp">NSInteger</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="bp">UITableViewCell</span> <span class="o">*</span><span class="n">cell</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">UITableViewCell</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithStyle</span><span class="p">:</span><span class="n">UITableViewCellStyleDefault</span> <span class="nl">reuseIdentifier</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">selectionStyle</span> <span class="o">=</span> <span class="n">UITableViewCellSelectionStyleNone</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">cell</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%ld&quot;</span><span class="p">,</span> <span class="n">i</span><span class="o">++</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">cell</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">tableView:</span><span class="p">(</span><span class="bp">UITableView</span> <span class="o">*</span><span class="p">)</span><span class="nv">tableView</span> <span class="nf">didSelectRowAtIndexPath:</span><span class="p">(</span><span class="bp">NSIndexPath</span> <span class="o">*</span><span class="p">)</span><span class="nv">indexPath</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%zd&quot;</span><span class="p">,</span> <span class="n">indexPath</span><span class="p">.</span><span class="n">row</span><span class="p">);</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果设置bounces为NO，就会出现上面所说的bug。去除的话就会出现两边有弹性的情况。所以解决方案有以下几种：<br></p>
-
-<ol>
-<li>更改方案，不用UITableView，改用UICollection、UIScrollView<br></li>
-<li>在cell中设置tap手势，点击时使用代理传出，然后进行手动调用<br></li>
-<li>接受有弹性的情况</li>
-</ol>
-
-
-<p>最后我采用的情况3，因为最方便，也不会造成大影响～～</p>
-
-<h2>高德、百度地图定位不准确问题</h2>
-
-<p>APP中需要向百度和高德传递一个目的地坐标，但是发现百度和高德的定位坐标都是不准确的Bug，只有苹果自带地图才是正确的。然后搜索了下得知关于<code>火星坐标</code>、<code>地球坐标</code>、<code>百度坐标</code>的一些信息。<br></p>
-
-<p>原先不知道后台传递过来的是火星坐标还是地球坐标，所以先将后台传递的坐标给打印出来，并且在网页高德地图中输入打印的坐标，然后和网页地图中搜索对应的地址相对比，发现基本无偏差，所以确认后台传递过来的是火星地图（高德地图用的火星坐标）<br></p>
-
-<p>然后就是百度地图了，因为就使用一个地图坐标转换的功能，所以不想引入整个百度SDK。上网搜了下对应的坐标转换算法，如下：<br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">const</span> <span class="kt">double</span> <span class="n">x_pi</span> <span class="o">=</span> <span class="mf">3.14159265358979324</span> <span class="o">*</span> <span class="mf">3000.0</span> <span class="o">/</span> <span class="mf">180.0</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="kt">void</span> <span class="nf">bd_encrypt</span><span class="p">(</span><span class="kt">double</span> <span class="n">gg_lat</span><span class="p">,</span> <span class="kt">double</span> <span class="n">gg_lon</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">bd_lat</span><span class="p">,</span> <span class="kt">double</span> <span class="o">*</span><span class="n">bd_lon</span><span class="p">)</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="kt">double</span> <span class="n">x</span> <span class="o">=</span> <span class="n">gg_lon</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">gg_lat</span><span class="p">;</span>
-</span><span class='line'>    <span class="kt">double</span> <span class="n">z</span> <span class="o">=</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">y</span> <span class="o">*</span> <span class="n">y</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.00002</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">y</span> <span class="o">*</span> <span class="n">x_pi</span><span class="p">);</span>
-</span><span class='line'>    <span class="kt">double</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">atan2</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.000003</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x_pi</span><span class="p">);</span>
-</span><span class='line'>    <span class="o">*</span><span class="n">bd_lon</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="n">cos</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.0065</span><span class="p">;</span>
-</span><span class='line'>    <span class="o">*</span><span class="n">bd_lat</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="n">sin</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.006</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这是从火星坐标转换到百度坐标的函数（作者从百度SDK中逆向出来的代码）。<br></p>
-
-<p>将后台传送的坐标通过如上函数的转换，就可以在百度地图APP中精确地进行显示了。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">urlString</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;baidumap://map/direction?origin=latlng:%lf,%lf|name:我的位置&amp;destination=latlng:%f,%f|name:%@&amp;mode=driving&quot;</span><span class="p">,</span> <span class="n">location</span><span class="p">.</span><span class="n">coordinate</span><span class="p">.</span><span class="n">latitude</span><span class="p">,</span> <span class="n">location</span><span class="p">.</span><span class="n">coordinate</span><span class="p">.</span><span class="n">longitude</span><span class="p">,</span> <span class="n">bdlat</span><span class="p">,</span> <span class="n">bdlon</span><span class="p">,</span> <span class="n">title</span><span class="p">]</span> <span class="nl">stringByAddingPercentEscapesUsingEncoding</span><span class="p">:</span><span class="n">NSUTF8StringEncoding</span><span class="p">];</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">UIApplication</span> <span class="n">sharedApplication</span><span class="p">]</span> <span class="nl">openURL</span><span class="p">:[</span><span class="bp">NSURL</span> <span class="nl">URLWithString</span><span class="p">:</span><span class="n">urlString</span><span class="p">]];</span><span class="err">`</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>但是发现高德地图还是显示不正确，然后查看了高德地图的API文档，发现是老代码有一个参数传错了：dev=0，原来传的是1，表示再进行一次国测转换（如果传的是地球坐标，那么这里传1）。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">urlString</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;iosamap://navi?sourceApplication=%@&amp;backScheme=%@&amp;poiname=%@&amp;lat=%lf&amp;lon=%lf&amp;dev=0&amp;style=2&quot;</span><span class="p">,</span> <span class="s">@&quot;FANCY&quot;</span><span class="p">,</span> <span class="s">@&quot;mudlab-manhattan&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lng</span><span class="p">]</span> <span class="nl">stringByAddingPercentEscapesUsingEncoding</span><span class="p">:</span><span class="n">NSUTF8StringEncoding</span><span class="p">];</span>
-</span><span class='line'><span class="p">[[</span><span class="bp">UIApplication</span> <span class="n">sharedApplication</span><span class="p">]</span> <span class="nl">openURL</span><span class="p">:[</span><span class="bp">NSURL</span> <span class="nl">URLWithString</span><span class="p">:</span><span class="n">urlString</span><span class="p">]];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以下是相应资料：</p>
-
-<p><a href="http://blog.csdn.net/coolypf/article/details/8569813">火星坐标系 (GCJ-02) 与百度坐标系 (BD-09) 的转换算法</a></p>
-
-<p><a href="http://blog.csdn.net/zhaoxy_thu/article/details/17033347">Objective-C上地球坐标系到火星坐标系转换算法</a></p>
-
-<p><a href="http://blog.csdn.net/jiajiayouba/article/details/25140967">iOS 火星坐标相关整理及解决方案汇总</a></p>
-
-<p>相关地图拾取器：</p>
-
-<p><a href="http://api.map.baidu.com/lbsapi/getpoint/index.html">百度</a>
-<a href="http://lbs.amap.com/console/show/picker">高德</a>
-<a href="https://www.google.com/maps">google</a></p>
-
-<p>地图客户端url跳转:</p>
-
-<p><a href="https://developer.apple.com/library/ios/featuredarticles/iPhoneURLScheme_Reference/MapLinks/MapLinks.html">苹果</a>
-<a href="http://lbsyun.baidu.com/index.php?title=uri/api/ios">百度</a>
-<a href="http://lbs.amap.com/api/uri-api/ios-uri-explain/">高德</a></p>
-
-<p>url跳转资料:</p>
-
-<p><a href="http://adad184.com/2015/08/11/practice-in-mapview-navigation-with-URI/">URI跳转方式地图导航的代码实践</a></p>
-
-<h2>tableView在Group模式下section从1开始</h2>
-
-<p>在设置sectionHeaderHeight为固定值后，发现viewForHeaderInSection是从section为1开始的，很疑惑，然后google了下原因，stackoverflow上已经有了答案：<a href="http://stackoverflow.com/questions/18932476/in-ios-7-viewforheaderinsection-section-is-starting-from-1-not-from-0">解决方案</a></p>
-
-<p>还有手册中对于这个方法的说明：
-<img src="http://triplecc.github.io/images/Snip20151118_2.png" alt="" /></p>
-
-<h2>UIActionSheet和UIAlertView出现边角抖动情况</h2>
-
-<p>如下情况：</p>
-
-<p><img src="http://triplecc.github.io/images/2015-11-19.gif" alt="" /></p>
-
-<p>被这个问题困扰了很久，因为在iOS7和iOS8中，现象都没那么明显，所以忽略了，但是在iOS9中就特别明显，虽然不影响用户的正常使用，优先级并不高，但总归是需要解决的bug。在stackoverflow询问后之后，很久才有人回复，原因是<code>UIViewEdgeAntialiasing</code>，如果有设置过这个字段为true，就会出现这样的问题，所以只要把它设置为false即可。<a href="http://stackoverflow.com/questions/19960108/renders-with-edge-antialiasing-causes-delay-in-uialertview-in-ios-7">更多解释</a></p>
-
-<h2>WKWebView开启新页面时无法跳转</h2>
-
-<p>使用WKWebView发现某些界面无法跳转，然后试了下UIWebView是可以的，使用浏览器打开，发现是打开一个新界面。于是就去google了下，发现了以下解决方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">webView</span><span class="p">.</span><span class="n">UIDelegate</span> <span class="o">=</span> <span class="nb">self</span>
-</span><span class='line'>
-</span><span class='line'>
-</span><span class='line'><span class="n">func</span> <span class="n">webView</span><span class="p">(</span><span class="nl">webView</span><span class="p">:</span> <span class="n">WKWebView</span><span class="p">,</span> <span class="n">createWebViewWithConfiguration</span> <span class="nl">configuration</span><span class="p">:</span> <span class="n">WKWebViewConfiguration</span><span class="p">,</span> <span class="n">forNavigationAction</span> <span class="nl">navigationAction</span><span class="p">:</span> <span class="n">WKNavigationAction</span><span class="p">,</span> <span class="nl">windowFeatures</span><span class="p">:</span> <span class="n">WKWindowFeatures</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WKWebView</span><span class="o">?</span> <span class="p">{</span>
-</span><span class='line'>  <span class="k">if</span> <span class="n">navigationAction</span><span class="p">.</span><span class="n">targetFrame</span><span class="o">?</span><span class="p">.</span><span class="n">mainFrame</span> <span class="o">??</span> <span class="nb">true</span> <span class="p">{</span>
-</span><span class='line'>      <span class="n">webView</span><span class="p">.</span><span class="n">loadRequest</span><span class="p">(</span><span class="n">navigationAction</span><span class="p">.</span><span class="n">request</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">}</span>
-</span><span class='line'>  <span class="k">return</span> <span class="nb">nil</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这是swift版本的，对应的<a href="http://stackoverflow.com/questions/25713069/why-is-wkwebview-not-opening-links-with-target-blank">stackoverflow上的回答</a></p>
 ]]></content>
   </entry>
   

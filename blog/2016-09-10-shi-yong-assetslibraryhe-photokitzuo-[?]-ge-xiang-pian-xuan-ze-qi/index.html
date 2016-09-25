@@ -1256,6 +1256,29 @@
 <p>一个很明显的问题是使用了RAC的版本后，相册选择器滚动的性能会下降，没有以前通过回调来的顺畅。如果稍微快速一点滚动的话，CPU很容易就上100%。</p>
 
 <p>可能是使用RAC的方式不是很正确造成的，后续尽可能优化这一块。</p>
+
+<h2>2016-9-25补充</h2>
+
+<p>关于grid界面卡顿的原因:<br>
+因为这个界面的cell非常多，如果快速滚动时不对获取图片的信号进行throttle，那么CPU的占用率就会很高，从而界面就会变得卡顿。<br>
+在这里设置throttle为0.05左右就可以使界面变得比较顺畅，并且不会有太大的刷新延迟以至于影响用户体验。如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">RAC</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">contentImageView</span><span class="p">.</span><span class="n">image</span><span class="p">)</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">viewModel</span><span class="p">.</span><span class="n">contentImageSignal</span>
+</span><span class='line'>        <span class="nl">throttle</span><span class="p">:</span><span class="mf">0.05</span><span class="p">]</span>
+</span><span class='line'>        <span class="nl">takeUntil</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">rac_prepareForReuseSignal</span><span class="p">]</span>
+</span><span class='line'>        <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="n">RACTuple</span> <span class="o">*</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="p">[</span><span class="n">value</span> <span class="n">first</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
 </div>
 
 
@@ -1311,6 +1334,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016-09-24-ioszhi-shi-sui-pian-qi/">iOS知识碎片七</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/">利用策略模式增强图片浏览器的扩展性</a>
       </li>
     
@@ -1324,10 +1351,6 @@
     
       <li class="post">
         <a href="/blog/2016-06-05-yymodelyue-du-xiao-ji/">YYModel阅读小记</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-05-12-mqttshi-yong-xiao-ji/">MQTT使用小记</a>
       </li>
     
   </ul>
