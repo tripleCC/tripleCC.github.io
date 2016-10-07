@@ -739,65 +739,6 @@ BehaviorSubject会在订阅者订阅时，发送一个最近或初始数据，�
 </ul>
 
 
-<hr />
-
-<h3>RxSwift实现初探</h3>
-
-<p>和ReactiveCocoa的实现类似，RxSwift也是通过不停地订阅上游的Observable来实现数据的流动。<br>
-Rx操作大体分为两种：</p>
-
-<ul>
-<li>创建: create、just、of、from等</li>
-<li>处理: map、flatMap、do等</li>
-</ul>
-
-
-<p>接下来通过下面的操作来简单分析下代码执行过程：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Observable</span><span class="p">.</span><span class="n">just</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="err">$</span><span class="mi">0</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="nl">onNext</span><span class="p">:</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">print</span><span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">)</span>
-</span><span class='line'><span class="p">})</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以下是执行过程中创建实例的过程:</p>
-
-<ul>
-<li>just操作创建Just实例（Just类是一个Observable）</li>
-<li>map操作创建Map实例，Map实例保存了上游的Observable，这里是Just（Map类是一个Observable）</li>
-<li>Map实例的subscribe操作创建了AnonymousObserver实例（AnonymousObserver是一个Observer）</li>
-</ul>
-
-
-<p>以下是执行Map实例的subscribe后代码执行过程：</p>
-
-<ul>
-<li>AnonymousObserver通过Map实例的subscribeSafe方法订阅了Map实例</li>
-<li>Map实例通过subscribe方法间接调用了自身的run方法</li>
-<li>run方法创建了MapSink实例，MapSink保存了下游的Observer（MapSink是一个Observer）；同时run方法让MapSink订阅Map实例保存的上游Observable，即Just。</li>
-<li>Just执行subscribe方法，在其中直接调用<code>observer.on(.next(_element))</code>向下游的Observer，即MapSink发送消息</li>
-<li>MapSink接收到消息进行处理，并向下游的Observer发送消息，及AnonymousObserver</li>
-<li>AnonymousObserver执行最终处理</li>
-</ul>
-
-
-<p>上面就是Rx操作执行过程的全部内容，可以总结两点：</p>
-
-<ul>
-<li>创建操作的subscribe方法会直接向下游Observer发送消息</li>
-<li>处理操作一般会创建两个实例，一个是Observable，一个是Observer。Observable让下游Observer可以进行订阅，而Observer则订阅上游的Observable</li>
-</ul>
-
-
-<hr />
-
 <h3>参考</h3>
 
 <p><a href="http://www.introtorx.com/Content/v1.0.10621.0/11_AdvancedErrorHandling.html#Using">.Net中关于Using的例子</a><br>
@@ -864,15 +805,15 @@ Rx操作大体分为两种：</p>
       </li>
     
       <li class="post">
+        <a href="/blog/2016-10-01-rxswiftshi-xian-chu-tan/">RxSwift实现初探</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016-09-24-ioszhi-shi-sui-pian-qi/">iOS知识碎片七</a>
       </li>
     
       <li class="post">
         <a href="/blog/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/">利用策略模式增强图片浏览器的扩展性</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-%5B%3F%5D-ge-xiang-pian-xuan-ze-qi/">使用AssetsLibrary和PhotoKit做一个简易的相片选择器</a>
       </li>
     
   </ul>

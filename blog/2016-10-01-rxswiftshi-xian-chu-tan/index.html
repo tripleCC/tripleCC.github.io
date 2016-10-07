@@ -5,12 +5,17 @@
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>iOS知识碎片七 - tripleCC的技术博客</title>
+  <title>RxSwift实现初探 - tripleCC的技术博客</title>
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1、Xcode8日志及Pod的Swift3.0问题 Xcode8日志及Pod的Swift3.0问题 目前的Xcode8会打印多余的日志，需要进入对应scheme中的enviroment variables设置下： 1
-OS_ACTIVITY_MODE disable &hellip;">
+  <meta name="description" content="和ReactiveCocoa的实现类似，RxSwift也是通过不停地订阅上游的Observable来实现数据的流动。
+Rx操作大体分为两种： 创建: create、just、of、from等
+处理: map、flatMap、do等 接下来通过下面的操作来简单分析下代码执行过程： 1
+2
+3
+4
+5 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -19,7 +24,7 @@ OS_ACTIVITY_MODE disable &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://triplecc.github.io/blog/2016-09-24-ioszhi-shi-sui-pian-qi/">
+  <link rel="canonical" href="http://triplecc.github.io/blog/2016-10-01-rxswiftshi-xian-chu-tan/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
   <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
@@ -69,7 +74,7 @@ OS_ACTIVITY_MODE disable &hellip;">
   
   <header>
     
-      <h1 class="entry-title">iOS知识碎片七</h1>
+      <h1 class="entry-title">RxSwift实现初探</h1>
     
     
       <p class="meta">
@@ -78,67 +83,75 @@ OS_ACTIVITY_MODE disable &hellip;">
 
 
 
-<time class='entry-date' datetime='2016-09-24T10:43:37+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>10:43 am</span></time>
+<time class='entry-date' datetime='2016-10-01T16:08:36+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2016</span></span> <span class='time'>4:08 pm</span></time>
         
       </p>
     
   </header>
 
 
-<div class="entry-content"><p>1、Xcode8日志及Pod的Swift3.0问题</p>
+<div class="entry-content"><p>和ReactiveCocoa的实现类似，RxSwift也是通过不停地订阅上游的Observable来实现数据的流动。<br>
+Rx操作大体分为两种：</p>
 
-<!--more-->
-
-
-<h2>Xcode8日志及Pod的Swift3.0问题</h2>
-
-<p>目前的Xcode8会打印多余的日志，需要进入对应scheme中的enviroment variables设置下：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>OS_ACTIVITY_MODE    disable</span></code></pre></td></tr></table></div></figure>
+<ul>
+<li>创建: create、just、of、from等</li>
+<li>处理: map、flatMap、do等</li>
+</ul>
 
 
-<p>Pod更新Swift三方库后编译，会出现转换语法的错误，需要在podfile中添加以下语句再更新：</p>
+<p>接下来通过下面的操作来简单分析下代码执行过程：</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>post_install do |installer|
-</span><span class='line'>    installer.pods_project.targets.each do |target|
-</span><span class='line'>        target.build_configurations.each do |config|
-</span><span class='line'>            config.build_settings['SWIFT_VERSION'] = '3.0'
-</span><span class='line'>            config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
-</span><span class='line'>        end
-</span><span class='line'>    end
-</span><span class='line'>end</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>let _ = Observable.just(1)
+</span><span class='line'>    .map { $0 }
+</span><span class='line'>    .subscribe(onNext: {
+</span><span class='line'>    print($0)
+</span><span class='line'>})</span></code></pre></td></tr></table></div></figure>
 
 
-<p>如果还想使用2.3的话：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>post_install do |installer|
-</span><span class='line'>  installer.pods_project.targets.each do |target|
-</span><span class='line'>    target.build_configurations.each do |config|
-</span><span class='line'>      config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
-</span><span class='line'>      #### IT IS IMPORTANT TO SET IT TO 2.3
-</span><span class='line'>      config.build_settings['SWIFT_VERSION'] = '2.3' 
-</span><span class='line'>    end
-</span><span class='line'>  end
-</span><span class='line'>end</span></code></pre></td></tr></table></div></figure>
 
+<!--More-->
+
+
+<p>以下是执行过程中创建实例的过程:</p>
+
+<ul>
+<li>just操作创建Just实例（Just类是一个Observable）</li>
+<li>map操作创建Map实例，Map实例保存了上游的Observable，这里是Just（Map类是一个Observable）</li>
+<li>Map实例的subscribe操作创建了AnonymousObserver实例（AnonymousObserver是一个Observer）</li>
+</ul>
+
+
+<p>以下是执行Map实例的subscribe后代码执行过程：</p>
+
+<ul>
+<li>AnonymousObserver通过Map实例的subscribeSafe方法订阅了Map实例</li>
+<li>Map实例通过subscribe方法间接调用了自身的run方法</li>
+<li>run方法创建了MapSink实例，MapSink保存了下游的Observer（MapSink是一个Observer）；同时run方法让MapSink订阅Map实例保存的上游Observable，即Just。</li>
+<li>Just执行subscribe方法，在其中直接调用<code>observer.on(.next(_element))</code>向下游的Observer，即MapSink发送消息</li>
+<li>MapSink接收到消息进行处理，并向下游的Observer发送消息，及AnonymousObserver</li>
+<li>AnonymousObserver执行最终处理</li>
+</ul>
+
+
+<p>上面就是Rx操作执行过程的全部内容，可以总结两点：</p>
+
+<ul>
+<li>创建操作的subscribe方法会直接向下游Observer发送消息</li>
+<li>处理操作一般会创建两个实例，一个是Observable，一个是Observer。Observable让下游Observer可以进行订阅，而Observer则订阅上游的Observable</li>
+</ul>
+
+
+<hr />
+
+<h3>参考</h3>
+
+<p><a href="http://tech.meituan.com/RACSignalSubscription.html">RACSignal的Subscription深入分析</a></p>
 </div>
 
 
@@ -154,7 +167,7 @@ OS_ACTIVITY_MODE disable &hellip;">
 
 
 
-<time class='entry-date' datetime='2016-09-24T10:43:37+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>24</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>10:43 am</span></time>
+<time class='entry-date' datetime='2016-10-01T16:08:36+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>1</span><span class='date-suffix'>st</span>, <span class='date-year'>2016</span></span> <span class='time'>4:08 pm</span></time>
       
 
 
@@ -169,10 +182,10 @@ OS_ACTIVITY_MODE disable &hellip;">
     
     <p class="meta">
       
-        <a class="basic-alignment left" href="/blog/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/" title="Previous Post: 利用策略模式增强图片浏览器的扩展性">&laquo; 利用策略模式增强图片浏览器的扩展性</a>
+        <a class="basic-alignment left" href="/blog/2016-09-24-ioszhi-shi-sui-pian-qi/" title="Previous Post: iOS知识碎片七">&laquo; iOS知识碎片七</a>
       
       
-        <a class="basic-alignment right" href="/blog/2016-10-01-rxswiftshi-xian-chu-tan/" title="Next Post: RxSwift实现初探">RxSwift实现初探 &raquo;</a>
+        <a class="basic-alignment right" href="/blog/2016-10-03-guan-yu-rxswiftzhong-de-disposebag/" title="Next Post: 关于RxSwift中的DisposeBag">关于RxSwift中的DisposeBag &raquo;</a>
       
     </p>
   </footer>
