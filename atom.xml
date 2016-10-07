@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-10-06T23:07:48+08:00</updated>
+  <updated>2016-10-07T15:54:04+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,720 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[RxSwift中Using的应用]]></title>
+    <link href="http://triplecc.github.io/blog/2016-10-06-rxswiftzhong-usingde-ying-yong/"/>
+    <updated>2016-10-06T23:22:34+08:00</updated>
+    <id>http://triplecc.github.io/blog/rxswiftzhong-usingde-ying-yong</id>
+    <content type="html"><![CDATA[<p><code>create a disposable resource that has the same lifespan as the Observable</code>，即创建一个和Observable具有相同生命周期的disposable资源。<br>
+这是ReactiveX对于Using的描述。</p>
+
+<p><img src="./images/2016-10-06-using.png" alt="" /></p>
+
+<p>可以看出，当一个ObserverA订阅Using返回的Observable时，Using会使用调用者传入的Resource工厂方法[resourceFactory]创建对应的资源，并且使用Observable工厂方法[observableFactory]创建ObserverA实际上想要订阅的Observable。当ObserverA终止时，对应的Resource也会被释放[dispose]。</p>
+
+<p>下面是一个简单的例子：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="nl">MyDisposables</span><span class="p">:</span> <span class="n">Disposable</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">func</span> <span class="n">dispose</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">print</span><span class="p">(</span><span class="s">&quot;dispose&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">......</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Observable</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">using</span><span class="p">({</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MyDisposables</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">MyDisposables</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">})</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">Int</span><span class="o">&gt;</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">interval</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nl">scheduler</span><span class="p">:</span> <span class="n">MainScheduler</span><span class="p">.</span><span class="n">instance</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">take</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="nl">onNext</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">print</span><span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>代码段对应的输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="mi">0</span>
+</span><span class='line'><span class="mi">1</span>
+</span><span class='line'><span class="mi">2</span>
+</span><span class='line'><span class="mi">3</span>
+</span><span class='line'><span class="mi">4</span>
+</span><span class='line'><span class="n">dispose</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，当AnonymousObserver[匿名观察者]订阅using返回的Observable时，using内部创建了定期输出Int值的ObservableA，以及资源MyDisposables。在发送5个消息之后，ObservableA被终止，与此同时，MyDisposables资源被using释放。<br></p>
+
+<p>理解起来还是比较简单的，但是在什么场景中会使用到这个操作呢？<br></p>
+
+<!--more-->
+
+
+<h4>监听Obervable</h4>
+
+<p>先看下RxSwift官方Demo中的一段关于GitHub登陆的代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="n">signingIn</span> <span class="o">=</span> <span class="n">ActivityIndicator</span><span class="p">()</span>
+</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">signingIn</span> <span class="o">=</span> <span class="n">signingIn</span><span class="p">.</span><span class="n">asObservable</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">let</span> <span class="n">usernameAndPassword</span> <span class="o">=</span> <span class="n">Observable</span><span class="p">.</span><span class="n">combineLatest</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">username</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">password</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">,</span> <span class="err">$</span><span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">signedIn</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">loginTaps</span><span class="p">.</span><span class="n">withLatestFrom</span><span class="p">(</span><span class="n">usernameAndPassword</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">flatMapLatest</span> <span class="p">{</span> <span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">API</span><span class="p">.</span><span class="n">signup</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="nl">password</span><span class="p">:</span> <span class="n">password</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">MainScheduler</span><span class="p">.</span><span class="n">instance</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">catchErrorJustReturn</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">trackActivity</span><span class="p">(</span><span class="n">signingIn</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">flatMapLatest</span> <span class="p">{</span> <span class="n">loggedIn</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">Bool</span><span class="o">&gt;</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">message</span> <span class="o">=</span> <span class="n">loggedIn</span> <span class="o">?</span> <span class="s">&quot;Mock: Signed in to GitHub.&quot;</span> <span class="o">:</span> <span class="s">&quot;Mock: Sign in to GitHub failed&quot;</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">wireframe</span><span class="p">.</span><span class="n">promptFor</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nl">cancelAction</span><span class="p">:</span> <span class="s">&quot;OK&quot;</span><span class="p">,</span> <span class="nl">actions</span><span class="p">:</span> <span class="p">[])</span>
+</span><span class='line'>            <span class="c1">// propagate original value</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+</span><span class='line'>                <span class="n">loggedIn</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">shareReplay</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>signingIn是当前是否正在登陆Observable；signedIn是当前登陆动作Observable。<br>
+signedIn体现的事件流如下:</p>
+
+<ul>
+<li>按下登陆按钮</li>
+<li>使用当前用户名及密码进行登陆</li>
+<li>展示登陆结果</li>
+</ul>
+
+
+<p>其中涉及到的Rx相关操作（<a href="http://rxmarbles.com">详细图示</a>）：</p>
+
+<ul>
+<li>combineLatest: 合并最后的username和password，形成一个新的Observable</li>
+<li>withLatestFrom: 形成一个以loginTaps发送事件时间为采样时间点，发送usernameAndPassword内容的Observable</li>
+</ul>
+
+
+<h4>困惑点</h4>
+
+<p>接下来当时比较困扰我的一个点：这段代码是如何做到监听当前是否正在登陆的？<br>
+其中涉及到记录开始登陆的操作如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">......</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">API</span><span class="p">.</span><span class="n">signup</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="nl">password</span><span class="p">:</span> <span class="n">password</span><span class="p">)</span>
+</span><span class='line'><span class="p">.</span><span class="n">observeOn</span><span class="p">(</span><span class="n">MainScheduler</span><span class="p">.</span><span class="n">instance</span><span class="p">)</span>
+</span><span class='line'><span class="p">.</span><span class="n">catchErrorJustReturn</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span>
+</span><span class='line'><span class="p">.</span><span class="n">trackActivity</span><span class="p">(</span><span class="n">signingIn</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">......</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">public</span> <span class="k">extension</span> <span class="n">ObservableConvertibleType</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">func</span> <span class="n">trackActivity</span><span class="p">(</span><span class="n">_</span> <span class="nl">activityIndicator</span><span class="p">:</span> <span class="n">ActivityIndicator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">activityIndicator</span><span class="p">.</span><span class="n">trackActivityOfObservable</span><span class="p">(</span><span class="nb">self</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>重点关注<code>.trackActivity(signingIn)</code>这个调用。当时我的困惑是这样的：</p>
+
+<ul>
+<li><code>.trackActivity(signingIn)</code>是在<code>signup(username, password: password)</code>后调用的，也就是说登陆事件已经结束了，程序才开始监听登陆动作？（这个理解是错误的）</li>
+</ul>
+
+
+<p>上面的假设当然是错误的。那么，要想获得正确的结果，事件流应该是一个怎么样的执行顺序呢？<br>
+最直白的想法应该就是下面三步：</p>
+
+<ul>
+<li>设置当前状态为正在执行登陆</li>
+<li>执行登陆操作</li>
+<li>设置当前状态为没有执行登陆</li>
+</ul>
+
+
+<p>那么问题来了。首先，<code>signup(username, password: password)</code>生成了登陆动作Observable，当有Observer订阅这个Observable时，Observable就会执行登陆操作，并发送对应的结果。这就造成了<code>.trackActivity(signingIn)</code> 不能直接返回上游传递过来的事件流，因为这样做的话，刚好切合了上面的那个假设。所以<code>.trackActivity(signingIn)</code>应该做到以下几件事情：</p>
+
+<ul>
+<li>A1、保留登陆动作ObservableA，返回自定义的一个ObservableB</li>
+<li>A2、当外部Observer订阅ObservableB时，设置当前状态为正在执行登陆</li>
+<li>A3、设置当前状态为正在执行登陆，然后让外部的Observer重新订阅到ObservableA</li>
+<li>A4、登陆操作执行完毕后，设置当前状态为没有执行登陆</li>
+</ul>
+
+
+<h4>解惑</h4>
+
+<p>下面时signingIn所属类ActivityIndicator的实现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">class</span> <span class="nl">ActivityIndicator</span> <span class="p">:</span> <span class="n">DriverConvertibleType</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">typealias</span> <span class="n">E</span> <span class="o">=</span> <span class="n">Bool</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="n">_lock</span> <span class="o">=</span> <span class="bp">NSRecursiveLock</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="n">_variable</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_loading</span><span class="p">:</span> <span class="n">Driver</span><span class="o">&lt;</span><span class="n">Bool</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">public</span> <span class="k">init</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_loading</span> <span class="o">=</span> <span class="n">_variable</span><span class="p">.</span><span class="n">asDriver</span><span class="p">()</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="err">$</span><span class="mi">0</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">distinctUntilChanged</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">fileprivate</span> <span class="k">func</span> <span class="n">trackActivityOfObservable</span><span class="o">&lt;</span><span class="nl">O</span><span class="p">:</span> <span class="n">ObservableConvertibleType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">source</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">O</span><span class="p">.</span><span class="n">E</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Observable</span><span class="p">.</span><span class="n">using</span><span class="p">({</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ActivityToken</span><span class="o">&lt;</span><span class="n">O</span><span class="p">.</span><span class="n">E</span><span class="o">&gt;</span> <span class="k">in</span>
+</span><span class='line'>            <span class="nb">self</span><span class="p">.</span><span class="n">increment</span><span class="p">()</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">ActivityToken</span><span class="p">(</span><span class="nl">source</span><span class="p">:</span> <span class="n">source</span><span class="p">.</span><span class="n">asObservable</span><span class="p">(),</span> <span class="nl">disposeAction</span><span class="p">:</span> <span class="nb">self</span><span class="p">.</span><span class="n">decrement</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">})</span> <span class="p">{</span> <span class="n">t</span> <span class="k">in</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">t</span><span class="p">.</span><span class="n">asObservable</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">private</span> <span class="k">func</span> <span class="n">increment</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_lock</span><span class="p">.</span><span class="n">lock</span><span class="p">()</span>
+</span><span class='line'>        <span class="n">_variable</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">_variable</span><span class="p">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span>
+</span><span class='line'>        <span class="n">_lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">private</span> <span class="k">func</span> <span class="n">decrement</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_lock</span><span class="p">.</span><span class="n">lock</span><span class="p">()</span>
+</span><span class='line'>        <span class="n">_variable</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">_variable</span><span class="p">.</span><span class="n">value</span> <span class="o">-</span> <span class="mi">1</span>
+</span><span class='line'>        <span class="n">_lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">public</span> <span class="k">func</span> <span class="n">asDriver</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Driver</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">_loading</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>先看下<code>_variable</code>对应的Variable类型。<br>
+Variable实际上是BehaviorSubject的一层包装，不同的是它只暴露数据，不会被终止或者失败。<br>
+BehaviorSubject会在订阅者订阅时，发送一个最近或初始数据，并且订阅者可以接收BehaviorSubject随后发送的所有数据。<br>
+下面是一个Variable的例子：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="n">v</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'><span class="n">v</span><span class="p">.</span><span class="n">asObservable</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="nl">onNext</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">print</span><span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">})</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">v</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+</span><span class='line'><span class="n">v</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">2</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>代码段对应的输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="mi">0</span>
+</span><span class='line'><span class="mi">1</span>
+</span><span class='line'><span class="mi">2</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>现在回过头来看下<code>_variable</code>、<code>_loading</code>这两个属性。<br>
+<code>_loading</code>在ActivityIndicator的初始化方法中的赋值如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">_loading</span> <span class="o">=</span> <span class="n">_variable</span><span class="p">.</span><span class="n">asDriver</span><span class="p">()</span>
+</span><span class='line'>  <span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="err">$</span><span class="mi">0</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">}</span>
+</span><span class='line'>  <span class="p">.</span><span class="n">distinctUntilChanged</span><span class="p">()</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中<code>_variable</code>的初始值为0。所以这部分的逻辑很容易理解：<code>_loading</code>通过<code>_variable</code>发送的值是否大于0来判断当前是否在执行动作，并且通过increment、decrement方法来设置<code>_variable</code>发送的值（改变当前正在执行的动作数）。<br></p>
+
+<p>重点还是在trackActivityOfObservable方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">fileprivate</span> <span class="k">func</span> <span class="n">trackActivityOfObservable</span><span class="o">&lt;</span><span class="nl">O</span><span class="p">:</span> <span class="n">ObservableConvertibleType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">source</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">O</span><span class="p">.</span><span class="n">E</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">Observable</span><span class="p">.</span><span class="n">using</span><span class="p">({</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ActivityToken</span><span class="o">&lt;</span><span class="n">O</span><span class="p">.</span><span class="n">E</span><span class="o">&gt;</span> <span class="k">in</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">increment</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">ActivityToken</span><span class="p">(</span><span class="nl">source</span><span class="p">:</span> <span class="n">source</span><span class="p">.</span><span class="n">asObservable</span><span class="p">(),</span> <span class="nl">disposeAction</span><span class="p">:</span> <span class="nb">self</span><span class="p">.</span><span class="n">decrement</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">})</span> <span class="p">{</span> <span class="n">t</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">t</span><span class="p">.</span><span class="n">asObservable</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中对应的resourceFactory：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ActivityToken</span><span class="o">&lt;</span><span class="n">O</span><span class="p">.</span><span class="n">E</span><span class="o">&gt;</span> <span class="k">in</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">increment</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">ActivityToken</span><span class="p">(</span><span class="nl">source</span><span class="p">:</span> <span class="n">source</span><span class="p">.</span><span class="n">asObservable</span><span class="p">(),</span> <span class="nl">disposeAction</span><span class="p">:</span> <span class="nb">self</span><span class="p">.</span><span class="n">decrement</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>observableFactory：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">{</span> <span class="n">t</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">t</span><span class="p">.</span><span class="n">asObservable</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ActivityToken的实现如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">private</span> <span class="k">struct</span> <span class="n">ActivityToken</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">ObservableConvertibleType</span><span class="p">,</span> <span class="n">Disposable</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_source</span><span class="p">:</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span>
+</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_dispose</span><span class="p">:</span> <span class="n">Cancelable</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">source</span><span class="p">:</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span><span class="p">,</span> <span class="nl">disposeAction</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_source</span> <span class="o">=</span> <span class="n">source</span>
+</span><span class='line'>        <span class="n">_dispose</span> <span class="o">=</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="nl">with</span><span class="p">:</span> <span class="n">disposeAction</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">func</span> <span class="n">dispose</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_dispose</span><span class="p">.</span><span class="n">dispose</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">func</span> <span class="n">asObservable</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">_source</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，ActivityToken就是一个保存了当前需要监听的Observable的资源。<br>
+当外部Observer订阅trackActivityOfObservable返回的ObservableB时，using调用resourceFactory做了以下操作：</p>
+
+<ul>
+<li>增加当前正在执行的动作数</li>
+<li>使用ActivityToken保存需要监听的ObservableA，并且在ActivityToken释放时，恢复当前正在执行的动作数</li>
+</ul>
+
+
+<p>接下来在调用observableFactory时，using把在resourceFactory中保存的ObservableA重新暴露给Observer。<br>
+通过这种方式，就能在ObservableA发送数据之前，执行额外的操作<code>self.increment()</code>，也就是上面<code>.trackActivity(signingIn)</code>应该做到的A2。并且因为using会在observableFactory返回的ObservableA终止时释放resourceFactory创建的资源，所以当ObservableA终止时，会执行<code>self.decrement</code>，也就是A4。<br>
+嗯，目前为止，上面的疑惑算是解决了。<br>
+总结一下，就是通过using操作hold主需要监听的Observable，然后在执行了想要的额外动作后，重新暴露Observable给外部的Observer。</p>
+
+<h4>using内部实现</h4>
+
+<p>最后，研究下using的内部实现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">static</span> <span class="k">func</span> <span class="n">using</span><span class="o">&lt;</span><span class="nl">R</span><span class="p">:</span> <span class="n">Disposable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">resourceFactory</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="p">()</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">,</span> <span class="nl">observableFactory</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Using</span><span class="p">(</span><span class="nl">resourceFactory</span><span class="p">:</span> <span class="n">resourceFactory</span><span class="p">,</span> <span class="nl">observableFactory</span><span class="p">:</span> <span class="n">observableFactory</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>using实际上返回的是一个Using类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">Using</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="p">,</span> <span class="nl">ResourceType</span><span class="p">:</span> <span class="n">Disposable</span><span class="o">&gt;:</span> <span class="n">Producer</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">typealias</span> <span class="n">E</span> <span class="o">=</span> <span class="n">SourceType</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">typealias</span> <span class="n">ResourceFactory</span> <span class="o">=</span> <span class="p">()</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">ResourceType</span>
+</span><span class='line'>    <span class="k">typealias</span> <span class="n">ObservableFactory</span> <span class="o">=</span> <span class="p">(</span><span class="n">ResourceType</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">fileprivate</span> <span class="k">let</span> <span class="nl">_resourceFactory</span><span class="p">:</span> <span class="n">ResourceFactory</span>
+</span><span class='line'>    <span class="n">fileprivate</span> <span class="k">let</span> <span class="nl">_observableFactory</span><span class="p">:</span> <span class="n">ObservableFactory</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">resourceFactory</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="n">ResourceFactory</span><span class="p">,</span> <span class="nl">observableFactory</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="n">ObservableFactory</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_resourceFactory</span> <span class="o">=</span> <span class="n">resourceFactory</span>
+</span><span class='line'>        <span class="n">_observableFactory</span> <span class="o">=</span> <span class="n">observableFactory</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kr">override</span> <span class="k">func</span> <span class="n">run</span><span class="o">&lt;</span><span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">E</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">sink</span> <span class="o">=</span> <span class="n">UsingSink</span><span class="p">(</span><span class="nl">parent</span><span class="p">:</span> <span class="nb">self</span><span class="p">,</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">observer</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">sink</span><span class="p">.</span><span class="n">disposable</span> <span class="o">=</span> <span class="n">sink</span><span class="p">.</span><span class="n">run</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">sink</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Using为Producer的子类，并且重载了run方法。<br>
+再看下Producer的实现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">Producer</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kr">override</span> <span class="k">init</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kr">override</span> <span class="k">func</span> <span class="n">subscribe</span><span class="o">&lt;</span><span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">Element</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">!</span><span class="n">CurrentThreadScheduler</span><span class="p">.</span><span class="n">isScheduleRequired</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">run</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">CurrentThreadScheduler</span><span class="p">.</span><span class="n">instance</span><span class="p">.</span><span class="n">schedule</span><span class="p">(())</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+</span><span class='line'>                <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">func</span> <span class="n">run</span><span class="o">&lt;</span><span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">Element</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">abstractMethod</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Producer调用subscribe时，会调用子类的run，并传入当前的Oberver。回到Using的实现，Producer的run方法中创建了UsingSink实例，并调用它的run方法。那么来看下最关键的UsingSink：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">UsingSink</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="p">,</span> <span class="nl">ResourceType</span><span class="p">:</span> <span class="n">Disposable</span><span class="p">,</span> <span class="nl">O</span><span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">Sink</span><span class="o">&lt;</span><span class="n">O</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">ObserverType</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">SourceType</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">typealias</span> <span class="n">Parent</span> <span class="o">=</span> <span class="n">Using</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="p">,</span> <span class="n">ResourceType</span><span class="o">&gt;</span>
+</span><span class='line'>    <span class="k">typealias</span> <span class="n">E</span> <span class="o">=</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_parent</span><span class="p">:</span> <span class="n">Parent</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">parent</span><span class="p">:</span> <span class="n">Parent</span><span class="p">,</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_parent</span> <span class="o">=</span> <span class="n">parent</span>
+</span><span class='line'>        <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">(</span><span class="nl">observer</span><span class="p">:</span> <span class="n">observer</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">func</span> <span class="n">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">var</span> <span class="n">disposable</span> <span class="o">=</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">()</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">do</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">let</span> <span class="n">resource</span> <span class="o">=</span> <span class="n">try</span> <span class="n">_parent</span><span class="p">.</span><span class="n">_resourceFactory</span><span class="p">()</span>
+</span><span class='line'>            <span class="n">disposable</span> <span class="o">=</span> <span class="n">resource</span>
+</span><span class='line'>            <span class="k">let</span> <span class="n">source</span> <span class="o">=</span> <span class="n">try</span> <span class="n">_parent</span><span class="p">.</span><span class="n">_observableFactory</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">return</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">(</span>
+</span><span class='line'>                <span class="n">source</span><span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="nb">self</span><span class="p">),</span>
+</span><span class='line'>                <span class="n">disposable</span>
+</span><span class='line'>            <span class="p">)</span>
+</span><span class='line'>        <span class="p">}</span> <span class="n">catch</span> <span class="k">let</span> <span class="n">error</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">(</span>
+</span><span class='line'>                <span class="n">Observable</span><span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="n">error</span><span class="p">).</span><span class="n">subscribe</span><span class="p">(</span><span class="nb">self</span><span class="p">),</span>
+</span><span class='line'>                <span class="n">disposable</span>
+</span><span class='line'>            <span class="p">)</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">func</span> <span class="n">on</span><span class="p">(</span><span class="n">_</span> <span class="nl">event</span><span class="p">:</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">switch</span> <span class="n">event</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">case</span> <span class="k">let</span> <span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">:</span>
+</span><span class='line'>            <span class="n">forwardOn</span><span class="p">(.</span><span class="n">next</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+</span><span class='line'>        <span class="k">case</span> <span class="k">let</span> <span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">:</span>
+</span><span class='line'>            <span class="n">forwardOn</span><span class="p">(.</span><span class="n">error</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+</span><span class='line'>            <span class="n">dispose</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">case</span> <span class="p">.</span><span class="nl">completed</span><span class="p">:</span>
+</span><span class='line'>            <span class="n">forwardOn</span><span class="p">(.</span><span class="n">completed</span><span class="p">)</span>
+</span><span class='line'>            <span class="n">dispose</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，在run方法中，UsingSink先是调用<code>_resourceFactory()</code>创建了资源resource，然后以resource为参数调用<code>_observableFactory()</code>来创建想要的Obervable。并且通过<code>Disposables.create(source.subscribe(self),disposable)</code>让resource的生命周期和Obervable一致。<br>
+实际上UsingSink只是在run中做了两件特殊的事情：</p>
+
+<ul>
+<li>在让source订阅自身前，创建了resource（一般会在这里做额外的操作）</li>
+<li>使用的source不是由上游给的，而是通过<code>_observableFactory</code>创建的（一般的操作比如map、flatMap等，都是由上游给的）</li>
+</ul>
+
+
+<h4>RxSwift实现初探</h4>
+
+<p>和ReactiveCocoa的实现类似，RxSwift也是通过不停地订阅上游的Observable来实现数据的流动。<br>
+Rx操作大体分为两种：</p>
+
+<ul>
+<li>创建: create、just、of、from等</li>
+<li>处理: map、flatMap、do等</li>
+</ul>
+
+
+<p>接下来通过下面的操作来简单分析下代码执行过程：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Observable</span><span class="p">.</span><span class="n">just</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="err">$</span><span class="mi">0</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="nl">onNext</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">print</span><span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'><span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以下是执行过程中创建实例的过程:</p>
+
+<ul>
+<li>just操作创建Just实例（Just类是一个Observable）</li>
+<li>map操作创建Map实例，Map实例保存了上游的Observable，这里是Just（Map类是一个Observable）</li>
+<li>Map实例的subscribe操作创建了AnonymousObserver实例（AnonymousObserver是一个Observer）</li>
+</ul>
+
+
+<p>以下是执行Map实例的subscribe后代码执行过程：</p>
+
+<ul>
+<li>AnonymousObserver通过Map实例的subscribeSafe方法订阅了Map实例</li>
+<li>Map实例通过subscribe方法间接调用了自身的run方法</li>
+<li>run方法创建了MapSink实例，MapSink保存了下游的Observer（MapSink是一个Observer）；同时run方法让MapSink订阅Map实例保存的上游Observable，即Just。</li>
+<li>Just执行subscribe方法，在其中直接调用<code>observer.on(.next(_element))</code>向下游的Observer，即MapSink发送消息</li>
+<li>MapSink接收到消息进行处理，并向下游的Observer发送消息，及AnonymousObserver</li>
+<li>AnonymousObserver执行最终处理</li>
+</ul>
+
+
+<p>上面就是Rx操作执行过程的全部内容，可以总结两点：</p>
+
+<ul>
+<li>创建操作的subscribe方法会直接向下游Observer发送消息</li>
+<li>处理操作一般会创建两个实例，一个是Observable，一个是Observer。Observable让下游Observer可以进行订阅，而Observer则订阅上游的Observable</li>
+</ul>
+
+
+<h4>refrence</h4>
+
+<p><a href="http://www.introtorx.com/Content/v1.0.10621.0/11_AdvancedErrorHandling.html#Using">.Net中关于Using的例子</a><br>
+<a href="http://rxmarbles.com">Rx操作图示</a><br>
+<a href="http://reactivex.io/documentation/operators/using.html">官方文档中对于using的说明</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[关于RxSwift中的DisposeBag]]></title>
@@ -6574,163 +7288,6 @@ AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/
 
 
 <p>这样以来就可以很方便地对UICollectionView进行一些操作了，比如在UITableView中嵌入一个流水布局的UICollectionView就可以利用上面的方法获取其实际高度。<a href="https://github.com/tripleCC/TPCSkillTagView">实际业务的应用</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Git开发流程]]></title>
-    <link href="http://triplecc.github.io/blog/2015-11-05-gitkai-fa-liu-cheng/"/>
-    <updated>2015-11-05T18:44:59+08:00</updated>
-    <id>http://triplecc.github.io/blog/gitkai-fa-liu-cheng</id>
-    <content type="html"><![CDATA[<h2>使用Git开发总结</h2>
-
-<p>现在很多互联网公司都是通过分布式的Git进行代码管理，SVN则逐渐被淘汰了。以下就是自己在Git开发中的流程与注意点：<br>
-1、所有人fork一份 project, 在自己的repository上开发，开发完成后向 project 提 pull request.</p>
-
-<p>2、如果遇到需要多人共同开发的比较大的项目，可以细分为个人完成的小项目，在各自 repository 上完成后 pull request.</p>
-
-<p>3、尽量保持每天至少 pull request 一次。如果功能一天不能完成，则每天抓取 project最新的版本 merge 并解决冲突，保证每次最终 pull request 的冲突减到最少。</p>
-
-<p>4、尽量保证提交前能看一遍每行改动 (如果使用 SourceTree, 可以看到对于每一行的改动，并选择是否提交/回滚这行的改动)，确保每行都是必要的。</p>
-
-<p>5、另外，iOS 项目中有一些 .gitignore 也无法忽略的文件，比如 project.pbxproj 和 *.xcodecheckout，需要每次手动来忽略其中的改动，务必确保这些文件内所有改动的行都是必要的，除非特殊情况不要提交其中的 PROVISIONING_PROFILE 和 Build Settings 相关的改动。</p>
-
-<!--more-->
-
-
-<h4>默认工作流程</h4>
-
-<ul>
-<li>把 project fork 一份到 yourname/project,并clone到本地</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>cd ~/git/
-</span><span class='line'>git clone https://github.com/yourname/project.git</span></code></pre></td></tr></table></div></figure>
-
-
-<p>保持代码是和主线同步的，假设主线名称为main</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>git remote add upstream https://github.com/main/matcha-ios.git
-</span><span class='line'>git checkout master
-</span><span class='line'>git fetch upstream 
-</span><span class='line'>git merge upstream/master</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在项目目录新建一个 .gitignore 来忽略一些不该提交的东西 <a href="https://github.com/github/gitignore.git">gitignore参考</a></p>
-
-<ul>
-<li>提交一次修改</li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>git add new.m git add new.h
-</span><span class='line'>git diff
-</span><span class='line'>git commit -m ‘add Class new’</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>git push origin</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>解决可能有的冲突：</li>
-</ul>
-
-
-<p>务必在这个阶段解决各种可能的冲突，减少 pull request merge 到 main/project 时的成本。SourceTree 的处理过程也是类似的。(这里命令行可以执行 git mergetool 来调用冲突处理工具来处理，用 SourceTree 可以直接打开 Xcode 自带的冲突处理工具处理)</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout master
-</span><span class='line'>git fetch upstream && git merge upstream/master</span></code></pre></td></tr></table></div></figure>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>// 解决冲突后
-</span><span class='line'>git commit -m "XXXX"
-</span><span class='line'>git push origin</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>提交Pull Request</li>
-</ul>
-
-
-<p>最后你需要做的，就是打开 <a href="https://github.com/yourname/project">https://github.com/yourname/project</a> ，提交一个Pull Request，并assign给某人帮你review.Pull Request的名称尽量取的有意义，比如<code>优化cell性能</code>等词语</p>
-
-<h2>Git学习资料</h2>
-
-<p>基本操作和概念： Try Git： <a href="http://try.github.com/">http://try.github.com/</a>
-图解Git 了解Git的一些特性：<a href="http://marklodato.github.com/visual-git-guide/index-zh-cn.html">http://marklodato.github.com/visual-git-guide/index-zh-cn.html</a>
-[推荐]一堆实用技巧，让你爱上命令行： <a href="http://blog.jobbole.com/25808/">http://blog.jobbole.com/25808/</a></p>
-
-<h2>Git操作备忘</h2>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>git diff &lt;branch1&gt; &lt;branch2&gt; -- &lt;file&gt; 比较不同分支同一个文件
-</span><span class='line'>git push origin :refs/tags/&lt;tagname&gt; 删除远程tag</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>Git关于rebase资料</h2>
-
-<p>(可以保持History的整洁，把新的修改作为标签打入要合并的commit, 么有merge from xxxx记录)</p>
-
-<p>注意：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>在git push之前，先git fetch，再git rebase。(一定要先rebase再push！)
-</span><span class='line'>
-</span><span class='line'>git fetch origin master
-</span><span class='line'>git rebase origin/master
-</span><span class='line'>git push
-</span><span class='line'>
-</span><span class='line'>等价：
-</span><span class='line'>git pull --rebase</span></code></pre></td></tr></table></div></figure>
-
-
-<p><a href="https://segmentfault.com/q/1010000000430041">团队开发里频繁使用 git rebase 来保持树的整洁好吗?</a></p>
-
-<p><a href="https://git-scm.com/book/zh/v1/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E8%A1%8D%E5%90%88">Git-分支-分支的衍合</a></p>
-
-<h2>找回commit</h2>
-
-<p>rebase掉的commit通过以下方式找回：</p>
-
-<ul>
-<li><p>进入<strong>.git/logs/refs/heads/</strong>，打开对应分支文件，查看提交记录。</p></li>
-<li><p>获得所要提交记录的sha1</p></li>
-<li><p>根据sha1，新开一个分支</p></li>
-</ul>
-
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>
-</span><span class='line'>git checkout -b branch-recovery sha1
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这样这个branch-recovery就有所有提交记录了。</p>
 ]]></content>
   </entry>
   

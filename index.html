@@ -9,15 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="在RxSwift中，订阅者都会返回一个Disposable（默认是Disposables），以便使用者可以在后续的操作中，取消此次订阅。
-使用者可以调用dispose方法来进行取消订阅： 1
-2
-3
-4
-5
-6
-7
-let disposables = Observable .just(1) . &hellip;">
+  <meta name="description" content="create a disposable resource that has the same lifespan as the Observable，即创建一个和Observable具有相同生命周期的disposable资源。
+这是ReactiveX对于Using的描述。 可以看出， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -73,6 +66,109 @@ let disposables = Observable .just(1) . &hellip;">
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016-10-06-rxswiftzhong-usingde-ying-yong/">RxSwift中Using的应用</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-10-06T23:22:34+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>11:22 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><code>create a disposable resource that has the same lifespan as the Observable</code>，即创建一个和Observable具有相同生命周期的disposable资源。<br>
+这是ReactiveX对于Using的描述。</p>
+
+<p><img src="./images/2016-10-06-using.png" alt="" /></p>
+
+<p>可以看出，当一个ObserverA订阅Using返回的Observable时，Using会使用调用者传入的Resource工厂方法[resourceFactory]创建对应的资源，并且使用Observable工厂方法[observableFactory]创建ObserverA实际上想要订阅的Observable。当ObserverA终止时，对应的Resource也会被释放[dispose]。</p>
+
+<p>下面是一个简单的例子：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="nl">MyDisposables</span><span class="p">:</span> <span class="n">Disposable</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">func</span> <span class="n">dispose</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">print</span><span class="p">(</span><span class="s">&quot;dispose&quot;</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">......</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Observable</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">using</span><span class="p">({</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MyDisposables</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">MyDisposables</span><span class="p">()</span>
+</span><span class='line'>    <span class="p">})</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">Int</span><span class="o">&gt;</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">interval</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nl">scheduler</span><span class="p">:</span> <span class="n">MainScheduler</span><span class="p">.</span><span class="n">instance</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">.</span><span class="n">take</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="nl">onNext</span><span class="p">:</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">print</span><span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">})</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>代码段对应的输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="mi">0</span>
+</span><span class='line'><span class="mi">1</span>
+</span><span class='line'><span class="mi">2</span>
+</span><span class='line'><span class="mi">3</span>
+</span><span class='line'><span class="mi">4</span>
+</span><span class='line'><span class="n">dispose</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，当AnonymousObserver[匿名观察者]订阅using返回的Observable时，using内部创建了定期输出Int值的ObservableA，以及资源MyDisposables。在发送5个消息之后，ObservableA被终止，与此同时，MyDisposables资源被using释放。<br></p>
+
+<p>理解起来还是比较简单的，但是在什么场景中会使用到这个操作呢？<br></p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016-10-06-rxswiftzhong-usingde-ying-yong/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -483,44 +579,6 @@ let disposables = Observable .just(1) . &hellip;">
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016-03-09-ioszhi-shi-sui-pian-wu/">iOS知识碎片五</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-03-09T15:31:32+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>3:31 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>1、iOS中文斜体<br>
-2、Swift中替代#ifdef以及关于Target管理<br>
-3、UIRefreshControl下拉抖动<br>
-4、聊天界面输入框换行抖动<br>
-5、UITapGestureRecognizer与tableView:didSelectRowAtIndexPath:<br></p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2016-03-09-ioszhi-shi-sui-pian-wu/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -543,6 +601,10 @@ let disposables = Observable .just(1) . &hellip;">
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016-10-06-rxswiftzhong-usingde-ying-yong/">RxSwift中Using的应用</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016-10-03-guan-yu-rxswiftzhong-de-disposebag/">关于RxSwift中的DisposeBag</a>
       </li>
     
@@ -556,10 +618,6 @@ let disposables = Observable .just(1) . &hellip;">
     
       <li class="post">
         <a href="/blog/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-%5B%3F%5D-ge-xiang-pian-xuan-ze-qi/">使用AssetsLibrary和PhotoKit做一个简易的相片选择器</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-08-10-ioszhi-shi-sui-pian-liu/">iOS知识碎片六</a>
       </li>
     
   </ul>
