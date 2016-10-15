@@ -9,8 +9,8 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="create a disposable resource that has the same lifespan as the Observable，即创建一个和Observable具有相同生命周期的disposable资源。
-这是ReactiveX对于Using的描述。 可以看出， &hellip;">
+  <meta name="description" content="一般情况下，从业务方从API中请求JSON数据时，一般都会经过以下三步： 1
+2 1 2 原始数据 -&gt; JSON/字典 -&gt; Model 当然，大部分情况下，原始数据就是JSON，所以第一步基本上只是对接受数据的一个类型转换。一般在网络层中，由组件方提供1步骤， &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +66,68 @@
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/">使用RxSwift+Moya+ObjectMapper接入模型</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-10-15T11:40:37+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>15</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>11:40 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>一般情况下，从业务方从API中请求JSON数据时，一般都会经过以下三步：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'> 1            2 
+</span><span class='line'>原始数据 -&gt; JSON/字典  -&gt; Model</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当然，大部分情况下，原始数据就是JSON，所以第一步基本上只是对接受数据的一个类型转换。一般在网络层中，由组件方提供1步骤，而业务方往往在网络组件的回调中提供步骤2。简单的转换逻辑明了了，接下来就可以试下用Moya实现步骤1，ObjectMapper实现步骤2。</p>
+
+<p>在结合RxSwift+Moya+ObjectMapper三者之后，常规JSON数据的获取与解析变得更加精简。以近期编写的一个V2ex API为例，获取个人信息接口如下：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>func fetchMemberInfo(_ username: String? = V2exAppContext.shared.currentUsername,
+</span><span class='line'>                     _ id: Int? = nil) -&gt; Observable&lt;V2exMember&gt; {
+</span><span class='line'>    return V2exProvider
+</span><span class='line'>        .request(.ShowMembers(username: username, id: id))
+</span><span class='line'>        .mapObject()
+</span><span class='line'>        .shareReplay(1)
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>嗯，没错，最终的调用就是这么简单明了！<br></p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -466,76 +528,6 @@ Rx操作大体分为两种：</p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/">更加快速地设置Frame</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2016-04-23T13:14:55+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>23</span><span class='date-suffix'>rd</span>, <span class='date-year'>2016</span></span> <span class='time'>1:14 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。<br></p>
-
-<h4>令人蛋疼的frame布局</h4>
-
-<p>老代码对界面的坐标尺寸设置都是通过下面的方式：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>...
-</span><span class='line'>UIView * mainView = [[UIView alloc] initWithFrame:CGRectMake(0, self.height, self.width, MAIN_HEIGHT)];
-</span><span class='line'>[mainView setBackgroundColor:[UIColor whiteColor]];
-</span><span class='line'>[self addSubview:mainView];
-</span><span class='line'>self.mainView = mainView;
-</span><span class='line'>
-</span><span class='line'>UIView * opertionMenu = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.width, 45)];
-</span><span class='line'>[opertionMenu setBackgroundColor:[UIColor whiteColor]];
-</span><span class='line'>[mainView addSubview:opertionMenu];
-</span><span class='line'>
-</span><span class='line'>UIView * line = [[UIView alloc] initWithFrame:CGRectMake(0, 44, self.width, 1)];
-</span><span class='line'>[line setBackgroundColor:[UIColor colorWithHex:0xe9e9e9]];
-</span><span class='line'>[opertionMenu addSubview:line];
-</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这些坐标设置工作都是在初始化，也就是init系列方法中完成的。这样做的弊端很明显，复用性很差，如果还是按照这种方式的话，每扩展一种界面类型，就要新增一个init方法。久而久之，冗余代码会越来越多，新增特性想重用这块控件的话，需要做比较多的无用功。<br></p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -558,6 +550,10 @@ Rx操作大体分为两种：</p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/">使用RxSwift+Moya+ObjectMapper接入模型</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2016-10-06-rxswiftzhong-usingde-ying-yong/">RxSwift中Using的应用</a>
       </li>
     
@@ -571,10 +567,6 @@ Rx操作大体分为两种：</p>
     
       <li class="post">
         <a href="/blog/2016-09-24-ioszhi-shi-sui-pian-qi/">iOS知识碎片七</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/">利用策略模式增强图片浏览器的扩展性</a>
       </li>
     
   </ul>
