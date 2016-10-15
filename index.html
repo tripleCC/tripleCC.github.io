@@ -342,20 +342,26 @@ Rx操作大体分为两种：</p>
   </header>
 
 
-  <div class="entry-content"><p>说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的<a href="https://github.com/mwaterfall/MWPhotoBrowser">MWPhotoBrowser</a>，<a href="https://github.com/ideaismobile/IDMPhotoBrowser">IDMPhotoBrowser</a>或者Swift版本的<a href="https://github.com/suzuki-0000/SKPhotoBrowser">SKPhotoBrowser</a>。<br>
-从核心功能来看，MWPhotoBrowser，IDMPhotoBrowser这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，在我看来，这是他的优势，但同时，高度的集成也催生了一些不足。<br>
-这样做的优势不言而喻，调用者只需要很少的几行代码，就可以集成一个图片浏览器框架，省时省力。以MWPhotoBrowser为例，在不设置额外属性的情况下，只需要下面两行代码就可以创建：</p>
+  <div class="entry-content"><p>说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的<a href="https://github.com/mwaterfall/MWPhotoBrowser">MWPhotoBrowser</a>，<a href="https://github.com/ideaismobile/IDMPhotoBrowser">IDMPhotoBrowser</a>或者Swift版本的<a href="https://github.com/suzuki-0000/SKPhotoBrowser">SKPhotoBrowser</a>。<br></p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<p>从核心功能来看，MWPhotoBrowser，IDMPhotoBrowser这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，在我看来，这是他的优势，但同时，高度的集成也催生了一些不足。<br></p>
+
+<p>这样做的优势不言而喻，调用者只需要很少的几行代码，就可以集成一个图片浏览器框架，省时省力。以MWPhotoBrowser为例，在不设置额外属性的情况下，只需要下面两行代码就可以创建：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>MWPhotoBrowser *browser = [[MWPhotoBrowser alloc] initWithPhotos:self.photos];
-</span><span class='line'>[self.navigationController pushViewController:browser animated:YES];</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">MWPhotoBrowser</span> <span class="o">*</span><span class="n">browser</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MWPhotoBrowser</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithPhotos</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">photos</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">navigationController</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">browser</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
-<p>使用者只要关注如何提供MWPhotoBrowser所要展示资源就可以了，不需要做额外的操作，非常地简洁方便。<br>
-关于不足，由于MWPhotoBrowser内部实现了获取网络图片功能，在追求内部实现尽量精简的前提下，不可避免地要依赖加载图片的第三方库(SDWebImage)。如果原来项目并没有使用SDWebImage，而是用YYWebImage或者Kingfisher，那么使用MWPhotoBrowser便会引入冗余的框架，从而让项目额外增加了一种图片缓存机制，不利于内存以及磁盘使用率的优化。<br>
-对于相册资源的访问，MWPhotoBrowser内部也实现了通过PHAsset或者ALAsset获取相片的功能。不过一般来说，项目会有自己的一套相册选择器，进而会有相应的相册资源获取策略。所以以个人观点来看，如何获取相册资源，应该由使用者告知，而不是在框架内部自己实现一套，这样更加符合DRY。<br>
-接下来，我会针对上面的不足，实现一套兼容本地资源、相册资源、网络资源的简易图片选择器。<br>
+<p>使用者只要关注如何提供MWPhotoBrowser所要展示资源就可以了，不需要做额外的操作，非常地简洁方便。<br></p>
+
+<p>关于不足，由于MWPhotoBrowser内部实现了获取网络图片功能，在追求内部实现尽量精简的前提下，不可避免地要依赖加载图片的第三方库(SDWebImage)。如果原来项目并没有使用SDWebImage，而是用YYWebImage或者Kingfisher，那么使用MWPhotoBrowser便会引入冗余的框架，从而让项目额外增加了一种图片缓存机制，不利于内存以及磁盘使用率的优化。<br></p>
+
+<p>对于相册资源的访问，MWPhotoBrowser内部也实现了通过PHAsset或者ALAsset获取相片的功能。不过一般来说，项目会有自己的一套相册选择器，进而会有相应的相册资源获取策略。所以以个人观点来看，如何获取相册资源，应该由使用者告知，而不是在框架内部自己实现一套，这样更加符合DRY。<br></p>
+
+<p>接下来，我会针对上面的不足，实现一套兼容本地资源、相册资源、网络资源的简易图片选择器。<br>
 本文章对应的所有代码在仓库<a href="https://github.com/tobevoid/TBVImageBrowser">TBVImageBrowser</a>中。</p>
 
 </div>
