@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-10-30T20:17:51+08:00</updated>
+  <updated>2016-10-30T20:25:12+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[一次短暂的mac开发之旅]]></title>
-    <link href="http://triplecc.github.io/blog/2016-10-25-%5B%3F%5D-ci-duan-zan-de-mackai-fa-zhi-lu/"/>
+    <link href="http://triplecc.github.io/blog/2016-10-25-yi-ci-duan-zan-de-mackai-fa-zhi-lu/"/>
     <updated>2016-10-25T22:43:37+08:00</updated>
-    <id>http://triplecc.github.io/blog/[?]-ci-duan-zan-de-mackai-fa-zhi-lu</id>
+    <id>http://triplecc.github.io/blog/yi-ci-duan-zan-de-mackai-fa-zhi-lu</id>
     <content type="html"><![CDATA[<p>回杭近半个月，发现公司后台写的接口文档还是比较清晰的。特别是自己组负责的业务线，接口文档上的字段和实际返回的字段几乎没有差别<br></p>
 
 <p>询问了周围小伙伴如何写模型文件之后，发现无非三种方式：</p>
@@ -49,12 +49,12 @@
 </ul>
 
 
-<p>然后我花了一个周末的时间，完成了一个简易的模型抓取生成工具。具体界面如下：<br></p>
-
 <!--more-->
 
 
-<p><img src="./images/2016-10-30fetcher.png" alt="" /></p>
+<p>然后我花了一个周末的时间，完成了一个简易的模型抓取生成工具。具体界面如下：<br></p>
+
+<p><img src="http://triplecc.github.io/images/2016-10-30fetcher.png" alt="" /></p>
 
 <p>输入浏览公司内部资料所需要的用户名和密码，并且输入自己需要的抓取的模型名，点击开始抓取，然后就等桌面上生成对应的模型文件了。当然，在界面上的预览窗口可以看到生成文件的内容，以及生成文件的保存地址。</p>
 
@@ -64,7 +64,7 @@
 
 <p>首先摘一个接口的文档：<br></p>
 
-<p><img src="./images/2016-10-30.png" alt="" /></p>
+<p><img src="http://triplecc.github.io/images/2016-10-30.png" alt="" /></p>
 
 <p>总结两点：</p>
 
@@ -76,7 +76,7 @@
 
 <p>接下来再看下需要抓取内容的HTML:<br></p>
 
-<p><img src="./images/2016-10-30xpath.png" alt="" /></p>
+<p><img src="http://triplecc.github.io/images/2016-10-30xpath.png" alt="" /></p>
 
 <p>可以看到，拿到第一个标签为<code>table</code>、类名为<code>confluenceTable</code>的元素，然后再取第一个标签为<code>tbody</code>的元素即可获取所有需要的数据。</p>
 
@@ -105,7 +105,7 @@
 
 <p> 获取第一个标签为<code>table</code>、类名为<code>confluenceTable</code>的元素代码如下：</p>
 
-<pre><code class="`"> extension TDFInterfaceFetcherHTMLParser  {
+<pre><code class="`swift"> extension TDFInterfaceFetcherHTMLParser  {
     var firstTableBody: [JiNode]? {
         return firstContentTable.flatMap{ $0.firstChildWithName("tbody")?.children }
     }
@@ -129,7 +129,7 @@
 
 <p>得到所有目标子节点后，再通过以下方法获取叶子节点：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -145,33 +145,35 @@
 <span class='line-number'>14</span>
 <span class='line-number'>15</span>
 <span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>//1、是叶子节点，添加到数组
-</span><span class='line'>//2、不是叶子节点，遍历其所有子节点
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">//1、是叶子节点，添加到数组</span>
+</span><span class='line'><span class="c1">//2、不是叶子节点，遍历其所有子节点</span>
 </span><span class='line'>
-</span><span class='line'>extension JiNode {
-</span><span class='line'>    func allLeafNodes() -&gt; [JiNode] {
-</span><span class='line'>        var leafNodes = [JiNode]()
-</span><span class='line'>        if !hasChildren {
-</span><span class='line'>            leafNodes.append(self)
-</span><span class='line'>        } else {
-</span><span class='line'>            children.forEach {
-</span><span class='line'>                leafNodes.append(contentsOf: $0.allLeafNodes())
-</span><span class='line'>            }
-</span><span class='line'>        }
-</span><span class='line'>        return leafNodes
-</span><span class='line'>    }
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'><span class="k">extension</span> <span class="n">JiNode</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">func</span> <span class="n">allLeafNodes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="n">JiNode</span><span class="p">]</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">var</span> <span class="n">leafNodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">JiNode</span><span class="p">]()</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">!</span><span class="n">hasChildren</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">leafNodes</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="nb">self</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">children</span><span class="p">.</span><span class="n">forEach</span> <span class="p">{</span>
+</span><span class='line'>                <span class="n">leafNodes</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="nl">contentsOf</span><span class="p">:</span> <span class="err">$</span><span class="mf">0.</span><span class="n">allLeafNodes</span><span class="p">())</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">leafNodes</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>接下来通过<code>JiNode</code>的<code>value</code>属性获取所有叶子节点对应元素的内容就好了：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>firstTableBody.map{ $0.allLeafNodes().flatMap{ $0.value } }</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">firstTableBody</span><span class="p">.</span><span class="n">map</span><span class="p">{</span> <span class="err">$</span><span class="mf">0.</span><span class="n">allLeafNodes</span><span class="p">().</span><span class="n">flatMap</span><span class="p">{</span> <span class="err">$</span><span class="mf">0.</span><span class="n">value</span> <span class="p">}</span> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>经过上面代码的处理，输出的数据如下：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -181,22 +183,22 @@
 <span class='line-number'>8</span>
 <span class='line-number'>9</span>
 <span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>["编号", "参数名（中文）", "参数名（英文）", "类型", "对应表", "对应字段", "备注"]
-</span><span class='line'>["1", "采购单ID", "id", "String", "purchase_info", "id", "　"]
-</span><span class='line'>["2", "所属实体ID", "entityId", "String", "purchase_info", "entity_id", "　"]
-</span><span class='line'>["3", "自实体ID", "selfEntityId", "String", "purchase_info", "self_entity_id", "　"]
-</span><span class='line'>["4", "自实体名称", "selfEntityName", "String", "　", "　", "　"]
-</span><span class='line'>["5", "供应商Id", "supplyId", "String", "purchase_info", "supply_id", "　"]
-</span><span class='line'>["6", "供应商名称", "supplyName", "String", "supply", "name", "　"]
-</span><span class='line'>["7", "仓库Id", "warehouseId", "String", "purchase_info", "warehouse_id", "　"]
-</span><span class='line'>["8", "仓库名称", "warehouseName", "String", "warehouse", "name", "　"]
-</span><span class='line'>["9", "单号", "no", "String", "purchase_info", "no", "　"]
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">[</span><span class="s">&quot;编号&quot;</span><span class="p">,</span> <span class="s">&quot;参数名（中文）&quot;</span><span class="p">,</span> <span class="s">&quot;参数名（英文）&quot;</span><span class="p">,</span> <span class="s">&quot;类型&quot;</span><span class="p">,</span> <span class="s">&quot;对应表&quot;</span><span class="p">,</span> <span class="s">&quot;对应字段&quot;</span><span class="p">,</span> <span class="s">&quot;备注&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;1&quot;</span><span class="p">,</span> <span class="s">&quot;采购单ID&quot;</span><span class="p">,</span> <span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;purchase_info&quot;</span><span class="p">,</span> <span class="s">&quot;id&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;2&quot;</span><span class="p">,</span> <span class="s">&quot;所属实体ID&quot;</span><span class="p">,</span> <span class="s">&quot;entityId&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;purchase_info&quot;</span><span class="p">,</span> <span class="s">&quot;entity_id&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;3&quot;</span><span class="p">,</span> <span class="s">&quot;自实体ID&quot;</span><span class="p">,</span> <span class="s">&quot;selfEntityId&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;purchase_info&quot;</span><span class="p">,</span> <span class="s">&quot;self_entity_id&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;4&quot;</span><span class="p">,</span> <span class="s">&quot;自实体名称&quot;</span><span class="p">,</span> <span class="s">&quot;selfEntityName&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;5&quot;</span><span class="p">,</span> <span class="s">&quot;供应商Id&quot;</span><span class="p">,</span> <span class="s">&quot;supplyId&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;purchase_info&quot;</span><span class="p">,</span> <span class="s">&quot;supply_id&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;6&quot;</span><span class="p">,</span> <span class="s">&quot;供应商名称&quot;</span><span class="p">,</span> <span class="s">&quot;supplyName&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;supply&quot;</span><span class="p">,</span> <span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;7&quot;</span><span class="p">,</span> <span class="s">&quot;仓库Id&quot;</span><span class="p">,</span> <span class="s">&quot;warehouseId&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;purchase_info&quot;</span><span class="p">,</span> <span class="s">&quot;warehouse_id&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;8&quot;</span><span class="p">,</span> <span class="s">&quot;仓库名称&quot;</span><span class="p">,</span> <span class="s">&quot;warehouseName&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;warehouse&quot;</span><span class="p">,</span> <span class="s">&quot;name&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="s">&quot;9&quot;</span><span class="p">,</span> <span class="s">&quot;单号&quot;</span><span class="p">,</span> <span class="s">&quot;no&quot;</span><span class="p">,</span> <span class="s">&quot;String&quot;</span><span class="p">,</span> <span class="s">&quot;purchase_info&quot;</span><span class="p">,</span> <span class="s">&quot;no&quot;</span><span class="p">,</span> <span class="s">&quot;　&quot;</span><span class="p">]</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
 <p>OK！后面的事情就相对简单了，主要是结合<code>Objective-C</code>的语法以及自身采用的<code>JSON</code>转模型框架来对上面的数组进行加工。项目里采用的YYModel，所以最终输出结果大致如下：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -225,37 +227,35 @@
 <span class='line-number'>27</span>
 <span class='line-number'>28</span>
 <span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>//====================================== 
-</span><span class='line'>// TDFPurchaseModel.h     
-</span><span class='line'>//======================================  
-</span><span class='line'>#import &lt;Foundation/Foundation.h&gt;   
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//======================================    </span>
+</span><span class='line'><span class="c1">// TDFPurchaseModel.h    </span>
+</span><span class='line'><span class="c1">//====================================== </span>
+</span><span class='line'><span class="cp">#import &lt;Foundation/Foundation.h&gt;  </span>
 </span><span class='line'>  
-</span><span class='line'>@interface TDFPurchaseModel : NSObject    
-</span><span class='line'>/** 采购单ID */    
-</span><span class='line'>@property (nonatomic, copy) NSString *id; 
-</span><span class='line'>/** 所属实体ID */ 
-</span><span class='line'>@property (nonatomic, copy) NSString *entityId;   
-</span><span class='line'>/** 自实体ID */    
-</span><span class='line'>@property (nonatomic, copy) NSString *selfEntityId;   
-</span><span class='line'>/** 自实体名称 */    
-</span><span class='line'>@property (nonatomic, copy) NSString *selfEntityName; 
-</span><span class='line'>/** 供应商Id */    
-</span><span class='line'>@property (nonatomic, copy) NSString *supplyId;
-</span><span class='line'>......
+</span><span class='line'><span class="k">@interface</span> <span class="nc">TDFPurchaseModel</span> : <span class="bp">NSObject</span> 
+</span><span class='line'><span class="cm">/** 采购单ID */</span>    
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">copy</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="kt">id</span><span class="p">;</span> 
+</span><span class='line'><span class="cm">/** 所属实体ID */</span> 
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">copy</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">entityId</span><span class="p">;</span>    
+</span><span class='line'><span class="cm">/** 自实体ID */</span>    
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">copy</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">selfEntityId</span><span class="p">;</span>    
+</span><span class='line'><span class="cm">/** 自实体名称 */</span>    
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">copy</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">selfEntityName</span><span class="p">;</span>  
+</span><span class='line'><span class="cm">/** 供应商Id */</span>    
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">,</span> <span class="k">copy</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">supplyId</span><span class="p">;</span>
+</span><span class='line'><span class="p">......</span>
 </span><span class='line'>
-</span><span class='line'>//======================================  
-</span><span class='line'>// TDFPurchaseModel.m     
-</span><span class='line'>//======================================  
-</span><span class='line'>#import "TDFPurchaseModel.h"  
-</span><span class='line'>@implementation TDFPurchaseModel  
-</span><span class='line'>+ (nullable NSDictionary&lt;NSString *, id&gt; *)modelCustomPropertyMapper {  
-</span><span class='line'>  return @{   
-</span><span class='line'>      @"purchaseDetails" : @"purchaseDetailsVo"   
-</span><span class='line'>  };  
-</span><span class='line'>} 
-</span><span class='line'>@end
-</span><span class='line'>
+</span><span class='line'><span class="c1">//====================================== </span>
+</span><span class='line'><span class="c1">// TDFPurchaseModel.m    </span>
+</span><span class='line'><span class="c1">//====================================== </span>
+</span><span class='line'><span class="cp">#import &quot;TDFPurchaseModel.h&quot;   </span>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TDFPurchaseModel</span>   
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="n">nullable</span> <span class="bp">NSDictionary</span><span class="o">&lt;</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">,</span> <span class="kt">id</span><span class="o">&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nf">modelCustomPropertyMapper</span> <span class="p">{</span>    
+</span><span class='line'>  <span class="k">return</span> <span class="l">@{</span> 
+</span><span class='line'>      <span class="s">@&quot;purchaseDetails&quot;</span> <span class="o">:</span> <span class="s">@&quot;purchaseDetailsVo&quot;</span>  
+</span><span class='line'>  <span class="l">}</span><span class="p">;</span>    
+</span><span class='line'><span class="p">}</span>  
+</span><span class='line'><span class="k">@end</span>
 </span></code></pre></td></tr></table></div></figure>
 
 
@@ -265,23 +265,23 @@
 
 <p>记忆最深的是<code>mac</code>开发中，拖拽到<code>storyboard</code>中的控件，其内部是可能存在多个子控件的。当我直接以<code>iOS</code>开发在<code>storyboard</code>拖拽控件的方式设置约束时，就会出现一些问题：</p>
 
-<p><img src="./images/Snip20161030_1.png" alt="" /></p>
+<p><img src="http://triplecc.github.io/images/Snip20161030_1.png" alt="" /></p>
 
 <p>这样的约束是针对内部的<code>NSTextView</code>设置的，当输入文本超过外部控件时，依赖于<code>NSTextView</code>高度约束的控件会发生变化。所以应该像下面这样，在侧边栏设置：</p>
 
-<p><img src="./images/Snip20161030_3.png" alt="" /></p>
+<p><img src="http://triplecc.github.io/images/Snip20161030_3.png" alt="" /></p>
 
 <p>至于其它，由于只是搭了一个简单的界面，也不好说些啥。不过现在感觉做<code>iOS</code>开发的，上手<code>mac</code>开发还是相对容易一些。</p>
 
 <p>最后挂下抓取结果图：</p>
 
-<p><img src="./image/2016-10-30result.png" alt="" /></p>
+<p><img src="http://triplecc.github.io/image/2016-10-30result.png" alt="" /></p>
 
 <h3>总结</h3>
 
 <p>写这个软件大概花了我一天半的时间，不过应该能给身边的小伙伴省下一些无谓的时间开销，还是挺高兴的。<br></p>
 
-<p>感觉程序员还是要多思考，不过是对代码还是对业务流程。不能说以前的人这么写，或者这么做了，我就跟着这么做，而不加以思考这样的代码或者流程到底合不合理，是不是正确/最优的做法，否则很难跳出自己的舒适圈。</p>
+<p>感觉程序员还是要多思考，不过是对代码还是对业务流程。不能说以前的人这么写，或者这么做了，我就跟着这么做，而不加以思考这样的代码或者流程到底合不合理，是不是正确/最优的做法，否则很难跳出自己的舒适区域。</p>
 ]]></content>
   </entry>
   
