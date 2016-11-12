@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-11-09T11:59:05+08:00</updated>
+  <updated>2016-11-12T15:39:24+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,143 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Objective-C使用范型实现map提示]]></title>
+    <link href="http://triplecc.github.io/blog/2016-11-12-objective-cshi-yong-fan-xing-shi-xian-mapti-shi/"/>
+    <updated>2016-11-12T14:45:35+08:00</updated>
+    <id>http://triplecc.github.io/blog/objective-cshi-yong-fan-xing-shi-xian-mapti-shi</id>
+    <content type="html"><![CDATA[<p>在当前项目的一些内容加工逻辑较多的界面，我会使用<code>ViewModel</code>来对<code>Model</code>进行一层包装，这样可以保持<code>Model</code>的纯净，也可以减少<code>Controller</code>中弱逻辑代码的堆叠。当然，部分公用内容也是可以通过给<code>Model</code>添加分类来实现的，<code>ViewModel</code>更多是提供特定页面的定制化内容。</p>
+
+<p>由于项目整体并非<code>MVVM</code>模式，也就没有引入<code>ReactiveCocoa</code>，所以项目里面比较多这样的代码：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSArray &lt;TBVEmployee *&gt; *employees = @[[TBVEmployee new]];
+</span><span class='line'>
+</span><span class='line'>NSMutableArray *items = [NSMutableArray array];
+</span><span class='line'>for (TBVEmployee *employee in employees) {
+</span><span class='line'>    TBVEmployeeItemViewModel *item = [TBVEmployeeItemViewModel itemWithEmployee:employee];
+</span><span class='line'>    [items addObject:item];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这段代码主要是将<code>Model</code> 转化成<code>ViewModel</code>。</p>
+
+<p>这里可以给<code>NSArray</code>增加一个<code>tbv_map</code>方法，让这段代码阅读起来更加函数式：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface NSArray (SwiftOperation)
+</span><span class='line'>- (instancetype)tbv_map:(id (^)(id value))block;
+</span><span class='line'>@end
+</span><span class='line'>
+</span><span class='line'>@implementation NSArray (SwiftOperation)
+</span><span class='line'>- (instancetype)tbv_map:(id(^)(id))block {
+</span><span class='line'>    NSCParameterAssert(block != NULL);
+</span><span class='line'>    NSMutableArray *temp = [NSMutableArray array];
+</span><span class='line'>    for (id element in self) {
+</span><span class='line'>        [temp addObject:block(element)];
+</span><span class='line'>    }
+</span><span class='line'>    return temp;
+</span><span class='line'>}
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>添加分类后，上面那段代码可以这样写：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSArray *employees = @[[TBVEmployee new]];
+</span><span class='line'>NSMutableArray *items = [employees tbv_map:^id(id value) {
+</span><span class='line'>    return [TBVEmployeeItemViewModel itemWithEmployee:value];
+</span><span class='line'>}];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>嗯，看起来清爽了不少。但是写多了之后会有一个小瑕疵：为了能<code>map</code>所有<code>NSArray</code>能容纳的类型，<code>block</code>的传参使用了<code>id</code>类型，当需要使用形参的个别属性时，我需要手动更改<code>id</code>为具体的类名：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSMutableArray *items = [employees tbv_map:^id(TBVEmployee *value) {
+</span><span class='line'>    NSLog(@"employee's name: %@", value.name);
+</span><span class='line'>    return [TBVEmployeeItemViewModel itemWithEmployee:value];
+</span><span class='line'>}];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>有没有什么法子让<code>Xcode</code>的智能提示帮我直接预测到要<code>map</code>的元素类型呢？</p>
+
+<p>答案是<code>Objective-C</code>的范型。虽然<code>Objective-C</code>的范型支持还是处于很弱的状态，但是处理当前的这个需求还是可以的。</p>
+
+<p>先给<code>NSArray</code>分类添加范型：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface NSArray &lt;T&gt; (SwiftOperation)
+</span><span class='line'>- (instancetype)tbv_map:(id (^)(T value))block;
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后在使用时，指定需要<code>map</code>数组的元素类型：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSArray &lt;TBVEmployee *&gt; *employees = @[[TBVEmployee new]];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后<code>Xcode</code>就回根据数组元素的类型，做出智能提示啦：</p>
+
+<p><img src="./image/2016-11-12-3.26.30.png" alt="" /></p>
+
+<p>以此还可以增加其它的操作：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface NSArray &lt;T&gt; (SwiftOperation)
+</span><span class='line'>/** -&gt; swift map */
+</span><span class='line'>- (instancetype)tbv_map:(id (^)(T value))block;
+</span><span class='line'>/** -&gt; swift filter */
+</span><span class='line'>- (instancetype)tbv_filter:(BOOL (^)(T value))block;
+</span><span class='line'>/** -&gt; swift reduce */
+</span><span class='line'>- (id)tbv_foldLeftWithStart:(T)start reduce:(T (^)(T result, T next))reduce;
+</span><span class='line'>/** -&gt; swift forEach */
+</span><span class='line'>- (void)tbv_forEach:(void (^)(T value))block;
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里只添加了<code>NSArray</code>类型的操作，<code>NSDictionary</code>、<code>NSSet</code>这类集合类型也可以以此类推来实现。不过上面的方法只是做了一层简易的包装，并没有延迟计算啥的，只是让我写起来能更加开心、舒畅点吧。</p>
+
+<p>突然好怀念在项目里面用<code>Reactive Extension</code>的日子啊＝＝，那感觉真是爽的不要不要的。。。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[一次短暂的mac开发之旅]]></title>
@@ -7407,176 +7544,6 @@ AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/
 在第二个实现中，因为编译器的原因，我不得不将一般转换as改成可选转换as?，然后增加if语句进行判断。(针对类型转换，if-case可以缩减代码量)<br></p>
 
 <p>case匹配模式在针对<code>值绑定</code>，<code>元组</code>，<code>类型转换</code>都带来了一定便利，<a href="http://appventure.me/2015/08/20/swift-pattern-matching-in-detail/#sec-9">Match Me if you can: Swift Pattern Matching in Detail.</a>这篇文章中，对这几种情况进行了非常详细的讲解，并列举了一些实际应用的例子，推荐阅读。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在Swift实现Struct归档]]></title>
-    <link href="http://triplecc.github.io/blog/2015-12-24-zai-swiftshi-xian-gui-dang-struct/"/>
-    <updated>2015-12-24T15:08:29+08:00</updated>
-    <id>http://triplecc.github.io/blog/zai-swiftshi-xian-gui-dang-struct</id>
-    <content type="html"><![CDATA[<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">struct</span> <span class="n">AboutMe</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">detail</span><span class="p">:</span> <span class="n">String</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">links</span><span class="p">:</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在Swift中，Struct类型是无法进行归档操作的，只有继承自NSObject并且遵守了NSCoding协议的类才可以进行相应的归档操作。也就是将上面结构体改成类：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="nl">AboutMe</span><span class="p">:</span> <span class="bp">NSObject</span><span class="p">,</span> <span class="bp">NSCoding</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">detail</span><span class="p">:</span> <span class="n">String</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">links</span><span class="p">:</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span>
-</span><span class='line'>    <span class="n">required</span> <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">coder</span> <span class="nl">aDecoder</span><span class="p">:</span> <span class="bp">NSCoder</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">aDecoder</span><span class="p">.</span><span class="n">decodeObjectForKey</span><span class="p">(</span><span class="s">&quot;detail&quot;</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">aDecoder</span><span class="p">.</span><span class="n">decodeObjectForKey</span><span class="p">(</span><span class="s">&quot;links&quot;</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">func</span> <span class="n">encodeWithCoder</span><span class="p">(</span><span class="nl">aCoder</span><span class="p">:</span> <span class="bp">NSCoder</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">aCoder</span><span class="p">.</span><span class="n">encodeObject</span><span class="p">(</span><span class="n">detail</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">aCoder</span><span class="p">.</span><span class="n">encodeObject</span><span class="p">(</span><span class="n">links</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>但是如果要对Struct进行归档，可以转换思维，使用按照以下步骤实现。</p>
-
-<!--more-->
-
-
-<h6>实现一个归档、解档协议：</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">Archivable</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">func</span> <span class="n">archive</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="bp">NSDictionary</span>
-</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="nl">unarchive</span><span class="p">:</span> <span class="bp">NSDictionary</span><span class="o">?</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>因为NSKeyedArchiver可以直接对Foundation类进行操作，所以可以将结构体中的属性都转换成字典，然后进行后续操作；archive函数返回一个归档好的字典，而可失败构造函数传入一个需要解档的字典。</p>
-
-<h6>让AboutMe遵守并实现以上声明的协议</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">extension</span> <span class="nl">AboutMe</span><span class="p">:</span> <span class="n">Archivable</span><span class="p">{</span>
-</span><span class='line'>    <span class="k">func</span> <span class="n">archive</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="bp">NSDictionary</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="p">[</span><span class="s">&quot;detail&quot;</span> <span class="o">:</span> <span class="n">detail</span><span class="p">,</span> <span class="s">&quot;links&quot;</span> <span class="o">:</span> <span class="n">links</span><span class="p">]</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="nl">unarchive</span><span class="p">:</span> <span class="bp">NSDictionary</span><span class="o">?</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">guard</span> <span class="k">let</span> <span class="n">values</span> <span class="o">=</span> <span class="n">unarchive</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">nil</span> <span class="p">}</span>
-</span><span class='line'>        <span class="k">if</span> <span class="k">let</span> <span class="n">detail</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s">&quot;detail&quot;</span><span class="p">]</span> <span class="kt">as</span><span class="o">?</span> <span class="n">String</span><span class="p">,</span>
-</span><span class='line'>            <span class="n">links</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s">&quot;links&quot;</span><span class="p">]</span> <span class="kt">as</span><span class="o">?</span> <span class="p">[[</span><span class="nl">String</span> <span class="p">:</span> <span class="n">String</span><span class="p">]]</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nb">self</span><span class="p">.</span><span class="n">detail</span> <span class="o">=</span> <span class="n">detail</span>
-</span><span class='line'>                <span class="nb">self</span><span class="p">.</span><span class="n">links</span> <span class="o">=</span> <span class="n">links</span>
-</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="nb">nil</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这里使用扩展进行归解档方法的添加，可以看到，原先结构体的属性在接口上都是以字典的形势在传输。</p>
-
-<h6>实现归解档函数</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">func</span> <span class="n">unarchiveObjectWithFile</span><span class="o">&lt;</span><span class="nl">T</span><span class="p">:</span> <span class="n">Archivable</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">path</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="o">?</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">T</span><span class="p">(</span><span class="nl">unarchive</span><span class="p">:</span> <span class="bp">NSKeyedUnarchiver</span><span class="p">.</span><span class="n">unarchiveObjectWithFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="kt">as</span><span class="o">?</span> <span class="bp">NSDictionary</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">public</span> <span class="k">func</span> <span class="n">archiveObject</span><span class="o">&lt;</span><span class="nl">T</span><span class="p">:</span> <span class="n">Archivable</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">object</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">toFile</span> <span class="nl">path</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="bp">NSKeyedArchiver</span><span class="p">.</span><span class="n">archiveRootObject</span><span class="p">(</span><span class="n">object</span><span class="p">.</span><span class="n">archive</span><span class="p">(),</span> <span class="nl">toFile</span><span class="p">:</span> <span class="n">path</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>对AboutMe进行字典化后，NSKeyedArchiver可以直接对其进行操作，所以这个实现并不复杂。<br></p>
-
-<p>完成以上步骤，就可以对Struct进行归档和接档操作了：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="n">path</span> <span class="o">=</span> <span class="n">NSSearchPathForDirectoriesInDomains</span><span class="p">(</span><span class="n">NSSearchPathDirectory</span><span class="p">.</span><span class="n">CachesDirectory</span><span class="p">,</span> <span class="n">NSSearchPathDomainMask</span><span class="p">.</span><span class="n">UserDomainMask</span><span class="p">,</span> <span class="nb">true</span><span class="p">).</span><span class="n">first</span><span class="o">!</span> <span class="o">+</span> <span class="s">&quot;/Person&quot;</span>
-</span><span class='line'><span class="k">let</span> <span class="n">aboutMe</span> <span class="o">=</span> <span class="n">AboutMe</span><span class="p">(</span><span class="nl">detail</span><span class="p">:</span> <span class="s">&quot;tripleCC&quot;</span><span class="p">,</span> <span class="nl">links</span><span class="p">:</span> <span class="p">[[</span><span class="s">&quot;github&quot;</span> <span class="o">:</span> <span class="s">&quot;https://github.com/tripleCC&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s">&quot;gitblog&quot;</span> <span class="o">:</span> <span class="s">&quot;http://triplecc.github.io/&quot;</span><span class="p">]])</span>
-</span><span class='line'><span class="n">archiveObject</span><span class="p">(</span><span class="n">aboutMe</span><span class="p">,</span> <span class="nl">toFile</span><span class="p">:</span> <span class="n">path</span><span class="p">)</span>
-</span><span class='line'><span class="k">let</span> <span class="nl">unAboutMe</span><span class="p">:</span> <span class="n">AboutMe</span><span class="o">?</span> <span class="o">=</span> <span class="n">unarchiveObjectWithFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-</span><span class='line'><span class="n">debugPrint</span><span class="p">(</span><span class="n">unAboutMe</span><span class="p">)</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果要进行集合操作，可以添加以下函数：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">func</span> <span class="n">archiveObjectLists</span><span class="o">&lt;</span><span class="nl">T</span><span class="p">:</span> <span class="n">Archivable</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">lists</span><span class="p">:</span> <span class="p">[</span><span class="n">T</span><span class="p">],</span> <span class="n">toFile</span> <span class="nl">path</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">let</span> <span class="n">encodedLists</span> <span class="o">=</span> <span class="n">lists</span><span class="p">.</span><span class="n">map</span><span class="p">{</span> <span class="err">$</span><span class="mf">0.</span><span class="n">archive</span><span class="p">()</span> <span class="p">}</span>
-</span><span class='line'>    <span class="bp">NSKeyedArchiver</span><span class="p">.</span><span class="n">archiveRootObject</span><span class="p">(</span><span class="n">encodedLists</span><span class="p">,</span> <span class="nl">toFile</span><span class="p">:</span> <span class="n">path</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">public</span> <span class="k">func</span> <span class="n">unarchiveObjectListsWithFile</span><span class="o">&lt;</span><span class="nl">T</span><span class="p">:</span> <span class="n">Archivable</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">path</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="n">T</span><span class="p">]</span><span class="o">?</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">guard</span> <span class="k">let</span> <span class="n">decodedLists</span> <span class="o">=</span> <span class="bp">NSKeyedUnarchiver</span><span class="p">.</span><span class="n">unarchiveObjectWithFile</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="kt">as</span><span class="o">?</span> <span class="p">[</span><span class="bp">NSDictionary</span><span class="p">]</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">nil</span> <span class="p">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">decodedLists</span><span class="p">.</span><span class="n">flatMap</span><span class="p">{</span> <span class="n">T</span><span class="p">(</span><span class="nl">unarchive</span><span class="p">:</span> <span class="err">$</span><span class="mi">0</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>参考博客</h3>
-
-<p>1.<a href="http://swiftandpainless.com/nscoding-and-swift-structs/">NSCoding And Swift Structs</a><br>
-2.<a href="http://redqueencoder.com/property-lists-and-user-defaults-in-swift/">Property Lists And User Defaults in Swift</a></p>
 ]]></content>
   </entry>
   

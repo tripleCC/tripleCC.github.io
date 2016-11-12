@@ -1,0 +1,327 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Objective-C使用范型实现map提示 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="在当前项目的一些内容加工逻辑较多的界面，我会使用ViewModel来对Model进行一层包装，这样可以保持Model的纯净，也可以减少Controller中弱逻辑代码的堆叠。当然，部分公用内容也是可以通过给Model添加分类来实现的，ViewModel更多是提供特定页面的定制化内容。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2016-11-12-objective-cshi-yong-fan-xing-shi-xian-mapti-shi/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="http://libs.useso.com/js/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="/javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="//fonts.useso.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="//fonts.useso.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>日拱一卒</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.baidu.com" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Objective-C使用范型实现map提示</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2016-11-12T14:45:35+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>2:45 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>在当前项目的一些内容加工逻辑较多的界面，我会使用<code>ViewModel</code>来对<code>Model</code>进行一层包装，这样可以保持<code>Model</code>的纯净，也可以减少<code>Controller</code>中弱逻辑代码的堆叠。当然，部分公用内容也是可以通过给<code>Model</code>添加分类来实现的，<code>ViewModel</code>更多是提供特定页面的定制化内容。</p>
+
+<p>由于项目整体并非<code>MVVM</code>模式，也就没有引入<code>ReactiveCocoa</code>，所以项目里面比较多这样的代码：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSArray &lt;TBVEmployee *&gt; *employees = @[[TBVEmployee new]];
+</span><span class='line'>
+</span><span class='line'>NSMutableArray *items = [NSMutableArray array];
+</span><span class='line'>for (TBVEmployee *employee in employees) {
+</span><span class='line'>    TBVEmployeeItemViewModel *item = [TBVEmployeeItemViewModel itemWithEmployee:employee];
+</span><span class='line'>    [items addObject:item];
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这段代码主要是将<code>Model</code> 转化成<code>ViewModel</code>。</p>
+
+<p>这里可以给<code>NSArray</code>增加一个<code>tbv_map</code>方法，让这段代码阅读起来更加函数式：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface NSArray (SwiftOperation)
+</span><span class='line'>- (instancetype)tbv_map:(id (^)(id value))block;
+</span><span class='line'>@end
+</span><span class='line'>
+</span><span class='line'>@implementation NSArray (SwiftOperation)
+</span><span class='line'>- (instancetype)tbv_map:(id(^)(id))block {
+</span><span class='line'>    NSCParameterAssert(block != NULL);
+</span><span class='line'>    NSMutableArray *temp = [NSMutableArray array];
+</span><span class='line'>    for (id element in self) {
+</span><span class='line'>        [temp addObject:block(element)];
+</span><span class='line'>    }
+</span><span class='line'>    return temp;
+</span><span class='line'>}
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>添加分类后，上面那段代码可以这样写：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSArray *employees = @[[TBVEmployee new]];
+</span><span class='line'>NSMutableArray *items = [employees tbv_map:^id(id value) {
+</span><span class='line'>    return [TBVEmployeeItemViewModel itemWithEmployee:value];
+</span><span class='line'>}];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>嗯，看起来清爽了不少。但是写多了之后会有一个小瑕疵：为了能<code>map</code>所有<code>NSArray</code>能容纳的类型，<code>block</code>的传参使用了<code>id</code>类型，当需要使用形参的个别属性时，我需要手动更改<code>id</code>为具体的类名：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSMutableArray *items = [employees tbv_map:^id(TBVEmployee *value) {
+</span><span class='line'>    NSLog(@"employee's name: %@", value.name);
+</span><span class='line'>    return [TBVEmployeeItemViewModel itemWithEmployee:value];
+</span><span class='line'>}];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>有没有什么法子让<code>Xcode</code>的智能提示帮我直接预测到要<code>map</code>的元素类型呢？</p>
+
+<p>答案是<code>Objective-C</code>的范型。虽然<code>Objective-C</code>的范型支持还是处于很弱的状态，但是处理当前的这个需求还是可以的。</p>
+
+<p>先给<code>NSArray</code>分类添加范型：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface NSArray &lt;T&gt; (SwiftOperation)
+</span><span class='line'>- (instancetype)tbv_map:(id (^)(T value))block;
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后在使用时，指定需要<code>map</code>数组的元素类型：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>NSArray &lt;TBVEmployee *&gt; *employees = @[[TBVEmployee new]];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后<code>Xcode</code>就回根据数组元素的类型，做出智能提示啦：</p>
+
+<p><img src="./image/2016-11-12-3.26.30.png" alt="" /></p>
+
+<p>以此还可以增加其它的操作：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>@interface NSArray &lt;T&gt; (SwiftOperation)
+</span><span class='line'>/** -&gt; swift map */
+</span><span class='line'>- (instancetype)tbv_map:(id (^)(T value))block;
+</span><span class='line'>/** -&gt; swift filter */
+</span><span class='line'>- (instancetype)tbv_filter:(BOOL (^)(T value))block;
+</span><span class='line'>/** -&gt; swift reduce */
+</span><span class='line'>- (id)tbv_foldLeftWithStart:(T)start reduce:(T (^)(T result, T next))reduce;
+</span><span class='line'>/** -&gt; swift forEach */
+</span><span class='line'>- (void)tbv_forEach:(void (^)(T value))block;
+</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里只添加了<code>NSArray</code>类型的操作，<code>NSDictionary</code>、<code>NSSet</code>这类集合类型也可以以此类推来实现。不过上面的方法只是做了一层简易的包装，并没有延迟计算啥的，只是让我写起来能更加开心、舒畅点吧。</p>
+
+<p>突然好怀念在项目里面用<code>Reactive Extension</code>的日子啊＝＝，那感觉真是爽的不要不要的。。。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2016-11-12T14:45:35+08:00'><span class='date'><span class='date-month'>Nov</span> <span class='date-day'>12</span><span class='date-suffix'>th</span>, <span class='date-year'>2016</span></span> <span class='time'>2:45 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2016-10-22-yi-ci-duan-zan-de-mackai-fa-zhi-lu/" title="Previous Post: 一次短暂的mac开发之旅">&laquo; 一次短暂的mac开发之旅</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 喜欢技术，喜欢Ubuntu，喜欢字符终端，热衷底层，涉略微处理器、Linux，最终加入移动大家庭 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc" style="color: coral"> 访问我的简书 </a><br>
+  <a href="https://github.com/tripleCC" style="color: coral"> 访问我的github </a><br>
+  <a href="https://twitter.com/tripleCCBrian" style="color: coral"> 我的twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016-11-12-objective-cshi-yong-fan-xing-shi-xian-mapti-shi/">Objective-C使用范型实现map提示</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-10-22-yi-ci-duan-zan-de-mackai-fa-zhi-lu/">一次短暂的mac开发之旅</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/">使用RxSwift+Moya+ObjectMapper接入模型</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-10-06-rxswiftzhong-usingde-ying-yong/">ReactiveX中Using操作的应用</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-10-03-guan-yu-rxswiftzhong-de-disposebag/">关于RxSwift中的DisposeBag</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
