@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2016-11-21T18:48:08+08:00</updated>
+  <updated>2016-12-05T23:27:45+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,274 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[利用runtime兼容老代码小记]]></title>
+    <link href="http://triplecc.github.io/blog/2016-12-05-li-yong-runtimejian-rong-lao-dai-ma-xiao-ji/"/>
+    <updated>2016-12-05T21:50:14+08:00</updated>
+    <id>http://triplecc.github.io/blog/li-yong-runtimejian-rong-lao-dai-ma-xiao-ji</id>
+    <content type="html"><![CDATA[<p>通常来说，在项目的初期，因为各种原因，要么人力不够，要么项目周期过紧，会产生难以维护、阅读性较差的代码。而这种代码，我习惯称之为“老代码”。就比如现在手上的项目，初期是由一个被迫转到<code>iOS</code>的后端<code>java</code>哥们写的，所以工程里面到处都可以看见<code>java</code>的一些编码风格，比如模型以<code>Vo</code>结尾、接口以<code>I</code>开头等，甚至转场动画都是简单粗暴地通过<code>view</code>叠加再辅以动画实现的。“老代码”是项目特定时间段的产物，因此，也不能把锅全部推给写这些代码的人。不过前人埋坑，后人总得填啊。</p>
+
+<p>好了，吐槽完毕，开始正题。</p>
+
+<!--more-->
+
+
+<p>当前项目的业务里面有各种可供筛选的条件，比如分类、通道、类别等。“老代码”是这样实现相关功能的：</p>
+
+<ul>
+<li>每种筛选条件都创建一个模型，它们的父类并没有统一</li>
+<li>分类存在父子分类，所以有一个ItreeNode协议来规范分类模型</li>
+<li>通道和类别等其他条件是没有父子分类的，不过“老代码”为了能让视图统一更具ItreeNode来渲染界面，依然让它们遵守ItreeNode，这里暂且不论这样做是否科学</li>
+<li>后台返回的数据中没“全部”条件，需要前端自己添加，“老代码”以-1作为“全部”条件的id，但是没有统一入口，外部都是手动创建模型，赋值id属性。</li>
+<li>筛选UI控件使用id保证条件的唯一性，而获取id是通过ItreeNode的obtainItemId方法</li>
+</ul>
+
+
+<p>做为一个比较懒的人，做新页面的时候，我肯定不想每次都手动创建一次“全部”条件，至少不能每次都创建不一样的模型，只为了给当前筛选控件添加“全部”条件。更进一步讲，能不能创建一个如下的<code>NSArray</code>分类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">&lt;</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nf">tdf_prefixAllTypeWithName:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样针对条件数组，我只需要这样调用就可以了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// name可以是@“全部分类&quot;、@“全部通道”或者其他筛选条件</span>
+</span><span class='line'><span class="p">[</span><span class="n">categories</span> <span class="nl">tdf_prefixAllTypeWithName</span><span class="p">:</span><span class="n">name</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么问题来了，要怎么做才能让不同筛选的条件都能使用同一个“全部”接口呢？</p>
+
+<p>首先，我不想用<code>if-else</code>或者<code>switch-if</code>的，虽然简单粗暴，但是以后如果要添加新的条件类型的话，还需要修改这个判断分支，不够优雅。
+既然筛选的UI控件使用的是<code>ItreeNode</code>方法获取，那我直接创建一个<code>AllType</code>好了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TDFTreeNodeAllType</span> : <span class="nc">Base</span> <span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;</span>
+</span><span class='line'><span class="cm">/** 类型名（默认‘全部分类’） */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">node</span><span class="p">;</span>
+</span><span class='line'><span class="cm">/** 通过这个方法来比较是否是全部分类 */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">isEqual:</span><span class="p">(</span><span class="kt">id</span> <span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;</span><span class="p">)</span><span class="nv">object</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TDFTreeNodeAllType</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">node</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">TDFTreeNodeAllType</span> <span class="o">*</span><span class="n">node</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TDFTreeNodeAllType</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="n">node</span><span class="p">.</span><span class="kt">id</span> <span class="o">=</span> <span class="n">TDFSilverBulletId</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">node</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">isEqual:</span><span class="p">(</span><span class="kt">id</span> <span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;</span><span class="p">)</span><span class="nv">object</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[[</span><span class="nb">self</span> <span class="n">obtainItemId</span><span class="p">]</span> <span class="nl">isEqualToString</span><span class="p">:[</span><span class="n">object</span> <span class="n">obtainItemId</span><span class="p">]];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">obtainItemId</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="kt">id</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">obtainItemName</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">name</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="bp">NSArray</span> <span class="nl">(AllType)</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">&lt;</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nf">tdf_prefixAllTypeWithName:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSAssert</span><span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="nl">conformsToProtocol</span><span class="p">:@</span><span class="n">protocol</span><span class="p">(</span><span class="n">ITreeNode</span><span class="p">)],</span> <span class="s">@&quot;items should conform to ITreeNode&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">mutableCopy</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[[</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="n">obtainItemId</span><span class="p">]</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">TDFSilverBulletId</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">TDFTreeNodeAllType</span> <span class="o">*</span><span class="n">all</span> <span class="o">=</span> <span class="p">[</span><span class="n">TDFTreeNodeAllType</span> <span class="n">node</span><span class="p">];</span>
+</span><span class='line'>        <span class="n">all</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">result</span> <span class="nl">insertObject</span><span class="p">:</span><span class="n">all</span> <span class="nl">atIndex</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>搞定收工！</p>
+
+<p>但是稍微跑下后，我发现了一个蛋疼的问题：外部要使用这些条件类型特定属性的时候，程序会崩溃，因为<code>TDFTreeNodeAllType</code>找不到对应的方法。
+这时，我第一个想到的就是动态创建一个“全部”类型对象：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">&lt;</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nf">tdf_prefixAllTypeWithName:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSAssert</span><span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="nl">conformsToProtocol</span><span class="p">:@</span><span class="n">protocol</span><span class="p">(</span><span class="n">ITreeNode</span><span class="p">)],</span> <span class="s">@&quot;items should conform to ITreeNode&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">mutableCopy</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[[</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="n">obtainItemId</span><span class="p">]</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">TDFSilverBulletId</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kt">Class</span> <span class="k">class</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="k">class</span><span class="p">];</span>
+</span><span class='line'>        <span class="kt">id</span> <span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;</span> <span class="n">node</span> <span class="o">=</span> <span class="p">[[</span><span class="k">class</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>          <span class="o">???????????????????????????????????????????</span>
+</span><span class='line'>      
+</span><span class='line'>        <span class="p">[</span><span class="n">result</span> <span class="nl">insertObject</span><span class="p">:</span><span class="n">node</span> <span class="nl">atIndex</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>但是这里我怎么让<code>node</code>成为全部类型对象呢？实际上我并不能直接让<code>node</code>的<code>obtainItemId</code>方法返回<code>-1</code>，也不能通过<code>method_setImplementation</code>或者<code>method_exchangeImplementations</code>修改<code>obtainItemId</code>的实现，因为会影响到类原本对于这个方法的实现。</p>
+
+<p>绕了一圈，还是回到了单独创建一个模型<code>TDFTreeNodeAllType</code>表示“全部”条件的方案。现在明确要解决的问题是：如何让外部调用<code>TDFTreeNodeAllType</code>没有，筛选条件模型有的方法，还可以不崩溃？嗯，答案在消息转发相关的三步骤。</p>
+
+<p>首先要记录筛选条件的<code>Class</code>：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TDFTreeNodeAllType</span> : <span class="nc">Base</span> <span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;</span>
+</span><span class='line'><span class="cm">/** 当前类型对应的类，保证同样的操作不会崩溃 */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">Class</span> <span class="n">targetClass</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/** 类型名（默认‘全部分类’） */</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">node</span><span class="p">;</span>
+</span><span class='line'><span class="cm">/** 通过这个方法来比较是否是全部分类 */</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">isEqual:</span><span class="p">(</span><span class="kt">id</span> <span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;</span><span class="p">)</span><span class="nv">object</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="bp">NSArray</span> <span class="nl">(AllType)</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">&lt;</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nf">tdf_prefixAllTypeWithName:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">name</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSAssert</span><span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="nl">conformsToProtocol</span><span class="p">:@</span><span class="n">protocol</span><span class="p">(</span><span class="n">ITreeNode</span><span class="p">)],</span> <span class="s">@&quot;items should conform to ITreeNode&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">mutableCopy</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[[</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="n">obtainItemId</span><span class="p">]</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">TDFSilverBulletId</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">TDFTreeNodeAllType</span> <span class="o">*</span><span class="n">all</span> <span class="o">=</span> <span class="p">[</span><span class="n">TDFTreeNodeAllType</span> <span class="n">node</span><span class="p">];</span>
+</span><span class='line'>        <span class="n">all</span><span class="p">.</span><span class="n">targetClass</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">firstObject</span> <span class="k">class</span><span class="p">];</span>
+</span><span class='line'>        <span class="n">all</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">result</span> <span class="nl">insertObject</span><span class="p">:</span><span class="n">all</span> <span class="nl">atIndex</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在消息转发前，可以通过重载<code>forwardingTargetForSelector</code>知悉当前要调用的方法。所以只要在这个方法里面判断<code>TDFTreeNodeAllType</code>是否存在此<code>SEL</code>，没有的话返回上面保存<code>Class</code>创建的对象就可以了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">forwardingTargetForSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="nb">self</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">aSelector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">NSAssert</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">targetClass</span><span class="p">,</span> <span class="s">@&quot;target class should&#39;t be nil in order to avoiding forwarding Invocation&quot;</span><span class="p">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="p">[[</span><span class="nb">self</span><span class="p">.</span><span class="n">targetClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="nb">super</span> <span class="nl">forwardingTargetForSelector</span><span class="p">:</span><span class="n">aSelector</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>再给<code>NSObject</code>添加一个判断是否为“全部”条件的分类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="bp">NSObject</span> <span class="nl">(AllType)</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">tdf_isAllType</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSAssert</span><span class="p">([</span><span class="nb">self</span> <span class="nl">conformsToProtocol</span><span class="p">:@</span><span class="n">protocol</span><span class="p">(</span><span class="n">ITreeNode</span><span class="p">)],</span> <span class="s">@&quot;object should confirm ITreeNode&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[[(</span><span class="kt">id</span> <span class="o">&lt;</span><span class="n">ITreeNode</span><span class="o">&gt;</span><span class="p">)</span><span class="nb">self</span> <span class="n">obtainItemId</span><span class="p">]</span> <span class="nl">isEqualToString</span><span class="p">:</span><span class="n">TDFSilverBulletId</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样一来，添加和使用“全部”条件就非常方便了。</p>
+
+<p>虽然很多论调都说<code>runtime</code>工作上用的场景非常之少，面试问这些的没啥用，但是个人感觉还是要知道一些的。因为假如真的遇到一些难以通过平常手段搞定的需求的话，<code>runtime</code>能给开发者带来一些别样的灵感。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[国外iOS开发者的博客]]></title>
@@ -26,6 +294,13 @@
 <li><a href="https://ruslanspivak.com">https://ruslanspivak.com</a></li>
 <li><a href="http://chris.eidhof.nl/post/">http://chris.eidhof.nl/post/</a></li>
 <li><a href="http://alisoftware.github.io/">http://alisoftware.github.io/</a></li>
+<li><a href="https://www.mikeash.com/pyblog/">https://www.mikeash.com/pyblog/</a></li>
+<li><a href="http://www.cocoawithlove.com/">http://www.cocoawithlove.com/</a></li>
+<li><a href="http://nshipster.com/">http://nshipster.com/</a></li>
+<li><a href="https://www.raywenderlich.com/">https://www.raywenderlich.com/</a></li>
+<li><a href="https://www.cocoacontrols.com/">https://www.cocoacontrols.com/</a></li>
+<li><a href="http://blog.mugunthkumar.com/category/articles/">http://blog.mugunthkumar.com/category/articles/</a></li>
+<li><a href="http://petersteinberger.com/">http://petersteinberger.com/</a></li>
 </ul>
 
 ]]></content>
@@ -7235,123 +7510,6 @@ AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/
 <a href="http://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html">常用 Git 命令清单</a><br>
 <a href="http://www.ruanyifeng.com/blog/2015/12/git-workflow.html">Git 工作流程</a><br>
 <a href="http://www.ruanyifeng.com/blog/2016/01/commit_message_change_log.html">Git Commit规范</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[在Ubuntu下编译Swift]]></title>
-    <link href="http://triplecc.github.io/blog/2016-01-05-zai-ubuntuxia-bian-yi-swift/"/>
-    <updated>2016-01-05T22:00:18+08:00</updated>
-    <id>http://triplecc.github.io/blog/zai-ubuntuxia-bian-yi-swift</id>
-    <content type="html"><![CDATA[<p>哎，近半年没有在Ubuntu的字符终端下畅爽地码代码了（那种Ctrl+Alt+F1~F6然后只有不同颜色的字符在屏幕上跳跃的感觉现在想起来还是超爽啊！），今天恰好来试下在Ubuntu下编译Swift，因为要截图，所以只能在图形界面的虚拟终端下码了- -。</p>
-
-<h5>下载工具包</h5>
-
-<p>首先需要进这<a href="https://swift.org/download/">这里</a>下载对应的工具包，因为我的系统是去年安装的Ubuntu14.04所以选择最后一个。<br>
-<img src="http://triplecc.github.io/images/Snip20160105_8.png" alt="" /><br></p>
-
-<h5>解压工具包</h5>
-
-<p>然后进入下载文件夹解压：<br>
-<img src="http://triplecc.github.io/images/Snip20160105_9.png" alt="" /><br>
-可以看到解压后，目录下有下面几个子目录：<br>
-<img src="http://triplecc.github.io/images/Snip20160105_10.png" alt="" /><br>
-主要说明三个子目录</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>bin   可执行文件
-</span><span class='line'>lib   可执行文件动态库
-</span><span class='line'>share man</span></code></pre></td></tr></table></div></figure>
-
-
-<!--More-->
-
-
-<h5>设置PATH路径</h5>
-
-<p>接下来需要设置系统的PATH：<br></p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>// root
-</span><span class='line'>$ vim /etc/profile
-</span><span class='line'>// 对应的user
-</span><span class='line'>$ vim ~/.profile</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后在文件的末尾添加以下表达式即可（Shift+g跳到最后一行；Shift+o添加一行）：<br>
-<img src="http://triplecc.github.io/images/Snip20160105_12.png" alt="" /><br>
-也可以在当前虚拟终端暂时性的设置PATH，不过退出这个终端在重新开启一个就恢复以前的PATH了：<br>
-<img src="http://triplecc.github.io/images/Snip20160105_11.png" alt="" /><br>
-这里我直接把工具包目录下的bin目录以及lib目录中的动态库和可执行文件直接移到/usr/local/bin和/usr/local/lib中，这样就不需要修改PATH路径了。</p>
-
-<h5>下载Swift运行的依赖库</h5>
-
-<p>因为上星期在运行Swift开源代码的时候，我基本把所有的依赖环境都安装了，所以不需要重新安装，如果没有安装过的话，可以执行以下命令：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ sudo apt-get install clang libicu-dev</span></code></pre></td></tr></table></div></figure>
-
-
-<h5>编写Swift程序</h5>
-
-<p>上面步骤执行完成，就可以在Ubuntu上编写运行Swift代码了。
-先试用下Swift的REPL，效果如下：<br>
-<img src="http://triplecc.github.io/images/Snip20160105_15.png" alt="" /><br>
-然后就可以正式编写Swift代码了，想想都有点小激动＝＝。<br>
-新建一个Swift目录，然后创建第一个程序目录HelloWorld。<br></p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ cd ~/Study
-</span><span class='line'>$ mkdir -p Swift/HelloWorld
-</span><span class='line'>$ cd Swift/HelloWorld</span></code></pre></td></tr></table></div></figure>
-
-
-<p>因为每个包都需要有Package.swift文件，所以执行以下命令进行创建：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ touch package.swift</span></code></pre></td></tr></table></div></figure>
-
-
-<p>最后需要创建一个包含main.swift的Sources文件夹：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ mkdir Sources
-</span><span class='line'>$ touch Sources/main.swift</span></code></pre></td></tr></table></div></figure>
-
-
-<p>接着开始编辑main.swift：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ vim main.swift
-</span><span class='line'>// 插入以下代码
-</span><span class='line'>print("Hello, world!")</span></code></pre></td></tr></table></div></figure>
-
-
-<p>执行以下命令编译并运行文件：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>$ swift build
-</span><span class='line'>$ .build/debug/Swift</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以下为运行结果 ：</p>
-
-<p><img src="http://triplecc.github.io/images/Snip20160105_14.png" alt="" /><br></p>
-
-<h5>THE END</h5>
-
-<p>在Ubuntu下写Swift，感觉还是非常不错的，以后有时间可以多玩一玩。</p>
 ]]></content>
   </entry>
   
