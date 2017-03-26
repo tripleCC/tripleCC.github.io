@@ -114,23 +114,64 @@ Mac 默认的 shell 是 bash （ /bin/sh ），那么为什么不用系统默认
 主要是因为 zsh 强大的可定制性。即使还没对 zsh 进行配置，它也具备了一些非常实用的功能：
 
 - 可以补全命令 / 路径 / 参数等，tab 可展示所有待选项，并可使用 tab / tab + shift / ctrl + f / ctrl + b / ctrl + n / ctrl + p 进行选择。（如果使用 tmux 默认的 prefix ， ctrl  + bb 才会发送 ctrl + b）
-- 不需要输入 cd 跳转，直接输入路径即可。输入 d ，可列出当前访问过的目录，继续输入相应数字可进入目录。
+- 不需要输入 cd 跳转，直接输入路径即可。输入 d ，可列出访问过的目录，继续输入相应数字可进入目录。
 - 根据前缀查找历史命令，比如输入 git ，按上方向键，查找的是所有用过的 git 命令，而不是全部命令。
 - 还有别名，搜索等，更多内容可以查看 [Why zsh?](https://www-s.acm.illinois.edu/workshops/zsh/why.html)。
 
 前面说了， zsh 最大的优势在于定制性强，那么配置起来会不会很复杂？关于这个，开源社区已经有现成的了－－ [oh-my-zsh](https://github.com/robbyrussell/oh-my-zsh) 。这个就不展开了， [wiki](https://github.com/robbyrussell/oh-my-zsh/wiki) 上写的非常详细。
 
+#####安装方式
+
+```
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+```
+
 ##autojump
-zsh 
+autojump 是一个优化目录切换的命令行工具。上文说了，zsh 不仅缩减了 cd 命令，而且优化了切换目录时的体验，那么我还要 autojump 干什么呢？
+
+答案是 autojump 可以用一行命令直达目标，而不需要开发者频繁地敲击 tab 来补全路径。 autojump 会以某种方式纪录使用者访问过的目录的次数，并以次数为基准进行跳转，次数越多的优先级越高。
+
+下面是 autojump 的一些基本用法：
+
+| 功能           |    快捷键     |
+| ------------- |:-------------:|
+| 跳往目录           | j + 部分目录名 |
+| 跳往目录（子目录优先）           | jc + 部分目录名 |
+| 在Finder中打开目录      | jo + 目录部分字母 |
+| 在Finder中打开目录（子目录优先）    | jco + 部分目录名 |
+| 增加当前目录权重    | j -i + 增加数值 |
+| 减少当前目录权重    | j -d + 减少数值 |
+| 查看所有目录权重    | j -s |
+| 移除不存在目录    | j --purge |
+| 增加目录    | j -a + 目录路径 |
+
+更多信息，可以使用万能的 `--help` 查看。
+
+#####安装方式
+
+```
+brew install autojump
+```
+
+
 
 ##tmux
 
-[mosh](https://mosh.org/)
-  ssh 工具，更健壮，支持断续连接 支持除了 iPhone 之外的几乎任何平台
+
 
 <iframe width="750" height="420" src="/videos/tmux_attach.mp4" controls="controls" autoplay=false autostart="0" frameborder="5"> </iframe>
 
 [tmux配置文件](https://github.com/gpakosz/.tmux)
+
+[tmux plugins manager](https://github.com/tmux-plugins/tpm.git)
+
+[tmux resurrect](https://github.com/tmux-plugins/tmux-resurrect)
+
+#####安装方式
+```
+brew install tmux
+```
+
 
 ##fzf
 
