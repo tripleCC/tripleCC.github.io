@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-03-26T17:33:54+08:00</updated>
+  <updated>2017-04-01T12:05:50+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -298,29 +298,237 @@
 </table>
 
 
-<p>更多信息，可以使用万能的 <code>--help</code> 查看。</p>
+<p><br>
+更多信息，可以使用万能的 <code>--help</code> 查看。</p>
 
 <h5>安装方式</h5>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>brew install autojump</span></code></pre></td></tr></table></div></figure>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew install autojump
+</span><span class='line'>
+</span><span class='line'>// .zshrc 中添加以下内容
+</span><span class='line'>[ -f /usr/local/etc/profile.d/autojump.sh ] && . /usr/local/etc/profile.d/autojump.sh</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>tmux</h2>
 
-<iframe width="750" height="420" src="http://triplecc.github.io/videos/tmux_attach.mp4" controls="controls" autoplay=false autostart="0" frameborder="5"> </iframe>
+<p>对于 tmux (terminal multiplexer) ，其自身的 man 手册是这么描述的：</p>
+
+<blockquote><p>tmux is a terminal multiplexer: it enables a number of terminals to be created,
+     accessed, and controlled from a single screen.  tmux may be detached from a
+     screen and continue running in the background, then later reattached.</p></blockquote>
+
+<p>也就是说 tmux 是一个终端复用工具，它允许在一个物理窗口上运行多个终端会话，所以多用于远程登录时保留操作现场，不过个人也比较喜欢在 Mac Pro 开发机上使用。下面是使用 tmux 后呈现的基本界面：</p>
+
+<p><img src="http://triplecc.github.io/images/Snip20170329_6.png" alt="" /></p>
+
+<p>如上图所示，tmux 主要由三种元素构成： session、window、pane。它们之间是从属关系，也就是说 session 可以包含多个 window， window 可以包含多个 pane ，而最终展示在交互界面上可供操作的窗口，其实都是 pane 。</p>
+
+<p>需要注意的是，我在 Mac mini 和 Mac Pro 上都安装了 tmux ，之所以上图底部有两条 bar （对应 work session 和 macmini session），是因为我通过 ssh 远程登录了 Mac mini 并开启了 Mac mini 的 tmux ，上方三个可见的 pane 展示的信息都属于 Mac mini 。</p>
+
+<h3>tmux 常用操作</h3>
+
+<p>在开始之前，说明下本人的 tmux 采用的是 <a href="https://github.com/gpakosz/.tmux">gpakosz 分享的配置文件</a>，并且 tmux 的所有快捷键操作都需要先执行 &lsquo;C-b&rsquo; ， 即 CTRL + b。如果在上图的场景下，需要通过快捷键操控 Mac mini 的 pane，那么就按两次 &lsquo;C-b&rsquo; 。
+<br></p>
+
+<h5>Session</h5>
+
+<blockquote><p>In tmux, a session is displayed on screen by a client and all sessions are
+     managed by a single server.  The server and each client are separate pro-
+     cesses which communicate through a socket in /tmp.</p></blockquote>
+
+<table>
+<thead>
+<tr>
+<th> 功能           </th>
+<th style="text-align:center;">    快捷键     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 查看当前所有会话           </td>
+<td style="text-align:center;"> s <br> tmux list-sessions <br> 方向键 + 回车 进行选择切换 </td>
+</tr>
+<tr>
+<td> 分离当前会话           </td>
+<td style="text-align:center;"> d <br> tmux detach </td>
+</tr>
+<tr>
+<td> 重命名当前会话      </td>
+<td style="text-align:center;"> $ <br> tmux rename-session -t </td>
+</tr>
+</tbody>
+</table>
 
 
-<p><a href="https://github.com/gpakosz/.tmux">tmux配置文件</a></p>
+<p><br></p>
 
-<p><a href="https://github.com/tmux-plugins/tpm.git">tmux plugins manager</a></p>
+<h5>Window</h5>
 
-<p><a href="https://github.com/tmux-plugins/tmux-resurrect">tmux resurrect</a></p>
+<table>
+<thead>
+<tr>
+<th> 功能           </th>
+<th style="text-align:center;">    快捷键     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 创建窗口           </td>
+<td style="text-align:center;"> c <br> tmux select-window -t </td>
+</tr>
+<tr>
+<td> 切换到特定窗口           </td>
+<td style="text-align:center;"> 数字 <br> tmux select-window -t </td>
+</tr>
+<tr>
+<td> 关闭当前窗口           </td>
+<td style="text-align:center;"> &amp; <br> tmux kill-window -t </td>
+</tr>
+<tr>
+<td> 列出所有窗口           </td>
+<td style="text-align:center;"> w <br> tmux list-windows </td>
+</tr>
+<tr>
+<td> 重命名当前窗口           </td>
+<td style="text-align:center;"> , <br> tmux rename-window -t </td>
+</tr>
+</tbody>
+</table>
+
+
+<p><br></p>
+
+<h5>Pane</h5>
+
+<table>
+<thead>
+<tr>
+<th> 功能           </th>
+<th style="text-align:center;">    快捷键     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 垂直/水平分隔窗格           </td>
+<td style="text-align:center;"> % / &ldquo; <br> tmux split-window -h/v </td>
+</tr>
+<tr>
+<td> 关闭窗格           </td>
+<td style="text-align:center;"> x <br> tmux kill-pane -t </td>
+</tr>
+<tr>
+<td> 选中特定窗格      </td>
+<td style="text-align:center;"> q <br> 出现数字后 + 数字 </td>
+</tr>
+<tr>
+<td> 切换窗格      </td>
+<td style="text-align:center;"> h/j/k/l <br> tmux select-pane -t </td>
+</tr>
+<tr>
+<td> 交换当前窗格位置      </td>
+<td style="text-align:center;"> { / } </td>
+</tr>
+<tr>
+<td> 分离当前窗格到窗口     </td>
+<td style="text-align:center;"> + </td>
+</tr>
+</tbody>
+</table>
+
+
+<p><br></p>
+
+<h5>其他操作</h5>
+
+<table>
+<thead>
+<tr>
+<th> 功能           </th>
+<th style="text-align:center;">    快捷键     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 显示所有快捷键          </td>
+<td style="text-align:center;"> ? </td>
+</tr>
+<tr>
+<td> 加载配置文件      </td>
+<td style="text-align:center;"> r </td>
+</tr>
+<tr>
+<td>   显示所有命令         </td>
+<td style="text-align:center;">  tmux list-commands </td>
+</tr>
+<tr>
+<td> 清除所有tmux元素并退出      </td>
+<td style="text-align:center;"> tmux kill-server </td>
+</tr>
+<tr>
+<td> 接入已开启的会话      </td>
+<td style="text-align:center;"> tmux attach <br> 远程登录恢复环境就靠它了 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p><br>
+更多命令可以查看 tmux 的 man 手册。</p>
+
+<h3>tmux 配置文件</h3>
+
+<p><a href="https://github.com/gpakosz/.tmux">gpakosz 分享的配置文件</a>  默认是没有开启 vi 模式的，需要在 .tmux.conf.local 中打开以下配置开启：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>set -g mode-keys vi</span></code></pre></td></tr></table></div></figure>
+
+
+<p>因为我默认使用 zsh，所以继续添加以下配置，以便让新增窗格的 shell 都是 zsh 而不是 sh：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>set-option -g default-shell /bin/zsh</span></code></pre></td></tr></table></div></figure>
+
+
+<p>tmux 在默认情况下复制的内容是不会进入系统剪切板的，也就是不能粘贴到任意位置，所以需要安装 reattach-to-user-namespace :</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew install reattach-to-user-namespace</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后在 .tmux.conf.local 中新增以下配置：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>bind-key -t vi-copy y copy-pipe "reattach-to-user-namespace pbcopy"
+</span><span class='line'>bind-key -t vi-copy Enter copy-pipe "reattach-to-user-namespace pbcopy"</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>tmux 插件管理器</h3>
+
+<p>tmux 还有专门的 <a href="https://github.com/tmux-plugins/tpm.git">插件管理器</a> ，可以更加简便地配置附加功能。比如 tmux 在关机之后就无法通过 tmux attach 恢复关机前的环境了，需要编写脚本进行恢复，而这个需求可以通过安装现成的 <a href="https://github.com/tmux-plugins/tmux-resurrect">tmux resurrect</a> 插件实现。</p>
 
 <h5>安装方式</h5>
 
+<p>tmux:</p>
+
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class=''><span class='line'>brew install tmux</span></code></pre></td></tr></table></div></figure>
+
+
+<p>.tmux:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd
+</span><span class='line'>git clone https://github.com/gpakosz/.tmux.git
+</span><span class='line'>ln -s -f .tmux/.tmux.conf
+</span><span class='line'>cp .tmux/.tmux.conf.local .</span></code></pre></td></tr></table></div></figure>
 
 
 <h2>fzf</h2>
@@ -332,6 +540,11 @@
 <h2>shiftlt</h2>
 
 <h2>snap</h2>
+
+<h2>参考文章</h2>
+
+<p><a href="http://cenalulu.github.io/linux/tmux/">Tmux - Linux从业者必备利器</a><br>
+<a href="http://tangosource.com/blog/a-tmux-crash-course-tips-and-tweaks/">A tmux crash course tips and tweaks</a></p>
 ]]></content>
   </entry>
   
@@ -2808,7 +3021,8 @@ Rx操作大体分为两种：</p>
     <updated>2016-09-24T10:43:37+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-qi</id>
     <content type="html"><![CDATA[<p>1、Xcode8日志及Pod的Swift3.0问题 <br>
-2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进</p>
+2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 <br>
+3、解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题 <br></p>
 
 <!--more-->
 
@@ -2872,6 +3086,41 @@ Rx操作大体分为两种：</p>
 <p>在上图箭头处输入空格，光标和文字不会向前移动。</p>
 
 <p><a href="http://stackoverflow.com/questions/19569688/right-aligned-uitextfield-spacebar-does-not-advance-cursor-in-ios-7">解决方案</a></p>
+
+<h2>解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题</h2>
+
+<p>假设现有有控制器 A ， present 了控制器 B ，而在控制器 B 还没有 dimiss 完全时，再 present 新的控制器 C 就会出现这个警告，控制器 C 也并不会如预期显示。</p>
+
+<p>把上面的控制器 C 当成 UIAlertController ，就切合某些业务场景了。 那么这个问题可以看成：如何让UIAlertController 使用起来和 UIAlertView 一样“万金油” ，并且不用受控制器层级约束。</p>
+
+<p>下面是 stackoverflow 上一个比较详细的解决方案：
+<a href="http://stackoverflow.com/questions/26554894/how-to-present-uialertcontroller-when-not-in-a-view-controller">How to present UIAlertController when not in a ViewController</a></p>
+
+<p>简单来说，就是创建一个新的 window ( 优先级比当前最高优先级大 1 )， 然后通过这个 window 的根控制器 present UIAlertController，并且在 UIAlertController 被释放的同时，释放此 window。</p>
+
+<p>这个方案本身目前看来并没有问题，问题出现 agilityvision 在 stackoverflow 上给的 demo 上面多了下面代码 (<a href="https://github.com/agilityvision/FFGlobalAlertController">FFGlobalAlertController</a> 并没有这几句代码)：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="p">([</span><span class="n">delegate</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">window</span><span class="p">)])</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// we inherit the main window&#39;s tintColor</span>
+</span><span class='line'>  <span class="nb">self</span><span class="p">.</span><span class="n">alertWindow</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="n">delegate</span><span class="p">.</span><span class="n">window</span><span class="p">.</span><span class="n">tintColor</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面代码在以下情况下会造成 alert 按钮文字无法显示：</p>
+
+<ul>
+<li>设置 -> 通用 -> 辅助功能 -> 增强对比度 -> 打开加深颜色 。</li>
+</ul>
+
+
+<p>这个问题挺奇葩的，要不是刚好有测试人员打开了这个开关，基本也发现不了。最终我也不知道为什么会这样，从 Xcode 可视化工具看， alert 按钮上的确是有文字的，颜色也没错。</p>
+
+<p>想要使用 agilityvision 的方案，删除这几句代码就可以不会出现上述问题了。</p>
 ]]></content>
   </entry>
   

@@ -7,7 +7,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1、Xcode8日志及Pod的Swift3.0问题 2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 Xcode8日志及Pod的Swift3.0问题 目前的Xcode8会打印多余的日志，需要进入对应scheme中的enviroment &hellip;">
+  <meta name="description" content="1、Xcode8日志及Pod的Swift3.0问题 2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 3、解决使用UIAlertController时，Attempt to present vc whose view is not in the &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -81,7 +81,8 @@
 
 
 <div class="entry-content"><p>1、Xcode8日志及Pod的Swift3.0问题 <br>
-2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进</p>
+2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 <br>
+3、解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题 <br></p>
 
 <!--more-->
 
@@ -145,6 +146,41 @@
 <p>在上图箭头处输入空格，光标和文字不会向前移动。</p>
 
 <p><a href="http://stackoverflow.com/questions/19569688/right-aligned-uitextfield-spacebar-does-not-advance-cursor-in-ios-7">解决方案</a></p>
+
+<h2>解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题</h2>
+
+<p>假设现有有控制器 A ， present 了控制器 B ，而在控制器 B 还没有 dimiss 完全时，再 present 新的控制器 C 就会出现这个警告，控制器 C 也并不会如预期显示。</p>
+
+<p>把上面的控制器 C 当成 UIAlertController ，就切合某些业务场景了。 那么这个问题可以看成：如何让UIAlertController 使用起来和 UIAlertView 一样“万金油” ，并且不用受控制器层级约束。</p>
+
+<p>下面是 stackoverflow 上一个比较详细的解决方案：
+<a href="http://stackoverflow.com/questions/26554894/how-to-present-uialertcontroller-when-not-in-a-view-controller">How to present UIAlertController when not in a ViewController</a></p>
+
+<p>简单来说，就是创建一个新的 window ( 优先级比当前最高优先级大 1 )， 然后通过这个 window 的根控制器 present UIAlertController，并且在 UIAlertController 被释放的同时，释放此 window。</p>
+
+<p>这个方案本身目前看来并没有问题，问题出现 agilityvision 在 stackoverflow 上给的 demo 上面多了下面代码 (<a href="https://github.com/agilityvision/FFGlobalAlertController">FFGlobalAlertController</a> 并没有这几句代码)：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="p">([</span><span class="n">delegate</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">window</span><span class="p">)])</span> <span class="p">{</span>
+</span><span class='line'>  <span class="c1">// we inherit the main window&#39;s tintColor</span>
+</span><span class='line'>  <span class="nb">self</span><span class="p">.</span><span class="n">alertWindow</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="n">delegate</span><span class="p">.</span><span class="n">window</span><span class="p">.</span><span class="n">tintColor</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面代码在以下情况下会造成 alert 按钮文字无法显示：</p>
+
+<ul>
+<li>设置 -> 通用 -> 辅助功能 -> 增强对比度 -> 打开加深颜色 。</li>
+</ul>
+
+
+<p>这个问题挺奇葩的，要不是刚好有测试人员打开了这个开关，基本也发现不了。最终我也不知道为什么会这样，从 Xcode 可视化工具看， alert 按钮上的确是有文字的，颜色也没错。</p>
+
+<p>想要使用 agilityvision 的方案，删除这几句代码就可以不会出现上述问题了。</p>
 </div>
 
 
