@@ -145,35 +145,141 @@ autojump 是一个优化目录切换的命令行工具。上文说了，zsh 不�
 | 移除不存在目录    | j --purge |
 | 增加目录    | j -a + 目录路径 |
 
+<br>
 更多信息，可以使用万能的 `--help` 查看。
 
 #####安装方式
 
 ```
 brew install autojump
+
+// .zshrc 中添加以下内容
+[ -f /usr/local/etc/profile.d/autojump.sh ] && . /usr/local/etc/profile.d/autojump.sh
 ```
 
 
 
 ##tmux
+对于 tmux (terminal multiplexer) ，其自身的 man 手册是这么描述的：
+
+> tmux is a terminal multiplexer: it enables a number of terminals to be created,
+     accessed, and controlled from a single screen.  tmux may be detached from a
+     screen and continue running in the background, then later reattached.
+
+
+也就是说 tmux 是一个终端复用工具，它允许在一个物理窗口上运行多个终端会话，所以多用于远程登录时保留操作现场，不过个人也比较喜欢在 Mac Pro 开发机上使用。下面是使用 tmux 后呈现的基本界面：
+
+![](/images/Snip20170329_6.png)
+
+如上图所示，tmux 主要由三种元素构成： session、window、pane。它们之间是从属关系，也就是说 session 可以包含多个 window， window 可以包含多个 pane ，而最终展示在交互界面上可供操作的窗口，其实都是 pane 。
+
+需要注意的是，我在 Mac mini 和 Mac Pro 上都安装了 tmux ，之所以上图底部有两条 bar （对应 work session 和 macmini session），是因为我通过 ssh 远程登录了 Mac mini 并开启了 Mac mini 的 tmux ，上方三个可见的 pane 展示的信息都属于 Mac mini 。
+
+### tmux 常用操作
+
+在开始之前，说明下本人的 tmux 采用的是 [gpakosz 分享的配置文件](https://github.com/gpakosz/.tmux)，并且 tmux 的所有快捷键操作都需要先执行 'C-b' ， 即 CTRL + b。如果在上图的场景下，需要通过快捷键操控 Mac mini 的 pane，那么就按两次 'C-b' 。
+<br>
+
+##### Session
 
 
 
-<iframe width="750" height="420" src="/videos/tmux_attach.mp4" controls="controls" autoplay=false autostart="0" frameborder="5"> </iframe>
+> In tmux, a session is displayed on screen by a client and all sessions are
+     managed by a single server.  The server and each client are separate pro-
+     cesses which communicate through a socket in /tmp.
 
-[tmux配置文件](https://github.com/gpakosz/.tmux)
 
-[tmux plugins manager](https://github.com/tmux-plugins/tpm.git)
 
-[tmux resurrect](https://github.com/tmux-plugins/tmux-resurrect)
+| 功能           |    快捷键     |
+| ------------- |:-------------:|
+| 查看当前所有会话           | s <br> tmux list-sessions <br> 方向键 + 回车 进行选择切换 |
+| 分离当前会话           | d <br> tmux detach |
+| 重命名当前会话      | $ <br> tmux rename-session -t |
+
+<br>
+##### Window
+| 功能           |    快捷键     |
+| ------------- |:-------------:|
+| 创建窗口           | c <br> tmux select-window -t |
+| 切换到特定窗口           | 数字 <br> tmux select-window -t |
+| 关闭当前窗口           | & <br> tmux kill-window -t |
+| 列出所有窗口           | w <br> tmux list-windows |
+| 重命名当前窗口           | , <br> tmux rename-window -t |
+
+<br>
+##### Pane
+| 功能           |    快捷键     |
+| ------------- |:-------------:|
+| 垂直/水平分隔窗格           | % / " <br> tmux split-window -h/v |
+| 关闭窗格           | x <br> tmux kill-pane -t |
+| 选中特定窗格      | q <br> 出现数字后 + 数字 |
+| 切换窗格      | h/j/k/l <br> tmux select-pane -t |
+| 交换当前窗格位置      | { / } |
+| 分离当前窗格到窗口     | + |
+
+<br>
+#####其他操作
+| 功能           |    快捷键     |
+| ------------- |:-------------:|
+| 显示所有快捷键          | ? |
+| 加载配置文件      | r |
+|   显示所有命令         |  tmux list-commands |
+| 清除所有tmux元素并退出      | tmux kill-server |
+| 接入已开启的会话      | tmux attach <br> 远程登录恢复环境就靠它了 |
+
+
+<br>
+更多命令可以查看 tmux 的 man 手册。
+
+### tmux 配置文件
+
+[gpakosz 分享的配置文件](https://github.com/gpakosz/.tmux)  默认是没有开启 vi 模式的，需要在 .tmux.conf.local 中打开以下配置开启：
+
+```
+set -g mode-keys vi
+```
+
+因为我默认使用 zsh，所以继续添加以下配置，以便让新增窗格的 shell 都是 zsh 而不是 sh：
+
+```
+set-option -g default-shell /bin/zsh
+```
+
+tmux 在默认情况下复制的内容是不会进入系统剪切板的，也就是不能粘贴到任意位置，所以需要安装 reattach-to-user-namespace :
+
+```
+brew install reattach-to-user-namespace
+```
+然后在 .tmux.conf.local 中新增以下配置：
+
+```
+bind-key -t vi-copy y copy-pipe "reattach-to-user-namespace pbcopy"
+bind-key -t vi-copy Enter copy-pipe "reattach-to-user-namespace pbcopy"
+```
+
+### tmux 插件管理器
+
+tmux 还有专门的 [插件管理器](https://github.com/tmux-plugins/tpm.git) ，可以更加简便地配置附加功能。比如 tmux 在关机之后就无法通过 tmux attach 恢复关机前的环境了，需要编写脚本进行恢复，而这个需求可以通过安装现成的 [tmux resurrect](https://github.com/tmux-plugins/tmux-resurrect) 插件实现。
 
 #####安装方式
+tmux:
+
 ```
 brew install tmux
+```
+.tmux:
+
+```
+cd
+git clone https://github.com/gpakosz/.tmux.git
+ln -s -f .tmux/.tmux.conf
+cp .tmux/.tmux.conf.local .
 ```
 
 
 ##fzf
+
+
 
 [fzf](https://github.com/junegunn/fzf)
 
@@ -182,3 +288,8 @@ brew install tmux
 ##shiftlt
 
 ##snap
+
+##参考文章
+
+[Tmux - Linux从业者必备利器](http://cenalulu.github.io/linux/tmux/)<br>
+[A tmux crash course tips and tweaks](http://tangosource.com/blog/a-tmux-crash-course-tips-and-tweaks/)
