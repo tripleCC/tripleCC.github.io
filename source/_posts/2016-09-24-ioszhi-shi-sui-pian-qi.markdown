@@ -77,7 +77,7 @@ if ([delegate respondsToSelector:@selector(window)]) {
 
 ```
 
-上面代码在以下情况下会造成 alert 按钮文字无法显示：
+上面代码在以下情况下，存在 alert 按钮文字无法显示的问题 ：
 
 - 设置 -> 通用 -> 辅助功能 -> 增强对比度 -> 打开加深颜色 。
 
