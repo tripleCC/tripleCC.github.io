@@ -67,7 +67,7 @@ end
 
 简单来说，就是创建一个新的 window ( 优先级比当前最高优先级大 1 )， 然后通过这个 window 的根控制器 present UIAlertController，并且在 UIAlertController 被释放的同时，释放此 window。
 
-这个方案本身目前看来并没有问题，问题出现 agilityvision 在 stackoverflow 上给的 demo 上面多了下面代码 ([FFGlobalAlertController](https://github.com/agilityvision/FFGlobalAlertController) 并没有这几句代码)：
+这个方案本身目前看来并没有问题，问题出现 agilityvision 在 stackoverflow 上给的 demo 多了下面代码 ([FFGlobalAlertController](https://github.com/agilityvision/FFGlobalAlertController) 并没有这几句代码)：
 
 ```objc
 if ([delegate respondsToSelector:@selector(window)]) {
