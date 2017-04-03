@@ -175,20 +175,62 @@ brew install autojump
 
 需要注意的是，我在 Mac mini 和 Mac Pro 上都安装了 tmux ，之所以上图底部有两条 bar （对应 work session 和 macmini session），是因为我通过 ssh 远程登录了 Mac mini 并开启了 Mac mini 的 tmux ，上方三个可见的 pane 展示的信息都属于 Mac mini 。
 
+### 配置 tmux 
+
+实现 tmux 的基本配置并不复杂，只需要在 `~/.tmux.conf` 添加需要的功能即可，不过这里我还是要推荐下 [gpakosz 分享的配置文件](https://github.com/gpakosz/.tmux) (目前本人也是用的这个配置文件)，因为这个样式看起来实在是非常舒服。 执行以下命令安装 `.tmux` :
+
+```
+cd
+git clone https://github.com/gpakosz/.tmux.git
+ln -s -f .tmux/.tmux.conf
+cp .tmux/.tmux.conf.local .
+```
+
+这个配置文件实现了常用的功能快捷键绑定，如果要添加额外的配置项，可以编辑 `~/.tmux.conf.local` 文件。下面是我自己添加的配置项：
+
+- 开启 vi 模式
+
+```
+set -g mode-keys vi
+```
+
+- 设置默认 shell 为zsh
+
+```
+set-option -g default-shell /bin/zsh
+```
+
+- 绑定系统剪切版
+	- 安装 reattach-to-user-namespace 
+	
+	```
+	brew install reattach-to-user-namespace
+	```
+	- 绑定拷贝快捷键：
+	
+	```
+	bind-key -t vi-copy y copy-pipe "reattach-to-user-namespace pbcopy"
+	bind-key -t vi-copy Enter copy-pipe "reattach-to-user-namespace pbcopy"
+	```
+
+- 由于 tmux 在关机重启后，无法有效地进行 attach ，所以添加重启时恢复 tmux 上下文的 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)  (需要注意的是 tmux-resurrect 作者推荐使用 tmux [插件管理器](https://github.com/tmux-plugins/tpm.git) 进行安装，不过这样做会出现 [奇怪的警告](https://github.com/gpakosz/.tmux/issues/61))
+	- 克隆 tmux-resurrect 仓库
+	
+	```
+	git clone https://github.com/tmux-plugins/tmux-resurrect ~/clone/path
+	```
+	- 在 `~/.tmux.conf.local` 中添加以下语句
+	
+	```
+	run-shell ~/clone/path/resurrect.tmux
+	```
+
 ### tmux 常用操作
 
-在开始之前，说明下本人的 tmux 采用的是 [gpakosz 分享的配置文件](https://github.com/gpakosz/.tmux)，并且 tmux 的所有快捷键操作都需要先执行 'C-b' ， 即 CTRL + b。如果在上图的场景下，需要通过快捷键操控 Mac mini 的 pane，那么就按两次 'C-b' 。
+在开始之前，说明下 tmux 的所有快捷键操作都需要先执行一次 'C-b' ， 即 ctrl + b。 如果在上图的场景中，需要通过快捷键操控 Mac mini 的 pane，那么就按两次 'C-b' 。
 <br>
 
 ##### Session
-
-
-
-> In tmux, a session is displayed on screen by a client and all sessions are
-     managed by a single server.  The server and each client are separate pro-
-     cesses which communicate through a socket in /tmp.
-
-
 
 | 功能           |    快捷键     |
 | ------------- |:-------------:|
@@ -225,69 +267,52 @@ brew install autojump
 | 加载配置文件      | r |
 |   显示所有命令         |  tmux list-commands |
 | 清除所有tmux元素并退出      | tmux kill-server |
-| 接入已开启的会话      | tmux attach <br> 远程登录恢复环境就靠它了 |
+| 接入已开启的会话      | tmux attach <br> 远程登录恢复上下文就靠它了 |
 
 
 <br>
 更多命令可以查看 tmux 的 man 手册。
 
-### tmux 配置文件
-
-[gpakosz 分享的配置文件](https://github.com/gpakosz/.tmux)  默认是没有开启 vi 模式的，需要在 .tmux.conf.local 中打开以下配置开启：
-
-```
-set -g mode-keys vi
-```
-
-因为我默认使用 zsh，所以继续添加以下配置，以便让新增窗格的 shell 都是 zsh 而不是 sh：
-
-```
-set-option -g default-shell /bin/zsh
-```
-
-tmux 在默认情况下复制的内容是不会进入系统剪切板的，也就是不能粘贴到任意位置，所以需要安装 reattach-to-user-namespace :
-
-```
-brew install reattach-to-user-namespace
-```
-然后在 .tmux.conf.local 中新增以下配置：
-
-```
-bind-key -t vi-copy y copy-pipe "reattach-to-user-namespace pbcopy"
-bind-key -t vi-copy Enter copy-pipe "reattach-to-user-namespace pbcopy"
-```
-
-### tmux 插件管理器
-
-tmux 还有专门的 [插件管理器](https://github.com/tmux-plugins/tpm.git) ，可以更加简便地配置附加功能。比如 tmux 在关机之后就无法通过 tmux attach 恢复关机前的环境了，需要编写脚本进行恢复，而这个需求可以通过安装现成的 [tmux resurrect](https://github.com/tmux-plugins/tmux-resurrect) 插件实现。
-
 #####安装方式
-tmux:
 
 ```
 brew install tmux
 ```
-.tmux:
-
-```
-cd
-git clone https://github.com/gpakosz/.tmux.git
-ln -s -f .tmux/.tmux.conf
-cp .tmux/.tmux.conf.local .
-```
-
 
 ##fzf
 
+fzf 是在终端使用的一款模式搜索命令行工具，方便开发者快速地定位历史命令或者文件，并且可以和 tmux 结合起来使用。
 
+下面是我常用的两个快捷键：
 
-[fzf](https://github.com/junegunn/fzf)
+| 功能           |    快捷键     |
+| ------------- |:-------------:|
+| 显示历史命令          | ctrl + r |
+| 显示当前目录下所有文件      | ctrl + t |
 
-##vimium
+<br>
 
-##shiftlt
+#####安装方式
 
-##snap
+```
+brew install fzf
+
+// .zshrc 中添加下面语句
+/usr/local/opt/fzf/install
+```
+
+## 其他实用小软件
+- vimium (Chrome 插件)
+	- 通过 vim 快捷键，进行网页浏览，超棒 ( shift + ? 可以列出所有快捷键 )
+	
+	
+- shiftlt
+	- 切屏神器，可以通过快捷键控制应用窗口大小
+	
+	
+- snap
+	- 可以绑定快捷键，快速打开应用
+	
 
 ##参考文章
 
