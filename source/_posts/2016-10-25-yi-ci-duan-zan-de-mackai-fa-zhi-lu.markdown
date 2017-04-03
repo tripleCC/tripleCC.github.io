@@ -38,7 +38,7 @@ categories:
 话不多说，接下来记录下自己写这个`mac`工具的过程。
 
 ###确认要抓取的内容及条件
-首先摘一个接口的文档：<br>
+下面是我根据实际接口样式模拟的一个接口的文档：<br>
 
 ![](/images/2016-10-30.png)
 
@@ -125,14 +125,7 @@ firstTableBody.map{ $0.allLeafNodes().flatMap{ $0.value } }
 ```
 ["编号", "参数名（中文）", "参数名（英文）", "类型", "对应表", "对应字段", "备注"]
 ["1", "采购单ID", "id", "String", "purchase_info", "id", "　"]
-["2", "所属实体ID", "entityId", "String", "purchase_info", "entity_id", "　"]
-["3", "自实体ID", "selfEntityId", "String", "purchase_info", "self_entity_id", "　"]
-["4", "自实体名称", "selfEntityName", "String", "　", "　", "　"]
-["5", "供应商Id", "supplyId", "String", "purchase_info", "supply_id", "　"]
-["6", "供应商名称", "supplyName", "String", "supply", "name", "　"]
-["7", "仓库Id", "warehouseId", "String", "purchase_info", "warehouse_id", "　"]
-["8", "仓库名称", "warehouseName", "String", "warehouse", "name", "　"]
-["9", "单号", "no", "String", "purchase_info", "no", "　"]
+...
 
 ```
 
