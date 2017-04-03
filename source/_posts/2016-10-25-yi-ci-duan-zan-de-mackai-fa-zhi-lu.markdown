@@ -140,14 +140,7 @@ OK！后面的事情就相对简单了，主要是结合`Objective-C`的语法�
 @interface TDFPurchaseModel : NSObject	
 /** 采购单ID */	
 @property (nonatomic, copy) NSString *id;	
-/** 所属实体ID */	
-@property (nonatomic, copy) NSString *entityId;	
-/** 自实体ID */	
-@property (nonatomic, copy) NSString *selfEntityId;	
-/** 自实体名称 */	
-@property (nonatomic, copy) NSString *selfEntityName;	
-/** 供应商Id */	
-@property (nonatomic, copy) NSString *supplyId;
+
 ......
 
 //======================================	
