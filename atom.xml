@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-04-02T14:26:03+08:00</updated>
+  <updated>2017-04-03T20:15:15+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -329,16 +329,85 @@
 
 <p>需要注意的是，我在 Mac mini 和 Mac Pro 上都安装了 tmux ，之所以上图底部有两条 bar （对应 work session 和 macmini session），是因为我通过 ssh 远程登录了 Mac mini 并开启了 Mac mini 的 tmux ，上方三个可见的 pane 展示的信息都属于 Mac mini 。</p>
 
+<h3>配置 tmux</h3>
+
+<p>实现 tmux 的基本配置并不复杂，只需要在 <code>~/.tmux.conf</code> 添加需要的功能即可，不过这里我还是要推荐下 <a href="https://github.com/gpakosz/.tmux">gpakosz 分享的配置文件</a> (目前本人也是用的这个配置文件)，因为这个样式看起来实在是非常舒服。 执行以下命令安装 <code>.tmux</code> :</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd
+</span><span class='line'>git clone https://github.com/gpakosz/.tmux.git
+</span><span class='line'>ln -s -f .tmux/.tmux.conf
+</span><span class='line'>cp .tmux/.tmux.conf.local .</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这个配置文件实现了常用的功能快捷键绑定，如果要添加额外的配置项，可以编辑 <code>~/.tmux.conf.local</code> 文件。下面是我自己添加的配置项：</p>
+
+<ul>
+<li>开启 vi 模式</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>set -g mode-keys vi</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>设置默认 shell 为zsh</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>set-option -g default-shell /bin/zsh</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p>绑定系统剪切版</p>
+
+<ul>
+<li>安装 reattach-to-user-namespace</li>
+</ul>
+
+
+<pre><code class="``">  brew install reattach-to-user-namespace
+</code></pre>
+
+<ul>
+<li>绑定拷贝快捷键：</li>
+</ul>
+
+
+<pre><code class="``">  bind-key -t vi-copy y copy-pipe "reattach-to-user-namespace pbcopy"
+  bind-key -t vi-copy Enter copy-pipe "reattach-to-user-namespace pbcopy"
+</code></pre></li>
+<li><p>由于 tmux 在关机重启后，无法有效地进行 attach ，所以添加重启时恢复 tmux 上下文的 <a href="https://github.com/tmux-plugins/tmux-resurrect">tmux-resurrect</a>  (需要注意的是 tmux-resurrect 作者推荐使用 tmux <a href="https://github.com/tmux-plugins/tpm.git">插件管理器</a> 进行安装，不过这样做会出现 <a href="https://github.com/gpakosz/.tmux/issues/61">奇怪的警告</a>)</p>
+
+<ul>
+<li>克隆 tmux-resurrect 仓库</li>
+</ul>
+
+
+<pre><code class="``">  git clone https://github.com/tmux-plugins/tmux-resurrect ~/clone/path
+</code></pre>
+
+<ul>
+<li>在 <code>~/.tmux.conf.local</code> 中添加以下语句</li>
+</ul>
+
+
+<pre><code class="``">  run-shell ~/clone/path/resurrect.tmux
+</code></pre></li>
+</ul>
+
+
 <h3>tmux 常用操作</h3>
 
-<p>在开始之前，说明下本人的 tmux 采用的是 <a href="https://github.com/gpakosz/.tmux">gpakosz 分享的配置文件</a>，并且 tmux 的所有快捷键操作都需要先执行 &lsquo;C-b&rsquo; ， 即 CTRL + b。如果在上图的场景下，需要通过快捷键操控 Mac mini 的 pane，那么就按两次 &lsquo;C-b&rsquo; 。
+<p>在开始之前，说明下 tmux 的所有快捷键操作都需要先执行一次 &lsquo;C-b&rsquo; ， 即 ctrl + b。 如果在上图的场景中，需要通过快捷键操控 Mac mini 的 pane，那么就按两次 &lsquo;C-b&rsquo; 。
 <br></p>
 
 <h5>Session</h5>
-
-<blockquote><p>In tmux, a session is displayed on screen by a client and all sessions are
-     managed by a single server.  The server and each client are separate pro-
-     cesses which communicate through a socket in /tmp.</p></blockquote>
 
 <table>
 <thead>
@@ -470,7 +539,7 @@
 </tr>
 <tr>
 <td> 接入已开启的会话      </td>
-<td style="text-align:center;"> tmux attach <br> 远程登录恢复环境就靠它了 </td>
+<td style="text-align:center;"> tmux attach <br> 远程登录恢复上下文就靠它了 </td>
 </tr>
 </tbody>
 </table>
@@ -479,67 +548,75 @@
 <p><br>
 更多命令可以查看 tmux 的 man 手册。</p>
 
-<h3>tmux 配置文件</h3>
-
-<p><a href="https://github.com/gpakosz/.tmux">gpakosz 分享的配置文件</a>  默认是没有开启 vi 模式的，需要在 .tmux.conf.local 中打开以下配置开启：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>set -g mode-keys vi</span></code></pre></td></tr></table></div></figure>
-
-
-<p>因为我默认使用 zsh，所以继续添加以下配置，以便让新增窗格的 shell 都是 zsh 而不是 sh：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>set-option -g default-shell /bin/zsh</span></code></pre></td></tr></table></div></figure>
-
-
-<p>tmux 在默认情况下复制的内容是不会进入系统剪切板的，也就是不能粘贴到任意位置，所以需要安装 reattach-to-user-namespace :</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>brew install reattach-to-user-namespace</span></code></pre></td></tr></table></div></figure>
-
-
-<p>然后在 .tmux.conf.local 中新增以下配置：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>bind-key -t vi-copy y copy-pipe "reattach-to-user-namespace pbcopy"
-</span><span class='line'>bind-key -t vi-copy Enter copy-pipe "reattach-to-user-namespace pbcopy"</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>tmux 插件管理器</h3>
-
-<p>tmux 还有专门的 <a href="https://github.com/tmux-plugins/tpm.git">插件管理器</a> ，可以更加简便地配置附加功能。比如 tmux 在关机之后就无法通过 tmux attach 恢复关机前的环境了，需要编写脚本进行恢复，而这个需求可以通过安装现成的 <a href="https://github.com/tmux-plugins/tmux-resurrect">tmux resurrect</a> 插件实现。</p>
-
 <h5>安装方式</h5>
-
-<p>tmux:</p>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class=''><span class='line'>brew install tmux</span></code></pre></td></tr></table></div></figure>
 
 
-<p>.tmux:</p>
+<h2>fzf</h2>
+
+<p>fzf 是在终端使用的一款模式搜索命令行工具，方便开发者快速地定位历史命令或者文件，并且可以和 tmux 结合起来使用。</p>
+
+<p>下面是我常用的两个快捷键：</p>
+
+<table>
+<thead>
+<tr>
+<th> 功能           </th>
+<th style="text-align:center;">    快捷键     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> 显示历史命令          </td>
+<td style="text-align:center;"> ctrl + r </td>
+</tr>
+<tr>
+<td> 显示当前目录下所有文件      </td>
+<td style="text-align:center;"> ctrl + t </td>
+</tr>
+</tbody>
+</table>
+
+
+<p><br></p>
+
+<h5>安装方式</h5>
 
 <figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>cd
-</span><span class='line'>git clone https://github.com/gpakosz/.tmux.git
-</span><span class='line'>ln -s -f .tmux/.tmux.conf
-</span><span class='line'>cp .tmux/.tmux.conf.local .</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew install fzf
+</span><span class='line'>
+</span><span class='line'>// .zshrc 中添加下面语句
+</span><span class='line'>/usr/local/opt/fzf/install</span></code></pre></td></tr></table></div></figure>
 
 
-<h2>fzf</h2>
+<h2>其他实用小软件</h2>
 
-<p><a href="https://github.com/junegunn/fzf">fzf</a></p>
+<ul>
+<li><p>vimium (Chrome 插件)</p>
 
-<h2>vimium</h2>
+<ul>
+<li>通过 vim 快捷键，进行网页浏览，超棒 ( shift + ? 可以列出所有快捷键 )</li>
+</ul>
+</li>
+<li><p>shiftlt</p>
 
-<h2>shiftlt</h2>
+<ul>
+<li>切屏神器，可以通过快捷键控制应用窗口大小</li>
+</ul>
+</li>
+<li><p>snap</p>
 
-<h2>snap</h2>
+<ul>
+<li>可以绑定快捷键，快速打开应用</li>
+</ul>
+</li>
+</ul>
+
 
 <h2>参考文章</h2>
 
@@ -951,33 +1028,6 @@
 <p>这样一来，添加和使用“全部”条件就非常方便了。</p>
 
 <p>虽然很多论调都说 <code>runtime</code> 工作上用的场景非常之少，面试问这些的没啥用，但是个人感觉还是要知道一些的。因为假如真的遇到一些难以通过平常手段搞定的需求的话， <code>runtime</code> 能给开发者带来一些别样的灵感。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[国外iOS开发者的博客]]></title>
-    <link href="http://triplecc.github.io/blog/2016-11-13-guo-wai-ioskai-fa-zhe-de-bo-ke/"/>
-    <updated>2016-11-13T13:08:31+08:00</updated>
-    <id>http://triplecc.github.io/blog/guo-wai-ioskai-fa-zhe-de-bo-ke</id>
-    <content type="html"><![CDATA[<ul>
-<li><a href="http://holko.pl/archive/">http://holko.pl/archive/</a></li>
-<li><a href="http://annema.me/">http://annema.me/</a></li>
-<li><a href="http://modocache.io/">http://modocache.io/</a></li>
-<li><a href="http://clean-swift.com/blog/">http://clean-swift.com/blog/</a></li>
-<li><a href="https://ruslanspivak.com">https://ruslanspivak.com</a></li>
-<li><a href="http://chris.eidhof.nl/post/">http://chris.eidhof.nl/post/</a></li>
-<li><a href="http://alisoftware.github.io/">http://alisoftware.github.io/</a></li>
-<li><a href="https://www.mikeash.com/pyblog/">https://www.mikeash.com/pyblog/</a></li>
-<li><a href="http://www.cocoawithlove.com/">http://www.cocoawithlove.com/</a></li>
-<li><a href="http://nshipster.com/">http://nshipster.com/</a></li>
-<li><a href="https://www.raywenderlich.com/">https://www.raywenderlich.com/</a></li>
-<li><a href="https://www.cocoacontrols.com/">https://www.cocoacontrols.com/</a></li>
-<li><a href="http://blog.mugunthkumar.com/category/articles/">http://blog.mugunthkumar.com/category/articles/</a></li>
-<li><a href="http://petersteinberger.com/">http://petersteinberger.com/</a></li>
-<li><a href="http://www.jessesquires.com/">http://www.jessesquires.com/</a></li>
-<li><a href="https://ashfurrow.com/blog/">https://ashfurrow.com/blog/</a></li>
-</ul>
-
 ]]></content>
   </entry>
   
@@ -7924,6 +7974,280 @@ AppCoda上面有篇关于<a href="http://www.appcoda.com/custom-pull-to-refresh/
 <a href="http://www.captechconsulting.com/blogs/ios-9-tutorial-series-protocol-oriented-programming-with-uikit">iOS 9 Tutorial Series: Protocol-Oriented Programming with UIKit</a><br>
 现有文章示例代码大多为人为创造的情景下工作/面向协议真对UIKit 的应用/Swift协议的好处与限制/不能给Objective-C协议中的方法提供默认实现/可以给Objective-C协议添加新方法/协议for模型,数据格式,UI风格/协议及其扩展适合在添加共享、范性功能时使用，并不很切合UI<br>
 <a href="http://www.capitalone.io/blog/improved-protocol-oriented-programming-untyped-type-aliases/">Improved Protocol-Oriented Programming with Untyped Type Aliases</a><br></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[iOS知识碎片四]]></title>
+    <link href="http://triplecc.github.io/blog/2016-02-02-ioszhi-shi-sui-pian-si/"/>
+    <updated>2016-02-02T15:57:22+08:00</updated>
+    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-si</id>
+    <content type="html"><![CDATA[<p>1、显示CoreData执行的SQL语句<br>
+2、监听UITextView键盘的发送按钮<br>
+3、设置CoreData实体唯一约束<br>
+4、iOS9关于canOpenURL不生效<br>
+5、OC变参函数</p>
+
+<!--more-->
+
+
+<h2>显示CoreData执行的SQL语句</h2>
+
+<p>设置步骤(<code>-com.apple.CoreData.SQLDebug 1</code>): <br>
+<img src="http://triplecc.github.io/images/Snip20160202_1.png" alt="" /><br></p>
+
+<p><img src="http://triplecc.github.io/images/Snip20160202_2.png" alt="" /><br>
+打印结果：<br>
+<img src="http://triplecc.github.io/images/Snip20160202_4.png" alt="" /><br></p>
+
+<p>在获得对应的表后，可以通过sqlite3命令进行打印：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ sqlite3 /Users/songruiwang/Desktop/1.sqlite </span></code></pre></td></tr></table></div></figure>
+
+
+<p>执行help查询对应的命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sqlite&gt; .help</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果要显示表内容的话，可以执行以下命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>sqlite&gt; .mode line
+</span><span class='line'>sqlite&gt; select * from tbl1;
+</span><span class='line'>  one = hello!
+</span><span class='line'>  two = 10
+</span><span class='line'>
+</span><span class='line'>  one = hello!
+</span><span class='line'>  two = 200
+</span><span class='line'>sqlite&gt; </span></code></pre></td></tr></table></div></figure>
+
+
+<p>更多详细的操作可以通过help查看。</p>
+
+<h2>监听UITextView键盘的发送按钮</h2>
+
+<p>UITextField有代理方法监听是否点击了发送按钮：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (BOOL)textFieldShouldReturn:(UITextField *)textField;</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过UITextView因为可以输入多行的关系，所以没有类似的代理方法。那么在作为聊天输入框的时候，就必须利用其它代理方法来实现：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>- (BOOL)textView:(UITextView *)textView shouldChangeTextInRange:(NSRange)range replacementText:(NSString *)text {
+</span><span class='line'>    if ([text isEqualToString:@"\n"]) {
+</span><span class='line'>        [self publish];
+</span><span class='line'>        return NO;
+</span><span class='line'>    } else {
+</span><span class='line'>        [self adjustSubviewsWithTextView:textView];
+</span><span class='line'>    }
+</span><span class='line'>    return YES;
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面的代码块就是一种实现方式，只是需要去除输入换行的功能，不过作为聊天输入框，舍弃这个功能也是可以接受的。</p>
+
+<h2>设置CoreData实体唯一约束</h2>
+
+<p>在iOS9以前，不希望CoreData中出现相同的实体可以通过先查询后判断的形式实现。在iOS9以后，iOS提供了另外的设置，可以直接达到这个目的。设置步骤如下：</p>
+
+<p>首先需要在CoreData配置实体属性中添加作为唯一标识的属性：</p>
+
+<p><img src="http://triplecc.github.io/images/Snip20160222_1.png" alt="" /></p>
+
+<p>然后在managedObjectContext上下文中添加合并策略，以便在遇到相同实体时进行更新：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">lazy</span> <span class="k">var</span> <span class="nl">managedObjectContext</span><span class="p">:</span> <span class="bp">NSManagedObjectContext</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>    <span class="c1">// Returns the managed object context for the application (which is already bound to the persistent store coordinator for the application.) This property is optional since there are legitimate error conditions that could cause the creation of the context to fail.</span>
+</span><span class='line'>    <span class="k">let</span> <span class="n">coordinator</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">persistentStoreCoordinator</span>
+</span><span class='line'>    <span class="k">var</span> <span class="n">managedObjectContext</span> <span class="o">=</span> <span class="bp">NSManagedObjectContext</span><span class="p">(</span><span class="nl">concurrencyType</span><span class="p">:</span> <span class="p">.</span><span class="n">MainQueueConcurrencyType</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">managedObjectContext</span><span class="p">.</span><span class="n">persistentStoreCoordinator</span> <span class="o">=</span> <span class="n">coordinator</span>
+</span><span class='line'>    <span class="c1">// 添加合并策略（更新为内存中的属性值）</span>
+</span><span class='line'>    <span class="n">managedObjectContext</span><span class="p">.</span><span class="n">mergePolicy</span> <span class="o">=</span> <span class="n">NSMergeByPropertyObjectTrumpMergePolicy</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">managedObjectContext</span>
+</span><span class='line'><span class="p">}()</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样当执行以下测试代码时：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 模型</span>
+</span><span class='line'><span class="k">class</span> <span class="nl">Person</span><span class="p">:</span> <span class="bp">NSManagedObject</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">class</span> <span class="k">var</span> <span class="nl">entityName</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">String</span><span class="p">(</span><span class="n">Person</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">context</span><span class="p">:</span> <span class="bp">NSManagedObjectContext</span><span class="p">,</span>
+</span><span class='line'>        <span class="nl">name</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">let</span> <span class="n">entity</span> <span class="o">=</span> <span class="bp">NSEntityDescription</span><span class="p">.</span><span class="n">entityForName</span><span class="p">(</span><span class="n">Person</span><span class="p">.</span><span class="n">entityName</span><span class="p">,</span> <span class="nl">inManagedObjectContext</span><span class="p">:</span> <span class="n">context</span><span class="p">)</span><span class="o">!</span>
+</span><span class='line'>            <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">(</span><span class="nl">entity</span><span class="p">:</span> <span class="n">entity</span><span class="p">,</span> <span class="nl">insertIntoManagedObjectContext</span><span class="p">:</span> <span class="n">context</span><span class="p">)</span>
+</span><span class='line'>            <span class="nb">self</span><span class="p">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">@</span><span class="n">objc</span>
+</span><span class='line'>    <span class="n">private</span> <span class="kr">override</span> <span class="k">init</span><span class="p">(</span><span class="nl">entity</span><span class="p">:</span> <span class="bp">NSEntityDescription</span><span class="p">,</span> <span class="n">insertIntoManagedObjectContext</span> <span class="nl">context</span><span class="p">:</span> <span class="bp">NSManagedObjectContext</span><span class="o">?</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">(</span><span class="nl">entity</span><span class="p">:</span> <span class="n">entity</span><span class="p">,</span> <span class="nl">insertIntoManagedObjectContext</span><span class="p">:</span> <span class="n">context</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 控制器</span>
+</span><span class='line'><span class="k">var</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'><span class="k">var</span> <span class="nl">persons</span><span class="p">:</span> <span class="p">[</span><span class="n">Person</span><span class="p">]</span><span class="o">!</span>
+</span><span class='line'><span class="c1">// 按键回调</span>
+</span><span class='line'><span class="k">func</span> <span class="n">add</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">let</span> <span class="n">delegate</span> <span class="o">=</span> <span class="bp">UIApplication</span><span class="p">.</span><span class="n">sharedApplication</span><span class="p">().</span><span class="n">delegate</span> <span class="kt">as</span><span class="o">!</span> <span class="n">AppDelegate</span>
+</span><span class='line'>    <span class="n">delegate</span><span class="p">.</span><span class="n">managedObjectContext</span><span class="p">.</span><span class="n">performBlock</span> <span class="p">{</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Void</span> <span class="k">in</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">person</span> <span class="o">=</span> <span class="n">Person</span><span class="p">(</span><span class="nl">context</span><span class="p">:</span> <span class="n">delegate</span><span class="p">.</span><span class="n">managedObjectContext</span><span class="p">,</span> <span class="nl">name</span><span class="p">:</span> <span class="s">&quot;\(self.i++ % 4)&quot;</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">person</span><span class="p">.</span><span class="n">age</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">i</span> <span class="o">%</span> <span class="mi">5</span>
+</span><span class='line'>        <span class="n">delegate</span><span class="p">.</span><span class="n">saveContext</span><span class="p">()</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">request</span> <span class="o">=</span> <span class="bp">NSFetchRequest</span><span class="p">(</span><span class="nl">entityName</span><span class="p">:</span> <span class="n">Person</span><span class="p">.</span><span class="n">entityName</span><span class="p">)</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">persons</span> <span class="o">=</span> <span class="n">try</span><span class="o">!</span> <span class="n">delegate</span><span class="p">.</span><span class="n">managedObjectContext</span><span class="p">.</span><span class="n">executeFetchRequest</span><span class="p">(</span><span class="n">request</span><span class="p">)</span> <span class="kt">as</span><span class="o">!</span> <span class="p">[</span><span class="n">Person</span><span class="p">]</span>
+</span><span class='line'>        <span class="n">print</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">persons</span><span class="p">.</span><span class="n">last</span><span class="o">?</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">persons</span><span class="p">.</span><span class="n">count</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">persons</span><span class="p">.</span><span class="n">last</span><span class="o">?</span><span class="p">.</span><span class="n">age</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>  
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>会输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span><span class='line'><span class="n">Optional</span><span class="p">(</span><span class="s">&quot;3&quot;</span><span class="p">)</span> <span class="mi">4</span> <span class="n">Optional</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到最后一个实体在不断地更新，并没有添加新的实体到sqlite中。</p>
+
+<p>不过需要注意的一点是当执行save操作后，<code>后面创建的约束值相同的实体会被清为default</code>，即除了第一个person，后面的person实体都会被清为default。</p>
+
+<p>还有唯一约束一般结合NSFetchedResultsController使用，由NSFetchedResultsController来管理实体，就不用担心自己已经存储的有值的实体被清为defalut了（这里可以用先查后创建的方式避免，不过这样的话代码逻辑就和没有用这个约束一样了），因为在约束值相同的情况下，NSFetchedResultsController根本不会将其存入，进而不会触发对应的刷新代理方法。</p>
+
+<h2>iOS9关于canOpenURL不生效</h2>
+
+<p>系统在iOS9之后加强了隐私保护，需要在info.plist中设置<code>LSApplicationQueriesSchemes</code>来添加要跳转的对应URL scheme，canOpenURL才会生效。</p>
+
+<p>详细地址:</p>
+
+<p><a href="https://developer.apple.com/videos/play/wwdc2015/703/">session 703 privacy and your app</a></p>
+
+<h2>OC变参函数</h2>
+
+<p>一个项目中各个API的host可能并不一样，所以最好有一个方法能够预置对应API的host，除了宏，变参函数是个很好的选择，如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">jobURLStringWithPath:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">format</span><span class="p">,</span> <span class="p">...</span> <span class="n">NS_FORMAT_FUNCTION</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">){</span>
+</span><span class='line'>    <span class="bp">NSString</span> <span class="o">*</span><span class="n">contents</span> <span class="o">=</span> <span class="n">JOB_HOST</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">va_list</span> <span class="n">args</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">va_start</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">format</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">contents</span> <span class="o">=</span> <span class="p">[</span><span class="n">contents</span> <span class="nl">stringByAppendingString</span><span class="p">:[[</span><span class="bp">NSString</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFormat</span><span class="p">:</span><span class="n">format</span> <span class="nl">arguments</span><span class="p">:</span><span class="n">args</span><span class="p">]];</span>
+</span><span class='line'>    <span class="n">va_end</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">contents</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样就可以进行以下调用来获取url字符串：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">[</span><span class="n">BaseAPI</span> <span class="nl">jobURLStringWithPath</span><span class="p">:</span><span class="s">@&quot;/deliveries.json&quot;</span><span class="p">]</span>
+</span><span class='line'><span class="p">[</span><span class="n">BaseAPI</span> <span class="nl">jobURLStringWithPath</span><span class="p">:</span><span class="s">@&quot;/user/%@/job.json&quot;</span><span class="p">,</span> <span class="n">userId</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>相对来说还是比较方便的。</p>
 ]]></content>
   </entry>
   
