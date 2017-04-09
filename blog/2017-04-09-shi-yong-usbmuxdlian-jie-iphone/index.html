@@ -1,0 +1,268 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>使用usbmuxd连接iPhone - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="最近通过 wifi ssh 到越狱了的 iOS 设备上出了个奇怪的问题： ssh 一直不结束，没提示成功，也没有提示失败。下面是自己对越狱设备进行“自测”的过程： 操作 结果 iOS ssh mac ip 成功 iOS ssh localhost 成功 (sshd 是跑起来的) iOS ssh &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2017-04-09-shi-yong-usbmuxdlian-jie-iphone/">
+  <link href="/favicon.png" rel="shortcut icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <!--[good job! gfw]><script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script><!-->
+  <script src="http://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
+  <link href="/stylesheets/google-fonts.css" rel="stylesheet" type="text/css">
+  
+
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">使用usbmuxd连接iPhone</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2017-04-09T14:28:11+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>2:28 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>最近通过 wifi ssh 到越狱了的 iOS 设备上出了个奇怪的问题： ssh 一直不结束，没提示成功，也没有提示失败。下面是自己对越狱设备进行“自测”的过程：</p>
+
+<table>
+<thead>
+<tr>
+<th> 操作           </th>
+<th style="text-align:center;">    结果     </th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> iOS ssh mac ip          </td>
+<td style="text-align:center;"> 成功 </td>
+</tr>
+<tr>
+<td> iOS ssh localhost          </td>
+<td style="text-align:center;"> 成功 (sshd 是跑起来的)</td>
+</tr>
+<tr>
+<td> iOS ssh 自身 ip          </td>
+<td style="text-align:center;"> 失败 </td>
+</tr>
+<tr>
+<td> mac ssh iOS ip           </td>
+<td style="text-align:center;"> 失败 </td>
+</tr>
+</tbody>
+</table>
+
+
+<p>上面的失败是指没有返回 ssh 的结果，一直卡在连接阶段。</p>
+
+<!--more-->
+
+
+<p>谷歌了很多资料，后来重装了 openSSH，也试过重置网络设置，最终还是不了了之，找不出越狱设备哪里出了问题。这样就只剩下利用 usbmuxd 进行连接的方式了。</p>
+
+<p>首先是安装 usbmuxd ：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew list usbmuxd</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后看下 iproxy 的使用说明：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>iproxy LOCAL_TCP_PORT DEVICE_TCP_PORT [UDID]</span></code></pre></td></tr></table></div></figure>
+
+
+<p>也就是执行 <code>iproxy 2223 22 &amp;</code> 后，会将越狱设备的 22 端口 (ssh用) 映射到本地的 2223 端口。 <br>
+这样我就可以通过 <code>ssh root@localhost -p 2223</code> 连接越狱设备了。</p>
+
+<p>假如找不到 iproxy 命令，可以执行 <code>brew list usbmuxd</code> 找下可执行文件的路径，添加到 $PATH 。</p>
+
+<p>使用 theos 的 <code>make package install</code> 命令时，需要添加下面两个环境变量 ：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>export THEOS_DEVICE_IP=localhost
+</span><span class='line'>export THEOS_DEVICE_PORT=2223</span></code></pre></td></tr></table></div></figure>
+
+
+<p>还有如果不想每次 ssh 都输入密码，可以进行以下操作 ：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>brew install ssh-copy-id
+</span><span class='line'>ssh-copy-id root@localhost -p 2223</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样下次 ssh 相同的设备，就不需要输入密码了。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2017-04-09T14:28:11+08:00'><span class='date'><span class='date-month'>Apr</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>2:28 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017-03-19-ru-he-yu-kuai-di-shi-yong-ming-ling-xing/" title="Previous Post: 如何愉快地使用命令行">&laquo; 如何愉快地使用命令行</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 曾经的嵌入式软件开发者，现已皈依苹果大法门下。目前混迹杭州，喜欢没事就去西湖浪荡。轻微完美主义者，跑步爱好者。 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc"> 我的简书 </a><br>
+  <a href="https://github.com/tripleCC"> 我的GitHub </a><br>
+  <a href="https://twitter.com/tripleCCBrian"> 我的Twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017-04-09-shi-yong-usbmuxdlian-jie-iphone/">使用usbmuxd连接iPhone</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-03-19-ru-he-yu-kuai-di-shi-yong-ming-ling-xing/">如何愉快地使用命令行</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-03-09-nsjsonserializationhe-nsnumber/">NSJSONSerialization和NSNumber的事故现场</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-12-05-li-yong-runtimejian-rong-lao-dai-ma-xiao-ji/">利用runtime兼容老代码小记</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2016-11-12-objective-cshi-yong-fan-xing-shi-xian-mapti-shi/">Objective-C使用范型实现map提示</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+        <li>
+        	<a href="http://www.swiftyper.com/">Swiftyper-小锅</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
