@@ -7,8 +7,9 @@ styles: [data-table]
 categories: 
 ---
 
-最近通过 WIFI ssh 到越狱设备上时，出了个奇怪的问题： <br>
+最近通过 wifi ssh 到越狱设备上时，出了个奇怪的问题： <br>
 ssh 一直不结束，没提示成功，也没有提示失败。<br>
+
 下面是自己对越狱设备进行“自测”的过程：
 
 | 操作           |    结果     |
@@ -38,11 +39,9 @@ iproxy LOCAL_TCP_PORT DEVICE_TCP_PORT [UDID]
 ```
 
 也就是执行 `iproxy 2223 22 &` 后，会将越狱设备的 22 端口 (ssh用) 映射到本地的 2223 端口。 <br>
-这样我就可以通过 `ssh root@localhost -p 2223` 连接越狱设备了。
+这样我就可以通过 `ssh root@localhost -p 2223` 连接越狱设备了。如果找不到 iproxy 命令，可以执行 `brew list usbmuxd` 找下可执行文件的路径，添加到 $PATH 。
 
-假如找不到 iproxy 命令，可以执行 `brew list usbmuxd` 找下可执行文件的路径，添加到 $PATH 。
-
-使用 theos 的 `make package install` 命令时，需要添加下面两个环境变量 ：
+使用 theos 的 `make package install` 命令时，需要先添加下面两个环境变量 ：
 
 ```
 export THEOS_DEVICE_IP=localhost
