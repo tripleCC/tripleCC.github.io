@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "使用usbmuxd连接iPhone"
+title: "使用usbmuxd连接越狱设备"
 date: 2017-04-09 14:28:11 +0800
 comments: true
 styles: [data-table]
