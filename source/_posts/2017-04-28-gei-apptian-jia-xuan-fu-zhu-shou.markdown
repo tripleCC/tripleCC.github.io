@@ -82,7 +82,7 @@ FLEXWindow 中还有一个比较重要的是：
 
 窗口创建完毕，接下来需要展示工具栏了。 FLEXLoader 创建了一个 FLEXExplorerViewController 作为
 
-FLEXWindow 的 rootViewController 来展示内容。由于工具栏在 APP 的生命周期中都会存在，FLEXLoader 还创建了 FLEXManager 单例管理工具窗口，这样就能通过下面代码控制工具栏显示与否：
+FLEXWindow 的 rootViewController 来展示内容。由于工具栏在 APP 的整个生命周期中都会存在，FLEXLoader 还创建了 FLEXManager 单例来管理工具窗口，这样就能通过下面代码控制工具栏显示与否：
 
 ```
 - (void)showExplorer
@@ -95,7 +95,40 @@ FLEXWindow 的 rootViewController 来展示内容。由于工具栏在 APP 的�
     self.explorerWindow.hidden = YES;
 }
 ```
+FLEX 工具栏差不多就是以上诉方式实现的，接下来就可以着手开发自己的悬浮助手了。
 
 ## 悬浮助手
 
+悬浮助手，顾名思义，只是一个助手，因此即使去除这部分代码，工程应该依然能编译通过。用组件化开发的语言来描述，悬浮助手只是一个 Pod ，添加和去除应该只需要在 Podfile 中增删一行代码。
 
+不侵入业务的话，使用 swizzling method 是个不错的选择。在这个需求中，我对 UIViewController 的 `viewDidAppear` 进行了替换，然后初始化悬浮助手窗口管理者：
+
+```
+- (void)tpc_viewDidAppear:(BOOL)animated {
+    [self tpc_viewDidAppear:animated];
+    
+    if (已经初始化过)  return;
+    
+  	 初始化悬浮助手管理者，展示界面
+}
+```
+
+只要把基础的悬浮做好，后面添加功能就比较方便了。下面是我自己的悬浮助手界面：
+
+![](./images/Snip20170430_3.png)
+
+目前为止，这个助手具备以下功能：
+
+- 单击，出现功能入口，选择对应功能
+- 双击，登录入口，输入手机、密码，点击登录
+- 三击，出现切店入口，点击黄色/绿色条目，切换至对应店铺
+- 四击，切换网络环境
+- 长按拖动
+
+并且在启动工程是会默认登录，这样的话开发需要登录权限的业务组件就非常方便了。
+
+## 参考
+
+[Understanding Windows and Screens](https://developer.apple.com/library/content/documentation/WindowsViews/Conceptual/WindowAndScreenGuide/WindowScreenRolesinApp/WindowScreenRolesinApp.html#//apple_ref/doc/uid/TP40012555-CH4-SW3)
+
+[UIKit-UIWindow](https://developer.apple.com/reference/uikit/uiwindow)
