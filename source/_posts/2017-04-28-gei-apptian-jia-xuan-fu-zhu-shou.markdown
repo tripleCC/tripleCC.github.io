@@ -80,9 +80,7 @@ FLEXWindow 中还有一个比较重要的是：
 
 这里插个题外话，NSWindow 有一个 `canBecomeKey` 的公开方法，功能和 UIWindow `_canBecomeKeyWindow`一样，UIWindow 却把它设为了私有方法。或许是因为 Mac 上常常通过创建 window 来展示新内容，而 iOS 更多的是改变 window 中的视图吧。还有 keyWindow 和普通 window 相比，优势是能接收当前的键盘和非触摸事件，而触摸事件则是先传递到当前触摸到的 window 上，windowLevel 越高，在响应链中就越靠前。所以在悬浮助手中，我让 `_canBecomeKeyWindow` 直接返回了 NO 。
 
-窗口创建完毕，接下来需要展示工具栏了。 FLEXLoader 创建了一个 FLEXExplorerViewController 作为
-
-FLEXWindow 的 rootViewController 来展示内容。由于工具栏在 APP 的整个生命周期中都会存在，FLEXLoader 还创建了 FLEXManager 单例来管理工具窗口，这样就能通过下面代码控制工具栏显示与否：
+窗口创建完毕，接下来需要展示工具栏了。 FLEXLoader 创建了一个 FLEXExplorerViewController 作为FLEXWindow 的 rootViewController 来展示内容。由于工具栏在 APP 的整个生命周期中都会存在，FLEXLoader 还创建了 FLEXManager 单例来管理工具窗口，这样就能通过下面代码控制工具栏显示与否：
 
 ```objc
 - (void)showExplorer
