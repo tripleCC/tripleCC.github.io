@@ -22,7 +22,7 @@ FLEXLoader，其在 GitHub 上的项目名为 [FLEX](https://github.com/Flipboar
 
 在越狱设备中，开启想要观察 APP 的 FLEXLoader 功能，然后打开 APP ，就会看到有如下工具栏悬浮于界面之上：
 
-![](/images/IMG_3107.PNG)
+![](/images/Snip20170430_4.PNG)
 
 接下来，对 FLEX 这部分功能进行简略地解读。
 
@@ -113,7 +113,7 @@ FLEX 工具栏差不多就是以上诉方式实现的，接下来就可以着手
 
 只要把基础的悬浮做好，后面添加功能就比较方便了。下面是我自己的悬浮助手界面：
 
-![](/images/Snip20170430_3.png)
+![](/images/Snip20170430_5.png)
 
 目前为止，这个助手具备以下功能：
 
