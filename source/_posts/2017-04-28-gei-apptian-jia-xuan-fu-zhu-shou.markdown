@@ -22,15 +22,15 @@ FLEXLoader，其在 GitHub 上的项目名为 [FLEX](https://github.com/Flipboar
 
 在越狱设备中，开启想要观察 APP 的 FLEXLoader 功能，然后打开 APP ，就会看到有如下工具栏悬浮于界面之上：
 
-![](./images/IMG_3107.PNG)
+![](/images/IMG_3107.PNG)
 
 接下来，对 FLEX 这部分功能进行简略地解读。
 
 ## FLEX 工具栏
  
-首先 FLEXLoader 为了能让工具栏悬浮于 APP 所有界面之上，独立创建了一个高 windowLevel 的 FLEXWindow ：
+首先， FLEXLoader 为了能让工具栏悬浮于 APP 所有界面之上，独立创建了一个高 windowLevel 的 FLEXWindow ：
 
-```
+```objc
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
@@ -48,7 +48,7 @@ FLEXLoader，其在 GitHub 上的项目名为 [FLEX](https://github.com/Flipboar
 
 这个 window 是 FLEXLoader 上所有视图得以展示的基础。因为这个 window 的层级比状态栏还高，会对 APP 原本的事件响应产生影响，所以就有如下代码对事件进行过滤 ：
 
-```
+```objc
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
 {
     BOOL pointInside = NO;
@@ -62,7 +62,7 @@ FLEXLoader，其在 GitHub 上的项目名为 [FLEX](https://github.com/Flipboar
 
 FLEXWindow 中还有一个比较重要的是：
 
-```
+```objc
 - (BOOL)canBecomeKeyWindow
 {
     return [self.eventDelegate canBecomeKeyWindow];
@@ -84,7 +84,7 @@ FLEXWindow 中还有一个比较重要的是：
 
 FLEXWindow 的 rootViewController 来展示内容。由于工具栏在 APP 的整个生命周期中都会存在，FLEXLoader 还创建了 FLEXManager 单例来管理工具窗口，这样就能通过下面代码控制工具栏显示与否：
 
-```
+```objc
 - (void)showExplorer
 {
     self.explorerWindow.hidden = NO;
@@ -115,7 +115,7 @@ FLEX 工具栏差不多就是以上诉方式实现的，接下来就可以着手
 
 只要把基础的悬浮做好，后面添加功能就比较方便了。下面是我自己的悬浮助手界面：
 
-![](./images/Snip20170430_3.png)
+![](/images/Snip20170430_3.png)
 
 目前为止，这个助手具备以下功能：
 
