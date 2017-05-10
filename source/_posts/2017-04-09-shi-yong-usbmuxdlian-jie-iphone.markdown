@@ -29,7 +29,7 @@ ssh 一直不结束，没提示成功，也没有提示失败。<br>
 首先是安装 usbmuxd ：
 
 ```
-brew list usbmuxd
+brew install usbmuxd
 ```
 
 然后看下 iproxy 的使用说明：
