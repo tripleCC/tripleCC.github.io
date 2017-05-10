@@ -135,8 +135,33 @@ ssh 一直不结束，没提示成功，也没有提示失败。<br></p>
 </pre></td><td class='code'><pre><code class=''><span class='line'>iproxy LOCAL_TCP_PORT DEVICE_TCP_PORT [UDID]</span></code></pre></td></tr></table></div></figure>
 
 
-<p>也就是执行 <code>iproxy 2223 22 &amp;</code> 后，会将越狱设备的 22 端口 (ssh用) 映射到本地的 2223 端口。 <br>
-这样我就可以通过 <code>ssh root@localhost -p 2223</code> 连接越狱设备了。如果找不到 iproxy 命令，可以执行 <code>brew list usbmuxd</code> 找下可执行文件的路径，添加到 $PATH 。</p>
+<p>也就是执行以下命令后：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>iproxy 2223 22 &</span></code></pre></td></tr></table></div></figure>
+
+
+<p>会将越狱设备的 22 端口 (ssh用) 映射到本地的 2223 端口。 这样就可以通过 <code>ssh root@localhost -p 2223</code> 连接越狱设备了。</p>
+
+<p>如果需要用 lldb 调试越狱设备上的进程，需要先将 connect 的端口映射到本地，这里以 1234 端口为例：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>iproxy 1234 1234 &</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后打开 lldb ，输入以下命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>process connect connect://localhost:1234</span></code></pre></td></tr></table></div></figure>
+
+
+<p>连接越狱设备，输入以下命令：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>debugserver *:1234 -a 进程名</span></code></pre></td></tr></table></div></figure>
+
+
+<p>只要越狱设备上的 debugserver （重签名过的）正常运行， 就可以连接通过 lldb 进行远程调试了。</p>
 
 <p>使用 theos 的 <code>make package install</code> 命令时，需要先添加下面两个环境变量 ：</p>
 
@@ -155,6 +180,8 @@ ssh 一直不结束，没提示成功，也没有提示失败。<br></p>
 
 
 <p>这样下次 ssh 相同的设备，就不需要输入密码了。</p>
+
+<p>最后，如果输入 iproxy 时，显示可执行文件不存在，可以执行 <code>brew list usbmuxd</code> 找下可执行文件的路径，添加到 $PATH 。</p>
 </div>
 
 
