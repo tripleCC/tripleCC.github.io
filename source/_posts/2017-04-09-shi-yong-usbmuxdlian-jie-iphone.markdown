@@ -38,8 +38,31 @@ brew install usbmuxd
 iproxy LOCAL_TCP_PORT DEVICE_TCP_PORT [UDID]
 ```
 
-也就是执行 `iproxy 2223 22 &` 后，会将越狱设备的 22 端口 (ssh用) 映射到本地的 2223 端口。 <br>
-这样我就可以通过 `ssh root@localhost -p 2223` 连接越狱设备了。如果找不到 iproxy 命令，可以执行 `brew list usbmuxd` 找下可执行文件的路径，添加到 $PATH 。
+也就是执行以下命令后： 
+
+```
+iproxy 2223 22 &
+```
+会将越狱设备的 22 端口 (ssh用) 映射到本地的 2223 端口。 这样就可以通过 `ssh root@localhost -p 2223` 连接越狱设备了。
+
+如果需要用 lldb 调试越狱设备上的进程，需要先将 connect 的端口映射到本地，这里以 1234 端口为例：
+
+```
+iproxy 1234 1234 &
+```
+然后打开 lldb ，输入以下命令：
+
+```
+process connect connect://localhost:1234
+```
+
+连接越狱设备，输入以下命令：
+
+```
+debugserver *:1234 -a 进程名
+```
+
+只要越狱设备上的 debugserver （重签名过的）正常运行， 就可以连接通过 lldb 进行远程调试了。
 
 使用 theos 的 `make package install` 命令时，需要先添加下面两个环境变量 ：
 
@@ -57,3 +80,4 @@ ssh-copy-id root@localhost -p 2223
 
 这样下次 ssh 相同的设备，就不需要输入密码了。
 
+最后，如果输入 iproxy 时，显示可执行文件不存在，可以执行 `brew list usbmuxd` 找下可执行文件的路径，添加到 $PATH 。
