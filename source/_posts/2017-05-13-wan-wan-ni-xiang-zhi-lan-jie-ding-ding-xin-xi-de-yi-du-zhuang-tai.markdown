@@ -377,7 +377,7 @@ bl         imp___stubs__objc_msgSend
 ...
 ```
 
-通过反汇编代码可以看出，这个 `dataSource` 先后调用了 `noRepeatSortMessagesWithNotificationMessageList:` 和 `dealMessageListWithNoRepeatSortArray:finishBlock:` 方法，会不会在后一个方法已读标志呢？在确认之前，我们先看下 `dataSource` 这个方法：
+通过反汇编代码可以看出，这个 `dataSource` 先后调用了 `noRepeatSortMessagesWithNotificationMessageList:` 和 `dealMessageListWithNoRepeatSortArray:finishBlock:` 方法，会不会在后一个方法发送已读标志呢？在确认之前，我们先看下 `dataSource` 这个方法：
 
 ```
 @property(retain, nonatomic) DTMessageControllerDataSource *dataSource; // @synthesize dataSource=_dataSource;
@@ -643,7 +643,7 @@ install.exec "killall -9 DingTalk"
 ```
 
 ## 小结
-第一次逆向实践，虽说编写的 Tweak 代码才几行，但其定位过程却是一波三折，可能因为经验不足导致定位不准确吧，不过逆向需要很好的耐心倒不假。因为以前做过即时通讯，所以对钉钉消息收发流程多好还是会有点自己的理解，这无形中也推进了我逆向的进度。
+第一次逆向实践，虽说编写的 Tweak 代码才几行，但其定位过程却是一波三折，可能因为经验不足导致定位不准确吧，不过逆向需要很好的耐心倒不假。因为以前做过即时通讯，所以对钉钉消息收发流程多少还是会有点自己的理解，这无形中也推进了我逆向的进度。
 
 最后，这次逆向让我时隔三年之后，再一次有机会利用终端调试程序，还记得以前是做 Linux 应用程序时在嵌入式设备中使用 gdb 进行调试。决定以后在 Xcode 中也要多用命令行进行调试了，实在是舒畅。
 ## 参考
