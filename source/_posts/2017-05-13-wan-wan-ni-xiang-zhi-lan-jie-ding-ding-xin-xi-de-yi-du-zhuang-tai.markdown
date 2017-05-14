@@ -196,7 +196,7 @@ libsystem_kernel.dylib`mach_msg_overwrite_trap:
 可以看到 chisel 不仅把目标控制器 `<DTMessageOTOViewController 0x13c830400>` 打印出来了，还顺带把当前整个控制器层级都给拉了出来。
 
 #### 定位接受消息方法
-将消息标为已读的前提是钉钉接收到了该消息，进而可以推测是不是在接收消息后，钉钉发送了已读标志，所以我们先找出接收消息的回调方法。在不知道确切方法的情况下，浏览下下 class-dump 出来的 DTMessageOTOViewController 类信息多少会有收获的：
+将消息标为已读的前提是钉钉接收到了该消息，进而可以推测是不是在接收消息后，钉钉发送了已读标志，所以我们先找出接收消息的回调方法。在不知道确切方法的情况下，浏览下下 class-dump 出来的 `DTMessageOTOViewController` 类信息多少会有收获的：
 
 ```objc
 //
@@ -222,7 +222,7 @@ libsystem_kernel.dylib`mach_msg_overwrite_trap:
 
 结合方法命名，我只关注了上方的三个方法。接下来可以逐个测试上面的方法，找出处理消息的回调了。
 
-在 Hopper Disassembler 中， DTMessageOTOViewController 的 handleNotificationMessage 的方法如下：
+在 Hopper Disassembler 中， `DTMessageOTOViewController` 的 `handleNotificationMessage:` 的方法如下：
 
 ```
         ; ================ B E G I N N I N G   O F   P R O C E D U R E ================
@@ -233,7 +233,7 @@ libsystem_kernel.dylib`mach_msg_overwrite_trap:
 ...
 ```
 
-如上所示，我们可以知道 handleNotificationMessage 的相对地址是 0x0000000100466820，打开 lldb 进行调试：
+如上所示，我们可以知道 `handleNotificationMessage:` 的相对地址是 0x0000000100466820，打开 lldb 进行调试：
 
 1、获取 DingTalk 的 ASLR (地址空间配置随机加载) 偏移量
 
@@ -242,13 +242,13 @@ libsystem_kernel.dylib`mach_msg_overwrite_trap:
 [  0] 0x0000000000004000 /var/containers/Bundle/Application/60B29D5D-2360-4C01-A49F-8CA87C752EFE/DingTalk.app/DingTalk(0x0000000100004000)
 ```
 
-2、设置 handleNotificationMessage 断点信息。不过在设置前，得先明确下参数和返回值的传递规则。
+2、设置 `handleNotificationMessage:` 断点信息。不过在设置前，得先明确下参数和返回值的传递规则。
 <br>
 
 参数传递规则：前四个参数存放在 R0 - R3 中，剩余的通过栈进行传递。<br>
 返回值传递规则：通过 R0 传递给调用者。
 
-众所周知，Objective-C 的方法调用是通过 objc_msgSend 函数实现的，objc_msgSend 定义如下：
+众所周知，Objective-C 的方法调用是通过 `objc_msgSend` 函数实现的，`objc_msgSend` 定义如下：
 
 ```
 id objc_msgSend(id self, SEL	_cmd,...);
@@ -294,7 +294,7 @@ DingTalk`_mh_execute_header:
     0x10046a82c <+4614188>: stp    x20, x19, [sp, #48]
 (lldb)
 ```
-可以看到接收消息后，的确进入了 handleNotificationMessage 方法。并且通过 LR （保存函数返回地址寄存器），我们可以定位到是 receivedMessageListNotification 方法调用了 handleNotificationMessage ：
+可以看到接收消息后，的确进入了 `handleNotificationMessage:` 方法。并且通过 LR （保存函数返回地址寄存器），我们可以定位到是 `receivedMessageListNotification:` 方法调用了 `handleNotificationMessage:` ：
 
 ```
 (lldb) p/x $lr - 0x0000000000004000
@@ -315,7 +315,7 @@ Hopper Disassembler ：
 00000001004667d0         mov        x0, x22
 ...
 ```
-进而，我们可以知道新消息到来时，钉钉会广播 DTPushReceivedMessageListNotification 通知：
+进而，我们可以知道新消息到来时，钉钉会广播 `DTPushReceivedMessageListNotification` 通知：
 
 ```
 NSConcreteNotification 0x170854430 {name = DTPushReceivedMessageListNotification; object = <DTReconnectedHandler: 0x170015990>; userInfo = {
@@ -327,7 +327,7 @@ NSConcreteNotification 0x170854430 {name = DTPushReceivedMessageListNotification
 
 4、从反汇编代码中寻找线索
 
-虽然定位到了 handleNotificationMessage 方法，但最终发现这个方法并没有给我想要的信息，不过它的调用者 receivedMessageListNotification 方法却提供了一些有用的线索：
+虽然定位到了 `handleNotificationMessage:` 方法，但最终发现这个方法并没有给我想要的信息，不过它的调用者 `receivedMessageListNotification:` 方法却提供了一些有用的线索：
 
 ```
         ; ================ B E G I N N I N G   O F   P R O C E D U R E ================
@@ -348,7 +348,7 @@ NSConcreteNotification 0x170854430 {name = DTPushReceivedMessageListNotification
 0000000100466778         bl         imp___stubs__objc_msgSendSuper2
 ...
 ```
-DTMessageOTOViewController 对象的 receivedMessageListNotification 方法有效信息并不多，但它在调用 handleNotificationMessage 方法前，调用了父类的 receivedMessageListNotification 方法：
+`DTMessageOTOViewController` 对象的 `receivedMessageListNotification:` 方法有效信息并不多，但它在调用 `handleNotificationMessage:` 方法前，调用了父类的 `receivedMessageListNotification:` 方法：
 
 ```
  ; ================ B E G I N N I N G   O F   P R O C E D U R E ================
@@ -377,13 +377,13 @@ bl         imp___stubs__objc_msgSend
 ...
 ```
 
-通过反汇编代码可以看出，这个 dataSource 先后调用了 `noRepeatSortMessagesWithNotificationMessageList:` 和 `dealMessageListWithNoRepeatSortArray:finishBlock:` 方法，会不会在后一个方法已读标志呢？在确认之前，我们先看下 dataSource 这个方法：
+通过反汇编代码可以看出，这个 `dataSource` 先后调用了 `noRepeatSortMessagesWithNotificationMessageList:` 和 `dealMessageListWithNoRepeatSortArray:finishBlock:` 方法，会不会在后一个方法已读标志呢？在确认之前，我们先看下 `dataSource` 这个方法：
 
 ```
 @property(retain, nonatomic) DTMessageControllerDataSource *dataSource; // @synthesize dataSource=_dataSource;
 ```
 
-数据源被剥离到一个独立的对象了，这种做法在界面比较复杂的情况中很常见，能有效减少控制器中的代码。那么 DTMessageControllerDataSource 里面会有什么有用的信息么？
+数据源被剥离到一个独立的对象了，这种做法在界面比较复杂的情况中很常见，能有效减少控制器中的代码。那么 `DTMessageControllerDataSource` 里面会有什么有用的信息么？
 
 
 #### 定位发送已读标志方法
@@ -416,7 +416,7 @@ bl         imp___stubs__objc_msgSend
 00000001001a071c         ret
 ...
 ```
-不过这次因为要改变返回值，我直接把断点打在了 0x00000001001a070c 这个地方：
+不过这次因为要改变返回值，我直接把断点打在了 `0x00000001001a070c` 这个地方：
 
 ```
 Process 4961 stopped
@@ -570,7 +570,7 @@ DingTalk`_mh_execute_header:
 
 #### 编写安装 Tweak 
 
-首先，创建一个 Tweak 工程模版：
+1、创建一个 Tweak 工程模版：
 
 ```objc
 ➜  DingTalk nic.pl
@@ -591,7 +591,7 @@ Author/Maintainer Name [tripleCC]: tripleCC
 Instantiating iphone/tweak in dingtalkrecallbarrier/...
 Done.
 ```
-然后可以编写 Tweak.m 和 Makefile 文件了：
+2、编写 Tweak.m 和 Makefile 文件了：
 
 Tweak.m：
  
@@ -620,7 +620,7 @@ after-install::
 
 这里的 `needSendReadStatusInCellForRowWithMessage:` 直接返回 NO ，因为即使不执行原来的方法，也不会影响 App 的正常运行。
 
-最后，将 Tweak 编译打包安装到越狱设备上：
+3、将 Tweak 编译打包安装到越狱设备上：
 
 ```
 
@@ -646,7 +646,6 @@ install.exec "killall -9 DingTalk"
 第一次逆向实践，虽说编写的 Tweak 代码才几行，但其定位过程却是一波三折，可能因为经验不足导致定位不准确吧，不过逆向需要很好的耐心倒不假。因为以前做过即时通讯，所以对钉钉消息收发流程多好还是会有点自己的理解，这无形中也推进了我逆向的进度。
 
 最后，这次逆向让我时隔三年之后，再一次有机会利用终端调试程序，还记得以前是做 Linux 应用程序时在嵌入式设备中使用 gdb 进行调试。决定以后在 Xcode 中也要多用命令行进行调试了，实在是舒畅。
-
 ## 参考
 [iOS应用逆向工程](https://book.douban.com/subject/26363333/)<br>
 [iOS 逆向实战 - 钉钉签到远程“打卡”](http://www.swiftyper.com/2017/02/15/dingtalk-fake-gps/)<br>
