@@ -271,6 +271,8 @@ set-option -g default-shell /bin/zsh
 
 
 <br>
+另外，如果使用 gpakosz 的 配置文件，按 `+` 可以抽离当前 pane 为一个独立 window，再按一次 `+` ，这个 window 又会回到抽离前的状态，对于 13 寸屏幕的我，还是非常便利的。
+
 更多命令可以查看 tmux 的 man 手册。
 
 #####安装方式
