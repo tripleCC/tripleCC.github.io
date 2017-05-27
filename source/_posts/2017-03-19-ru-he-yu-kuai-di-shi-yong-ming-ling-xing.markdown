@@ -213,7 +213,7 @@ set-option -g default-shell /bin/zsh
 	bind-key -t vi-copy Enter copy-pipe "reattach-to-user-namespace pbcopy"
 	```
 
-- 由于 tmux 在关机重启后，无法有效地进行 attach ，所以添加重启时恢复 tmux 上下文的 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)  (需要注意的是 tmux-resurrect 作者推荐使用 tmux [插件管理器](https://github.com/tmux-plugins/tpm.git) 进行安装，不过这样做会出现 [奇怪的警告](https://github.com/gpakosz/.tmux/issues/61))
+- 由于 tmux 在关机重启后，无法有效地进行 attach ，所以添加重启时恢复 tmux 上下文的 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)  (需要注意的是 tmux-resurrect 作者推荐使用 tmux [插件管理器](https://github.com/tmux-plugins/tpm.git) 进行安装，不过这样做会出现 [奇怪的警告](https://github.com/gpakosz/.tmux/issues/61)) (UPDATE 2017-5-27: 去除警告，参考[这里](https://github.com/tmux-plugins/tpm/blob/master/docs/tpm_not_working.md))
 	- 克隆 tmux-resurrect 仓库
 	
 	```
