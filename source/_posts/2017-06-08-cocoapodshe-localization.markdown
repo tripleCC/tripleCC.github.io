@@ -23,7 +23,7 @@ categories:
 
 **CocoaPods 会把资源塞进对应的 Frameworks** ，只有通过指定 Frameworks 的 bundle 才能访问到资源：
 
-```
+```objc
 // Objective-C
 [NSBundle bundleForClass:<#ClassFromPodspec#>]
 // Swift
@@ -41,7 +41,7 @@ NSBundle(forClass: <#ClassFromPodspec#>)
 
 SobotKit 是“智齿”的 iOS SDK ，下面是 SobotKit podspec 文件的部分代码：
 
-```
+```objc
 s.frameworks =  "AudioToolbox","AssetsLibrary","SystemConfiguration","AVFoundation","MobileCoreServices"
 s.library   = 'z.1.2.5'
 
@@ -61,7 +61,7 @@ s.ios.vendored_frameworks = 'SobotKit.framework'
 
 下面是修改后的 podspec：
 
-```
+```objc
 s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','*.lproj'
 ```
 
