@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-06-08T17:09:35+08:00</updated>
+  <updated>2017-06-08T17:10:29+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -20,7 +20,7 @@
     <id>http://triplecc.github.io/blog/cocoapodshe-localization</id>
     <content type="html"><![CDATA[<p>一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。</p>
 
-<p>问题来了：在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SDK 拉进工程中，国际化信息就又生效了。在咨询其开发人员无果后，只能自己慢慢排雷了。由于问题只在 “CocoaPods 引入 SDK” 这种情况下出现，所以要想彻底解决这个问题，就需要明确 CocoaPods 是如何对国际化资源进行管理的。</p>
+<p>问题来了：在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SDK 拉进工程中，国际化信息就又生效了。在咨询其开发人员无果后，只能自己慢慢排雷了。由于问题只在 “通过 CocoaPods 引入 SDK” 这种情况下出现，所以要想彻底解决这个问题，就需要明确 CocoaPods 是如何对国际化资源进行管理的。</p>
 
 <!--more-->
 
@@ -37,14 +37,15 @@
 
 <p><strong>CocoaPods 会把资源塞进对应的 Frameworks</strong> ，只有通过指定 Frameworks 的 bundle 才能访问到资源：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>// Objective-C
-</span><span class='line'>[NSBundle bundleForClass:&lt;#ClassFromPodspec#&gt;]
-</span><span class='line'>// Swift
-</span><span class='line'>NSBundle(forClass: &lt;#ClassFromPodspec#&gt;)</span></code></pre></td></tr></table></div></figure>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// Objective-C</span>
+</span><span class='line'><span class="p">[</span><span class="bp">NSBundle</span> <span class="nl">bundleForClass</span><span class="p">:</span><span class="o">&lt;</span><span class="err">#</span><span class="n">ClassFromPodspec</span><span class="err">#</span><span class="o">&gt;</span><span class="p">]</span>
+</span><span class='line'><span class="c1">// Swift</span>
+</span><span class='line'><span class="bp">NSBundle</span><span class="p">(</span><span class="nl">forClass</span><span class="p">:</span> <span class="o">&lt;</span><span class="err">#</span><span class="n">ClassFromPodspec</span><span class="err">#</span><span class="o">&gt;</span><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>这种方式对于 Static Libraries 和 Dynamic Frameworks 都是有效的。如果编写的框架包含一些资源的话，内部访问资源时，应该以这种方式指定确切的 bundle ，因为无法确定开发者是以何种方式集成你的框架。</p>
@@ -57,18 +58,19 @@
 
 <p>SobotKit 是“智齿”的 iOS SDK ，下面是 SobotKit podspec 文件的部分代码：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
 <span class='line-number'>5</span>
 <span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>s.frameworks =  "AudioToolbox","AssetsLibrary","SystemConfiguration","AVFoundation","MobileCoreServices"
-</span><span class='line'>s.library   = 'z.1.2.5'
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">s</span><span class="p">.</span><span class="n">frameworks</span> <span class="o">=</span>  <span class="s">&quot;AudioToolbox&quot;</span><span class="p">,</span><span class="s">&quot;AssetsLibrary&quot;</span><span class="p">,</span><span class="s">&quot;SystemConfiguration&quot;</span><span class="p">,</span><span class="s">&quot;AVFoundation&quot;</span><span class="p">,</span><span class="s">&quot;MobileCoreServices&quot;</span>
+</span><span class='line'><span class="n">s</span><span class="p">.</span><span class="n">library</span>   <span class="o">=</span> <span class="err">&#39;</span><span class="n">z</span><span class="mf">.1.2.5</span><span class="err">&#39;</span>
 </span><span class='line'>
-</span><span class='line'># s.resource  = "icon.png"
-</span><span class='line'>s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','en.lproj/SobotLocalizable.strings','zh-Hans.lproj/SobotLocalizable.strings'
-</span><span class='line'>s.ios.vendored_frameworks = 'SobotKit.framework'</span></code></pre></td></tr></table></div></figure>
+</span><span class='line'><span class="cp"># s.resource  = &quot;icon.png&quot;</span>
+</span><span class='line'><span class="n">s</span><span class="p">.</span><span class="n">resources</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">SobotKit</span><span class="p">.</span><span class="n">bundle</span><span class="sc">&#39;,&#39;</span><span class="n">ZCEmojiExpression</span><span class="p">.</span><span class="n">bundle</span><span class="sc">&#39;,&#39;</span><span class="n">en</span><span class="p">.</span><span class="n">lproj</span><span class="o">/</span><span class="n">SobotLocalizable</span><span class="p">.</span><span class="n">strings</span><span class="sc">&#39;,&#39;</span><span class="n">zh</span><span class="o">-</span><span class="n">Hans</span><span class="p">.</span><span class="n">lproj</span><span class="o">/</span><span class="n">SobotLocalizable</span><span class="p">.</span><span class="n">strings</span><span class="err">&#39;</span>
+</span><span class='line'><span class="n">s</span><span class="p">.</span><span class="n">ios</span><span class="p">.</span><span class="n">vendored_frameworks</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">SobotKit</span><span class="p">.</span><span class="n">framework</span><span class="err">&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>下面是以 Static Libraries 的方式集成进工程后的目录结构：</p>
@@ -82,8 +84,9 @@
 
 <p>下面是修改后的 podspec：</p>
 
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','*.lproj'</span></code></pre></td></tr></table></div></figure>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">s</span><span class="p">.</span><span class="n">resources</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">SobotKit</span><span class="p">.</span><span class="n">bundle</span><span class="sc">&#39;,&#39;</span><span class="n">ZCEmojiExpression</span><span class="p">.</span><span class="n">bundle</span><span class="sc">&#39;,&#39;</span><span class="o">*</span><span class="p">.</span><span class="n">lproj</span><span class="err">&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
 
 
 <p>构建工程后，可以看下目录：</p>
