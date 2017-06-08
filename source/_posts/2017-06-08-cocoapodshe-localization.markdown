@@ -52,12 +52,12 @@ s.ios.vendored_frameworks = 'SobotKit.framework'
 
 下面是以 Static Libraries 的方式集成进工程后的目录结构：
 
-![](./images/Snip20170608_1.png)
-![](./images/Snip20170608_4.png)
+![](/images/Snip20170608_1.png)
+![](/images/Snip20170608_4.png)
 
 构建工程后，进入 product 根目录。可以看到，虽然在目录中，Pod 增加了 en.lproj、zh-Hans 两个文件夹，但是拷贝到 app bundle 后，却并没有这两个文件夹，同名的 .strings 文件相互覆盖了。
 
-![](./images/Snip20170608_5.png)
+![](/images/Snip20170608_5.png)
 
 下面是修改后的 podspec：
 
@@ -67,12 +67,12 @@ s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','*.lproj'
 
 构建工程后，可以看下目录：
 
-![](./images/Snip20170608_3.png)
-![](./images/Snip20170608_4.png)
+![](/images/Snip20170608_3.png)
+![](/images/Snip20170608_4.png)
 
 构建后的 product 根目录：
 
-![](./images/Snip20170608_6.png)
+![](/images/Snip20170608_6.png)
 
 最终结果表明， SobotKit 的 podspec 写错了。不过工程的目录结构还是让我迷惑了很久，Pod 目录里面居然有实体文件，着实让我走了点弯路。
 
