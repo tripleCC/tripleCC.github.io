@@ -8,8 +8,9 @@ categories:
 
 一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。
 
-在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SDK 拉进工程中，国际化信息就又生效了。在咨询其开发人员无果后，只能自己慢慢排雷了。由于问题只在 “CocoaPods 引入 SDK” 这种情况下出现，所以要想彻底解决这个问题，就需要明确 CocoaPods 是如何对国际化资源进行管理的。
+问题来了：在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SDK 拉进工程中，国际化信息就又生效了。在咨询其开发人员无果后，只能自己慢慢排雷了。由于问题只在 “CocoaPods 引入 SDK” 这种情况下出现，所以要想彻底解决这个问题，就需要明确 CocoaPods 是如何对国际化资源进行管理的。
 
+<!--more-->
 ## CocoaPods 如何管理资源
 
 从 [CocoaPods 0.36 的 release 文档](http://blog.cocoapods.org/CocoaPods-0.36/) 看，它对资源的管理方式，取决于是否以 Frameworks 的方式对 CocoaPods 进行集成，从 Podfile 层面看，就是是否使用了 use_frameworks! 。
@@ -73,11 +74,11 @@ s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','*.lproj'
 
 ![](./images/Snip20170608_6.png)
 
-最终结果表明， SobotKit 的 podspec 写错了。不过工程的目录结构还是让我迷惑了很久，走了点弯路。
+最终结果表明， SobotKit 的 podspec 写错了。不过工程的目录结构还是让我迷惑了很久，Pod 目录里面居然有实体文件，着实让我走了点弯路。
 
 ## 小结
 
-在明确构建时，当前工程会将 SobotKit 的相关资源直接塞到 app bundle 后，排查问题就变得简单了。因为在我这个项目的上下文中，直接把 SobotKit 拉进主工程和通过 Pod 集成，其资源最终存放的的位置都是 app bundle ，这也就排除了 SobotKit 内部调用Localizaton宏错误这一猜测。
+在明确构建当前工程会将 SobotKit 的相关资源直接塞到 app bundle 后，排查问题就变得简单了。因为在我这个项目的上下文中，直接把 SobotKit 拉进主工程和通过 Pod 集成，其资源最终存放的的位置都是 app bundle ，这也就排除了 SobotKit 内部调用Localizaton宏错误这一猜测。
 
 CocoaPods 推荐以 Dynamic Frameworks 的方式集成，不过要注意的是引用资源时，要指定对应的 bundle 。
 
