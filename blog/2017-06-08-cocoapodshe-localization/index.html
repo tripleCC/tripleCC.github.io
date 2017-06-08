@@ -1,0 +1,305 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CocoaPods和Localization - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。 在使用 CocoaPods 集成“智齿”后，“智齿” &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2017-06-08-cocoapodshe-localization/">
+  <link href="/favicon.png" rel="shortcut icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <!--[good job! gfw]><script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script><!-->
+  <script src="http://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
+  <link href="/stylesheets/google-fonts.css" rel="stylesheet" type="text/css">
+  
+
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">CocoaPods和Localization</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2017-06-08T09:23:01+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>9:23 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。</p>
+
+<p>在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SDK 拉进工程中，国际化信息就又生效了。在咨询其开发人员无果后，只能自己慢慢排雷了。由于问题只在 “CocoaPods 引入 SDK” 这种情况下出现，所以要想彻底解决这个问题，就需要明确 CocoaPods 是如何对国际化资源进行管理的。</p>
+
+<h2>CocoaPods 如何管理资源</h2>
+
+<p>从 <a href="http://blog.cocoapods.org/CocoaPods-0.36/">CocoaPods 0.36 的 release 文档</a> 看，它对资源的管理方式，取决于是否以 Frameworks 的方式对 CocoaPods 进行集成，从 Podfile 层面看，就是是否使用了 use_frameworks! 。</p>
+
+<h4>以 Static Libraries 的方式集成</h4>
+
+<p><strong>CocoaPods 会把所有的资源塞进 app bundle</strong> ，开发者可以使用 <code>[NSBundle mainBundle]</code> 访问里面的所有资源，也可以从生成 product 的根目录查看资源（显示包内容后）。由于苹果不允许 Swift 代码被编译成静态库，所以如果 Swift 项目想使用 CocoaPods 管理源码的话，是一定要使用 Dynamic Frameworks 方式进行集成的。一般来说， Objective-C 项目都是使用此方式集成。</p>
+
+<h4>以 Dynamic Frameworks 的方式集成</h4>
+
+<p><strong>CocoaPods 会把资源塞进对应的 Frameworks</strong> ，只有通过指定 Frameworks 的 bundle 才能访问到资源：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>// Objective-C
+</span><span class='line'>[NSBundle bundleForClass:&lt;#ClassFromPodspec#&gt;]
+</span><span class='line'>// Swift
+</span><span class='line'>NSBundle(forClass: &lt;#ClassFromPodspec#&gt;)</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这种方式对于 Static Libraries 和 Dynamic Frameworks 都是有效的。如果编写的框架包含一些资源的话，内部访问资源时，应该以这种方式指定确切的 bundle ，因为无法确定开发者是以何种方式集成你的框架。</p>
+
+<p>顺带说下，由于没有很好的方式来构建<strong>传递依赖</strong>中含有 static libraries 的 frameworks（如果不是传递依赖，即使存在含有 static libraries 的 Pod ，构建时还是会直接归并入最终的可执行文件中），使用 CocoaPods 时，选择哪种集成方式对于单个 target 来说是一件 “all or  nothing” 的事情，也就是说开发者无法<strong>主动</strong>针对个别 Pod 采用不同的集成方式。（如有需要，可以使用 <a href="https://github.com/Carthage/Carthage">carthage</a>）</p>
+
+<p>举个例子：假如当前主工程依赖了 PodA 、 PodB ，而 PodA 依赖了 PodB，并且 PodB 中有静态二进制文件(.a / .framework) ，那么在执行 <code>pod update</code> 时，就会报 <code>transitive dependencies that include static binaries</code> 错误。这样在组件化时，就很难引入使用 Swift 编写的 Pod 了，因为如果项目足够大，就肯定会存在<strong>传递依赖</strong>中含有 static libraries 的情况。</p>
+
+<h2>SobotKit 存在的问题</h2>
+
+<p>SobotKit 是“智齿”的 iOS SDK ，下面是 SobotKit podspec 文件的部分代码：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>s.frameworks =  "AudioToolbox","AssetsLibrary","SystemConfiguration","AVFoundation","MobileCoreServices"
+</span><span class='line'>s.library   = 'z.1.2.5'
+</span><span class='line'>
+</span><span class='line'># s.resource  = "icon.png"
+</span><span class='line'>s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','en.lproj/SobotLocalizable.strings','zh-Hans.lproj/SobotLocalizable.strings'
+</span><span class='line'>s.ios.vendored_frameworks = 'SobotKit.framework'</span></code></pre></td></tr></table></div></figure>
+
+
+<p>下面是以 Static Libraries 的方式集成进工程后的目录结构：</p>
+
+<p><img src="./images/Snip20170608_1.png" alt="" />
+<img src="./images/Snip20170608_4.png" alt="" /></p>
+
+<p>构建工程后，进入 product 根目录。可以看到，虽然在目录中，Pod 增加了 en.lproj、zh-Hans 两个文件夹，但是拷贝到 app bundle 后，却并没有这两个文件夹，同名的 .strings 文件相互覆盖了。</p>
+
+<p><img src="./images/Snip20170608_5.png" alt="" /></p>
+
+<p>下面是修改后的 podspec：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','*.lproj'</span></code></pre></td></tr></table></div></figure>
+
+
+<p>构建工程后，可以看下目录：</p>
+
+<p><img src="./images/Snip20170608_3.png" alt="" />
+<img src="./images/Snip20170608_4.png" alt="" /></p>
+
+<p>构建后的 product 根目录：</p>
+
+<p><img src="./images/Snip20170608_6.png" alt="" /></p>
+
+<p>最终结果表明， SobotKit 的 podspec 写错了。不过工程的目录结构还是让我迷惑了很久，走了点弯路。</p>
+
+<h2>小结</h2>
+
+<p>在明确构建时，当前工程会将 SobotKit 的相关资源直接塞到 app bundle 后，排查问题就变得简单了。因为在我这个项目的上下文中，直接把 SobotKit 拉进主工程和通过 Pod 集成，其资源最终存放的的位置都是 app bundle ，这也就排除了 SobotKit 内部调用Localizaton宏错误这一猜测。</p>
+
+<p>CocoaPods 推荐以 Dynamic Frameworks 的方式集成，不过要注意的是引用资源时，要指定对应的 bundle 。</p>
+
+<h2>参考</h2>
+
+<p><a href="http://blog.xianqu.org/2015/08/pod-resources/">给 Pod 添加资源文件</a><br>
+<a href="http://blog.cocoapods.org/CocoaPods-0.36/">CocoaPods 0.36 - Framework and Swift Support</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2017-06-08T09:23:01+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>8</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>9:23 am</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017-05-13-wan-wan-ni-xiang-zhi-lan-jie-ding-ding-xin-xi-de-yi-du-zhuang-tai/" title="Previous Post: 玩玩逆向之拦截钉钉消息已读状态">&laquo; 玩玩逆向之拦截钉钉消息已读状态</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 曾经的嵌入式软件开发者，现已皈依苹果大法门下。目前混迹杭州，喜欢没事就去西湖浪荡。轻微完美主义者，跑步爱好者。 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc"> 我的简书 </a><br>
+  <a href="https://github.com/tripleCC"> 我的GitHub </a><br>
+  <a href="https://twitter.com/tripleCCBrian"> 我的Twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017-06-08-cocoapodshe-localization/">CocoaPods和Localization</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-05-13-wan-wan-ni-xiang-zhi-lan-jie-ding-ding-xin-xi-de-yi-du-zhuang-tai/">玩玩逆向之拦截钉钉消息已读状态</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-04-28-gei-apptian-jia-xuan-fu-zhu-shou/">给 APP 添加悬浮助手</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-04-09-shi-yong-usbmuxdlian-jie-iphone/">使用usbmuxd连接越狱设备</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-03-19-ru-he-yu-kuai-di-shi-yong-ming-ling-xing/">如何愉快地使用命令行</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+        <li>
+        	<a href="http://www.swiftyper.com/">Swiftyper-小锅</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'tripleCC';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://triplecc.github.io/blog/2017-06-08-cocoapodshe-localization/';
+        var disqus_url = 'http://triplecc.github.io/blog/2017-06-08-cocoapodshe-localization/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
