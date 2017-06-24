@@ -5,4 +5,4 @@ cd ./source/_posts
 
 file=`find . -atime -1s`
 echo $file
-open $file 
+subl $file
