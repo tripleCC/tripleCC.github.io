@@ -3,7 +3,7 @@ layout: post
 title: "闲谈 IGListKit"
 date: 2017-06-23 16:13:46 +0800
 comments: true
-keywords: IGListKit, SectionController, 数据驱动, 构建表单, RETableViewManager, 固化样式, 复用单元, 分离业务代码
+tags: 【IGListKit, SectionController, 数据驱动, 构建表单, RETableViewManager, 固化样式, 复用单元, 分离业务代码】
 categories: 
 ---
 IGListKit 是 Instagram 在 16 年出品的一款针对 UICollectionView 的***数据驱动***框架，旨在帮助开发者更加快速、灵活地构建列表页面。 
