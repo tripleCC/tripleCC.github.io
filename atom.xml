@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-06-08T17:19:47+08:00</updated>
+  <updated>2017-07-04T21:19:44+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,535 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Objective-C]]></title>
+    <link href="http://triplecc.github.io/blog/2017-07-04-objective-c/"/>
+    <updated>2017-07-04T20:53:58+08:00</updated>
+    <id>http://triplecc.github.io/blog/objective-c</id>
+    <content type="html"><![CDATA[<h2>多播代理 (GCDMulticastDelegate)</h2>
+
+<h2>代理转发 (IGListAdapterProxy)</h2>
+
+<h2></h2>
+
+<p><a href="http://satanwoo.github.io/2016/10/23/multithread-dangling-pointer/">浅谈一种解决多线程野指针的新思路</a></p>
+
+<h2>兼容旧代码结构</h2>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[闲谈 IGListKit]]></title>
+    <link href="http://triplecc.github.io/blog/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/"/>
+    <updated>2017-06-23T16:13:46+08:00</updated>
+    <id>http://triplecc.github.io/blog/ru-he-kuai-su-da-jian-biao-dan-jie-mian</id>
+    <content type="html"><![CDATA[<p>IGListKit 是 Instagram 在 16 年出品的一款针对 UICollectionView 的<strong><em>数据驱动</em></strong>框架，旨在帮助开发者更加快速、灵活地构建列表页面。</p>
+
+<p>现存的绝大部分 Objective-C 框架，在集成进 Swift 项目中后，编写的代码依然会透出一股浓浓的 Objective-C 味，总感觉不纯正。而 IGListKit 虽然使用 Objective-C/C++ 开发，但是很好地照顾到了日渐增多的 Swift 开发者，不仅提供了大量 Swift 编写的 Demo （绝大部份），而且在 3.0.0 版本之后去除了 <code>IG</code> 前缀，更好地兼容了现版本 Swift 简洁的代码风格。所以，不管是 Swift 项目，还是 Objective-C 项目，引入 IGListKit 都是个不错的选择， 一来方便<strong><em>分离</em></strong>业务代码以降低复杂度，再者可以更好地编写<strong><em>粒度更大</em></strong>的复用单元目的，更多好处，只能在使用中体验了。</p>
+
+<!--more-->
+
+
+<h2>初识 IGListKit</h2>
+
+<p>去年初次使用 IGListKit 时，除了数据驱动，它对传统 UICollectionView 所做的封装方式，以及流畅的编写体验同样让我感到惊艳和意外。</p>
+
+<p>下面是 IGListKit 的层级结构图：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>
+</span><span class='line'>                                  |---- Cell
+</span><span class='line'>      |---- SectionController ----|
+</span><span class='line'>      |                           |---- Cell      
+</span><span class='line'>      |
+</span><span class='line'>      |                           |---- Cell
+</span><span class='line'>Adpter|---- SectionController ----|
+</span><span class='line'>      |                           |---- Cell
+</span><span class='line'>      |
+</span><span class='line'>      |                           |---- Cell
+</span><span class='line'>      |---- SectionController ----|
+</span><span class='line'>                                  |---- Cell</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>刚入手 IGListKit ，可能会感觉这种分层似曾相识 &mdash;&mdash; UITableView 的 dataSource：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>                              |---- Cell
+</span><span class='line'>            |---- Section ----|
+</span><span class='line'>            |                 |---- Cell      
+</span><span class='line'>            |
+</span><span class='line'>            |                 |---- Cell
+</span><span class='line'>dataSource  |---- Section ----|
+</span><span class='line'>            |                 |---- Cell
+</span><span class='line'>            |
+</span><span class='line'>            |                 |---- Cell
+</span><span class='line'>            |---- Section ----|
+</span><span class='line'>                              |---- Cell</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<p>但是上面的分层只是概念上的，并没有直接在 UITableViewSource ，也就是在代码的层面体现出来，编写业务代码时，Cell 和 Section 的 View 只是分散在两个不同代理方法中。如果要进行分层，需要手动对 UITableView 进行一层封装。</p>
+
+<p>IGListKit 恰好替开发者封装了这层接口，在编写代码时， Cell 是挂在 SectionController 类中的。当存在多个不同类型的 SectionController 时，每个 SectionController 类管理属于自己的 Cell，这样做有利于开发者进行业务代码的分离，更进一步讲，有利于大粒度单元的复用。</p>
+
+<p>IGListKit 十分强调<strong><em>页面粒度的细化</em></strong>，所以 SectionController <strong><em>只能</em></strong>挂载一个 unique Object ，然后根据这个 Object 去生成一个或多个 Cell 。一般情况下，一个（种） Object 只会填充一个（种） Cell ，一个（种） Cell 的业务由一个 SectionContoller 进行管理。 SectionController 还对应了一个 supplementaryViewSource ，用以提供 Section 的头尾视图。</p>
+
+<p>不过也正是因为这种严格的机制，加上 <code>objectsForListAdapter:</code> 返回的必须是承载 unique 的 Object 的数组，通常也就是扁平的一维数组，导致 IGListKit 无法像 UITableView 的 dataSource 一样，通过嵌套的数据对象数组来描述 Section 。这也就造成了 IGListKit 在构建某些 Section 边界比较模糊的界面时，需要开发者做出比原生控件更多的配置和包装才能实现。比如以下情况：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">class</span> <span class="n">Message</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">let</span> <span class="nl">timestamp</span><span class="p">:</span> <span class="n">String</span>
+</span><span class='line'>    <span class="n">let</span> <span class="nl">text</span><span class="p">:</span> <span class="n">String</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">init</span><span class="p">(</span><span class="nl">timestamp</span><span class="p">:</span> <span class="n">String</span><span class="p">,</span> <span class="nl">text</span><span class="p">:</span> <span class="n">String</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">timestamp</span> <span class="o">=</span> <span class="n">timestamp</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="n">text</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果要求列表以相同的 timestamp 为基准来划分 Section ，并在 Section 头部加上时间的 supplementaryView ，用 IGListKit 实现就会有点麻烦。对于多个不同 SectionController 的组合，虽然 IGListKit 专门提供了StackedSectionController ，不过同样的，StackedSectionController 对应的还是一个 Object，换句话说，其下多个 SectionController 绑定了同个 Object 。</p>
+
+<p>不过瑕不掩瑜，IGListKit 还是提供了很多好用的特性，不管是 WorkRange，还是数据驱动的更新机制，都是值得一试的理由。</p>
+
+<h2>使用 IGListKit 构建表单</h2>
+
+<p>前面说的是可复用性强的列表页面，那么元素可复用性较差的表单界面 IGListKit 能够规避使用原生控件 dataSource 时 <code>if else</code> 判断过多的情况么？</p>
+
+<p>目前的答案是不能，SectionController 只是打散了 Section 层面的业务逻辑，当一个 SectionController 中有许多种不同类型的 Cell 时，其表现出来的业务复杂度和使用原生控件的 dataSource 并没有显著差别。不过我们可以参照 RETableViewManager 给 IGListKit 再做一层简易的包装。</p>
+
+<p><a href="https://github.com/romaonthego/RETableViewManager">RETableViewManager</a> 也是一个数据驱动的库，只不过针对的是 UITableView ，但是此数据驱动和 IGListKit 的数据驱动还是有比较明显的区别的。</p>
+
+<p>在我看来，RETableViewManager 的强调的是<strong><em>展示固化样式</em></strong>，通过绑定各式各样的 Item 和 Cell ，来达到数据驱动的目的，开发者只要操纵 Item 即可构建界面。而 IGListKit 的强调的则是 <strong><em>操作Object 的唯一性</em></strong>，利用这个唯一性对特定 UICollectionView 进行增删改，凡是可以获取到 Object 的地方，就可以摒弃以前通过 NSIndexPaths 操作 UICollectionView 的方式，不过开发者还是需要和 Cell 打交道。</p>
+
+<h2>包装 IGListKit</h2>
+
+<p>以下代码，可以在 <a href="https://github.com/tobevoid/TBVListAdapterManager">TBVListAdapterManager</a> 中查看。</p>
+
+<p>在包装 IGListKit 之前，先来看下 RETableViewManager 的层级结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>                                  <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                <span class="o">|----</span> <span class="n">Section</span> <span class="o">----|</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>     
+</span><span class='line'>                <span class="o">|</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'><span class="n">TableViewManager</span><span class="o">|----</span> <span class="n">Section</span> <span class="o">----|</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                <span class="o">|</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                <span class="o">|----</span> <span class="n">Section</span> <span class="o">----|</span>
+</span><span class='line'>                                  <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上方的 Item 和 Cell 是互相绑定关系，在获取到数据对象 Object 后，可以通过设置 Item 去渲染 Cell。也就是说， Item 和 Object 是一对一，甚至是多对一的关系，这个和 IGListKit 刚好切合，因为它的 Cell 和 Object 就是一对一或者多对一的关系。结合上图， RETableViewManager 的 Section 可以对应多个 Object ，而 IGListKit 的 SectionController 只能对应一个 Object ，这就造成了无法将 SectionControler 直接封装成 Section 的窘境。</p>
+
+<p>事实上，我更愿意把 SectionControler 描述成一组 Cell 的集合，而非传统意义上的 Section 。既然 SectionControler 和 Object 是一对一关系，那么 SectionController 本身是否也可以遵守 <code>IGListDiffable</code> 而成为一个 unique Object呢 ？从这个角度出发，可以初步看下封装后的层级结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'>                                                      <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                                  <span class="o">|----</span> <span class="n">ItemBunch</span> <span class="o">----|</span>
+</span><span class='line'>                                  <span class="o">|</span>                   <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                                  <span class="o">|</span>
+</span><span class='line'>                <span class="o">|----</span> <span class="n">Section</span> <span class="o">----|</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|</span>         
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|</span>                   <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|----</span> <span class="n">ItemBunch</span> <span class="o">----|</span>
+</span><span class='line'>                <span class="o">|</span>                                     <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                <span class="o">|</span>
+</span><span class='line'>                <span class="o">|</span>
+</span><span class='line'><span class="n">AdapterManager</span>  <span class="o">|</span>
+</span><span class='line'>                <span class="o">|</span>
+</span><span class='line'>                <span class="o">|</span>
+</span><span class='line'>                <span class="o">|</span>
+</span><span class='line'>                <span class="o">|</span>                                     <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|----</span> <span class="n">ItemBunch</span> <span class="o">----|</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|</span>                   <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                <span class="o">|</span>                 <span class="o">|</span>
+</span><span class='line'>                <span class="o">|----</span> <span class="n">Section</span> <span class="o">----|</span>
+</span><span class='line'>                                  <span class="o">|</span>            
+</span><span class='line'>                                  <span class="o">|</span>                   <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span><span class='line'>                                  <span class="o">|----</span> <span class="n">ItemBunch</span> <span class="o">----|</span>
+</span><span class='line'>                                                      <span class="o">|----</span> <span class="n">Item</span> <span class="o">~~~~</span> <span class="n">Cell</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>接下来看下具体的接口定义， ItemBunch 接口如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NS_ASSUME_NONNULL_BEGIN</span>
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListSection</span>;
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListItemBunch</span>;
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListItem</span>;
+</span><span class='line'>
+</span><span class='line'><span class="n">NS_SWIFT_NAME</span><span class="p">(</span><span class="n">ListItemBunchViewSource</span><span class="p">)</span>
+</span><span class='line'><span class="k">@protocol</span> <span class="nc">TBVListItemBunchViewSource</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">@required</span>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="bp">NSArray</span> <span class="o">&lt;</span><span class="bp">NSString</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nl">supportedElementKindsForBunch</span><span class="p">:(</span><span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="p">)</span><span class="n">bunch</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">__kindof</span> <span class="bp">UICollectionReusableView</span> <span class="o">*</span><span class="p">)</span><span class="nf">bunch:</span><span class="p">(</span><span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="p">)</span><span class="nv">bunch</span> <span class="nf">viewForSupplementaryElementOfKind:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">elementKind</span> <span class="nf">atIndex:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">index</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nf">bunch:</span><span class="p">(</span><span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="p">)</span><span class="nv">bunch</span> <span class="nf">sizeForSupplementaryViewOfKind:</span><span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nv">elementKind</span> <span class="nf">atIndex:</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nv">index</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">NS_SWIFT_NAME</span><span class="p">(</span><span class="n">ListItemBunch</span><span class="p">)</span>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">TBVListItemBunch</span> : <span class="nc">IGListSectionController</span> <span class="o">&lt;</span><span class="n">IGListDiffable</span><span class="o">&gt;</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">@</span><span class="n">package</span>
+</span><span class='line'>    <span class="k">__weak</span> <span class="n">TBVListSection</span> <span class="o">*</span><span class="n">_associatedSection</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">__weak</span> <span class="kt">id</span> <span class="o">&lt;</span><span class="n">TBVListItemBunchViewSource</span><span class="o">&gt;</span> <span class="n">_bunchViewSource</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="n">TBVListSection</span> <span class="o">*</span><span class="n">associatedSection</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">*</span><span class="n">items</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSInteger</span> <span class="n">index</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithItem:</span><span class="p">(</span><span class="n">nullable</span> <span class="n">TBVListItem</span> <span class="o">*</span><span class="p">)</span><span class="nv">item</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">addItem:</span><span class="p">(</span><span class="n">nonnull</span> <span class="n">TBVListItem</span> <span class="o">*</span><span class="p">)</span><span class="nv">item</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">removeItem:</span><span class="p">(</span><span class="n">nonnull</span> <span class="n">TBVListItem</span> <span class="o">*</span><span class="p">)</span><span class="nv">item</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reload</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reloadAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reloadAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span> <span class="nf">completion:</span><span class="p">(</span><span class="n">nullable</span> <span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">BOOL</span> <span class="n">finished</span><span class="p">))</span><span class="nv">completion</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'><span class="n">NS_ASSUME_NONNULL_END</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Item 的接口如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NS_ASSUME_NONNULL_BEGIN</span>
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListItemBunch</span>;
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListItem</span>;
+</span><span class='line'>
+</span><span class='line'><span class="n">NS_SWIFT_NAME</span><span class="p">(</span><span class="n">ListItemSelectBlock</span><span class="p">)</span>
+</span><span class='line'><span class="k">typedef</span> <span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="n">TBVListItemSelectBlock</span><span class="p">)(</span><span class="n">TBVListItem</span> <span class="o">*</span> <span class="n">_Nonnull</span> <span class="n">item</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">NS_SWIFT_NAME</span><span class="p">(</span><span class="n">ListItem</span><span class="p">)</span>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">TBVListItem</span> : <span class="bp">NSObject</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">@</span><span class="n">package</span>
+</span><span class='line'>    <span class="k">__weak</span> <span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="n">_associatedBunch</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="n">associatedBunch</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">CGSize</span> <span class="n">cellSize</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSInteger</span> <span class="n">index</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">copy</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="n">TBVListItemSelectBlock</span> <span class="n">selectBlock</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reload</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reloadAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reloadAnimated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span> <span class="nf">completion:</span><span class="p">(</span><span class="n">nullable</span> <span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="p">)(</span><span class="kt">BOOL</span> <span class="n">finished</span><span class="p">))</span><span class="nv">completion</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'><span class="n">NS_ASSUME_NONNULL_END</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Section 的接口如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">NS_ASSUME_NONNULL_BEGIN</span>
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListAdapterManager</span>;
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListItemBunch</span>;
+</span><span class='line'><span class="k">@class</span> <span class="nc">TBVListSection</span>;
+</span><span class='line'>
+</span><span class='line'><span class="n">NS_SWIFT_NAME</span><span class="p">(</span><span class="n">ListSection</span><span class="p">)</span>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">TBVListSection</span> : <span class="bp">NSObject</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">@</span><span class="n">package</span>
+</span><span class='line'>    <span class="k">__weak</span> <span class="n">TBVListAdapterManager</span> <span class="o">*</span><span class="n">_associatedManager</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="n">TBVListAdapterManager</span> <span class="o">*</span><span class="n">associatedManager</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">&lt;</span><span class="n">TBVListItemBunch</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="n">itemBunches</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSInteger</span> <span class="n">index</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="n">TBVListSectionConfiguration</span> <span class="o">*</span><span class="n">headerConfiguration</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="n">nullable</span><span class="p">,</span> <span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="n">TBVListSectionConfiguration</span> <span class="o">*</span><span class="n">footerConfiguration</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">addItemBunch:</span><span class="p">(</span><span class="n">nonnull</span> <span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="p">)</span><span class="nv">bunch</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">removeItemBunch:</span><span class="p">(</span><span class="n">nonnull</span> <span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="p">)</span><span class="nv">bunch</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">reload</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'><span class="n">NS_ASSUME_NONNULL_END</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>至此，对于 IGListKitExamples 的 ObjcDemoViewController ，我可以重新用这套包装，去实现上文所说的 Section 边界比较模糊的的场景：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">TBVListAdapterManager</span> <span class="o">*</span><span class="n">manager</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TBVListAdapterManager</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithAdapter</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">adapter</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">manager</span> <span class="nl">registerItems</span><span class="p">:</span><span class="l">@[</span><span class="n">TBVS</span><span class="p">(</span><span class="n">InteractiveItem</span><span class="p">),</span> <span class="n">TBVS</span><span class="p">(</span><span class="n">PhotoItem</span><span class="p">),</span> <span class="n">TBVS</span><span class="p">(</span><span class="n">UserInfoItem</span><span class="p">),</span> <span class="n">TBVS</span><span class="p">(</span><span class="n">CommandItem</span><span class="p">)</span><span class="l">]</span><span class="p">];</span>
+</span><span class='line'><span class="k">for</span> <span class="p">(</span><span class="bp">NSInteger</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">--</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="n">TBVListSection</span> <span class="o">*</span><span class="n">section</span> <span class="o">=</span> <span class="p">[</span><span class="n">TBVListSection</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'>        <span class="n">section</span><span class="p">.</span><span class="n">headerConfiguration</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TBVListSectionConfiguration</span> <span class="n">alloc</span><span class="p">]</span>
+</span><span class='line'>                                       <span class="nl">initWithSupplementarySize</span><span class="p">:</span><span class="n">CGSizeMake</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+</span><span class='line'>                                       <span class="nl">reusableClass</span><span class="p">:[</span><span class="n">TBVCollectionReusableView</span> <span class="k">class</span><span class="p">]</span>
+</span><span class='line'>                                       <span class="nl">configureBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">TBVListSection</span> <span class="o">*</span><span class="n">section</span><span class="p">,</span> <span class="n">TBVCollectionReusableView</span> <span class="o">*</span><span class="n">reusableView</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                                           <span class="n">reusableView</span><span class="p">.</span><span class="n">textLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="s">@&quot;2017-01-22 12:23:44&quot;</span><span class="p">;</span>
+</span><span class='line'>                                       <span class="p">}];</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">manager</span> <span class="nl">addSection</span><span class="p">:</span><span class="n">section</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="n">Post</span> <span class="o">*</span><span class="n">p</span> <span class="k">in</span> <span class="nb">self</span><span class="p">.</span><span class="n">data</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">TBVListItemBunch</span> <span class="o">*</span><span class="n">bunch</span> <span class="o">=</span> <span class="p">[</span><span class="n">TBVListItemBunch</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">[</span><span class="n">section</span> <span class="nl">addItemBunch</span><span class="p">:</span><span class="n">bunch</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="n">UserInfoItem</span> <span class="o">*</span><span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">UserInfoItem</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'>                <span class="n">item</span><span class="p">.</span><span class="n">selectBlock</span> <span class="o">=</span> <span class="o">^</span><span class="p">(</span><span class="n">TBVListItem</span> <span class="o">*</span> <span class="n">_Nonnull</span> <span class="n">item</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="n">item</span><span class="p">.</span><span class="n">cellSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">cellSize</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">100</span><span class="p">));</span>
+</span><span class='line'>                    <span class="p">[</span><span class="n">item</span> <span class="n">reload</span><span class="p">];</span>
+</span><span class='line'>                <span class="p">};</span>
+</span><span class='line'>                <span class="p">[</span><span class="n">bunch</span> <span class="nl">addItem</span><span class="p">:</span><span class="n">item</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="n">PhotoItem</span> <span class="o">*</span><span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">PhotoItem</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'>                <span class="n">item</span><span class="p">.</span><span class="n">selectBlock</span> <span class="o">=</span> <span class="o">^</span><span class="p">(</span><span class="n">TBVListItem</span> <span class="o">*</span> <span class="n">_Nonnull</span> <span class="n">item</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="n">item</span><span class="p">.</span><span class="n">cellSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">cellSize</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">100</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>                    <span class="p">[</span><span class="n">item</span><span class="p">.</span><span class="n">associatedBunch</span> <span class="n">reload</span><span class="p">];</span>
+</span><span class='line'>                <span class="p">};</span>
+</span><span class='line'>                <span class="p">[</span><span class="n">bunch</span> <span class="nl">addItem</span><span class="p">:</span><span class="n">item</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="n">InteractiveItem</span> <span class="o">*</span><span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">InteractiveItem</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'>                <span class="n">item</span><span class="p">.</span><span class="n">selectBlock</span> <span class="o">=</span> <span class="o">^</span><span class="p">(</span><span class="n">TBVListItem</span> <span class="o">*</span> <span class="n">_Nonnull</span> <span class="n">item</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                    <span class="n">item</span><span class="p">.</span><span class="n">cellSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">cellSize</span><span class="p">.</span><span class="n">width</span><span class="p">,</span> <span class="n">arc4random_uniform</span><span class="p">(</span><span class="mi">100</span><span class="p">));</span>
+</span><span class='line'>                    <span class="p">[</span><span class="n">item</span><span class="p">.</span><span class="n">associatedBunch</span><span class="p">.</span><span class="n">associatedSection</span> <span class="n">reload</span><span class="p">];</span>
+</span><span class='line'>                <span class="p">};</span>
+</span><span class='line'>                <span class="p">[</span><span class="n">bunch</span> <span class="nl">addItem</span><span class="p">:</span><span class="n">item</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="k">for</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="n">c</span> <span class="k">in</span> <span class="n">p</span><span class="p">.</span><span class="n">comments</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>                <span class="n">TBVCommandItem</span> <span class="o">*</span><span class="n">item</span> <span class="o">=</span> <span class="p">[</span><span class="n">TBVCommandItem</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'>                <span class="n">item</span><span class="p">.</span><span class="n">commant</span> <span class="o">=</span> <span class="n">c</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">[</span><span class="n">bunch</span> <span class="nl">addItem</span><span class="p">:</span><span class="n">item</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nb">self</span><span class="p">.</span><span class="n">manager</span> <span class="o">=</span> <span class="n">manager</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">manager</span> <span class="n">reload</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>对于上述固化样式类的数据驱动模型，我认为实现<strong><em>&ldquo;自治&rdquo;</em></strong>是核心。这就要求通过 Item 可以访问 ItemBunch， 通过 ItemBunch 可以访问 Section，Section、AdapterManger 同理 （链表式的访问）。  这样做的好处是，可以通过 Item 、ItemBunch 和 Section 直接刷新自身，而不需要去手动获取 tableView / collectionView 再结合 NSIndexPaths 去刷新对应条目，让<strong><em>所有的变动通过操作数据完成</em></strong>；而且针对复杂业务，我还是可以很方便地回到 IGListKit 利用 SectionController 处理业务的那种方式，将业务分散到 Section 子类中。</p>
+
+<h2>小结</h2>
+
+<p>IGListKit 强调的<strong><em>页面粒度的细化</em></strong>恰恰是我所推崇的，一旦样式积木多了之后，构造页面的方式就具备了无限的可能性。对于部分展示逻辑偏多、交互偏少的 App 来说，利用固化样式来精简业务代码是个不错的选择。虽然“固化”一词看起来和“灵活”相反，但事实上并非如此，一定程度上的固化恰恰能让界面的编写更加灵活。</p>
+
+<p>如果将固化的样式想像成大粒度的 HTML 标签，那么就可以把 App 当作一个移动端的浏览器，而让后台下发固化样式以堆砌界面。</p>
+
+<p>另外，在构造样式 / Item 的时候，<strong><em>面向接口编程</em></strong>能给后期扩展带来不小的灵活性。换句话说，多用 Protocol ,少用继承。</p>
+
+<h2>参考</h2>
+
+<p><a href="https://instagram.github.io/IGListKit/">IGListKit</a><br>
+<a href="https://www.raywenderlich.com/147162/iglistkit-tutorial-better-uicollectionviews">IGListKit Tutorial: Better UICollectionViews</a><br>
+<a href="https://imtx.me/archives/2091.html">从 Instagram 开源 IGListKit 聊聊 iOS 开发趋势</a><br>
+<a href="http://www.infoq.com/cn/presentations/three-little-stories-behind-the-shise-app">精益创业实践——食色App背后的三个小故事</a><br></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[CocoaPods和Localization]]></title>
@@ -7381,1181 +7910,6 @@ YYModel给使用者提供了极强的扩展性。在解析的过程中，使用�
 <h3>小结</h3>
 
 <p>很粗略地记录下部分阅读过程。YYModel有不少值得学习的地方，不管是代码风格还是考虑问题的全面性，这些都需要通过阅读源码来了解。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[MQTT使用小记]]></title>
-    <link href="http://triplecc.github.io/blog/2016-05-12-mqttshi-yong-xiao-ji/"/>
-    <updated>2016-05-12T17:12:43+08:00</updated>
-    <id>http://triplecc.github.io/blog/mqttshi-yong-xiao-ji</id>
-    <content type="html"><![CDATA[<p>MQTT全称Message Queue Telemetry Transport，是一个针对轻量级的发布/订阅式消息传输场景的协议，同时也是被推崇的物联网传输协议。MQTT详细的介绍文章可以从<a href="http://mqtt.org/">官方网站</a>获得，所以这里就不进行详细的展开了，而是针对这些天的使用经历与感受做一番纪录。</p>
-
-<p>MQTT开源的iOS客户端有以下几种：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>|MQTTKit  |Marquette|Moscapsule|Musqueteer|MQTT-Client|MqttSDK|CocoaMQTT|
-</span><span class='line'>|---------|---------|----------|----------|-----------|-------|---------|
-</span><span class='line'>|Obj-C    |Obj-C    |Swift     |Obj-C     |Obj-C      |Obj-C  |Swift    |
-</span><span class='line'>|Mosquitto|Mosquitto|Mosquitto |Mosquitto |native     |native |native   |</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以上开源库我只看过部分MQTTKit、MQTT-Client、CocoaMQTT的开源代码，总体来说MQTT-Client支持的功能更多全面一些。如果只是对协议本身进行学习不考虑功能的话，可以阅读CocoaMQTT，也可以阅读我重写的<a href="https://github.com/tripleCC/SwiftMQTT">SwiftMQTT</a>，因为代码量相对前面两个库少了很多。</p>
-
-<p>而MQTT的broker一般选择<a href="http://mosquitto.org/">Mosquitto</a>，Mosquitto是一个由C编写的集客户端和服务端为一体的开源项目，所以相对来说风格较为友好，可以无障碍地阅读并调试源码（<a href="https://github.com/eclipse/mosquitto">开源地址</a>）。可以看到，以上客户端开源库中的前四种就是基于Mosquitto的一层封装。</p>
-
-<!--more-->
-
-
-<h4>Mosquitto的安装和使用</h4>
-
-<p>Mosquitto在Linux下的安装相对比Mac-OS简单很多，主要是因为openssl的一些路径问题，后者需要多一些步骤。Mac-OS下可以通过两种方法运行Mosquitto，一种是通过brew命令安装Mosquitto:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">brew</span> <span class="n">install</span> <span class="n">mosquitto</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>安装完成后就可以在mosquitto.conf文件中更改相应的配置了。接着进入根目录（也可以指定$PATH到mosquitto可执行文件的目录），执行以下命令运行mosquitto：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// -c 读取配置</span>
-</span><span class='line'><span class="c1">// -d 后台运行</span>
-</span><span class='line'><span class="c1">// -v 打印详细日志</span>
-</span><span class='line'><span class="p">.</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">mosquitto</span> <span class="o">-</span><span class="n">c</span> <span class="n">etc</span><span class="o">/</span><span class="n">mosquitto</span><span class="o">/</span><span class="n">mosquitto</span><span class="p">.</span><span class="n">conf</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">v</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果要重启mosquitto服务，可以先kill掉，再重启：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="nl">tripleCC</span><span class="p">:</span><span class="mf">1.4.8</span> <span class="n">songruiwang</span><span class="err">$</span> <span class="n">ps</span> <span class="o">-</span><span class="n">A</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">mosquitto</span>
-</span><span class='line'><span class="mi">55417</span> <span class="o">??</span>         <span class="mi">0</span><span class="o">:</span><span class="mf">00.05</span> <span class="p">.</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">mosquitto</span> <span class="o">-</span><span class="n">c</span> <span class="n">etc</span><span class="o">/</span><span class="n">mosquitto</span><span class="o">/</span><span class="n">mosquitto</span><span class="p">.</span><span class="n">conf</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">v</span>
-</span><span class='line'><span class="nl">tripleCC</span><span class="p">:</span><span class="mf">1.4.8</span> <span class="n">songruiwang</span><span class="err">$</span> <span class="n">kill</span> <span class="o">-</span><span class="mi">9</span> <span class="mi">55417</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>现在要说明的是第二种方式，通过源码编译生成mosquitto可执行文件（好处是可以通过lldb对mosquitto进行调试，能更好地熟悉运行机制）。</p>
-
-<p>下载mosquitto源码后进入根目录，然后执行以下命令：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 禁用TLS_PSK，并且声称Debug版本（后续lldb调试需要用到符号表）</span>
-</span><span class='line'><span class="c1">// 如果openssl是通过brew进行安装，就需要手动指定OPENSSL_ROOT_DIR和OPENSSL_INCLUDE_DIR环境变量</span>
-</span><span class='line'><span class="c1">// 但是后来发现即使指定了，在编译时符号表中还是找不到TLS_PSK相关的函数</span>
-</span><span class='line'><span class="n">cmake</span> <span class="o">-</span><span class="n">DWITH_TLS_PSK</span><span class="o">=</span><span class="n">OFF</span> <span class="o">-</span><span class="n">DWITH_TLS</span><span class="o">=</span><span class="n">OFF</span> <span class="o">-</span><span class="n">DCMAKE_BUILD_TYPE</span><span class="o">=</span><span class="n">Debug</span>
-</span><span class='line'><span class="n">make</span> <span class="n">install</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>终端会提示无法拷贝可执行文件mosquitto，这个问题无伤大雅。可以手动拷贝到$PATH指定的目录下，也可以直接进入mosquitto所在目录运行：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="nl">tripleCC</span><span class="p">:</span><span class="n">src</span> <span class="n">songruiwang</span><span class="err">$</span> <span class="n">lldb</span> <span class="n">mosquitto</span>
-</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">target</span> <span class="n">create</span> <span class="s">&quot;mosquitto&quot;</span>
-</span><span class='line'><span class="n">Current</span> <span class="n">executable</span> <span class="kr">set</span> <span class="n">to</span> <span class="err">&#39;</span><span class="n">mosquitto</span><span class="err">&#39;</span> <span class="p">(</span><span class="n">x86_64</span><span class="p">).</span>
-</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">b</span> <span class="n">mqtt3_packet_handle</span>
-</span><span class='line'><span class="n">Breakpoint</span> <span class="mi">1</span><span class="o">:</span> <span class="k">where</span> <span class="o">=</span> <span class="n">mosquitto</span><span class="err">`</span><span class="n">mqtt3_packet_handle</span> <span class="o">+</span> <span class="mi">16</span> <span class="n">at</span> <span class="n">read_handle</span><span class="p">.</span><span class="nl">c</span><span class="p">:</span><span class="mi">36</span><span class="p">,</span> <span class="n">address</span> <span class="o">=</span> <span class="mh">0x0000000100018eb0</span>
-</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">r</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这样当客户端连接到broker时，就可以对mosquitto进行逐行调试了：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Process</span> <span class="mi">57680</span> <span class="nl">launched</span><span class="p">:</span> <span class="err">&#39;</span><span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">songruiwang</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">mosquitto</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mosquitto</span><span class="err">&#39;</span> <span class="p">(</span><span class="n">x86_64</span><span class="p">)</span>
-</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">mosquitto</span> <span class="n">version</span> <span class="mf">1.4.8</span> <span class="p">(</span><span class="n">build</span> <span class="n">date</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">05</span><span class="o">-</span><span class="mi">12</span> <span class="mi">18</span><span class="o">:</span><span class="mi">36</span><span class="o">:</span><span class="mi">15</span><span class="o">+</span><span class="mi">0800</span><span class="p">)</span> <span class="n">starting</span>
-</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">Using</span> <span class="k">default</span> <span class="n">config</span><span class="p">.</span>
-</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">Opening</span> <span class="n">ipv4</span> <span class="n">listen</span> <span class="n">socket</span> <span class="n">on</span> <span class="n">port</span> <span class="mf">1883.</span>
-</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">Opening</span> <span class="n">ipv6</span> <span class="n">listen</span> <span class="n">socket</span> <span class="n">on</span> <span class="n">port</span> <span class="mf">1883.</span>
-</span><span class='line'><span class="mi">1463049659</span><span class="o">:</span> <span class="n">New</span> <span class="n">connection</span> <span class="n">from</span> <span class="mf">127.0.0.1</span> <span class="n">on</span> <span class="n">port</span> <span class="mf">1883.</span>
-</span><span class='line'><span class="n">Process</span> <span class="mi">57680</span> <span class="n">stopped</span>
-</span><span class='line'><span class="o">*</span> <span class="kr">thread</span> <span class="err">#</span><span class="mi">1</span><span class="o">:</span> <span class="n">tid</span> <span class="o">=</span> <span class="mh">0xba449</span><span class="p">,</span> <span class="mh">0x0000000100018eb0</span> <span class="n">mosquitto</span><span class="err">`</span><span class="n">mqtt3_packet_handle</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="mh">0x000000010002f4f0</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="mh">0x0000000100201990</span><span class="p">)</span> <span class="o">+</span> <span class="mi">16</span> <span class="n">at</span> <span class="n">read_handle</span><span class="p">.</span><span class="nl">c</span><span class="p">:</span><span class="mi">36</span><span class="p">,</span> <span class="n">queue</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">com</span><span class="p">.</span><span class="n">apple</span><span class="p">.</span><span class="n">main</span><span class="o">-</span><span class="kr">thread</span><span class="err">&#39;</span><span class="p">,</span> <span class="n">stop</span> <span class="n">reason</span> <span class="o">=</span> <span class="n">breakpoint</span> <span class="mf">1.1</span>
-</span><span class='line'>    <span class="n">frame</span> <span class="err">#</span><span class="mi">0</span><span class="o">:</span> <span class="mh">0x0000000100018eb0</span> <span class="n">mosquitto</span><span class="err">`</span><span class="n">mqtt3_packet_handle</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="mh">0x000000010002f4f0</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="mh">0x0000000100201990</span><span class="p">)</span> <span class="o">+</span> <span class="mi">16</span> <span class="n">at</span> <span class="n">read_handle</span><span class="p">.</span><span class="nl">c</span><span class="p">:</span><span class="mi">36</span>
-</span><span class='line'>   <span class="mi">33</span>     
-</span><span class='line'>   <span class="mi">34</span>     <span class="kt">int</span> <span class="n">mqtt3_packet_handle</span><span class="p">(</span><span class="k">struct</span> <span class="n">mosquitto_db</span> <span class="o">*</span><span class="n">db</span><span class="p">,</span> <span class="k">struct</span> <span class="n">mosquitto</span> <span class="o">*</span><span class="n">context</span><span class="p">)</span>
-</span><span class='line'>   <span class="mi">35</span>     <span class="p">{</span>
-</span><span class='line'><span class="o">-&gt;</span> <span class="mi">36</span>       <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">context</span><span class="p">)</span> <span class="k">return</span> <span class="n">MOSQ_ERR_INVAL</span><span class="p">;</span>
-</span><span class='line'>   <span class="mi">37</span>     
-</span><span class='line'>   <span class="mi">38</span>         <span class="nf">switch</span><span class="p">((</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">in_packet</span><span class="p">.</span><span class="n">command</span><span class="p">)</span><span class="o">&amp;</span><span class="mh">0xF0</span><span class="p">){</span>
-</span><span class='line'>   <span class="mi">39</span>             <span class="k">case</span> <span class="nl">PINGREQ</span><span class="p">:</span>
-</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">p</span> <span class="o">*</span><span class="n">context</span>
-</span><span class='line'><span class="p">(</span><span class="n">mosquitto</span><span class="p">)</span> <span class="err">$</span><span class="mi">0</span> <span class="o">=</span> <span class="p">{</span>
-</span><span class='line'>  <span class="n">sock</span> <span class="o">=</span> <span class="mi">6</span>
-</span><span class='line'>  <span class="k">protocol</span> <span class="o">=</span> <span class="n">mosq_p_invalid</span>
-</span><span class='line'>  <span class="n">address</span> <span class="o">=</span> <span class="mh">0x0000000100200db0</span> <span class="s">&quot;127.0.0.1&quot;</span>
-</span><span class='line'>  <span class="kt">id</span> <span class="o">=</span> <span class="mh">0x0000000000000000</span> <span class="o">&lt;</span><span class="n">no</span> <span class="n">value</span> <span class="n">available</span><span class="o">&gt;</span>
-</span><span class='line'>  <span class="n">username</span> <span class="o">=</span> <span class="mh">0x0000000000000000</span> <span class="o">&lt;</span><span class="n">no</span> <span class="n">value</span> <span class="n">available</span><span class="o">&gt;</span>
-</span><span class='line'>  <span class="n">password</span> <span class="o">=</span> <span class="mh">0x0000000000000000</span> <span class="o">&lt;</span><span class="n">no</span> <span class="n">value</span> <span class="n">available</span><span class="o">&gt;</span>
-</span><span class='line'>  <span class="n">keepalive</span> <span class="o">=</span> <span class="mi">60</span>
-</span><span class='line'>  <span class="n">last_mid</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span class='line'>  <span class="n">state</span> <span class="o">=</span> <span class="n">mosq_cs_new</span>
-</span><span class='line'>  <span class="n">last_msg_in</span> <span class="o">=</span> <span class="mi">39584</span>
-</span><span class='line'>  <span class="n">last_msg_out</span> <span class="o">=</span> <span class="mi">39584</span>
-</span><span class='line'>  <span class="p">......</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这里安利一款代码阅读器Understand（和window下的SourceInsight很相似，都很强大！）<br>
-lldb很多命令和gdb相似，具体更多命令可以在lldb中执行help进行查看。
-更加详细的使用教程可以参考<a href="http://blog.csdn.net/shagoo/article/details/7910598">Mosquitto简要教程（安装/使用/测试）</a></p>
-
-<h4>使用Wireshark抓取报文</h4>
-
-<p>测试时使用的host一般为lo0，即本地回环地址，所以选择对应的过滤器：</p>
-
-<p><img src="http://triplecc.github.io/images/Snip20160512_2.png" alt="" /></p>
-
-<p>对端口进行过滤（这里使用的是1883端口）：</p>
-
-<p><img src="http://triplecc.github.io/images/Snip20160512_3.png" alt="" /></p>
-
-<p>然后连接客户端和服务端，就可以看见对应的MQTT报文了：</p>
-
-<p><img src="http://triplecc.github.io/images/Snip20160512_4.png" alt="" /></p>
-
-<p>在一些linux嵌入式环境下，无法通过Wireshark抓取报文，可以使用tcpdump抓取生成pcap文件，然后使用ftp等协议将文件传回到电脑，再使用Wireshark打开：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 这里还是用回环地址举例</span>
-</span><span class='line'><span class="n">tcpdump</span> <span class="o">-</span><span class="n">i</span> <span class="n">lo0</span> <span class="err">&#39;</span><span class="n">tcp</span> <span class="n">port</span> <span class="mi">1883</span><span class="err">&#39;</span> <span class="o">-</span><span class="n">s</span> <span class="mi">65535</span> <span class="o">-</span><span class="n">w</span> <span class="n">packet</span><span class="p">.</span><span class="n">pcap</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h4>MQTT协议的实践</h4>
-
-<h5>MQTT协议消息类型</h5>
-
-<p>为了能够更好地熟悉协议，我用struct+protocol的方式重写了CocoaMQTT的代码（<a href="https://github.com/tripleCC/SwiftMQTT">SwiftMQTT</a>）。CocoaMQTT库使用的是传统的面相对象编程方式，所以阅读起来并没有什么障碍，只不过小小吐槽下代码风格。<br></p>
-
-<p>MQTT协议总共有14种消息类型，使用枚举表示如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">enum</span> <span class="nl">SwiftMQTTMessageType</span> <span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">Connect</span>        <span class="o">=</span> <span class="mh">0x10</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">ConnAck</span>        <span class="o">=</span> <span class="mh">0x20</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">Publish</span>        <span class="o">=</span> <span class="mh">0x30</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">PubAck</span>         <span class="o">=</span> <span class="mh">0x40</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">PubRec</span>         <span class="o">=</span> <span class="mh">0x50</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">PubRel</span>         <span class="o">=</span> <span class="mh">0x60</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">PubComp</span>        <span class="o">=</span> <span class="mh">0x70</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">Subscribe</span>      <span class="o">=</span> <span class="mh">0x80</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">SubAck</span>         <span class="o">=</span> <span class="mh">0x90</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">Unsubscribe</span>    <span class="o">=</span> <span class="mh">0xA0</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">UnsubBack</span>      <span class="o">=</span> <span class="mh">0xB0</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">PingReq</span>        <span class="o">=</span> <span class="mh">0xC0</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">PingResp</span>       <span class="o">=</span> <span class="mh">0xD0</span>
-</span><span class='line'>    <span class="k">case</span> <span class="n">Disconnect</span>     <span class="o">=</span> <span class="mh">0xE0</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>以上消息可由"固定报头"+&ldquo;可变报头&rdquo;+&ldquo;有效载荷"三部分组成。<br></p>
-
-<p>固定报头由"类型+标志位"+&ldquo;剩余长度"组成，可以使用protocol表示第一部分：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTCommandProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">command</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">messageType</span><span class="p">:</span> <span class="n">SwiftMQTTMessageType</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">dupFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">qosLevel</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="k">retain</span><span class="o">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTCommandProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * +---------------+----------+-----------+--------+</span>
-</span><span class='line'><span class="cm">     * |    7 6 5 4    |     3    |    2 1    |   0    |</span>
-</span><span class='line'><span class="cm">     * |  Message Type | DUP flag | QoS level | RETAIN |</span>
-</span><span class='line'><span class="cm">     * +---------------+----------+-----------+--------+</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">messageType</span><span class="p">:</span> <span class="n">SwiftMQTTMessageType</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">SwiftMQTTMessageType</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xF0</span><span class="p">)</span> <span class="o">??</span> <span class="p">.</span><span class="n">Connect</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="n">newValue</span><span class="p">.</span><span class="n">rawValue</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0x0F</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">dupFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">command</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x01</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xF7</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">qosLevel</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">SwiftMQTTQosLevel</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="p">(</span><span class="n">command</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x03</span><span class="p">)</span> <span class="o">??</span> <span class="p">.</span><span class="n">AtMostOnce</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="n">newValue</span><span class="p">.</span><span class="n">rawValue</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xF9</span> <span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="k">retain</span><span class="o">:</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0x01</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xFE</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>剩余长度等于"可变报头"+&ldquo;有效载荷"各自的长度相加，这两者表示如下:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTVariableHeaderProtocol</span> <span class="p">{</span>
-</span><span class='line'>     <span class="k">var</span> <span class="nl">variableHeader</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTVariableHeaderProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">variableHeader</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span> <span class="k">return</span> <span class="bp">NSData</span><span class="p">()</span> <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTPayloadProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">payload</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTPayloadProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">payload</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span> <span class="k">return</span> <span class="bp">NSData</span><span class="p">()</span> <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>为了减少没有这两个部分的消息结构体的代码量，所以协议扩展中先返回空数据。<br>
-然后就可以定义并实现一个固定报头的总协议了：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="nl">SwiftMQTTFixedHeaderProtocol</span> <span class="p">:</span> <span class="n">SwiftMQTTCommandProtocol</span><span class="p">,</span> <span class="n">SwiftMQTTVariableHeaderProtocol</span><span class="p">,</span> <span class="n">SwiftMQTTPayloadProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">remainingLength</span><span class="p">:</span> <span class="kt">UInt32</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTFixedHeaderProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">remainingLength</span><span class="p">:</span> <span class="kt">UInt32</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">let</span> <span class="n">remainingLength</span> <span class="o">=</span> <span class="n">variableHeader</span><span class="p">.</span><span class="n">length</span> <span class="o">+</span> <span class="n">payload</span><span class="p">.</span><span class="n">length</span>
-</span><span class='line'>        <span class="n">guard</span> <span class="n">remainingLength</span> <span class="o">&lt;=</span> <span class="n">kSwiftMQTTMaxRemainingLength</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">SMPrint</span><span class="p">(</span><span class="s">&quot;the size of remaining length field should be below \(kSwiftMQTTMaxRemainingLength).&quot;</span><span class="p">)</span>
-</span><span class='line'>            <span class="k">return</span> <span class="kt">UInt32</span><span class="p">(</span><span class="n">kSwiftMQTTMaxRemainingLength</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="kt">UInt32</span><span class="p">(</span><span class="n">remainingLength</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>有了所有发送消息的组成部分之后，就可以对数据进行编码了：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="nl">SwiftMQTTMessageProtocol</span> <span class="p">:</span> <span class="n">SwiftMQTTFixedHeaderProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTMessageProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">let</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">NSMutableData</span><span class="p">()</span>
-</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendByte</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendData</span><span class="p">(</span><span class="n">remainingLength</span><span class="p">.</span><span class="n">data</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendData</span><span class="p">(</span><span class="n">variableHeader</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendData</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">data</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这里以Connect报文为例，结合以上协议，构成一个有效的消息结构体。<br>
-首先让SwiftMQTTConnectMessage遵守SwiftMQTTMessageProtocol协议，以此获得固定报头解析以及编码等能力：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">struct</span> <span class="nl">SwiftMQTTConnectMessage</span> <span class="p">:</span> <span class="n">SwiftMQTTMessageProtocol</span> <span class="p">{</span>
-</span><span class='line'>  <span class="n">public</span> <span class="k">var</span> <span class="n">command</span> <span class="o">=</span> <span class="kt">UInt8</span><span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
-</span><span class='line'>  <span class="p">...</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>由于command是固定报头类型和标志的必要载体，所以必须在结构体中实现。那么问题来了，MQTT协议的消息有14种，于是就需要在14种结构体种都实现一次这个成员变量，如果使用面向对象的方式，在公共子类中呈现这个成员变量就行了。这里是第一个让我感觉面向协议方式在实现MQTT不顺手的地方。<br>
-Connect报文的可变报头中分为四个部分:协议名，协议级别，连接标志和保持连接。这几个部分可以使用两个协议来实现：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTConnectFlagProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">connectFlag</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">usernameFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">passwordFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">willRetain</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">willQos</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">willFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">cleanSession</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTConnectFlagProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="cm">/**</span>
-</span><span class='line'><span class="cm">     * +----------+----------+------------+---------+----------+--------------+----------+</span>
-</span><span class='line'><span class="cm">     * |     7    |    6     |      5     |  4  3   |     2    |       1      |     0    |</span>
-</span><span class='line'><span class="cm">     * | username | password | willretain | willqos | willflag | cleansession | reserved |</span>
-</span><span class='line'><span class="cm">     * +----------+----------+------------+---------+----------+--------------+----------+</span>
-</span><span class='line'><span class="cm">     */</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">usernameFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">7</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x7F</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">passwordFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x40</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">6</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xBF</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">willRetain</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x20</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">5</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xDF</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">willQos</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">SwiftMQTTQosLevel</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x18</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">??</span> <span class="p">.</span><span class="n">AtMostOnce</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">.</span><span class="n">rawValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xE7</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">willFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x08</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xFA</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">cleanSession</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x04</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xFD</span><span class="p">)</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">protocol</span> <span class="n">SwiftMQTTClientProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolName</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolLevel</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">keepalive</span><span class="p">:</span> <span class="kt">UInt16</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">clientId</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">account</span><span class="p">:</span> <span class="n">SwiftMQTTAccount</span><span class="o">?</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">will</span><span class="p">:</span> <span class="n">SwiftMQTTWill</span><span class="o">?</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTClientProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolName</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span> <span class="k">return</span> <span class="s">&quot;MQTT&quot;</span> <span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolLevel</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span> <span class="k">return</span> <span class="mh">0x04</span> <span class="p">}</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">keepalive</span><span class="p">:</span> <span class="kt">UInt16</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">60</span> <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这样Connect报文结构体已经有了所有需要的协议，接下来主要的工作就是实现真正的variableHeader和payload了：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">var</span> <span class="nl">variableHeader</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">let</span> <span class="n">variableHeader</span> <span class="o">=</span> <span class="bp">NSMutableData</span><span class="p">()</span>
-</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">protocolName</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendByte</span><span class="p">(</span><span class="n">protocolLevel</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendByte</span><span class="p">(</span><span class="n">connectFlag</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendUInt16</span><span class="p">(</span><span class="n">keepalive</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">variableHeader</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="n">public</span> <span class="k">var</span> <span class="nl">payload</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">let</span> <span class="n">payload</span> <span class="o">=</span> <span class="bp">NSMutableData</span><span class="p">()</span>
-</span><span class='line'>    <span class="c1">// 客户端标识符-&gt;遗嘱主题-&gt;遗嘱消息-&gt;用户名-&gt;密码</span>
-</span><span class='line'>    <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">clientId</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">willTopic</span> <span class="o">=</span> <span class="n">will</span><span class="o">?</span><span class="p">.</span><span class="n">willTopic</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">willTopic</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">willMessage</span> <span class="o">=</span> <span class="n">will</span><span class="o">?</span><span class="p">.</span><span class="n">willMessage</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">willMessage</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">username</span> <span class="o">=</span> <span class="n">account</span><span class="o">?</span><span class="p">.</span><span class="n">username</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">username</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">password</span> <span class="o">=</span> <span class="n">account</span><span class="o">?</span><span class="p">.</span><span class="n">password</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">payload</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>至此，Connect的主要部分都已经构建完成。接下来以ConAck报文为例，实现从broker中返回的报文。<br>
-由于需要解析从broker中返回的报文，所以定义一个返回消息类型协议：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="nl">SwiftMQTTAckMessageProtocol</span><span class="p">:</span> <span class="n">SwiftMQTTCommandProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">],</span> <span class="nl">command</span><span class="p">:</span> <span class="kt">UInt8</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>最终SwiftMQTTConnAckMessage结构体如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">struct</span> <span class="nl">SwiftMQTTConnAckMessage</span> <span class="p">:</span> <span class="n">SwiftMQTTAckMessageProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="n">command</span> <span class="o">=</span> <span class="kt">UInt8</span><span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">sessionPresent</span><span class="p">:</span> <span class="n">Bool</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">connectReturnCode</span><span class="p">:</span> <span class="n">SwiftMQTTConnectReturnCode</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">],</span> <span class="nl">command</span><span class="p">:</span> <span class="kt">UInt8</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">guard</span> <span class="n">bytes</span><span class="p">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">nil</span> <span class="p">}</span>
-</span><span class='line'>        <span class="n">sessionPresent</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</span><span class='line'>        <span class="n">connectReturnCode</span> <span class="o">=</span> <span class="n">SwiftMQTTConnectReturnCode</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="n">bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">??</span> <span class="p">.</span><span class="n">Accepted</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">command</span> <span class="o">=</span> <span class="n">command</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这里又产生了第二个让我不是很舒服的地方：在protocol extension中实现有效的init非常麻烦（暂且不论在protocol extension中实现init的必要性）。下面是一个不完全的实现方式：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">protocol</span> <span class="n">MessageProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">messageId</span> <span class="p">:</span> <span class="kt">UInt16</span> <span class="p">{</span> <span class="kr">get</span> <span class="kr">set</span> <span class="p">}</span>
-</span><span class='line'>    <span class="k">init</span><span class="p">()</span>
-</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">])</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">extension</span> <span class="n">Message</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">guard</span> <span class="n">bytes</span><span class="p">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">nil</span> <span class="p">}</span>
-</span><span class='line'>        <span class="n">messageId</span> <span class="o">=</span> <span class="kt">UInt16</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;&lt;</span> <span class="mi">8</span> <span class="o">+</span> <span class="kt">UInt16</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">struct</span> <span class="nl">Message</span><span class="p">:</span> <span class="n">MessageProtocol</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">var</span> <span class="nl">messageId</span><span class="p">:</span> <span class="kt">UInt16</span>
-</span><span class='line'>    <span class="k">init</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">messageId</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>为了能在protocol extension实现一个默认的init?(_ bytes: [UInt8])方法，就必须要多定义一个没什么意义的init()方法。这让我直接放弃了这个念头，转而直接在每个消息类型的struct中实现对应的解析init方法，虽然这样会让部分代码重复。<br>
-至此，MQTT协议的消息类型实现差不多完成了，因为后续的12种消息和前面这2种大同小异。<br></p>
-
-<h5>MQTT协议消息解析</h5>
-
-<p>和CocoaMQTT一样，SwiftMQTT也是使用GCDAsyncSocket来进行socket通信。在调用GCDAsyncSocket实例的readData系列方法并读取到数据后，便可以从以下代理方法中解析读取到的数据：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">socket:</span><span class="p">(</span><span class="n">GCDAsyncSocket</span> <span class="o">*</span><span class="p">)</span><span class="nv">sock</span> <span class="nf">didReadData:</span><span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span><span class="p">)</span><span class="nv">data</span> <span class="nf">withTag:</span><span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="nv">tag</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>需要注意的是，如果使用的是按照缓存排列每次读取固定子节的方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">readDataToLength:</span><span class="p">(</span><span class="bp">NSUInteger</span><span class="p">)</span><span class="nv">length</span> <span class="nf">withTimeout:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">timeout</span> <span class="nf">tag:</span><span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="nv">tag</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>那么只要有一次读取错误，就会影响到后续所有数据的读取。<br>
-解析返回报文的主要方法如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="kr">mutating</span> <span class="k">func</span> <span class="nf">unpackData</span><span class="p">(</span><span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="n">SwiftMQTTMessagePart</span><span class="p">,</span> <span class="nl">nextReader</span><span class="p">:</span><span class="n">SwiftMQTTMessageDecoderNextReader</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">let</span> <span class="n">bytes</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">bytesArray</span>
-</span><span class='line'>    <span class="k">switch</span> <span class="n">part</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">Header</span><span class="p">:</span>
-</span><span class='line'>        <span class="n">messageHeader</span> <span class="o">=</span> <span class="n">unpackHeader</span><span class="p">(</span><span class="n">bytes</span><span class="p">)</span>
-</span><span class='line'>        <span class="c1">// 读取一个字节的剩余长度</span>
-</span><span class='line'>        <span class="n">nextReader</span><span class="p">(</span><span class="nl">length</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="p">.</span><span class="n">Length</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">Length</span><span class="p">:</span>
-</span><span class='line'>        <span class="n">messageLengthBytes</span><span class="p">.</span><span class="n">appendContentsOf</span><span class="p">(</span><span class="n">bytes</span><span class="p">)</span>
-</span><span class='line'>        <span class="c1">// 如果最高位为0，则剩余长度已确定</span>
-</span><span class='line'>        <span class="k">if</span> <span class="n">Bool</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="c1">// 继续读取一个字节的剩余长度</span>
-</span><span class='line'>            <span class="n">nextReader</span><span class="p">(</span><span class="nl">length</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="p">.</span><span class="n">Length</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="c1">// 获取剩余长度</span>
-</span><span class='line'>            <span class="k">let</span> <span class="n">messageLength</span> <span class="o">=</span> <span class="n">unpackLength</span><span class="p">(</span><span class="n">messageLengthBytes</span><span class="p">)</span>
-</span><span class='line'>            <span class="k">if</span> <span class="n">messageLength</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
-</span><span class='line'>                <span class="c1">// 读取可变报头和payload</span>
-</span><span class='line'>                <span class="n">nextReader</span><span class="p">(</span><span class="nl">length</span><span class="p">:</span> <span class="n">messageLength</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="p">.</span><span class="n">Content</span><span class="p">)</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="c1">// 没有可变报头和payload，不需要再进行读取操作，直接解包</span>
-</span><span class='line'>                <span class="n">unpackContent</span><span class="p">()</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="c1">// 重置长度缓存</span>
-</span><span class='line'>            <span class="n">messageLengthBytes</span><span class="p">.</span><span class="n">removeAll</span><span class="p">()</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">Content</span><span class="p">:</span>
-</span><span class='line'>        <span class="c1">// 解析可变报头和payload</span>
-</span><span class='line'>        <span class="n">unpackContent</span><span class="p">(</span><span class="n">bytes</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>报文分三个部分进行读取。需要注意的是读取剩余长度时，需要循环读取一个字节，以便确定剩余长度的最高字节。</p>
-
-<h4>小结</h4>
-
-<p>最后对比各个协议库，如果需要使用到MQTT的大部分功能，那么阅读Mosquitto源码会是个不错的选择，毕竟其实现的功能还是相对完善的。<br>
-而对于这次实践，总感觉有些地方使用面向协议没有面向对象来的更加简洁，不过这也是利弊的权衡吧，还是在可以接受的范围。</p>
-
-<h4>参考链接</h4>
-
-<p><a href="http://mosquitto.org/documentation/">MosquittoDocumentation</a><br>
-<a href="https://mcxiaoke.gitbooks.io/mqtt-cn/content/">MQTT中文文档</a><br>
-<a href="http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html">MQTT英文文档</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[更加快速地设置Frame]]></title>
-    <link href="http://triplecc.github.io/blog/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/"/>
-    <updated>2016-04-23T13:14:55+08:00</updated>
-    <id>http://triplecc.github.io/blog/geng-jia-kuai-su-di-she-zhi-frame</id>
-    <content type="html"><![CDATA[<p>由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。<br></p>
-
-<h4>令人蛋疼的frame布局</h4>
-
-<p>老代码对界面的坐标尺寸设置都是通过下面的方式：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>...
-</span><span class='line'>UIView * mainView = [[UIView alloc] initWithFrame:CGRectMake(0, self.height, self.width, MAIN_HEIGHT)];
-</span><span class='line'>[mainView setBackgroundColor:[UIColor whiteColor]];
-</span><span class='line'>[self addSubview:mainView];
-</span><span class='line'>self.mainView = mainView;
-</span><span class='line'>
-</span><span class='line'>UIView * opertionMenu = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.width, 45)];
-</span><span class='line'>[opertionMenu setBackgroundColor:[UIColor whiteColor]];
-</span><span class='line'>[mainView addSubview:opertionMenu];
-</span><span class='line'>
-</span><span class='line'>UIView * line = [[UIView alloc] initWithFrame:CGRectMake(0, 44, self.width, 1)];
-</span><span class='line'>[line setBackgroundColor:[UIColor colorWithHex:0xe9e9e9]];
-</span><span class='line'>[opertionMenu addSubview:line];
-</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这些坐标设置工作都是在初始化，也就是init系列方法中完成的。这样做的弊端很明显，复用性很差，如果还是按照这种方式的话，每扩展一种界面类型，就要新增一个init方法。久而久之，冗余代码会越来越多，新增特性想重用这块控件的话，需要做比较多的无用功。<br></p>
-
-<!--more-->
-
-
-<p>由于上面代码很多针对坐标尺寸的设置都是在init系列方法中完成的，所以很少有单独修改frame中的某个成员的操作，不过旧代码还是提供了快速设置某个成员的方法：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>@interface UIView (Size)
-</span><span class='line'>...
-</span><span class='line'>- (CGFloat)width;
-</span><span class='line'>- (CGFloat)height;
-</span><span class='line'>- (CGFloat)minX;
-</span><span class='line'>- (CGFloat)midX;
-</span><span class='line'>- (CGFloat)maxX;
-</span><span class='line'>- (CGFloat)minY;
-</span><span class='line'>- (CGFloat)midY;
-</span><span class='line'>- (CGFloat)maxY;
-</span><span class='line'>...
-</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
-
-
-<p>很明显地看出，这种分类命名是有问题的（这也是直接导致我后续没有引入masonry的诱因之一，旧代码中过多的使用了以上分类，和简易的masonry用法即没有mas前缀的方法产生的冲突过多）。<br></p>
-
-<p>于是我新增了一些快速设置的坐标的分类方法：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>@interface UIView (Size)
-</span><span class='line'>...
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_y;
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_x;
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_width;
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_height;
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_centerX;
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_centerY;
-</span><span class='line'>@property (assign, nonatomic) CGPoint bq_origin;
-</span><span class='line'>@property (assign, nonatomic) CGSize bq_size;
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_maxX;
-</span><span class='line'>@property (assign, nonatomic) CGFloat bq_maxY;
-</span><span class='line'>@property (assign, nonatomic, readonly) CGPoint bq_subCenter;
-</span><span class='line'>@property (assign, nonatomic, readonly) CGFloat bq_subCenterX;
-</span><span class='line'>@property (assign, nonatomic, readonly) CGFloat bq_subCenterY;
-</span><span class='line'>- (instancetype)bq_sizeToFit;
-</span><span class='line'>...
-</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
-
-
-<p>于是代码中就多了另外一种设置frame的书写格式：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>- (void)adjustSubviewFrame {
-</span><span class='line'>    ...
-</span><span class='line'>    if (!_timeLabel.hidden) {
-</span><span class='line'>        [_timeLabel sizeToFit];
-</span><span class='line'>        CGFloat timeLabelLRMargin = 5;
-</span><span class='line'>        CGFloat timeLabelTopMaigin = BQMessageCommonMargin;
-</span><span class='line'>        _timeLabel.bq_size = CGSizeMake(_timeLabel.bq_width + 2 * timeLabelLRMargin, BQMessageTimeHeight);
-</span><span class='line'>        _timeLabel.center = CGPointMake(self.contentView.bq_centerX, timeLabelTopMaigin + _timeLabel.bq_height * 0.5);
-</span><span class='line'>    } else {
-</span><span class='line'>        _timeLabel.frame = CGRectZero;
-</span><span class='line'>    }
-</span><span class='line'>    CGFloat headImageEdgeMargin = BQMessageCommonMargin;
-</span><span class='line'>    CGFloat headImageViewX = _isSelf ? self.contentView.bq_width - _headIconImageView.bq_width - headImageEdgeMargin : headImageEdgeMargin;
-</span><span class='line'>    CGFloat headImageViewY = CGRectGetMaxY(_timeLabel.frame) + headImageEdgeMargin;
-</span><span class='line'>    _headIconImageView.bq_origin = CGPointMake(headImageViewX, headImageViewY);
-</span><span class='line'>    if (!_identityButton.hidden) {
-</span><span class='line'>        CGFloat identifyButtonTopMargin = BQMessageHeaderBottomMargin;
-</span><span class='line'>        CGFloat identifyButtonY = CGRectGetMaxY(_headIconImageView.frame) + identifyButtonTopMargin;
-</span><span class='line'>        _identityButton.bq_y = identifyButtonY;
-</span><span class='line'>        _identityButton.bq_centerX = _headIconImageView.bq_centerX;
-</span><span class='line'>    }
-</span><span class='line'>    CGFloat nameLabelToHeadImageTopMargin = 0;
-</span><span class='line'>    if (!_nameLabel.hidden) {
-</span><span class='line'>        [_nameLabel sizeToFit];
-</span><span class='line'>        CGFloat nameLabelX = CGRectGetMaxX(_headIconImageView.frame) + headImageEdgeMargin;
-</span><span class='line'>        CGFloat nameLabelY = _headIconImageView.bq_y + nameLabelToHeadImageTopMargin;
-</span><span class='line'>        _nameLabel.bq_origin = CGPointMake(nameLabelX, nameLabelY);
-</span><span class='line'>    }
-</span><span class='line'>    ...
-</span><span class='line'>}
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>把设置可变坐标的代码独立出来放进一个方法中增强的控件的复用性，但是也无形中增加了布局代码代码量，而且估计第二个人来看这个计算过程也会很头大。<br></p>
-
-<p>能不能采用链式的方式简化对界面进行frame布局的代码？于是我借鉴了masonry的实现方式，弄了一套快速设置frame的代码。最终使用的效果：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>UIView *v1 = [UIView new];
-</span><span class='line'>v1.tpc_quickAttribute
-</span><span class='line'>.referToView(self.view)
-</span><span class='line'>.addToView(self.view)
-</span><span class='line'>.alignOrigin(CGPointMake(10, 20))
-</span><span class='line'>.alignSize(CGSizeMake(-200, -400))
-</span><span class='line'>.backgroundColor([UIColor redColor]);
-</span><span class='line'>
-</span><span class='line'>UIView *v2 = [UIView new];
-</span><span class='line'>v2.tpc_quickAttribute
-</span><span class='line'>.referToView(v1)
-</span><span class='line'>.addToView(v1)
-</span><span class='line'>.size(CGSizeMake(20, 20))
-</span><span class='line'>.alignCenter(pzero)
-</span><span class='line'>.backgroundColor([UIColor orangeColor]);
-</span><span class='line'>
-</span><span class='line'>UIView *v3 = [UIView new];
-</span><span class='line'>v3.tpc_quickAttribute
-</span><span class='line'>.addToView(self.view)
-</span><span class='line'>.referToView(v1)
-</span><span class='line'>.alignSize(CGSizeMake(20, 20))
-</span><span class='line'>.referToView(self.view)
-</span><span class='line'>.alignRightToRight(20)
-</span><span class='line'>.alignBottomToBottom(20)
-</span><span class='line'>.backgroundColor([[UIColor grayColor] colorWithAlphaComponent:0.4]);</span></code></pre></td></tr></table></div></figure>
-
-
-<p>顿时感觉整个世界又变清新了。。。<br></p>
-
-<h4>实现的思路<br></h4>
-
-<p>首先，给UIView绑定一个布局实例：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;UIView+TPCQuickAttribute.m&gt;
-</span><span class='line'>
-</span><span class='line'>- (TPCQuickAttribute *)tpc_quickAttribute {
-</span><span class='line'>    TPCQuickAttribute *quickAttribute = objc_getAssociatedObject(self, _cmd);
-</span><span class='line'>    if (!quickAttribute) {
-</span><span class='line'>        quickAttribute = [[TPCQuickAttribute alloc] initWithView:self];
-</span><span class='line'>        objc_setAssociatedObject(self, _cmd, quickAttribute, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-</span><span class='line'>    }
-</span><span class='line'>    return quickAttribute;
-</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这个TPCQuickAttribute就是进行快速设置frame的关键：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;TPCQuickAttribute.h&gt;
-</span><span class='line'>
-</span><span class='line'>#if TPC_OPEN_LOG == 1
-</span><span class='line'>#ifdef DEBUG
-</span><span class='line'>#define TPCLayoutLog(s, ... ) NSLog( @"&lt;%s:(%d)&gt; %@", __FUNCTION__, __LINE__, [NSString stringWithFormat:(s), ##__VA_ARGS__] ) 
-</span><span class='line'>#else
-</span><span class='line'>#define TPCLayoutLog(s, ... )
-</span><span class='line'>#endif
-</span><span class='line'>#else
-</span><span class='line'>#define TPCLayoutLog(s, ... )
-</span><span class='line'>#endif
-</span><span class='line'>@interface TPCQuickAttribute : NSObject &lt;TPCQuickProtcol&gt;
-</span><span class='line'>- (instancetype)initWithView:(UIView *)view;
-</span><span class='line'>@property (weak, nonatomic, readonly) UIView *view;
-</span><span class='line'>@property (weak, nonatomic) UIView *referView;
-</span><span class='line'>@property (assign, nonatomic, readonly) BOOL referViewIsSuperview;
-</span><span class='line'>
-</span><span class='line'>- (TPCQuickAttribute *(^)(UIView * view))referToView;
-</span><span class='line'>- (TPCQuickAttribute *(^)(UIView *))addToView;
-</span><span class='line'>- (void)end;
-</span><span class='line'>@end</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这个类包含了要进行布局的view对象，还有进行参考的referView。<br>
-一旦设置好了这两者，就可以进行下一步操作了：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;TPCQuickAttribute+Frame.m&gt;
-</span><span class='line'>...
-</span><span class='line'>- (TPCQuickAttribute *(^)(CGFloat))alignLeftToLeft {
-</span><span class='line'>    return ^TPCQuickAttribute *(CGFloat offset) {
-</span><span class='line'>        return self.x(self.referViewX + offset);
-</span><span class='line'>    };
-</span><span class='line'>}
-</span><span class='line'>
-</span><span class='line'>- (TPCQuickAttribute *(^)(CGFloat))alignLeftToRight {
-</span><span class='line'>    return ^TPCQuickAttribute *(CGFloat offset) {
-</span><span class='line'>        return self.alignLeftToLeft(self.referView.frame.size.width + offset);
-</span><span class='line'>    };
-</span><span class='line'>}
-</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
-
-
-<p>上面代码参考referView，对view的x坐标进行设置。对于这种链式的实现原理，就是利用了返回的block是一个无名函数，可以通过( )执行，这样对上面的方法进行调用，产生以下效果：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>xxx.alignLeftToLeft(0)</span></code></pre></td></tr></table></div></figure>
-
-
-<p>了解了block的使用方式就没什么复杂的了。<br>
-既然可以快速设置frame，那么常用属性呢？再增加一个分类：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;TPCQuickAttribute+Appearance.m&gt;
-</span><span class='line'>...
-</span><span class='line'>- (TPCQuickAttribute *(^)(UIColor *))backgroundColor {
-</span><span class='line'>    return ^TPCQuickAttribute *(UIColor *backgroundColor) {
-</span><span class='line'>        self.view.backgroundColor = backgroundColor;
-</span><span class='line'>        return self;
-</span><span class='line'>    };
-</span><span class='line'>}
-</span><span class='line'>
-</span><span class='line'>- (TPCQuickAttribute *(^)(UIViewContentMode))contentMode {
-</span><span class='line'>    return ^TPCQuickAttribute *(UIViewContentMode contentMode) {
-</span><span class='line'>        self.view.contentMode = contentMode;
-</span><span class='line'>        return self;
-</span><span class='line'>    };
-</span><span class='line'>}
-</span><span class='line'>
-</span><span class='line'>...</span></code></pre></td></tr></table></div></figure>
-
-
-<p>同理，综合上面的代码，就可以链式地写出设置frame的代码了。<br></p>
-
-<h4>小结</h4>
-
-<p>当然，现在有了自动布局，一般界面已经不需要使用frame进行布局了，代码的自动布局可以使用masonry，我私下也喜欢用storyboard+xib的方式写一些小demo。<br>
-所以以上代码纯属玩票＝＝。<br>
-<a href="https://github.com/tripleCC/TPCQuickAttribute">代码链接</a></p>
 ]]></content>
   </entry>
   
