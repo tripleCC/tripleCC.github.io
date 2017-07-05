@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-07-04T21:19:44+08:00</updated>
+  <updated>2017-07-05T08:47:52+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,23 +12,6 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
-  
-  <entry>
-    <title type="html"><![CDATA[Objective-C]]></title>
-    <link href="http://triplecc.github.io/blog/2017-07-04-objective-c/"/>
-    <updated>2017-07-04T20:53:58+08:00</updated>
-    <id>http://triplecc.github.io/blog/objective-c</id>
-    <content type="html"><![CDATA[<h2>多播代理 (GCDMulticastDelegate)</h2>
-
-<h2>代理转发 (IGListAdapterProxy)</h2>
-
-<h2></h2>
-
-<p><a href="http://satanwoo.github.io/2016/10/23/multithread-dangling-pointer/">浅谈一种解决多线程野指针的新思路</a></p>
-
-<h2>兼容旧代码结构</h2>
-]]></content>
-  </entry>
   
   <entry>
     <title type="html"><![CDATA[闲谈 IGListKit]]></title>
@@ -7910,6 +7893,782 @@ YYModel给使用者提供了极强的扩展性。在解析的过程中，使用�
 <h3>小结</h3>
 
 <p>很粗略地记录下部分阅读过程。YYModel有不少值得学习的地方，不管是代码风格还是考虑问题的全面性，这些都需要通过阅读源码来了解。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MQTT使用小记]]></title>
+    <link href="http://triplecc.github.io/blog/2016-05-12-mqttshi-yong-xiao-ji/"/>
+    <updated>2016-05-12T17:12:43+08:00</updated>
+    <id>http://triplecc.github.io/blog/mqttshi-yong-xiao-ji</id>
+    <content type="html"><![CDATA[<p>MQTT全称Message Queue Telemetry Transport，是一个针对轻量级的发布/订阅式消息传输场景的协议，同时也是被推崇的物联网传输协议。MQTT详细的介绍文章可以从<a href="http://mqtt.org/">官方网站</a>获得，所以这里就不进行详细的展开了，而是针对这些天的使用经历与感受做一番纪录。</p>
+
+<p>MQTT开源的iOS客户端有以下几种：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>|MQTTKit  |Marquette|Moscapsule|Musqueteer|MQTT-Client|MqttSDK|CocoaMQTT|
+</span><span class='line'>|---------|---------|----------|----------|-----------|-------|---------|
+</span><span class='line'>|Obj-C    |Obj-C    |Swift     |Obj-C     |Obj-C      |Obj-C  |Swift    |
+</span><span class='line'>|Mosquitto|Mosquitto|Mosquitto |Mosquitto |native     |native |native   |</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上开源库我只看过部分MQTTKit、MQTT-Client、CocoaMQTT的开源代码，总体来说MQTT-Client支持的功能更多全面一些。如果只是对协议本身进行学习不考虑功能的话，可以阅读CocoaMQTT，也可以阅读我重写的<a href="https://github.com/tripleCC/SwiftMQTT">SwiftMQTT</a>，因为代码量相对前面两个库少了很多。</p>
+
+<p>而MQTT的broker一般选择<a href="http://mosquitto.org/">Mosquitto</a>，Mosquitto是一个由C编写的集客户端和服务端为一体的开源项目，所以相对来说风格较为友好，可以无障碍地阅读并调试源码（<a href="https://github.com/eclipse/mosquitto">开源地址</a>）。可以看到，以上客户端开源库中的前四种就是基于Mosquitto的一层封装。</p>
+
+<!--more-->
+
+
+<h4>Mosquitto的安装和使用</h4>
+
+<p>Mosquitto在Linux下的安装相对比Mac-OS简单很多，主要是因为openssl的一些路径问题，后者需要多一些步骤。Mac-OS下可以通过两种方法运行Mosquitto，一种是通过brew命令安装Mosquitto:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">brew</span> <span class="n">install</span> <span class="n">mosquitto</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>安装完成后就可以在mosquitto.conf文件中更改相应的配置了。接着进入根目录（也可以指定$PATH到mosquitto可执行文件的目录），执行以下命令运行mosquitto：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// -c 读取配置</span>
+</span><span class='line'><span class="c1">// -d 后台运行</span>
+</span><span class='line'><span class="c1">// -v 打印详细日志</span>
+</span><span class='line'><span class="p">.</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">mosquitto</span> <span class="o">-</span><span class="n">c</span> <span class="n">etc</span><span class="o">/</span><span class="n">mosquitto</span><span class="o">/</span><span class="n">mosquitto</span><span class="p">.</span><span class="n">conf</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">v</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>如果要重启mosquitto服务，可以先kill掉，再重启：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="nl">tripleCC</span><span class="p">:</span><span class="mf">1.4.8</span> <span class="n">songruiwang</span><span class="err">$</span> <span class="n">ps</span> <span class="o">-</span><span class="n">A</span> <span class="o">|</span> <span class="n">grep</span> <span class="n">mosquitto</span>
+</span><span class='line'><span class="mi">55417</span> <span class="o">??</span>         <span class="mi">0</span><span class="o">:</span><span class="mf">00.05</span> <span class="p">.</span><span class="o">/</span><span class="n">sbin</span><span class="o">/</span><span class="n">mosquitto</span> <span class="o">-</span><span class="n">c</span> <span class="n">etc</span><span class="o">/</span><span class="n">mosquitto</span><span class="o">/</span><span class="n">mosquitto</span><span class="p">.</span><span class="n">conf</span> <span class="o">-</span><span class="n">d</span> <span class="o">-</span><span class="n">v</span>
+</span><span class='line'><span class="nl">tripleCC</span><span class="p">:</span><span class="mf">1.4.8</span> <span class="n">songruiwang</span><span class="err">$</span> <span class="n">kill</span> <span class="o">-</span><span class="mi">9</span> <span class="mi">55417</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>现在要说明的是第二种方式，通过源码编译生成mosquitto可执行文件（好处是可以通过lldb对mosquitto进行调试，能更好地熟悉运行机制）。</p>
+
+<p>下载mosquitto源码后进入根目录，然后执行以下命令：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 禁用TLS_PSK，并且声称Debug版本（后续lldb调试需要用到符号表）</span>
+</span><span class='line'><span class="c1">// 如果openssl是通过brew进行安装，就需要手动指定OPENSSL_ROOT_DIR和OPENSSL_INCLUDE_DIR环境变量</span>
+</span><span class='line'><span class="c1">// 但是后来发现即使指定了，在编译时符号表中还是找不到TLS_PSK相关的函数</span>
+</span><span class='line'><span class="n">cmake</span> <span class="o">-</span><span class="n">DWITH_TLS_PSK</span><span class="o">=</span><span class="n">OFF</span> <span class="o">-</span><span class="n">DWITH_TLS</span><span class="o">=</span><span class="n">OFF</span> <span class="o">-</span><span class="n">DCMAKE_BUILD_TYPE</span><span class="o">=</span><span class="n">Debug</span>
+</span><span class='line'><span class="n">make</span> <span class="n">install</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>终端会提示无法拷贝可执行文件mosquitto，这个问题无伤大雅。可以手动拷贝到$PATH指定的目录下，也可以直接进入mosquitto所在目录运行：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="nl">tripleCC</span><span class="p">:</span><span class="n">src</span> <span class="n">songruiwang</span><span class="err">$</span> <span class="n">lldb</span> <span class="n">mosquitto</span>
+</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">target</span> <span class="n">create</span> <span class="s">&quot;mosquitto&quot;</span>
+</span><span class='line'><span class="n">Current</span> <span class="n">executable</span> <span class="kr">set</span> <span class="n">to</span> <span class="err">&#39;</span><span class="n">mosquitto</span><span class="err">&#39;</span> <span class="p">(</span><span class="n">x86_64</span><span class="p">).</span>
+</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">b</span> <span class="n">mqtt3_packet_handle</span>
+</span><span class='line'><span class="n">Breakpoint</span> <span class="mi">1</span><span class="o">:</span> <span class="k">where</span> <span class="o">=</span> <span class="n">mosquitto</span><span class="err">`</span><span class="n">mqtt3_packet_handle</span> <span class="o">+</span> <span class="mi">16</span> <span class="n">at</span> <span class="n">read_handle</span><span class="p">.</span><span class="nl">c</span><span class="p">:</span><span class="mi">36</span><span class="p">,</span> <span class="n">address</span> <span class="o">=</span> <span class="mh">0x0000000100018eb0</span>
+</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">r</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样当客户端连接到broker时，就可以对mosquitto进行逐行调试了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Process</span> <span class="mi">57680</span> <span class="nl">launched</span><span class="p">:</span> <span class="err">&#39;</span><span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">songruiwang</span><span class="o">/</span><span class="n">Desktop</span><span class="o">/</span><span class="n">mosquitto</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">mosquitto</span><span class="err">&#39;</span> <span class="p">(</span><span class="n">x86_64</span><span class="p">)</span>
+</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">mosquitto</span> <span class="n">version</span> <span class="mf">1.4.8</span> <span class="p">(</span><span class="n">build</span> <span class="n">date</span> <span class="mi">2016</span><span class="o">-</span><span class="mo">05</span><span class="o">-</span><span class="mi">12</span> <span class="mi">18</span><span class="o">:</span><span class="mi">36</span><span class="o">:</span><span class="mi">15</span><span class="o">+</span><span class="mi">0800</span><span class="p">)</span> <span class="n">starting</span>
+</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">Using</span> <span class="k">default</span> <span class="n">config</span><span class="p">.</span>
+</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">Opening</span> <span class="n">ipv4</span> <span class="n">listen</span> <span class="n">socket</span> <span class="n">on</span> <span class="n">port</span> <span class="mf">1883.</span>
+</span><span class='line'><span class="mi">1463049645</span><span class="o">:</span> <span class="n">Opening</span> <span class="n">ipv6</span> <span class="n">listen</span> <span class="n">socket</span> <span class="n">on</span> <span class="n">port</span> <span class="mf">1883.</span>
+</span><span class='line'><span class="mi">1463049659</span><span class="o">:</span> <span class="n">New</span> <span class="n">connection</span> <span class="n">from</span> <span class="mf">127.0.0.1</span> <span class="n">on</span> <span class="n">port</span> <span class="mf">1883.</span>
+</span><span class='line'><span class="n">Process</span> <span class="mi">57680</span> <span class="n">stopped</span>
+</span><span class='line'><span class="o">*</span> <span class="kr">thread</span> <span class="err">#</span><span class="mi">1</span><span class="o">:</span> <span class="n">tid</span> <span class="o">=</span> <span class="mh">0xba449</span><span class="p">,</span> <span class="mh">0x0000000100018eb0</span> <span class="n">mosquitto</span><span class="err">`</span><span class="n">mqtt3_packet_handle</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="mh">0x000000010002f4f0</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="mh">0x0000000100201990</span><span class="p">)</span> <span class="o">+</span> <span class="mi">16</span> <span class="n">at</span> <span class="n">read_handle</span><span class="p">.</span><span class="nl">c</span><span class="p">:</span><span class="mi">36</span><span class="p">,</span> <span class="n">queue</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">com</span><span class="p">.</span><span class="n">apple</span><span class="p">.</span><span class="n">main</span><span class="o">-</span><span class="kr">thread</span><span class="err">&#39;</span><span class="p">,</span> <span class="n">stop</span> <span class="n">reason</span> <span class="o">=</span> <span class="n">breakpoint</span> <span class="mf">1.1</span>
+</span><span class='line'>    <span class="n">frame</span> <span class="err">#</span><span class="mi">0</span><span class="o">:</span> <span class="mh">0x0000000100018eb0</span> <span class="n">mosquitto</span><span class="err">`</span><span class="n">mqtt3_packet_handle</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="mh">0x000000010002f4f0</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="mh">0x0000000100201990</span><span class="p">)</span> <span class="o">+</span> <span class="mi">16</span> <span class="n">at</span> <span class="n">read_handle</span><span class="p">.</span><span class="nl">c</span><span class="p">:</span><span class="mi">36</span>
+</span><span class='line'>   <span class="mi">33</span>     
+</span><span class='line'>   <span class="mi">34</span>     <span class="kt">int</span> <span class="n">mqtt3_packet_handle</span><span class="p">(</span><span class="k">struct</span> <span class="n">mosquitto_db</span> <span class="o">*</span><span class="n">db</span><span class="p">,</span> <span class="k">struct</span> <span class="n">mosquitto</span> <span class="o">*</span><span class="n">context</span><span class="p">)</span>
+</span><span class='line'>   <span class="mi">35</span>     <span class="p">{</span>
+</span><span class='line'><span class="o">-&gt;</span> <span class="mi">36</span>       <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">context</span><span class="p">)</span> <span class="k">return</span> <span class="n">MOSQ_ERR_INVAL</span><span class="p">;</span>
+</span><span class='line'>   <span class="mi">37</span>     
+</span><span class='line'>   <span class="mi">38</span>         <span class="nf">switch</span><span class="p">((</span><span class="n">context</span><span class="o">-&gt;</span><span class="n">in_packet</span><span class="p">.</span><span class="n">command</span><span class="p">)</span><span class="o">&amp;</span><span class="mh">0xF0</span><span class="p">){</span>
+</span><span class='line'>   <span class="mi">39</span>             <span class="k">case</span> <span class="nl">PINGREQ</span><span class="p">:</span>
+</span><span class='line'><span class="p">(</span><span class="n">lldb</span><span class="p">)</span> <span class="n">p</span> <span class="o">*</span><span class="n">context</span>
+</span><span class='line'><span class="p">(</span><span class="n">mosquitto</span><span class="p">)</span> <span class="err">$</span><span class="mi">0</span> <span class="o">=</span> <span class="p">{</span>
+</span><span class='line'>  <span class="n">sock</span> <span class="o">=</span> <span class="mi">6</span>
+</span><span class='line'>  <span class="k">protocol</span> <span class="o">=</span> <span class="n">mosq_p_invalid</span>
+</span><span class='line'>  <span class="n">address</span> <span class="o">=</span> <span class="mh">0x0000000100200db0</span> <span class="s">&quot;127.0.0.1&quot;</span>
+</span><span class='line'>  <span class="kt">id</span> <span class="o">=</span> <span class="mh">0x0000000000000000</span> <span class="o">&lt;</span><span class="n">no</span> <span class="n">value</span> <span class="n">available</span><span class="o">&gt;</span>
+</span><span class='line'>  <span class="n">username</span> <span class="o">=</span> <span class="mh">0x0000000000000000</span> <span class="o">&lt;</span><span class="n">no</span> <span class="n">value</span> <span class="n">available</span><span class="o">&gt;</span>
+</span><span class='line'>  <span class="n">password</span> <span class="o">=</span> <span class="mh">0x0000000000000000</span> <span class="o">&lt;</span><span class="n">no</span> <span class="n">value</span> <span class="n">available</span><span class="o">&gt;</span>
+</span><span class='line'>  <span class="n">keepalive</span> <span class="o">=</span> <span class="mi">60</span>
+</span><span class='line'>  <span class="n">last_mid</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'>  <span class="n">state</span> <span class="o">=</span> <span class="n">mosq_cs_new</span>
+</span><span class='line'>  <span class="n">last_msg_in</span> <span class="o">=</span> <span class="mi">39584</span>
+</span><span class='line'>  <span class="n">last_msg_out</span> <span class="o">=</span> <span class="mi">39584</span>
+</span><span class='line'>  <span class="p">......</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里安利一款代码阅读器Understand（和window下的SourceInsight很相似，都很强大！）<br>
+lldb很多命令和gdb相似，具体更多命令可以在lldb中执行help进行查看。
+更加详细的使用教程可以参考<a href="http://blog.csdn.net/shagoo/article/details/7910598">Mosquitto简要教程（安装/使用/测试）</a></p>
+
+<h4>使用Wireshark抓取报文</h4>
+
+<p>测试时使用的host一般为lo0，即本地回环地址，所以选择对应的过滤器：</p>
+
+<p><img src="http://triplecc.github.io/images/Snip20160512_2.png" alt="" /></p>
+
+<p>对端口进行过滤（这里使用的是1883端口）：</p>
+
+<p><img src="http://triplecc.github.io/images/Snip20160512_3.png" alt="" /></p>
+
+<p>然后连接客户端和服务端，就可以看见对应的MQTT报文了：</p>
+
+<p><img src="http://triplecc.github.io/images/Snip20160512_4.png" alt="" /></p>
+
+<p>在一些linux嵌入式环境下，无法通过Wireshark抓取报文，可以使用tcpdump抓取生成pcap文件，然后使用ftp等协议将文件传回到电脑，再使用Wireshark打开：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="c1">// 这里还是用回环地址举例</span>
+</span><span class='line'><span class="n">tcpdump</span> <span class="o">-</span><span class="n">i</span> <span class="n">lo0</span> <span class="err">&#39;</span><span class="n">tcp</span> <span class="n">port</span> <span class="mi">1883</span><span class="err">&#39;</span> <span class="o">-</span><span class="n">s</span> <span class="mi">65535</span> <span class="o">-</span><span class="n">w</span> <span class="n">packet</span><span class="p">.</span><span class="n">pcap</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>MQTT协议的实践</h4>
+
+<h5>MQTT协议消息类型</h5>
+
+<p>为了能够更好地熟悉协议，我用struct+protocol的方式重写了CocoaMQTT的代码（<a href="https://github.com/tripleCC/SwiftMQTT">SwiftMQTT</a>）。CocoaMQTT库使用的是传统的面相对象编程方式，所以阅读起来并没有什么障碍，只不过小小吐槽下代码风格。<br></p>
+
+<p>MQTT协议总共有14种消息类型，使用枚举表示如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">enum</span> <span class="nl">SwiftMQTTMessageType</span> <span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">Connect</span>        <span class="o">=</span> <span class="mh">0x10</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">ConnAck</span>        <span class="o">=</span> <span class="mh">0x20</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">Publish</span>        <span class="o">=</span> <span class="mh">0x30</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">PubAck</span>         <span class="o">=</span> <span class="mh">0x40</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">PubRec</span>         <span class="o">=</span> <span class="mh">0x50</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">PubRel</span>         <span class="o">=</span> <span class="mh">0x60</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">PubComp</span>        <span class="o">=</span> <span class="mh">0x70</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">Subscribe</span>      <span class="o">=</span> <span class="mh">0x80</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">SubAck</span>         <span class="o">=</span> <span class="mh">0x90</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">Unsubscribe</span>    <span class="o">=</span> <span class="mh">0xA0</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">UnsubBack</span>      <span class="o">=</span> <span class="mh">0xB0</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">PingReq</span>        <span class="o">=</span> <span class="mh">0xC0</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">PingResp</span>       <span class="o">=</span> <span class="mh">0xD0</span>
+</span><span class='line'>    <span class="k">case</span> <span class="n">Disconnect</span>     <span class="o">=</span> <span class="mh">0xE0</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上消息可由"固定报头"+&ldquo;可变报头&rdquo;+&ldquo;有效载荷"三部分组成。<br></p>
+
+<p>固定报头由"类型+标志位"+&ldquo;剩余长度"组成，可以使用protocol表示第一部分：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTCommandProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">command</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">messageType</span><span class="p">:</span> <span class="n">SwiftMQTTMessageType</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">dupFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">qosLevel</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="k">retain</span><span class="o">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTCommandProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * +---------------+----------+-----------+--------+</span>
+</span><span class='line'><span class="cm">     * |    7 6 5 4    |     3    |    2 1    |   0    |</span>
+</span><span class='line'><span class="cm">     * |  Message Type | DUP flag | QoS level | RETAIN |</span>
+</span><span class='line'><span class="cm">     * +---------------+----------+-----------+--------+</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">messageType</span><span class="p">:</span> <span class="n">SwiftMQTTMessageType</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">SwiftMQTTMessageType</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xF0</span><span class="p">)</span> <span class="o">??</span> <span class="p">.</span><span class="n">Connect</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="n">newValue</span><span class="p">.</span><span class="n">rawValue</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0x0F</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">dupFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">command</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x01</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xF7</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">qosLevel</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">SwiftMQTTQosLevel</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="p">(</span><span class="n">command</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mh">0x03</span><span class="p">)</span> <span class="o">??</span> <span class="p">.</span><span class="n">AtMostOnce</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="n">newValue</span><span class="p">.</span><span class="n">rawValue</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xF9</span> <span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="k">retain</span><span class="o">:</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0x01</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">command</span> <span class="o">=</span> <span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">command</span> <span class="o">&amp;</span> <span class="mh">0xFE</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>剩余长度等于"可变报头"+&ldquo;有效载荷"各自的长度相加，这两者表示如下:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTVariableHeaderProtocol</span> <span class="p">{</span>
+</span><span class='line'>     <span class="k">var</span> <span class="nl">variableHeader</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTVariableHeaderProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">variableHeader</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span> <span class="k">return</span> <span class="bp">NSData</span><span class="p">()</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTPayloadProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">payload</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTPayloadProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">payload</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span> <span class="k">return</span> <span class="bp">NSData</span><span class="p">()</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>为了减少没有这两个部分的消息结构体的代码量，所以协议扩展中先返回空数据。<br>
+然后就可以定义并实现一个固定报头的总协议了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="nl">SwiftMQTTFixedHeaderProtocol</span> <span class="p">:</span> <span class="n">SwiftMQTTCommandProtocol</span><span class="p">,</span> <span class="n">SwiftMQTTVariableHeaderProtocol</span><span class="p">,</span> <span class="n">SwiftMQTTPayloadProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">remainingLength</span><span class="p">:</span> <span class="kt">UInt32</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTFixedHeaderProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">remainingLength</span><span class="p">:</span> <span class="kt">UInt32</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">remainingLength</span> <span class="o">=</span> <span class="n">variableHeader</span><span class="p">.</span><span class="n">length</span> <span class="o">+</span> <span class="n">payload</span><span class="p">.</span><span class="n">length</span>
+</span><span class='line'>        <span class="n">guard</span> <span class="n">remainingLength</span> <span class="o">&lt;=</span> <span class="n">kSwiftMQTTMaxRemainingLength</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">SMPrint</span><span class="p">(</span><span class="s">&quot;the size of remaining length field should be below \(kSwiftMQTTMaxRemainingLength).&quot;</span><span class="p">)</span>
+</span><span class='line'>            <span class="k">return</span> <span class="kt">UInt32</span><span class="p">(</span><span class="n">kSwiftMQTTMaxRemainingLength</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kt">UInt32</span><span class="p">(</span><span class="n">remainingLength</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>有了所有发送消息的组成部分之后，就可以对数据进行编码了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="nl">SwiftMQTTMessageProtocol</span> <span class="p">:</span> <span class="n">SwiftMQTTFixedHeaderProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTMessageProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">let</span> <span class="n">data</span> <span class="o">=</span> <span class="bp">NSMutableData</span><span class="p">()</span>
+</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendByte</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendData</span><span class="p">(</span><span class="n">remainingLength</span><span class="p">.</span><span class="n">data</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendData</span><span class="p">(</span><span class="n">variableHeader</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">data</span><span class="p">.</span><span class="n">appendData</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">data</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里以Connect报文为例，结合以上协议，构成一个有效的消息结构体。<br>
+首先让SwiftMQTTConnectMessage遵守SwiftMQTTMessageProtocol协议，以此获得固定报头解析以及编码等能力：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">struct</span> <span class="nl">SwiftMQTTConnectMessage</span> <span class="p">:</span> <span class="n">SwiftMQTTMessageProtocol</span> <span class="p">{</span>
+</span><span class='line'>  <span class="n">public</span> <span class="k">var</span> <span class="n">command</span> <span class="o">=</span> <span class="kt">UInt8</span><span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+</span><span class='line'>  <span class="p">...</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于command是固定报头类型和标志的必要载体，所以必须在结构体中实现。那么问题来了，MQTT协议的消息有14种，于是就需要在14种结构体种都实现一次这个成员变量，如果使用面向对象的方式，在公共子类中呈现这个成员变量就行了。这里是第一个让我感觉面向协议方式在实现MQTT不顺手的地方。<br>
+Connect报文的可变报头中分为四个部分:协议名，协议级别，连接标志和保持连接。这几个部分可以使用两个协议来实现：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="n">SwiftMQTTConnectFlagProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">connectFlag</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">usernameFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">passwordFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">willRetain</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">willQos</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">willFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">cleanSession</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span><span class="kr">get</span> <span class="kr">set</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTConnectFlagProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="cm">/**</span>
+</span><span class='line'><span class="cm">     * +----------+----------+------------+---------+----------+--------------+----------+</span>
+</span><span class='line'><span class="cm">     * |     7    |    6     |      5     |  4  3   |     2    |       1      |     0    |</span>
+</span><span class='line'><span class="cm">     * | username | password | willretain | willqos | willflag | cleansession | reserved |</span>
+</span><span class='line'><span class="cm">     * +----------+----------+------------+---------+----------+--------------+----------+</span>
+</span><span class='line'><span class="cm">     */</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">usernameFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">7</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">7</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x7F</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">passwordFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x40</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">6</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">6</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xBF</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">willRetain</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x20</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">5</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">5</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xDF</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">willQos</span><span class="p">:</span> <span class="n">SwiftMQTTQosLevel</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">SwiftMQTTQosLevel</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x18</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">??</span> <span class="p">.</span><span class="n">AtMostOnce</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">.</span><span class="n">rawValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xE7</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">willFlag</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x08</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xFA</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">cleanSession</span><span class="p">:</span> <span class="n">Bool</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kr">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Bool</span><span class="p">((</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0x04</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>        <span class="kr">set</span> <span class="p">{</span> <span class="n">connectFlag</span> <span class="o">=</span> <span class="p">(</span><span class="kt">UInt8</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">connectFlag</span> <span class="o">&amp;</span> <span class="mh">0xFD</span><span class="p">)</span> <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">protocol</span> <span class="n">SwiftMQTTClientProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolName</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolLevel</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">keepalive</span><span class="p">:</span> <span class="kt">UInt16</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">clientId</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">account</span><span class="p">:</span> <span class="n">SwiftMQTTAccount</span><span class="o">?</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">will</span><span class="p">:</span> <span class="n">SwiftMQTTWill</span><span class="o">?</span> <span class="p">{</span><span class="kr">get</span><span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">SwiftMQTTClientProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolName</span><span class="p">:</span> <span class="n">String</span> <span class="p">{</span> <span class="k">return</span> <span class="s">&quot;MQTT&quot;</span> <span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">protocolLevel</span><span class="p">:</span> <span class="kt">UInt8</span> <span class="p">{</span> <span class="k">return</span> <span class="mh">0x04</span> <span class="p">}</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">keepalive</span><span class="p">:</span> <span class="kt">UInt16</span> <span class="p">{</span> <span class="k">return</span> <span class="mi">60</span> <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样Connect报文结构体已经有了所有需要的协议，接下来主要的工作就是实现真正的variableHeader和payload了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">var</span> <span class="nl">variableHeader</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">let</span> <span class="n">variableHeader</span> <span class="o">=</span> <span class="bp">NSMutableData</span><span class="p">()</span>
+</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">protocolName</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendByte</span><span class="p">(</span><span class="n">protocolLevel</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendByte</span><span class="p">(</span><span class="n">connectFlag</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">variableHeader</span><span class="p">.</span><span class="n">appendUInt16</span><span class="p">(</span><span class="n">keepalive</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">variableHeader</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="n">public</span> <span class="k">var</span> <span class="nl">payload</span><span class="p">:</span> <span class="bp">NSData</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">let</span> <span class="n">payload</span> <span class="o">=</span> <span class="bp">NSMutableData</span><span class="p">()</span>
+</span><span class='line'>    <span class="c1">// 客户端标识符-&gt;遗嘱主题-&gt;遗嘱消息-&gt;用户名-&gt;密码</span>
+</span><span class='line'>    <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">clientId</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">willTopic</span> <span class="o">=</span> <span class="n">will</span><span class="o">?</span><span class="p">.</span><span class="n">willTopic</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">willTopic</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">willMessage</span> <span class="o">=</span> <span class="n">will</span><span class="o">?</span><span class="p">.</span><span class="n">willMessage</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">willMessage</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">username</span> <span class="o">=</span> <span class="n">account</span><span class="o">?</span><span class="p">.</span><span class="n">username</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">username</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">password</span> <span class="o">=</span> <span class="n">account</span><span class="o">?</span><span class="p">.</span><span class="n">password</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">payload</span><span class="p">.</span><span class="n">appendMQTTString</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">payload</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>至此，Connect的主要部分都已经构建完成。接下来以ConAck报文为例，实现从broker中返回的报文。<br>
+由于需要解析从broker中返回的报文，所以定义一个返回消息类型协议：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">protocol</span> <span class="nl">SwiftMQTTAckMessageProtocol</span><span class="p">:</span> <span class="n">SwiftMQTTCommandProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">],</span> <span class="nl">command</span><span class="p">:</span> <span class="kt">UInt8</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最终SwiftMQTTConnAckMessage结构体如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">struct</span> <span class="nl">SwiftMQTTConnAckMessage</span> <span class="p">:</span> <span class="n">SwiftMQTTAckMessageProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="n">command</span> <span class="o">=</span> <span class="kt">UInt8</span><span class="p">(</span><span class="mh">0x00</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">sessionPresent</span><span class="p">:</span> <span class="n">Bool</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">connectReturnCode</span><span class="p">:</span> <span class="n">SwiftMQTTConnectReturnCode</span>
+</span><span class='line'>    <span class="n">public</span> <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">],</span> <span class="nl">command</span><span class="p">:</span> <span class="kt">UInt8</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">guard</span> <span class="n">bytes</span><span class="p">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">nil</span> <span class="p">}</span>
+</span><span class='line'>        <span class="n">sessionPresent</span> <span class="o">=</span> <span class="n">Bool</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</span><span class='line'>        <span class="n">connectReturnCode</span> <span class="o">=</span> <span class="n">SwiftMQTTConnectReturnCode</span><span class="p">(</span><span class="nl">rawValue</span><span class="p">:</span> <span class="n">bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">??</span> <span class="p">.</span><span class="n">Accepted</span>
+</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">command</span> <span class="o">=</span> <span class="n">command</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里又产生了第二个让我不是很舒服的地方：在protocol extension中实现有效的init非常麻烦（暂且不论在protocol extension中实现init的必要性）。下面是一个不完全的实现方式：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">protocol</span> <span class="n">MessageProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">messageId</span> <span class="p">:</span> <span class="kt">UInt16</span> <span class="p">{</span> <span class="kr">get</span> <span class="kr">set</span> <span class="p">}</span>
+</span><span class='line'>    <span class="k">init</span><span class="p">()</span>
+</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">])</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">extension</span> <span class="n">Message</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">init</span><span class="o">?</span><span class="p">(</span><span class="n">_</span> <span class="nl">bytes</span><span class="p">:</span> <span class="p">[</span><span class="kt">UInt8</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">guard</span> <span class="n">bytes</span><span class="p">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">nil</span> <span class="p">}</span>
+</span><span class='line'>        <span class="n">messageId</span> <span class="o">=</span> <span class="kt">UInt16</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;&lt;</span> <span class="mi">8</span> <span class="o">+</span> <span class="kt">UInt16</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">struct</span> <span class="nl">Message</span><span class="p">:</span> <span class="n">MessageProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">var</span> <span class="nl">messageId</span><span class="p">:</span> <span class="kt">UInt16</span>
+</span><span class='line'>    <span class="k">init</span><span class="p">()</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">messageId</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>为了能在protocol extension实现一个默认的init?(_ bytes: [UInt8])方法，就必须要多定义一个没什么意义的init()方法。这让我直接放弃了这个念头，转而直接在每个消息类型的struct中实现对应的解析init方法，虽然这样会让部分代码重复。<br>
+至此，MQTT协议的消息类型实现差不多完成了，因为后续的12种消息和前面这2种大同小异。<br></p>
+
+<h5>MQTT协议消息解析</h5>
+
+<p>和CocoaMQTT一样，SwiftMQTT也是使用GCDAsyncSocket来进行socket通信。在调用GCDAsyncSocket实例的readData系列方法并读取到数据后，便可以从以下代理方法中解析读取到的数据：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">socket:</span><span class="p">(</span><span class="n">GCDAsyncSocket</span> <span class="o">*</span><span class="p">)</span><span class="nv">sock</span> <span class="nf">didReadData:</span><span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span><span class="p">)</span><span class="nv">data</span> <span class="nf">withTag:</span><span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="nv">tag</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需要注意的是，如果使用的是按照缓存排列每次读取固定子节的方法：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">readDataToLength:</span><span class="p">(</span><span class="bp">NSUInteger</span><span class="p">)</span><span class="nv">length</span> <span class="nf">withTimeout:</span><span class="p">(</span><span class="n">NSTimeInterval</span><span class="p">)</span><span class="nv">timeout</span> <span class="nf">tag:</span><span class="p">(</span><span class="kt">long</span><span class="p">)</span><span class="nv">tag</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>那么只要有一次读取错误，就会影响到后续所有数据的读取。<br>
+解析返回报文的主要方法如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="kr">mutating</span> <span class="k">func</span> <span class="nf">unpackData</span><span class="p">(</span><span class="nl">data</span><span class="p">:</span> <span class="bp">NSData</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="n">SwiftMQTTMessagePart</span><span class="p">,</span> <span class="nl">nextReader</span><span class="p">:</span><span class="n">SwiftMQTTMessageDecoderNextReader</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">let</span> <span class="n">bytes</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">bytesArray</span>
+</span><span class='line'>    <span class="k">switch</span> <span class="n">part</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">Header</span><span class="p">:</span>
+</span><span class='line'>        <span class="n">messageHeader</span> <span class="o">=</span> <span class="n">unpackHeader</span><span class="p">(</span><span class="n">bytes</span><span class="p">)</span>
+</span><span class='line'>        <span class="c1">// 读取一个字节的剩余长度</span>
+</span><span class='line'>        <span class="n">nextReader</span><span class="p">(</span><span class="nl">length</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="p">.</span><span class="n">Length</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">Length</span><span class="p">:</span>
+</span><span class='line'>        <span class="n">messageLengthBytes</span><span class="p">.</span><span class="n">appendContentsOf</span><span class="p">(</span><span class="n">bytes</span><span class="p">)</span>
+</span><span class='line'>        <span class="c1">// 如果最高位为0，则剩余长度已确定</span>
+</span><span class='line'>        <span class="k">if</span> <span class="n">Bool</span><span class="p">(</span><span class="n">bytes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 继续读取一个字节的剩余长度</span>
+</span><span class='line'>            <span class="n">nextReader</span><span class="p">(</span><span class="nl">length</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="p">.</span><span class="n">Length</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// 获取剩余长度</span>
+</span><span class='line'>            <span class="k">let</span> <span class="n">messageLength</span> <span class="o">=</span> <span class="n">unpackLength</span><span class="p">(</span><span class="n">messageLengthBytes</span><span class="p">)</span>
+</span><span class='line'>            <span class="k">if</span> <span class="n">messageLength</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// 读取可变报头和payload</span>
+</span><span class='line'>                <span class="n">nextReader</span><span class="p">(</span><span class="nl">length</span><span class="p">:</span> <span class="n">messageLength</span><span class="p">,</span> <span class="nl">part</span><span class="p">:</span> <span class="p">.</span><span class="n">Content</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>                <span class="c1">// 没有可变报头和payload，不需要再进行读取操作，直接解包</span>
+</span><span class='line'>                <span class="n">unpackContent</span><span class="p">()</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="c1">// 重置长度缓存</span>
+</span><span class='line'>            <span class="n">messageLengthBytes</span><span class="p">.</span><span class="n">removeAll</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="k">case</span> <span class="p">.</span><span class="nl">Content</span><span class="p">:</span>
+</span><span class='line'>        <span class="c1">// 解析可变报头和payload</span>
+</span><span class='line'>        <span class="n">unpackContent</span><span class="p">(</span><span class="n">bytes</span><span class="p">)</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>报文分三个部分进行读取。需要注意的是读取剩余长度时，需要循环读取一个字节，以便确定剩余长度的最高字节。</p>
+
+<h4>小结</h4>
+
+<p>最后对比各个协议库，如果需要使用到MQTT的大部分功能，那么阅读Mosquitto源码会是个不错的选择，毕竟其实现的功能还是相对完善的。<br>
+而对于这次实践，总感觉有些地方使用面向协议没有面向对象来的更加简洁，不过这也是利弊的权衡吧，还是在可以接受的范围。</p>
+
+<h4>参考链接</h4>
+
+<p><a href="http://mosquitto.org/documentation/">MosquittoDocumentation</a><br>
+<a href="https://mcxiaoke.gitbooks.io/mqtt-cn/content/">MQTT中文文档</a><br>
+<a href="http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html">MQTT英文文档</a></p>
 ]]></content>
   </entry>
   
