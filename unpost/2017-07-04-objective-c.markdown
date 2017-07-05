@@ -10,7 +10,9 @@ categories:
  
 ## 代理转发 (IGListAdapterProxy) 
 
-## 
+##  
 [浅谈一种解决多线程野指针的新思路](http://satanwoo.github.io/2016/10/23/multithread-dangling-pointer/)
+
+## 针对协议的依赖注入
 
 ## 兼容旧代码结构
