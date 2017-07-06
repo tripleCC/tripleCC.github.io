@@ -96,7 +96,7 @@ NSArray <TBVEmployee *> *employees = @[[TBVEmployee new]];
 ## 更改
 2017-07-06 ： 
 
-需要注意的是 `instancetype` 会包含范型检查，所以为了避免使用者过多地进行强制类型转换， `tbv_map` 可以修改成如下形式：
+需要注意的是 `instancetype` 会包含范型检查，为了避免使用者过多地进行强制类型转换， `tbv_map` 可以修改成如下形式：
 
 ```
 - (NSArray *)tbv_map:(id (^)(T value))block;
