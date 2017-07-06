@@ -93,4 +93,11 @@ NSArray <TBVEmployee *> *employees = @[[TBVEmployee new]];
 ```
 这里只添加了`NSArray`类型的操作，`NSDictionary`、`NSSet`这类集合类型也可以以此类推来实现。不过上面的方法只是做了一层简易的包装，并没有延迟计算啥的，只是让我写起来能更加开心、舒畅点吧。
 
-突然好怀念在项目里面用`Reactive Extension`的日子啊＝＝，那感觉真是爽的不要不要的。。。
+## 更改
+2017-07-06 ： 
+
+需要注意的是 `instancetype` 会包含范型检查，所以为了避免使用者过多地进行强制类型转换， `tbv_map` 可以修改成如下形式：
+
+```
+- (NSArray *)tbv_map:(id (^)(T value))block;
+```
