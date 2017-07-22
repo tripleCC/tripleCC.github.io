@@ -82,6 +82,9 @@ s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','*.lproj'
 
 CocoaPods 推荐以 Dynamic Frameworks 的方式集成，不过要注意的是引用资源时，要指定对应的 bundle 。
 
+## 补充
+2017.7.15: Pod 中稀奇古怪的 xib 访问不到崩溃问题，除了连线错误外，80% 以上都是因为 podspec 资源管理方式和实际代码调用方式不一致造成。
+
 ## 参考
 [给 Pod 添加资源文件](http://blog.xianqu.org/2015/08/pod-resources/)<br>
 [CocoaPods 0.36 - Framework and Swift Support](http://blog.cocoapods.org/CocoaPods-0.36/)
