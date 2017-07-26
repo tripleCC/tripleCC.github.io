@@ -101,7 +101,7 @@ IMP class_getMethodImplementation(Class cls, SEL sel)
 
 一般来说，既然走到这一步，这个对象都是没有 SEL 对应的 IMP 的，所以通常来说都必须要重写 `-methodSignatureForSelector:` 方法以返回有效的方法签名，否则就会抛出异常。不过有种例外，当对象实现了相应的方法，但还是走到了 Normal forwarding path 这一步时，就可以不重写 `-methodSignatureForSelector:` 方法。
 
-理解这种操作需要知晓 method swizzling 技术中的一个知识点，***替换 IMP 是不会影响到 SEL 和 参数信息的***。所以当把某个方法的实现替换成 `_objc_msgForward` 以启动消息转发时，即使不重写 `-methodSignatureForSelector:` ，这个方法依旧能返回有效的方法签名信息。举个例子：
+理解这种操作需要知晓 method swizzling 技术中的一个知识点，***替换 IMP 是不会影响到 SEL 和 参数信息的***。所以当把某个方法的实现替换成 `_objc_msgForward` / `_objc_msgForward_stret` 以启动消息转发时，即使不重写 `-methodSignatureForSelector:` ，这个方法依旧能返回有效的方法签名信息。举个例子：
 
 ```objc
 NSArray *arr = [NSArray new];
@@ -124,58 +124,63 @@ new type: @24@0:8Q16, imp: 0x7fffcada5cc0
 可以看到，更改的只有方法实现 IMP 。并且从源码层面看，method swizzling 在方法已存在的情况下，只是设置了对应的 Method 的 IMP，当方法不存在时，才会设置额外的一些属性：
 
 ```objc
-IMP class_replaceMethod(Class cls, SEL name, IMP imp, const char *types)
+IMP 
+class_replaceMethod(Class cls, SEL name, IMP imp, const char *types)
 {
     if (!cls) return nil;
 
-    return _class_addMethod(cls, name, imp, types, YES);
+    rwlock_write(&runtimeLock);
+    IMP old = addMethod(cls, name, imp, types ?: "", YES);
+    rwlock_unlock_write(&runtimeLock);
+    return old;
 }
-
-static IMP _class_addMethod(Class cls, SEL name, IMP imp, 
-                            const char *types, BOOL replace)
+static IMP 
+addMethod(Class cls, SEL name, IMP imp, const char *types, BOOL replace)
 {
-    old_method *m;
     IMP result = nil;
 
-    if (!types) types = "";
+    rwlock_assert_writing(&runtimeLock);
 
-    mutex_lock(&methodListLock);
+    assert(types);
+    assert(cls->isRealized());
 
-    if ((m = _findMethodInClass(cls, name))) {
+    method_t *m;
+    // 方法是否存在
+    if ((m = getMethodNoSuper_nolock(cls, name))) {
         // already exists
-        // fixme atomic
-        result = method_getImplementation((Method)m);
-        if (replace) {
-            method_setImplementation((Method)m, imp);
+        if (!replace) {
+            // 不替换返回已存在方法实现IMP
+            result = _method_getImplementation(m);
+        } else {
+            // 直接替换类cls的m函数指针为imp
+            result = _method_setImplementation(cls, m, imp);
         }
     } else {
-        // fixme could be faster
-        old_method_list *mlist = 
-            (old_method_list *)_calloc_internal(sizeof(old_method_list), 1);
-        mlist->obsolete = fixed_up_method_list;
-        mlist->method_count = 1;
-        mlist->method_list[0].method_name = name;
-        mlist->method_list[0].method_types = _strdup_internal(types);
+        // fixme optimize
+        // 申请方法列表内存
+        method_list_t *newlist;
+        newlist = (method_list_t *)_calloc_internal(sizeof(*newlist), 1);
+        newlist->entsize_NEVER_USE = (uint32_t)sizeof(method_t) | fixed_up_method_list;
+        newlist->count = 1;
+        
+        // 赋值名字，类型，方法实现（函数指针）
+        newlist->first.name = name;
+        newlist->first.types = strdup(types);
         if (!ignoreSelector(name)) {
-            mlist->method_list[0].method_imp = imp;
+            newlist->first.imp = imp;
         } else {
-            mlist->method_list[0].method_imp = (IMP)&_objc_ignored_method;
+            newlist->first.imp = (IMP)&_objc_ignored_method;
         }
         
-        _objc_insertMethods(cls, mlist, nil);
-        if (!(cls->info & CLS_CONSTRUCTING)) {
-            flush_caches(cls, NO);
-        } else {
-            // in-construction class has no subclasses
-            flush_cache(cls);
-        }
+        // 向类添加方法列表
+        attachMethodLists(cls, &newlist, 1, NO, NO, YES);
+
         result = nil;
     }
 
-    mutex_unlock(&methodListLock);
-
     return result;
 }
+
 ```
 
 消息转发流程大体如此，如果想了解具体的转发原理、`_objc_msgForward` 内部是如何实现的，可以阅读[玉令天下](http://yulingtianxia.com/)写的 [Objective-C 消息发送与转发机制原理](http://yulingtianxia.com/blog/2016/06/15/Objective-C-Message-Sending-and-Forwarding/)，文章会以反汇编地角度剖析消息转发的实现，能捋清不少疑惑。<br>
@@ -183,7 +188,7 @@ static IMP _class_addMethod(Class cls, SEL name, IMP imp,
 聊完消息转发的基本流程，再来说说它的一些应用场景。
 
 
-## 代理强引用转弱引用
+## Week Proxy
 
 NSTimer、CADisplayLink 是实际项目中常用的计时器类，它们都使用 target - action 机制设置目标对象以及回调方法。相信很多人都遇到过 NSTimer 或者 CADisplayLink 对象造成的循环引用问题。实际上，这两个对象是强引用 target 的，如果使用者管理不当，轻则造成 target 对象的延迟释放，重则导致与 target 对象的循环引用。
 
@@ -285,9 +290,9 @@ FLAnimatedImageView(object) ---> displayLink ---> weakProxy ~~~> FLAnimatedImage
 
 此外，苹果私有库 MIME.framework 中就有这种机制的应用 ---- MFWeakProxy ；YYKit 的 YYAnimatedImageView 也使用了相同的机制管理 CADisplayLink，其对应类为 YYWeakProxy 。
 
-## 部分代理方法转发
+## Delegate Proxy
 
-部分代理方法转发，顾名思义，就是封装者使用了被封装对象代理的一部分方法，然后将剩余的方法通过新的代理转发给调用者。这种机制在二次封装第三方框架或者原生控件时，能减少不少胶水代码。
+Delegate Proxy 主要实现部分代理方法的转发，顾名思义，就是封装者使用了被封装对象代理的一部分方法，然后将剩余的方法通过新的代理转发给调用者。这种机制在二次封装第三方框架或者原生控件时，能减少不少胶水代码。
 
 接下来，我会以 IGListKit 中的 IGListAdapterProxy 为例，描述如何利用这种机制来简化代码。在开始之前先了解下与 IGListAdapterProxy 直接相关的 IGListAdapter 。 IGListAdapter 是 UICollectionView 的数据源和代理实现者，以下是它与本主题相关联的两个属性：
                                                                                  
@@ -434,7 +439,7 @@ self.delegateProxy = [[IGListAdapterProxy alloc] initWithCollectionViewTarget:_c
 通过这种转发机制，即使后续有新的代理方法，也不用手动添加胶水代码了。一些流行的开源库中也可以看到这种做法的身影，比如 AsyncDisplayKit 就有对应的 `_ASCollectionViewProxy` 来转发未实现的代理方法。
 
 
-## 多播代理 
+## Multicast Delegate
 
 通知和代理是解耦对象间消息传递的两种重要方式，其中通知主要针对一对多的单向通信，而代理则主要提供一对一的双向通信。
 
@@ -577,7 +582,7 @@ multicastDelegate = (GCDMulticastDelegate <MyPluginDelegate> *)[[GCDMulticastDel
 
 可以看到， `-methodSignatureForSelector:` 方法遍历了 `delegateNodes` ，并返回首个有效的方法签名。当没有找到有效的方法签名时，会返回 `-doNothing` 方法的签名，以规避未知方法导致的崩溃。在得到方法签名并构造 NSInvocation 对象后， `-forwardInvocation:` 同样遍历了 `delegateNodes` ，并在特定的任务队列中执行代理回调。如果发现已被销毁的代理，则删除它对应的 GCDMulticastDelegateNode 对象。
 
-## NSUndoManager 中的应用
+## Record Message Call
 
 NSUndoManager 是 Foundation 框架中，一个基于命令模式设计的撤消栈管理类。通过这个类可以很方便地实现撤消、重做功能，比如以下苹果官方 Demo ：
 
@@ -681,11 +686,119 @@ NSUndoManager 是如何通过这种方式存储调用 `-setMyObjectWidth:height:
 TBVUndoManager 通过 `-prepareWithInvocationTarget:` 方法将发送消息对象保存为 `_target` 成员变量，然后创建了代理类 TBVUndoProxy 并返回给方法调用者。当外部调用者用这个返回值作为消息发送对象时， TBVUndoProxy 并没有对应的方法实现，于是就触发了消息转发机制， TBVUndoManager 则利用保存的 `_target` 返回有效的方法签名，并且保存重组了  TBVUndoProxy 回传的 NSInvocation。最终，当外界调用 `undo` 时，执行的就是保有 `_target` 和 `-prepareWithInvocationTarget:`  信息的 NSInvocation 。（原生代码将 NSInvocation 包装成 `_NSUndoInvocation` 、 `_NSUndoObject` 压入 `_NSUndoStack` 栈中）
 
 
-## Aspects 与 JSPatch 中的应用
+## Intercept Any Message Call
+
+Aspects 是一个提供面向切片编程的库，它可以让开发者以无侵入的方式添加额外的功能。它提供了两个简单易用的入口，用于 hook 特定类或者特定对象的方法：
+
+```
+/// Adds a block of code before/instead/after the current `selector` for a specific class.
++ (id<AspectToken>)aspect_hookSelector:(SEL)selector
+                           withOptions:(AspectOptions)options
+                            usingBlock:(id)block
+                                 error:(NSError **)error;
+
+/// Adds a block of code before/instead/after the current `selector` for a specific instance.
+- (id<AspectToken>)aspect_hookSelector:(SEL)selector
+                           withOptions:(AspectOptions)options
+                            usingBlock:(id)block
+                                 error:(NSError **)error;
+```
+
+开发者可以用以下方式 hook 所有 UIViewController 实例对象的 `-viewWillAppear:` 方法 :
+
+```
+[UIViewController aspect_hookSelector:@selector(viewWillAppear:) withOptions:AspectPositionAfter usingBlock:^(id<AspectInfo> aspectInfo, BOOL animated) {
+    NSLog(@"View Controller %@ will appear animated: %tu", aspectInfo.instance, animated);
+} error:NULL];
+```
+
+因为不知道使用者会 hook 什么方法，所以就无法像传统的 swizzling method 一样，预先编写对应的 IMP 去替换传入的方法。这时就需要内部实现一个统一调用机制，这个机制需要满足以下两点：
+
+1、 为了能进行切片操作，需要让所有被 hook 方法的调用都通过一个统一的入口完成。<br>
+2、 为了给原始实现和切片操作提供参数/返回值信息，这个入口要能获取被 hook 方法完整的签名信息。<br>
 
 
+综合上述两点以及 Normal forwarding path 的执行过程，可以比较轻松地联想到 `-forwardInvocation:` 方法非常适合作为这个入口。结合 Aspects 源码，来看下其实现中，和消息转发相关的两个步骤：
 
-## 依靠协议的依赖注入
+```
+static void aspect_prepareClassAndHookSelector(NSObject *self, SEL selector, NSError **error) {
+    NSCParameterAssert(selector);
+    Class klass = aspect_hookClass(self, error);
+    Method targetMethod = class_getInstanceMethod(klass, selector);
+    IMP targetMethodIMP = method_getImplementation(targetMethod);
+    if (!aspect_isMsgForwardIMP(targetMethodIMP)) {
+        // Make a method alias for the existing method implementation, it not already copied.
+        const char *typeEncoding = method_getTypeEncoding(targetMethod);
+        SEL aliasSelector = aspect_aliasForSelector(selector);
+        if (![klass instancesRespondToSelector:aliasSelector]) {
+            __unused BOOL addedAlias = class_addMethod(klass, aliasSelector, method_getImplementation(targetMethod), typeEncoding);
+            NSCAssert(addedAlias, @"Original implementation for %@ is already copied to %@ on %@", NSStringFromSelector(selector), NSStringFromSelector(aliasSelector), klass);
+        }
+
+        // We use forwardInvocation to hook in.
+        class_replaceMethod(klass, selector, aspect_getMsgForwardIMP(self, selector), typeEncoding);
+        AspectLog(@"Aspects: Installed hook for -[%@ %@].", klass, NSStringFromSelector(selector));
+    }
+}
+
+static Class aspect_hookClass(NSObject *self, NSError **error) {
+    NSCParameterAssert(self);
+   ...
+        aspect_swizzleForwardInvocation(subclass);
+   ...
+}
+static void aspect_swizzleForwardInvocation(Class klass) {
+    NSCParameterAssert(klass);
+    // If there is no method, replace will act like class_addMethod.
+    IMP originalImplementation = class_replaceMethod(klass, @selector(forwardInvocation:), (IMP)__ASPECTS_ARE_BEING_CALLED__, "v@:@");
+    if (originalImplementation) {
+        class_addMethod(klass, NSSelectorFromString(AspectsForwardInvocationSelectorName), originalImplementation, "v@:@");
+    }
+    AspectLog(@"Aspects: %@ is now aspect aware.", NSStringFromClass(klass));
+}
+static void __ASPECTS_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL selector, NSInvocation *invocation) {
+    NSCParameterAssert(self);
+    NSCParameterAssert(invocation);
+    ...
+
+    // Before hooks.
+    aspect_invoke(classContainer.beforeAspects, info);
+    aspect_invoke(objectContainer.beforeAspects, info);
+
+    // Instead hooks.
+    BOOL respondsToAlias = YES;
+    if (objectContainer.insteadAspects.count || classContainer.insteadAspects.count) {
+        aspect_invoke(classContainer.insteadAspects, info);
+        aspect_invoke(objectContainer.insteadAspects, info);
+    }else {
+        Class klass = object_getClass(invocation.target);
+        do {
+            if ((respondsToAlias = [klass instancesRespondToSelector:aliasSelector])) {
+                [invocation invoke];
+                break;
+            }
+        }while (!respondsToAlias && (klass = class_getSuperclass(klass)));
+    }
+
+    // After hooks.
+    aspect_invoke(classContainer.afterAspects, info);
+    aspect_invoke(objectContainer.afterAspects, info);
+
+    ...
+}
+```
+
+这里在忽略掉 Aspects 创建子类等操作后，可以看出以上代码总共做了两件事：
+
+1、对原始 `-forwardInvocation:` 方法执行 swizzling method ，将实现替换成 `__ASPECTS_ARE_BEING_CALLED__` ，以便在 `__ASPECTS_ARE_BEING_CALLED__` 函数中执行了额外的切片操作。<br>
+2、对被 hook 的方法执行 swizzling method ，将实现替换成 `_objc_msgForward` / `_objc_msgForward_stret` ，以便触发被 hook 方法的消息转发机制，然后在步骤 1 的 `__ASPECTS_ARE_BEING_CALLED__` 函数中，进行切片操作。<br>
+
+
+值得一提的是， JSPatch 也是利用相似的机制，实现用 `defineClass` 接口任意替换一个类的方法的功能，不同的是 JSPatch 在它的 `__ASPECTS_ARE_BEING_CALLED__` 函数中，直接把参数传给了 JavaScript 的实现。
+
+<!-- ## Dependency Injection -->
+
+<!-- ## 依靠协议的依赖注入 -->
 
 
 ## 小结
@@ -697,6 +810,7 @@ TBVUndoManager 通过 `-prepareWithInvocationTarget:` 方法将发送消息对�
 [Objective-C Message Forwarding](https://mikeash.com/pyblog/friday-qa-2009-03-27-objective-c-message-forwarding.html)<br>
 [Objective-C 中的消息与消息转发](http://blog.ibireme.com/2013/11/26/objective-c-messaging/) <br>
 [Objective-C 消息发送与转发机制原理](http://yulingtianxia.com/blog/2016/06/15/Objective-C-Message-Sending-and-Forwarding/)<br>
+[AOP. Delivered](https://codeshaker.blogspot.jp/2012/01/aop-delivered.html) <br>
 [面向切面编程之 Aspects 源码解析及应用](https://wereadteam.github.io/2016/06/30/Aspects/)<br>
 [JSPatch 实现原理详解](https://github.com/bang590/JSPatch/wiki/JSPatch-%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E8%AF%A6%E8%A7%A3)<br>
 
