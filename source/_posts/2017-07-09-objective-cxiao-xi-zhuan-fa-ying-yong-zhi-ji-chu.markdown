@@ -802,6 +802,15 @@ static void __ASPECTS_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL
 
 
 ## 小结
+关于消息转发的应用主要摘录了以下几个例子：
+
+- Week Proxy
+- Delegate Proxy
+- Multicast Delegate
+- Record Message Call
+- Intercept Any Message Call
+
+其中大部分应用场景都涉及到消息转发的第二三步，即 Fast forwarding path、Normal forwarding path 。特别是 Normal forwarding path ，  携带完整信息的 NSInvocation 让这一步具备了强大的可塑性。
 
 ## 参考
 

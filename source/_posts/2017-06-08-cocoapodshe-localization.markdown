@@ -33,9 +33,9 @@ NSBundle(forClass: <#ClassFromPodspec#>)
 这种方式对于 Static Libraries 和 Dynamic Frameworks 都是有效的。如果编写的框架包含一些资源的话，内部访问资源时，应该以这种方式指定确切的 bundle ，因为无法确定开发者是以何种方式集成你的框架。
 
 
-顺带说下，由于没有很好的方式来构建**传递依赖**中含有 static libraries 的 frameworks（如果不是传递依赖，即使存在含有 static libraries 的 Pod ，构建时还是会直接归并入最终的可执行文件中），使用 CocoaPods 时，选择哪种集成方式对于单个 target 来说是一件 “all or  nothing” 的事情，也就是说开发者无法**主动**针对个别 Pod 采用不同的集成方式。（如有需要，可以使用 [carthage](https://github.com/Carthage/Carthage)）
+顺带说下，由于没有很好的方式来构建**传递依赖**中含有 static libraries（如果不是传递依赖，即使存在含有 static libraries 的 Pod ，构建时还是会直接归并入最终的可执行文件中），使用 CocoaPods 时，选择哪种集成方式对于单个 target 来说是一件 “all or  nothing” 的事情，也就是说开发者无法**主动**针对个别 Pod 采用不同的集成方式。（如有需要，可以使用 [carthage](https://github.com/Carthage/Carthage)）
 
-举个例子：假如当前主工程依赖了 PodA 、 PodB ，而 PodA 依赖了 PodB，并且 PodB 中有静态二进制文件(.a / .framework) ，那么在执行 `pod update` 时，就会报 `transitive dependencies that include static binaries` 错误。这样在组件化时，就很难引入使用 Swift 编写的 Pod 了，因为如果项目足够大，就肯定会存在**传递依赖**中含有 static libraries 的情况。
+举个例子：假如当前主工程依赖了 PodA 、 PodB ，而 PodA 依赖了 PodB，并且 PodB 中有静态库 (这里需要注意的是，有些 SDK 是 .framework 格式，但是本质还是静态库，可用 file 命令查看, 参考 [iOS is it a static or a dynamic framework?](https://stackoverflow.com/questions/32591878/ios-is-it-a-static-or-a-dynamic-framework))，那么在执行 `pod update` 时，就会报 `transitive dependencies that include static binaries` 错误。这样在组件化时，就很难引入使用 Swift 编写的 Pod 了，因为如果项目足够大，就肯定会存在**传递依赖**中含有 static libraries 的情况。
 
 ## SobotKit 存在的问题
 
