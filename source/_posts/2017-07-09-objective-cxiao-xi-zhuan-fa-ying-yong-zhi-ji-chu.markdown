@@ -802,7 +802,7 @@ static void __ASPECTS_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL
 
 
 ## 小结
-关于消息转发的应用主要摘录了以下几个例子：
+消息转发有三步，分别是 Lazy method resolution （动态添加方法）、 Fast forwarding path （转发至可响应对象）、 Normal forwarding path （获取 NSInvocation 信息）。关于消息转发的应用，本文主要摘录了以下几个例子：
 
 - Week Proxy
 - Delegate Proxy
@@ -810,7 +810,7 @@ static void __ASPECTS_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL
 - Record Message Call
 - Intercept Any Message Call
 
-其中大部分应用场景都涉及到消息转发的第二三步，即 Fast forwarding path、Normal forwarding path 。特别是 Normal forwarding path ，  携带完整信息的 NSInvocation 让这一步具备了强大的可塑性。
+其中大部分应用场景都涉及到消息转发的第二三步，即 Fast forwarding path、Normal forwarding path 。特别是 Normal forwarding path ，配合 `_objc_msgForward` / `_objc_msgForward_stret` 函数强行进行消息转发，可以获取携带完整调用信息的 NSInvocation 。借助于 NSInvocation 的灵活性，开发者就可以完成一些非常有意思的事情了。
 
 ## 参考
 

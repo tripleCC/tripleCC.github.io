@@ -512,6 +512,6 @@ struct objc_super { id receiver; Class class; };
 
 
 ###参考
-1.[Objective-C Runtime 运行时之一：类与对象](http://southpeak.github.io/blog/2014/10/25/objective-c-runtime-yun-xing-shi-zhi-lei-yu-dui-xiang/)<br>
-2.[Objective-C Runtime](http://yulingtianxia.com/blog/2014/11/05/objective-c-runtime/)
-
+[Objective-C Runtime 运行时之一：类与对象](http://southpeak.github.io/blog/2014/10/25/objective-c-runtime-yun-xing-shi-zhi-lei-yu-dui-xiang/)<br>
+[Objective-C Runtime](http://yulingtianxia.com/blog/2014/11/05/objective-c-runtime/)<br>
+[What is a meta-class in Objective-C?](https://www.cocoawithlove.com/2010/01/what-is-meta-class-in-objective-c.html)<br>
