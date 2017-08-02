@@ -1,0 +1,901 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>用 Block 实现委托方法 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="Block 和 Delegate 是对象间传递消息的常用机制，这两个机制可以说是各有千秋。 Delegate 可以很方便把目标动作的执行过程划分为多个方法，以展现不同时间节点下特定的操作； Block 则擅长处理一个回调多个落点的情况，并且它可以通过捕捉上下文信息，来达到减少创建额外变量， &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2017-07-28-blockhe-nsmethodsignature/">
+  <link href="/favicon.png" rel="shortcut icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <!--[good job! gfw]><script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script><!-->
+  <script src="http://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
+  <link href="/stylesheets/google-fonts.css" rel="stylesheet" type="text/css">
+  
+
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">用 Block 实现委托方法</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2017-07-28T19:05:22+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>7:05 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Block 和 Delegate 是对象间传递消息的常用机制，这两个机制可以说是各有千秋。 Delegate 可以很方便把目标动作的执行过程划分为多个方法，以展现不同时间节点下特定的操作； Block 则擅长处理一个回调多个落点的情况，并且它可以通过捕捉上下文信息，来达到减少创建额外变量，集中消息处理逻辑的目的。结合以上两种通信方式的特点，我们可以添加一些额外的桥接处理，让 Delegate 机制也能享有 Block 机制所拥有的部分优点。桥接处理的核心就是用 Block 实现委托方法。</p>
+
+<!--more-->
+
+
+<p>由于 Runtime 的存在，在消息转发的最后一步，开发者可以轻松地拦截对未定义方法的调用，并且针对当前消息做一些额外的处理，比如改变它的入参、设置另一个消息接受者等。借助于这一特性，我们可以创建一个统一的 Delegate 对象，并在这个对象的 <code>-forwardInvocation:</code> 方法中，用预先设置的 Block 替换对委托方法的调用，以达到用 Block 实现委托方法的目的。</p>
+
+<h2>NSInvocation 基本使用</h2>
+
+<blockquote><p>NSInvocation objects are used to store and forward messages between objects and between applications</p></blockquote>
+
+<p>这是苹果官方对 NSInvocation 的用途给出的解释。一个 NSInvocation 对象包含了 Objective-C 消息的所有要素：消息接收对象、 方法选择器 (SEL) 、参数以及返回值，并且这些要素都可以由开发者直接设置。以下是使用 NSInvocation 的一个简单的例子：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">foo</span> <span class="o">=</span> <span class="s">@&quot;foo&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="n">signature</span> <span class="o">=</span> <span class="p">[</span><span class="n">foo</span> <span class="nl">methodSignatureForSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">stringByAppendingString</span><span class="p">:)];</span>
+</span><span class='line'><span class="bp">NSInvocation</span> <span class="o">*</span><span class="n">invocation</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSInvocation</span> <span class="nl">invocationWithMethodSignature</span><span class="p">:</span><span class="n">signature</span><span class="p">];</span>
+</span><span class='line'><span class="n">invocation</span><span class="p">.</span><span class="n">selector</span> <span class="o">=</span> <span class="k">@selector</span><span class="p">(</span><span class="nl">stringByAppendingString</span><span class="p">:);</span>
+</span><span class='line'>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">bar</span> <span class="o">=</span> <span class="s">@&quot;bar&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">setArgument</span><span class="p">:</span><span class="o">&amp;</span><span class="n">bar</span> <span class="nl">atIndex</span><span class="p">:</span><span class="mi">2</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="n">foo</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">getReturnValue</span><span class="p">:</span><span class="o">&amp;</span><span class="n">result</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">resultString</span> <span class="o">=</span> <span class="p">(</span><span class="k">__bridge</span> <span class="bp">NSString</span> <span class="o">*</span><span class="p">)(</span><span class="n">result</span><span class="p">);</span>
+</span><span class='line'><span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@&quot;</span><span class="p">,</span> <span class="n">resultString</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面代码块输出：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="mi">2017</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mo">01</span> <span class="mi">15</span><span class="o">:</span><span class="mo">07</span><span class="o">:</span><span class="mf">51.131489</span><span class="o">+</span><span class="mi">0800</span> <span class="p">[</span><span class="mi">33240</span><span class="o">:</span><span class="mi">7029681</span><span class="p">]</span> <span class="n">foobar</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，以上结果和执行 <code>[foo stringByAppendingString:bar]</code>  的结果是一致的。</p>
+
+<p>关于 NSInvocation 的使用，需要留意以下两点：</p>
+
+<p>1、一般方法的自定义参数从索引 2 开始，前两个分别是对象自身以及发送方法的 SEL 。<br>
+2、从 <code>-getArgument:atIndex:</code> 和 <code>-getReturnValue:</code> 方法中获取的对象是不会被 retain 的，所以如果使用了 ARC ，那么以下代码都是错误的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">bar</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">getArgument</span><span class="p">:</span><span class="o">&amp;</span><span class="n">bar</span> <span class="nl">atIndex</span><span class="p">:</span><span class="mi">2</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">getReturnValue</span><span class="p">:</span><span class="o">&amp;</span><span class="n">result</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>ARC 编译环境下局部对象默认具有 <code>__strong</code> 属性，它会针对这个对象添加 release 代码，所以这样的代码可能会因为 release 已经释放的对象而崩溃。正确代码如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">bar</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="c1">//__unsafe_unretained NSString *bar = nil;</span>
+</span><span class='line'><span class="c1">//__weak NSString *bar = nil;</span>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">getArgument</span><span class="p">:</span><span class="o">&amp;</span><span class="n">bar</span> <span class="nl">atIndex</span><span class="p">:</span><span class="mi">2</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'><span class="c1">//__unsafe_unretained NSString *result = nil;</span>
+</span><span class='line'><span class="c1">//__weak NSString *result = nil;</span>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">getReturnValue</span><span class="p">:</span><span class="o">&amp;</span><span class="n">result</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>3、如果是在两个 NSInvocation 对象间传递参数 /  返回值，那么可以直接传入指针获取并设置目标地址，以返回值为例：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">....</span>
+</span><span class='line'><span class="bp">NSInvocation</span> <span class="o">*</span><span class="n">invocation</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSInvocation</span> <span class="nl">invocationWithMethodSignature</span><span class="p">:</span><span class="n">signature</span><span class="p">];</span>
+</span><span class='line'><span class="bp">NSInvocation</span> <span class="o">*</span><span class="n">shadowInvocation</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSInvocation</span> <span class="nl">invocationWithMethodSignature</span><span class="p">:</span><span class="n">signature</span><span class="p">];</span>
+</span><span class='line'><span class="p">....</span>
+</span><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="n">resultBuffer</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="n">invocation</span><span class="p">.</span><span class="n">methodSignature</span><span class="p">.</span><span class="n">methodReturnLength</span><span class="p">);</span>
+</span><span class='line'><span class="n">memset</span><span class="p">(</span><span class="n">resultBuffer</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">invocation</span><span class="p">.</span><span class="n">methodSignature</span><span class="p">.</span><span class="n">methodReturnLength</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">[</span><span class="n">invocation</span> <span class="nl">getReturnValue</span><span class="p">:</span><span class="n">resultBuffer</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">shadowInvocation</span> <span class="nl">setReturnValue</span><span class="p">:</span><span class="n">resultBuffer</span><span class="p">];</span>
+</span><span class='line'><span class="p">....</span>
+</span><span class='line'><span class="n">free</span><span class="p">(</span><span class="n">resultBuffer</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这时，如果返回值是一个 NSString 对象，那么 <code>resultBuffer</code> 实际上是指向 NSString 对象指针的指针，这时可以这样读取实际内容：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="bp">NSString</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="p">(</span><span class="k">__bridge</span> <span class="bp">NSString</span> <span class="o">*</span><span class="p">)(</span><span class="o">*</span><span class="p">(</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="n">resultBuffer</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过在已经知道返回值是一个对象时，一般会直接传入对象指针的地址，以便直接读取对象。</p>
+
+<h2>获取方法签名</h2>
+
+<p>NSMethodSignature 是创建一个有效 NSInvocation 对象的必要成分，它提供了方法调用所必须的参数和返回值信息。</p>
+
+<h4>从对象中获取方法签名</h4>
+
+<p>NSObject 类用以下两个方法获取实例方法的方法签名：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="p">)</span><span class="nf">methodSignatureForSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="n">OBJC_SWIFT_UNAVAILABLE</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="p">)</span><span class="nf">instanceMethodSignatureForSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="n">OBJC_SWIFT_UNAVAILABLE</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>既然类也是对象，那么类方法的方法签名也就可以通过 <code>-methodSignatureForSelector:</code> 方法获取了。</p>
+
+<h4>从协议中获取方法签名</h4>
+
+<p>由于协议定义了接口的参数和返回值信息，所以从协议中也可以获取到特定方法的方法签名。利用 <code>protocol_getMethodDescription</code> 函数，可以获取到描述类型的 C 字符串，再通过这个字符串构造方法签名。针对协议中的接口有 <code>required</code> 和 <code>optional</code> 两种，并且不允许重复这一特点，可以创建构造方法签名的函数：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">static</span> <span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="nf">tbv_getProtocolMethodSignature</span><span class="p">(</span><span class="n">Protocol</span> <span class="o">*</span><span class="n">protocol</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">selector</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="n">isInstanceMethod</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">objc_method_description</span> <span class="n">methodDescription</span> <span class="o">=</span> <span class="n">protocol_getMethodDescription</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">selector</span><span class="p">,</span> <span class="nb">YES</span><span class="p">,</span> <span class="n">isInstanceMethod</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">methodDescription</span><span class="p">.</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">methodDescription</span> <span class="o">=</span> <span class="n">protocol_getMethodDescription</span><span class="p">(</span><span class="n">protocol</span><span class="p">,</span> <span class="n">selector</span><span class="p">,</span> <span class="nb">NO</span><span class="p">,</span> <span class="n">isInstanceMethod</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="bp">NSMethodSignature</span> <span class="nl">signatureWithObjCTypes</span><span class="p">:</span><span class="n">methodDescription</span><span class="p">.</span><span class="n">types</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>从 Block 中获取方法签名</h4>
+
+<p>苹果并没有提供一个开放的接口，供开发者获取 Block 的方法签名。不过根据 <a href="https://clang.llvm.org/docs/Block-ABI-Apple.html">LLVM 对 Block 结构的描述</a>，我们可以通过操作指针获取签名字符串。以下是 Block 的结构：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// Block internals.</span>
+</span><span class='line'><span class="k">typedef</span> <span class="nf">NS_OPTIONS</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="n">TBVBlockFlags</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">TBVBlockFlagsHasCopyDisposeHelpers</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">25</span><span class="p">),</span>
+</span><span class='line'>    <span class="n">TBVBlockFlagsHasSignature</span>          <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">30</span><span class="p">)</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="n">tbv_block</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">__unused</span> <span class="kt">Class</span> <span class="n">isa</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">TBVBlockFlags</span> <span class="n">flags</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">__unused</span> <span class="kt">int</span> <span class="n">reserved</span><span class="p">;</span>
+</span><span class='line'>    <span class="kt">void</span> <span class="p">(</span><span class="n">__unused</span> <span class="o">*</span><span class="n">invoke</span><span class="p">)(</span><span class="k">struct</span> <span class="n">tbv_block</span> <span class="o">*</span><span class="n">block</span><span class="p">,</span> <span class="p">...);</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">int</span> <span class="n">reserved</span><span class="p">;</span>
+</span><span class='line'>        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">int</span> <span class="n">size</span><span class="p">;</span>
+</span><span class='line'>        <span class="c1">// requires TBVBlockFlagsHasCopyDisposeHelpers</span>
+</span><span class='line'>        <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="k">copy</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">dst</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">src</span><span class="p">);</span>
+</span><span class='line'>        <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">dispose</span><span class="p">)(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="p">);</span>
+</span><span class='line'>        <span class="c1">// requires TBVBlockFlagsHasSignature</span>
+</span><span class='line'>        <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">signature</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">layout</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span> <span class="o">*</span><span class="n">descriptor</span><span class="p">;</span>
+</span><span class='line'>    <span class="c1">// imported variables</span>
+</span><span class='line'><span class="p">}</span> <span class="o">*</span><span class="n">TBVBlockRef</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，只要获取 <code>descriptor</code> 指针，然后根据不同条件添加特定的偏移量，就可以获取到 <code>signature</code> 了：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">static</span> <span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="nf">tbv_signatureForBlock</span><span class="p">(</span><span class="kt">id</span> <span class="n">block</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">TBVBlockRef</span> <span class="n">layout</span> <span class="o">=</span> <span class="p">(</span><span class="k">__bridge</span> <span class="n">TBVBlockRef</span><span class="p">)(</span><span class="n">block</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 没有签名，直接返回空</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">layout</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">TBVBlockFlagsHasSignature</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 获取 descriptor 指针</span>
+</span><span class='line'>    <span class="kt">void</span> <span class="o">*</span><span class="n">desc</span> <span class="o">=</span> <span class="n">layout</span><span class="o">-&gt;</span><span class="n">descriptor</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 跳过 reserved 和 size 成员</span>
+</span><span class='line'>    <span class="n">desc</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">int</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 如果有 Helpers 函数， 跳过 copy 和 dispose 成员</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">layout</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">&amp;</span> <span class="n">TBVBlockFlagsHasCopyDisposeHelpers</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">desc</span> <span class="o">+=</span> <span class="mi">2</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// desc 为 signature 指针的地址，转换下给 objcTypes</span>
+</span><span class='line'>    <span class="kt">char</span> <span class="o">*</span><span class="n">objcTypes</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="kt">char</span> <span class="o">**</span><span class="p">)</span><span class="n">desc</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="bp">NSMethodSignature</span> <span class="nl">signatureWithObjCTypes</span><span class="p">:</span><span class="n">objcTypes</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>方法调用 -> Block 调用</h2>
+
+<p>经过上文的探索，已经可以获取到 Block 和接口方法的签名信息了，下面要做的就是根据这个签名信息，结合方法对应的 NSInvocation 对象，创建和 Block 关联的 NSInvocation 对象。</p>
+
+<h4>存储 Block 信息</h4>
+
+<p>首先要做的是，存储 Block 的签名信息，并且和接口方法的签名信息做匹配处理。因为在调用前，需要将接口方法得到的参数转换成 Block 的入参，调用之后，需要将 Block 的返回值重新传给接口方法，所以必须确保两者的签名信息在一定程度上是兼容的。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithMethodSignature:</span><span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="p">)</span><span class="nv">methodSignature</span> <span class="nf">block:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">block</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">initWithMethodSignature</span><span class="p">:</span><span class="n">methodSignature</span> <span class="nl">blockSignature</span><span class="p">:</span><span class="n">tbv_signatureForBlock</span><span class="p">(</span><span class="n">block</span><span class="p">)</span> <span class="nl">block</span><span class="p">:</span><span class="n">block</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithMethodSignature:</span><span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="p">)</span><span class="nv">methodSignature</span> <span class="nf">blockSignature:</span><span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="p">)</span><span class="nv">blockSignature</span> <span class="nf">block:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">block</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSAssert</span><span class="p">(</span><span class="n">tbv_isCompatibleBlockSignature</span><span class="p">(</span><span class="n">blockSignature</span><span class="p">,</span> <span class="n">methodSignature</span><span class="p">),</span> <span class="s">@&quot;Block signature %@ is not compatible with method signature %@&quot;</span><span class="p">,</span> <span class="n">blockSignature</span><span class="p">,</span> <span class="n">methodSignature</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_methodSignature</span> <span class="o">=</span> <span class="n">methodSignature</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">_blockSignature</span> <span class="o">=</span> <span class="n">blockSignature</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">_block</span> <span class="o">=</span> <span class="n">block</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>签名匹配</h4>
+
+<p>Block 的签名信息相较于方法的签名信息，只在参数类型上少了 SEL 。方法的签名信息如果要获取自定义参数类型的话，需要从索引 2 开始，而 Block 的自定义参数类型信息则从索引 1 开始。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">static</span> <span class="kt">BOOL</span> <span class="nf">tbv_isCompatibleBlockSignature</span><span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="n">blockSignature</span><span class="p">,</span> <span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="n">methodSignature</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSCParameterAssert</span><span class="p">(</span><span class="n">blockSignature</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSCParameterAssert</span><span class="p">(</span><span class="n">methodSignature</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">blockSignature</span> <span class="nl">isEqual</span><span class="p">:</span><span class="n">methodSignature</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// block 参数个数需要小于 method 的参数个数 (针对 block 调用替换 method 调用)</span>
+</span><span class='line'>    <span class="c1">// 两者返回类型需要一致</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">blockSignature</span><span class="p">.</span><span class="n">numberOfArguments</span> <span class="o">&gt;=</span> <span class="n">methodSignature</span><span class="p">.</span><span class="n">numberOfArguments</span> <span class="o">||</span>
+</span><span class='line'>        <span class="n">blockSignature</span><span class="p">.</span><span class="n">methodReturnType</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">methodSignature</span><span class="p">.</span><span class="n">methodReturnType</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 参数类型需要一致</span>
+</span><span class='line'>    <span class="kt">BOOL</span> <span class="n">compatibleSignature</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 自定义参数从第二个开始</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">idx</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="n">blockSignature</span><span class="p">.</span><span class="n">numberOfArguments</span><span class="p">;</span> <span class="n">idx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// block 相比 method ，默认参数少了 SEL</span>
+</span><span class='line'>        <span class="c1">// method: id(@) SEL(:) ....</span>
+</span><span class='line'>        <span class="c1">// block: block(@?) ....</span>
+</span><span class='line'>        <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">methodArgument</span> <span class="o">=</span> <span class="p">[</span><span class="n">methodSignature</span> <span class="nl">getArgumentTypeAtIndex</span><span class="p">:</span><span class="n">idx</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">blockArgument</span> <span class="o">=</span> <span class="p">[</span><span class="n">blockSignature</span> <span class="nl">getArgumentTypeAtIndex</span><span class="p">:</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">methodArgument</span> <span class="o">||</span> <span class="o">!</span><span class="n">blockArgument</span> <span class="o">||</span> <span class="n">methodArgument</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">blockArgument</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">compatibleSignature</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>            <span class="k">break</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">compatibleSignature</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h4>Invocation 调用</h4>
+
+<p>得到了有效的 Block 签名信息，就可以构造 NSInvocation 对象了，不过还需要接口方法的实参信息，这可以通过让外部传入接口方法的 NSInvocation 对象实现。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">invokeWithMethodInvocation:</span><span class="p">(</span><span class="bp">NSInvocation</span> <span class="o">*</span><span class="p">)</span><span class="nv">methodInvocation</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSParameterAssert</span><span class="p">(</span><span class="n">methodInvocation</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">NSAssert</span><span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">methodSignature</span> <span class="nl">isEqual</span><span class="p">:</span><span class="n">methodInvocation</span><span class="p">.</span><span class="n">methodSignature</span><span class="p">],</span> <span class="s">@&quot;Method invocation&#39;s signature is not compatible with block signature&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="n">methodSignature</span> <span class="o">=</span> <span class="n">methodInvocation</span><span class="p">.</span><span class="n">methodSignature</span><span class="p">;</span>
+</span><span class='line'>    <span class="bp">NSInvocation</span> <span class="o">*</span><span class="n">blockInvocation</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSInvocation</span> <span class="nl">invocationWithMethodSignature</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">blockSignature</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">void</span> <span class="o">*</span><span class="n">argumentBuffer</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">idx</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="n">methodSignature</span><span class="p">.</span><span class="n">numberOfArguments</span><span class="p">;</span> <span class="n">idx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 获取参数类型</span>
+</span><span class='line'>        <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">type</span> <span class="o">=</span> <span class="p">[</span><span class="n">methodSignature</span> <span class="nl">getArgumentTypeAtIndex</span><span class="p">:</span><span class="n">idx</span><span class="p">];</span>
+</span><span class='line'>        <span class="bp">NSUInteger</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 获取参数大小</span>
+</span><span class='line'>        <span class="n">NSGetSizeAndAlignment</span><span class="p">(</span><span class="n">type</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">size</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 参数缓存</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">argumentBuffer</span> <span class="o">=</span> <span class="n">reallocf</span><span class="p">(</span><span class="n">argumentBuffer</span><span class="p">,</span> <span class="n">size</span><span class="p">)))</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 把 method 的参数传递给 block</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">methodInvocation</span> <span class="nl">getArgument</span><span class="p">:</span><span class="n">argumentBuffer</span> <span class="nl">atIndex</span><span class="p">:</span><span class="n">idx</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">blockInvocation</span> <span class="nl">setArgument</span><span class="p">:</span><span class="n">argumentBuffer</span> <span class="nl">atIndex</span><span class="p">:</span><span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 调用 block</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">blockInvocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">block</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 返回值缓存</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">methodSignature</span><span class="p">.</span><span class="n">methodReturnLength</span> <span class="o">&amp;&amp;</span>
+</span><span class='line'>        <span class="p">(</span><span class="n">argumentBuffer</span> <span class="o">=</span> <span class="n">reallocf</span><span class="p">(</span><span class="n">argumentBuffer</span><span class="p">,</span> <span class="n">methodSignature</span><span class="p">.</span><span class="n">methodReturnLength</span><span class="p">)))</span> <span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="c1">// 把 block 的返回值传递给 method</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">blockInvocation</span> <span class="nl">getReturnValue</span><span class="p">:</span><span class="n">argumentBuffer</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">methodInvocation</span> <span class="nl">setReturnValue</span><span class="p">:</span><span class="n">argumentBuffer</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// 释放缓存</span>
+</span><span class='line'>    <span class="n">free</span><span class="p">(</span><span class="n">argumentBuffer</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>顺带说下 <code>reallocf</code> 函数是 <code>realloc</code> 函数的增强版，它可以在后者无法申请到堆空间时，释放旧的堆空间：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="o">*</span><span class="nf">reallocf</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="n">p</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">void</span> <span class="o">*</span><span class="n">tmp</span> <span class="o">=</span> <span class="n">realloc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">s</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span> <span class="k">return</span> <span class="n">tmp</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">free</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这样就可以直接用 <code>argumentBuffer = reallocf(argumentBuffer, size)</code> 形式的语句，否则如果使用 <code>realloc</code>, 一旦返回的是 <code>NULL</code>，会造成旧的堆空间无法释放的问题。</p>
+
+<h2>实现委托方法</h2>
+
+<p>现在已经可以构造 Block 的 NSInvocation 对像，就缺携带参数和返回值信息的接口方法 NSInvocation 对象了。接下来就针对实例方法，简单地实现动态委托类。</p>
+
+<h4>储存 Block Invocation 信息</h4>
+
+<p>这里简单地以接口方法选择器对应的字符串为 Key，以 Block 对应的 Invocation 封装类为 Value 储存调用信息。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">initWithProtocol:</span><span class="p">(</span><span class="n">Protocol</span> <span class="o">*</span><span class="p">)</span><span class="nv">protocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">_protocol</span> <span class="o">=</span> <span class="n">protocol</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">_selectorInvocationMap</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableDictionary</span> <span class="n">dictionary</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">implementInstanceMethodOfSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">selector</span> <span class="nf">withBlock:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">block</span> <span class="p">{</span>
+</span><span class='line'>    <span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="n">methodSignature</span> <span class="o">=</span> <span class="n">tbv_getProtocolMethodSignature</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">protocol</span><span class="p">,</span> <span class="n">selector</span><span class="p">,</span> <span class="nb">YES</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">TBVBlockInvocation</span> <span class="o">*</span><span class="n">invocation</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TBVBlockInvocation</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithMethodSignature</span><span class="p">:</span><span class="n">methodSignature</span> <span class="nl">block</span><span class="p">:</span><span class="n">block</span><span class="p">];</span>
+</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">selectorInvocationMap</span><span class="p">[</span><span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">selector</span><span class="p">)]</span> <span class="o">=</span> <span class="n">invocation</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p></p>
+
+<h4>消息转发</h4>
+
+<p>向动态委托类发送委托消息后，会触发消息转发机制。在消息转发的最后一步，可以构造委托方法对应的 NSInvocation 对象，这个对像可供<strong>Invocation 调用</strong>一节中描述的 Block Invocation 使用。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">forwardInvocation:</span><span class="p">(</span><span class="bp">NSInvocation</span> <span class="o">*</span><span class="p">)</span><span class="nv">invocation</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">TBVBlockInvocation</span> <span class="o">*</span><span class="n">blockInvocation</span> <span class="o">=</span> <span class="nb">self</span><span class="p">.</span><span class="n">selectorInvocationMap</span><span class="p">[</span><span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">invocation</span><span class="p">.</span><span class="n">selector</span><span class="p">)];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">blockInvocation</span> <span class="nl">invokeWithMethodInvocation</span><span class="p">:</span><span class="n">invocation</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="p">)</span><span class="nf">methodSignatureForSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">sel</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">selectorInvocationMap</span><span class="p">[</span><span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">sel</span><span class="p">)].</span><span class="n">methodSignature</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">respondsToSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="o">!!</span><span class="nb">self</span><span class="p">.</span><span class="n">selectorInvocationMap</span><span class="p">[</span><span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">aSelector</span><span class="p">)];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>实例</h2>
+
+<p>最后看下如何使用这个动态委托类。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@class</span> <span class="nc">Computer</span>;
+</span><span class='line'><span class="k">@protocol</span> <span class="nc">ComputerDelegate</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">@required</span>
+</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nl">computerWillStart</span><span class="p">:(</span><span class="n">Computer</span> <span class="o">*</span><span class="p">)</span><span class="n">computer</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">computerShouldBeLocked:</span><span class="p">(</span><span class="n">Computer</span> <span class="o">*</span><span class="p">)</span><span class="nv">computer</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">Computer</span> : <span class="bp">NSObject</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">weak</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">id</span> <span class="o">&lt;</span><span class="n">ComputerDelegate</span><span class="o">&gt;</span> <span class="n">delegate</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">start</span><span class="p">;</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">lock</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">Computer</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">start</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">delegate</span> <span class="nl">computerWillStart</span><span class="p">:</span><span class="nb">self</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// start</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">lock</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">__unused</span> <span class="kt">BOOL</span> <span class="n">locked</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">delegate</span> <span class="nl">computerShouldBeLocked</span><span class="p">:</span><span class="nb">self</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;computer should be locked: %d </span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">locked</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// lock</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>下面是应用代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">TBVDynamicDelegate</span> <span class="o">&lt;</span><span class="n">ComputerDelegate</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">dynamicDelegate</span> <span class="o">=</span> <span class="p">(</span><span class="kt">id</span><span class="p">)[[</span><span class="n">TBVDynamicDelegate</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithProtocol</span><span class="p">:@</span><span class="n">protocol</span><span class="p">(</span><span class="n">ComputerDelegate</span><span class="p">)];</span>
+</span><span class='line'><span class="p">[</span><span class="n">dynamicDelegate</span> <span class="nl">implementInstanceMethodOfSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">computerWillStart</span><span class="p">:)</span> <span class="nl">withBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">Computer</span> <span class="o">*</span><span class="n">c</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@ will start&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">);</span>
+</span><span class='line'><span class="p">}];</span>
+</span><span class='line'><span class="p">[</span><span class="n">dynamicDelegate</span> <span class="nl">implementInstanceMethodOfSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="nl">computerShouldBeLocked</span><span class="p">:)</span> <span class="nl">withBlock</span><span class="p">:</span><span class="o">^</span><span class="kt">BOOL</span><span class="p">(</span><span class="n">Computer</span> <span class="o">*</span><span class="n">c</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@ should not be locked&quot;</span><span class="p">,</span> <span class="n">c</span><span class="p">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'><span class="p">}];</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Computer</span> <span class="o">*</span><span class="n">computer</span> <span class="o">=</span> <span class="p">[</span><span class="n">Computer</span> <span class="n">new</span><span class="p">];</span>
+</span><span class='line'><span class="n">computer</span><span class="p">.</span><span class="n">delegate</span> <span class="o">=</span> <span class="n">dynamicDelegate</span><span class="p">;</span>
+</span><span class='line'><span class="p">[</span><span class="n">computer</span> <span class="n">start</span><span class="p">];</span>
+</span><span class='line'><span class="p">[</span><span class="n">computer</span> <span class="n">lock</span><span class="p">];</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>输出结果：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="mi">2017</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mo">01</span> <span class="mi">14</span><span class="o">:</span><span class="mi">44</span><span class="o">:</span><span class="mf">29.814871</span><span class="o">+</span><span class="mi">0800</span> <span class="p">[</span><span class="mi">19950</span><span class="o">:</span><span class="mi">6944265</span><span class="p">]</span> <span class="o">&lt;</span><span class="nl">Computer</span><span class="p">:</span> <span class="mh">0x100405ce0</span><span class="o">&gt;</span> <span class="n">will</span> <span class="n">start</span>
+</span><span class='line'><span class="mi">2017</span><span class="o">-</span><span class="mi">08</span><span class="o">-</span><span class="mo">01</span> <span class="mi">14</span><span class="o">:</span><span class="mi">44</span><span class="o">:</span><span class="mf">29.815827</span><span class="o">+</span><span class="mi">0800</span> <span class="p">[</span><span class="mi">19950</span><span class="o">:</span><span class="mi">6944265</span><span class="p">]</span> <span class="o">&lt;</span><span class="nl">Computer</span><span class="p">:</span> <span class="mh">0x100405ce0</span><span class="o">&gt;</span> <span class="n">should</span> <span class="n">not</span> <span class="n">be</span> <span class="n">locked</span>
+</span><span class='line'><span class="n">computer</span> <span class="n">should</span> <span class="n">be</span> <span class="nl">locked</span><span class="p">:</span> <span class="mi">0</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>小结</h2>
+
+<p>其实用 Block 实现委托方法的开源方案在比较早的时候就已经出来了，本文的实现就是 <a href="https://github.com/BlocksKit/BlocksKit">BlocksKit</a> 的 A2BlockInvocation 和 A2DynamicDelegate 类的简易版本，其中省略了类方法以及一些边界条件的处理，不过大体的思路基本是一致的，还是围绕 NSInvocation 和消息转发在走。</p>
+
+<h2>参考</h2>
+
+<p><a href="https://github.com/steipete/Aspects">Aspects</a><br>
+<a href="https://github.com/BlocksKit/BlocksKit">BlocksKit</a><br>
+<a href="http://www.informit.com/articles/article.aspx?p=1620076&amp;seqNum=3">Hands-On Objective-C 2.0: Blocks</a><br>
+<a href="https://www.mikeash.com/pyblog/friday-qa-2011-10-28-generic-block-proxying.html">Generic Block Proxying</a><br>
+<a href="https://stackoverflow.com/questions/22018272/nsinvocation-returns-value-but-makes-app-crash-with-exc-bad-access">NSInvocation returns value but makes app crash with EXC_BAD_ACCESS</a><br></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2017-07-28T19:05:22+08:00'><span class='date'><span class='date-month'>Jul</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>7:05 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/" title="Previous Post: Objective-C 消息转发应用场景摘录">&laquo; Objective-C 消息转发应用场景摘录</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 曾经的嵌入式软件开发者，现已皈依苹果大法门下。目前混迹杭州，喜欢没事就去西湖压马路。轻微完美主义者，跑步爱好者。 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc"> 我的简书 </a><br>
+  <a href="https://github.com/tripleCC"> 我的GitHub </a><br>
+  <a href="https://twitter.com/tripleCCBrian"> 我的Twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017-07-28-blockhe-nsmethodsignature/">用 Block 实现委托方法</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/">Objective-C 消息转发应用场景摘录</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/">闲谈 IGListKit</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-06-08-cocoapodshe-localization/">CocoaPods和Localization</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-05-13-wan-wan-ni-xiang-zhi-lan-jie-ding-ding-xin-xi-de-yi-du-zhuang-tai/">玩玩逆向之拦截钉钉消息已读状态</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+        <li>
+        	<a href="http://www.swiftyper.com/">Swiftyper-小锅</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'tripleCC';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://triplecc.github.io/blog/2017-07-28-blockhe-nsmethodsignature/';
+        var disqus_url = 'http://triplecc.github.io/blog/2017-07-28-blockhe-nsmethodsignature/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
