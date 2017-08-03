@@ -810,7 +810,10 @@ static void __ASPECTS_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL
 - Record Message Call
 - Intercept Any Message Call
 
+可以看出，在这些例子中，都创建了一个代理类，并且这个代理类几乎没有实现自定义方法，或者直接是 NSProxy 的子类。这样，基本上所有的发送给代理类对象的消息，都会触发消息转发机制，而这个代理类就可以对拦截的消息做额外处理。
+
 其中大部分应用场景都涉及到消息转发的第二三步，即 Fast forwarding path、Normal forwarding path 。特别是 Normal forwarding path ，配合 `_objc_msgForward` / `_objc_msgForward_stret` 函数强行进行消息转发，可以获取携带完整调用信息的 NSInvocation 。借助于 NSInvocation 的灵活性，开发者就可以完成一些非常有意思的事情了。
+
 
 ## 参考
 
