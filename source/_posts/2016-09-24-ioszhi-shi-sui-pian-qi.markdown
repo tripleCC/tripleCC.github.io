@@ -8,6 +8,7 @@ categories:
 1、Xcode8日志及Pod的Swift3.0问题 <br>
 2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 <br>
 3、解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题 <br>
+4、单例在 Unit Test 中不唯一问题
 
 <!--more-->
 
@@ -84,3 +85,16 @@ if ([delegate respondsToSelector:@selector(window)]) {
 这个问题挺奇葩的，要不是刚好有测试人员打开了这个开关，基本也发现不了。最终我也不知道为什么会这样，从 Xcode 可视化工具看， alert 按钮上的确是有文字的，颜色也没错。
 
 想要使用 agilityvision 的方案，删除这几句代码就可以不会出现上述问题了。
+
+## 单例在 Unit Test 中不唯一问题
+
+项目中有两个 Target ，一个 Framework ，一个 Test ，不过 Podfile 只是指定了 Framework 的依赖，并没有像下面那样给 Test 设置依赖：
+
+```
+target 'XXXTests' do
+#    pod 
+end
+```
+这样在运行单元测试的时候，会出现 Undefined 编译错误。如果强制在 Configurations 中设置 Test 的配置和 Framework 一致，会造成工程里实际存在了两个单例类，单例对象实际上并不唯一。
+
+这种情况下，只要像上面演示的那样，给 Test 设置单独的依赖即可。
