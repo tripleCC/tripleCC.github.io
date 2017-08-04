@@ -97,4 +97,4 @@ end
 ```
 这样在运行单元测试的时候，会出现 Undefined 编译错误。如果强制在 Configurations 中设置 Test 的配置和 Framework 一致，会造成工程里实际存在了两个单例类，单例对象实际上并不唯一。
 
-这种情况下，只要像上面演示的那样，给 Test 设置单独的依赖即可。
+这种情况下，只要像上面演示的那样，给 Test 设置单独的依赖即可，一般为空即可。参考 [iOS Testing: dispatch_once get called twice. First in App, second in Test. Problems with Observers](https://stackoverflow.com/questions/21014843/ios-testing-dispatch-once-get-called-twice-first-in-app-second-in-test-probl)
