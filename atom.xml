@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-08-04T10:25:05+08:00</updated>
+  <updated>2017-08-12T10:29:05+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,19 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[Longjmp、setjmp和try-catch]]></title>
+    <link href="http://triplecc.github.io/blog/2017-08-09-longjmp,-setjmphe-try-catch/"/>
+    <updated>2017-08-09T10:01:19+08:00</updated>
+    <id>http://triplecc.github.io/blog/longjmp,-setjmphe-try-catch</id>
+    <content type="html"><![CDATA[<p><a href="http://www.cnblogs.com/markhy/p/3169035.html">Objective-C try/catch异常处理机制原理</a><br>
+<a href="http://newsgroups.derkeiler.com/Archive/Comp/comp.sys.mac.programmer.help/2007-08/msg00020.html">Exception safety in Objective-C</a><br>
+<a href="http://www.di.unipi.it/~nids/docs/longjump_try_trow_catch.html">Exceptions in C with Longjmp and Setjmp</a><br>
+<a href="https://book.douban.com/subject/1788421/">UNIX 环境高级编程</a><br>
+<a href="https://book.douban.com/subject/2377310/">C 专家编程</a><br></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[用 Block 实现委托方法]]></title>
@@ -7153,7 +7166,8 @@ Rx操作大体分为两种：</p>
     <content type="html"><![CDATA[<p>1、Xcode8日志及Pod的Swift3.0问题 <br>
 2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 <br>
 3、解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题 <br>
-4、单例在 Unit Test 中不唯一问题</p>
+4、单例在 Unit Test 中不唯一问题<br>
+5、C float 精度提升问题</p>
 
 <!--more-->
 
@@ -7255,7 +7269,7 @@ Rx操作大体分为两种：</p>
 
 <h2>单例在 Unit Test 中不唯一问题</h2>
 
-<p>项目中有两个 Target ，一个 Framework ，一个 Test ，不过 Podfile 只是指定了 Framework 的依赖，并没有像下面那样给 Test 设置依赖：</p>
+<p>项目中有两个 Target ，一个 Framework ，一个 Test ，不过 Podfile 只是指定了 Framework 的依赖，并没有像下面那样给 Test 设置依赖（或者继承主 Target）：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -7269,6 +7283,45 @@ Rx操作大体分为两种：</p>
 <p>这样在运行单元测试的时候，会出现 Undefined 编译错误。如果强制在 Configurations 中设置 Test 的配置和 Framework 一致，会造成工程里实际存在了两个单例类，单例对象实际上并不唯一。</p>
 
 <p>这种情况下，只要像上面演示的那样，给 Test 设置单独的依赖即可，一般为空即可。参考 <a href="https://stackoverflow.com/questions/21014843/ios-testing-dispatch-once-get-called-twice-first-in-app-second-in-test-probl">iOS Testing: dispatch_once get called twice. First in App, second in Test. Problems with Observers</a></p>
+
+<h2>C float 精度提升问题</h2>
+
+<p>对于这个问题的思考，起源于云风的这篇文章 <a href="http://blog.codingnow.com/2017/07/float_inconsistence.html#more">浮点运算潜在的结果不一致问题</a>，其中有几个评论我比较在意：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">stirp</span><span class="p">:</span>
+</span><span class='line'><span class="err">刚刚被小伙伴提示默认情况下</span><span class="kt">float</span><span class="err">相乘是自动提升精度到</span><span class="kt">double</span><span class="err">的，因此第一次输出就应该是对</span><span class="kt">double</span><span class="err">取整的。</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">x87</span> <span class="err">浮点运算的效果是</span><span class="kt">float</span><span class="err">相乘结果还是</span><span class="kt">float</span><span class="err">么？本地不支持</span><span class="mi">387</span><span class="err">，没法测试。</span>
+</span><span class='line'>
+</span><span class='line'><span class="nl">Cloud</span><span class="p">:</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">C</span> <span class="err">语言规范：表达式里最高精度是</span> <span class="kt">float</span> <span class="err">，那么表达式的值精度就是</span> <span class="kt">float</span> <span class="err">。没有相乘提升到</span> <span class="kt">double</span> <span class="err">的说法。</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">第一个写成</span> <span class="p">(</span><span class="kt">int</span><span class="p">)((</span><span class="kt">float</span><span class="p">)(</span><span class="n">x</span> <span class="o">*</span> <span class="mf">0.01f</span><span class="p">))</span> <span class="err">也是一样的，并不是对</span> <span class="kt">double</span> <span class="err">取整的问题。</span>
+</span><span class='line'>
+</span><span class='line'><span class="nl">stirp</span><span class="p">:</span>
+</span><span class='line'><span class="err">多谢</span><span class="n">dwing</span><span class="err">，原来</span><span class="n">C89</span><span class="o">/</span><span class="mi">90</span><span class="err">就已经不提升精度了。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在《C专家编程》一书中，是明确指出表达式中，float 会提升为 double ，这样会让编译器的处理起来更加方便。看了这几个评论信息后，结合以前看《C专家编程》的模糊记忆， 我随即去查阅了《C A Reference Manual》，发现的确如此，以二元操作符为例：</p>
+
+<p><img src="http://triplecc.github.io/images/Snip20170812_2.png" alt="" /></p>
+
+<p>可以看到，针对二元操作表达式，如果两边都是 float 类型，那么标准 C 已经不把精度提升为 double 了。</p>
 ]]></content>
   </entry>
   
@@ -8788,322 +8841,6 @@ TBVImageProgressPresenterProtocol的声明如下：</p>
 </span></code></pre></td></tr></table></div></figure>
 
 
-
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[iOS知识碎片六]]></title>
-    <link href="http://triplecc.github.io/blog/2016-08-10-ioszhi-shi-sui-pian-liu/"/>
-    <updated>2016-08-10T21:23:43+08:00</updated>
-    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-liu</id>
-    <content type="html"><![CDATA[<p>1、dispatch_after及NSTimer造成对象无法释放<br>
-2、宏定义<code>##</code>与<code>#</code><br>
-3、Swift实现原子属性<br>
-4、Xcode图像化调试错误<br>
-5、UITabBarController调用viewDidLoad的时机<br></p>
-
-<!--more-->
-
-
-<h2>dispatch_after及NSTimer造成对象无法释放</h2>
-
-<p>dispatch_after：<br></p>
-
-<ul>
-<li>由于dispatch_after会持有block内的对象，所以会使这个对象延迟释放。使用时最好能确保block内的对象都是weak的，这样不容易出问题。</li>
-</ul>
-
-
-<p>NSTimer:</p>
-
-<ul>
-<li>NSTimer在手动停止或截止时间点到达前，是不会释放的。所以为了能让使用NSTimer的对象能够顺利释放自身，最好对NSTimer使用<strong>__weak</strong>关键字，并且在dealloc时，手动停止NSTimer。如下：</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">...</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">__weak</span> <span class="bp">NSTimer</span> <span class="o">*</span><span class="n">_timer</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="p">...</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">dealloc</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">[</span><span class="n">_timer</span> <span class="n">invalidate</span><span class="p">]</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>宏定义<code>##</code>与<code>#</code></h2>
-
-<ul>
-<li><code>##</code>链接符
-
-<ul>
-<li>将两个字串连接起来
-
-<ul>
-<li><p>“##”是一种分隔连接方式，它的作用是先分隔，然后进行强制连接。</p></li>
-<li><p>预处理器一般把<code>空格</code>解释成分段标志，对于每一段和前面比较，相同的就被替换。这样做的结果是， 被替换段之间存在一些空格。如果我们不希望出现这些空格，就可以通过添加一些 ##来替代空格。</p></li>
-<li><p>另外一些分隔标志是，包括操作符，比如 +, -, *, /, [,], …，</p></li>
-<li><p>强制连接的作用是，去掉和前面的字符串之间的空格，而把两者连接起来</p></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cp">#define A1(name, type) type name_##type##_type </span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#define A2(name, type) type name##_##type##_type</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">A1</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span> <span class="cm">/* 等价于: int name_int_type; */</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">A2</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="kt">int</span><span class="p">);</span> <span class="cm">/* 等价于: int a1_int_type; */</span>
-</span><span class='line'>
-</span><span class='line'><span class="mi">1</span><span class="p">)</span> <span class="err">在第一个宏定义中，”</span><span class="n">name</span><span class="err">”和第一个”</span><span class="n">_</span><span class="err">”之间，以及第</span><span class="mi">2</span><span class="err">个”</span><span class="n">_</span><span class="err">”和第二个</span>
-</span><span class='line'>
-</span><span class='line'> <span class="err">”</span><span class="n">type</span><span class="err">”之间没有被分隔，所以预处理器会把</span><span class="n">name_</span><span class="err">##</span><span class="n">type</span><span class="err">##</span><span class="n">_type</span><span class="err">解释成</span><span class="mi">3</span><span class="err">段：</span>
-</span><span class='line'>
-</span><span class='line'> <span class="err">“</span><span class="n">name_</span><span class="err">”、“</span><span class="n">type</span><span class="err">”、以及“</span><span class="n">_type</span><span class="err">”，这中间只有“</span><span class="n">type</span><span class="err">”是在宏前面出现过</span>
-</span><span class='line'>
-</span><span class='line'> <span class="err">的，所以它可以被宏替换。</span>
-</span><span class='line'>
-</span><span class='line'><span class="mi">2</span><span class="p">)</span> <span class="err">而在第二个宏定义中，“</span><span class="n">name</span><span class="err">”和第一个“</span><span class="n">_</span><span class="err">”之间也被分隔了，所以</span>
-</span><span class='line'>
-</span><span class='line'> <span class="err">预处理器会把</span><span class="n">name</span><span class="err">##</span><span class="n">_</span><span class="err">##</span><span class="n">type</span><span class="err">##</span><span class="n">_type</span><span class="err">解释成</span><span class="mi">4</span><span class="err">段：“</span><span class="n">name</span><span class="err">”、“</span><span class="n">_</span><span class="err">”、“</span><span class="n">type</span><span class="err">”</span>
-</span><span class='line'>
-</span><span class='line'> <span class="err">以及“</span><span class="n">_type</span><span class="err">”，这其间，就有两个可以被宏替换了。</span>
-</span><span class='line'>
-</span><span class='line'><span class="mi">3</span><span class="p">)</span> <span class="n">A1</span><span class="err">和</span><span class="n">A2</span><span class="err">的定义也可以如下：</span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#define A1(name, type) type name_ ##type ##_type</span>
-</span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="err">##前面随意加上一些空格</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#define A2(name, type) type name ##_ ##type ##_type</span>
-</span><span class='line'>
-</span><span class='line'><span class="err">结果是##</span> <span class="err">会把前面的空格去掉完成强连接，得到和上面结果相同的宏定义</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li><p><code>#</code></p>
-
-<ul>
-<li>对这个变量替换后，添加双引号</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// 在打印枚举名时很好用</span>
-</span><span class='line'><span class="cp">#define BQ_PUSH_MESSAGE_TYPE_ELEMENT(key) @(key) : @#key</span>
-</span><span class='line'>
-</span><span class='line'><span class="n">BQPushMessageTypeStringsMap</span> <span class="o">=</span> <span class="l">@{</span>
-</span><span class='line'>                                    <span class="n">BQ_PUSH_MESSAGE_TYPE_ELEMENT</span><span class="p">(</span><span class="n">BQPushMessageTypeChat</span><span class="p">),</span>
-</span><span class='line'>                                    <span class="n">BQ_PUSH_MESSAGE_TYPE_ELEMENT</span><span class="p">(</span><span class="n">BQPushMessageTypeSystem</span><span class="p">),</span>
-</span><span class='line'>                                    <span class="n">BQ_PUSH_MESSAGE_TYPE_ELEMENT</span><span class="p">(</span><span class="n">BQPushMessageTypeLive</span><span class="p">),</span>
-</span><span class='line'>                                    <span class="l">}</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h4>Swift实现原子属性</h4>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">struct</span> <span class="n">SafeForm</span> <span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">public</span> <span class="k">var</span> <span class="nl">lock</span><span class="p">:</span> <span class="n">AnyObject</span><span class="o">!</span>
-</span><span class='line'>     <span class="n">public</span> <span class="k">var</span> <span class="nl">value</span><span class="p">:</span> <span class="n">U</span>
-</span><span class='line'>     <span class="n">public</span> <span class="k">var</span> <span class="nl">safeValue</span><span class="p">:</span> <span class="n">U</span> <span class="p">{</span>
-</span><span class='line'>         <span class="kr">get</span> <span class="p">{</span>
-</span><span class='line'>             <span class="k">return</span> <span class="n">withLock</span> <span class="p">{</span>
-</span><span class='line'>               <span class="k">return</span> <span class="n">value</span>
-</span><span class='line'>             <span class="p">}</span>
-</span><span class='line'>         <span class="p">}</span>
-</span><span class='line'>         <span class="kr">set</span> <span class="p">{</span>
-</span><span class='line'>             <span class="n">withLock</span> <span class="p">{</span>
-</span><span class='line'>                 <span class="n">value</span> <span class="o">=</span> <span class="n">newValue</span>
-</span><span class='line'>             <span class="p">}</span>
-</span><span class='line'>         <span class="p">}</span>
-</span><span class='line'>     <span class="p">}</span>
-</span><span class='line'>     <span class="cm">/* 不可与safeValue混用 */</span>
-</span><span class='line'>     <span class="n">public</span> <span class="k">func</span> <span class="n">sync_enter</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>         <span class="n">objc_sync_enter</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
-</span><span class='line'>     <span class="p">}</span>
-</span><span class='line'>     <span class="n">public</span> <span class="k">func</span> <span class="n">sync_exit</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>         <span class="n">objc_sync_exit</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
-</span><span class='line'>     <span class="p">}</span>
-</span><span class='line'>     <span class="n">private</span> <span class="k">func</span> <span class="n">withLock</span><span class="o">&lt;</span><span class="n">R</span><span class="o">&gt;</span><span class="p">(@</span><span class="n">noescape</span> <span class="nl">action</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">R</span> <span class="p">{</span>
-</span><span class='line'>         <span class="n">objc_sync_enter</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
-</span><span class='line'>         <span class="k">let</span> <span class="n">result</span> <span class="o">=</span> <span class="n">action</span><span class="p">()</span>
-</span><span class='line'>         <span class="n">objc_sync_exit</span><span class="p">(</span><span class="n">lock</span><span class="p">)</span>
-</span><span class='line'>         <span class="k">return</span> <span class="n">result</span>
-</span><span class='line'>     <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>实际上感觉原子属性的作用并不是很明显，对一个多步操作，还是需要自己手动加锁。</p>
-
-<h2>Xcode图像化调试错误</h2>
-
-<p>报错：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">Assertion</span> <span class="n">failure</span> <span class="k">in</span> <span class="o">-</span><span class="p">[</span><span class="bp">UITextView</span> <span class="n">_firstBaselineOffsetFromTop</span><span class="p">],</span> <span class="o">/</span><span class="n">BuildRoot</span><span class="o">/</span><span class="n">Library</span><span class="o">/</span><span class="n">Caches</span><span class="o">/</span><span class="n">com</span><span class="p">.</span><span class="n">apple</span><span class="p">.</span><span class="n">xbs</span><span class="o">/</span><span class="n">Sources</span><span class="o">/</span><span class="n">UIKit_Sim</span><span class="o">/</span><span class="n">UIKit</span><span class="o">-</span><span class="mf">3512.60.7</span><span class="o">/</span><span class="bp">UITextView</span><span class="p">.</span><span class="nl">m</span><span class="p">:</span><span class="mi">1683</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>添加以下代码即可：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="bp">UITextView</span><span class="nl">(MYTextView)</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@implementation</span> <span class="bp">UITextView</span> <span class="nl">(MYTextView)</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">_firstBaselineOffsetFromTop</span> <span class="p">{</span> <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">_baselineOffsetFromBottom</span> <span class="p">{</span> <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>或者</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">extension</span>
-</span><span class='line'>
-</span><span class='line'><span class="bp">UITextView</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">func</span> <span class="n">_firstBaselineOffsetFromTop</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">func</span> <span class="n">_baselineOffsetFromBottom</span><span class="p">()</span> <span class="p">{</span> <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>UITabBarController调用viewDidLoad的时机</h2>
-
-<p>继承UITabBarController后，从外部调用init创建，即使没有加载它的view，它也会调用viewDidLoad，这点和UIViewController不一样。 <br>
-所以在使用Swift时，需要注意在UITableBarController中声明为!类型的属性，容易造成强制解包崩溃的问题。<br>
-详细信息</p>
-
-<ul>
-<li><a href="http://www.andrewmonshizadeh.com/2015/02/23/uitabbarcontroller-is-different/">UITabBarController is Different</a></li>
-</ul>
 
 ]]></content>
   </entry>

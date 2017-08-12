@@ -7,12 +7,17 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1
+  <meta name="description" content="Swift在2.0版本之后，对if、guard、for的匹配进行了一定的加强，其中case匹配模式感觉还是挺新奇的。 参照Swift官方手册，可以知道，这种模式在针对可选值进行处理时，可以获得额外的便利： 1
 2
 3
 4
-struct AboutMe { var detail: String var links: [[String : String]]
-} 在Swift中，Struct类型是无法进行归档操作的，只有继承自NSObject并且遵守了NSCoding协议的类才可以进行相应的归档操作。 &hellip;">
+5
+6
+7
+8
+9
+10
+let someOptional: Int? = &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -66,6 +71,103 @@ struct AboutMe { var detail: String var links: [[String : String]]
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015-12-29-if-case,-guard-case,-for-case/">Swift2.0中的case匹配</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-12-29T17:15:29+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>29</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>5:15 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Swift在2.0版本之后，对if、guard、for的匹配进行了一定的加强，其中case匹配模式感觉还是挺新奇的。</p>
+
+<p>参照Swift官方手册，可以知道，这种模式在针对可选值进行处理时，可以获得额外的便利：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="nl">someOptional</span><span class="p">:</span> <span class="n">Int</span><span class="o">?</span> <span class="o">=</span> <span class="mi">42</span>
+</span><span class='line'><span class="c1">// Match using an enumeration case pattern</span>
+</span><span class='line'><span class="k">if</span> <span class="k">case</span> <span class="p">.</span><span class="n">Some</span><span class="p">(</span><span class="k">let</span> <span class="n">x</span><span class="p">)</span> <span class="o">=</span> <span class="n">someOptional</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// Match using an optional pattern</span>
+</span><span class='line'><span class="k">if</span> <span class="k">case</span> <span class="k">let</span> <span class="n">x</span><span class="o">?</span> <span class="o">=</span> <span class="n">someOptional</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>x?是.Some(let x)的简写方式。单从以上代码段，可能还看不出有什么特别之处，相反还比以前的实现繁琐：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">if</span> <span class="k">let</span> <span class="n">x</span> <span class="o">=</span> <span class="n">someOptional</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过官方手册体现其便利的是for关键字，if还需要另一种场景来体现其带来的便利：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="nl">arrayOfOptionalInts</span><span class="p">:</span> <span class="p">[</span><span class="n">Int</span><span class="o">?</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">nil</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="nb">nil</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+</span><span class='line'><span class="c1">// Match only non-nil values</span>
+</span><span class='line'><span class="k">for</span> <span class="k">case</span> <span class="k">let</span> <span class="n">number</span><span class="o">?</span> <span class="k">in</span> <span class="n">arrayOfOptionalInts</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">print</span><span class="p">(</span><span class="s">&quot;Found a \(number)&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">// 输出</span>
+</span><span class='line'><span class="c1">// Found a 2</span>
+</span><span class='line'><span class="c1">// Found a 3</span>
+</span><span class='line'><span class="c1">// Found a 5</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，在遍历可选值数组的场景下，这种方式确实减少了一些代码，要是以前，我可能会这样实现：</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015-12-29-if-case,-guard-case,-for-case/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -510,49 +612,6 @@ struct AboutMe { var detail: String var links: [[String : String]]
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2015-09-06-ioszhi-shi-sui-pian-yi/">iOS知识碎片一</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2015-09-06T00:04:36+08:00'><span class='date'><span class='date-month'>Sep</span> <span class='date-day'>6</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:04 am</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>学习工作中总会有那么几个注意点和困惑点，这些琐碎的知识点容易让我迷惑，所以决定做这么一个纪录，希望能持之以恒，积少成多</p>
-
-<ol>
-<li>解决同时设置阴影和裁剪，阴影消失问题</li>
-<li>swift中使用字符串创建类及错误处理</li>
-<li>swift中回调函数设置作用域注意</li>
-<li>可视化界面调整图片拉伸</li>
-<li>AFNetworking出现SSL错误</li>
-</ol>
-
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2015-09-06-ioszhi-shi-sui-pian-yi/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/5">&larr; Older</a>
@@ -577,6 +636,10 @@ struct AboutMe { var detail: String var links: [[String : String]]
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017-08-09-longjmp,-setjmphe-try-catch/">Longjmp、setjmp和try-catch</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017-07-28-blockhe-nsmethodsignature/">用 Block 实现委托方法</a>
       </li>
     
@@ -590,10 +653,6 @@ struct AboutMe { var detail: String var links: [[String : String]]
     
       <li class="post">
         <a href="/blog/2017-06-08-cocoapodshe-localization/">CocoaPods和Localization</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017-05-13-wan-wan-ni-xiang-zhi-lan-jie-ding-ding-xin-xi-de-yi-du-zhuang-tai/">玩玩逆向之拦截钉钉消息已读状态</a>
       </li>
     
   </ul>

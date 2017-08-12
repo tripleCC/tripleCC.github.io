@@ -83,7 +83,8 @@
 <div class="entry-content"><p>1、Xcode8日志及Pod的Swift3.0问题 <br>
 2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 <br>
 3、解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题 <br>
-4、单例在 Unit Test 中不唯一问题</p>
+4、单例在 Unit Test 中不唯一问题<br>
+5、C float 精度提升问题</p>
 
 <!--more-->
 
@@ -185,7 +186,7 @@
 
 <h2>单例在 Unit Test 中不唯一问题</h2>
 
-<p>项目中有两个 Target ，一个 Framework ，一个 Test ，不过 Podfile 只是指定了 Framework 的依赖，并没有像下面那样给 Test 设置依赖：</p>
+<p>项目中有两个 Target ，一个 Framework ，一个 Test ，不过 Podfile 只是指定了 Framework 的依赖，并没有像下面那样给 Test 设置依赖（或者继承主 Target）：</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
@@ -199,6 +200,45 @@
 <p>这样在运行单元测试的时候，会出现 Undefined 编译错误。如果强制在 Configurations 中设置 Test 的配置和 Framework 一致，会造成工程里实际存在了两个单例类，单例对象实际上并不唯一。</p>
 
 <p>这种情况下，只要像上面演示的那样，给 Test 设置单独的依赖即可，一般为空即可。参考 <a href="https://stackoverflow.com/questions/21014843/ios-testing-dispatch-once-get-called-twice-first-in-app-second-in-test-probl">iOS Testing: dispatch_once get called twice. First in App, second in Test. Problems with Observers</a></p>
+
+<h2>C float 精度提升问题</h2>
+
+<p>对于这个问题的思考，起源于云风的这篇文章 <a href="http://blog.codingnow.com/2017/07/float_inconsistence.html#more">浮点运算潜在的结果不一致问题</a>，其中有几个评论我比较在意：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="nl">stirp</span><span class="p">:</span>
+</span><span class='line'><span class="err">刚刚被小伙伴提示默认情况下</span><span class="kt">float</span><span class="err">相乘是自动提升精度到</span><span class="kt">double</span><span class="err">的，因此第一次输出就应该是对</span><span class="kt">double</span><span class="err">取整的。</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">x87</span> <span class="err">浮点运算的效果是</span><span class="kt">float</span><span class="err">相乘结果还是</span><span class="kt">float</span><span class="err">么？本地不支持</span><span class="mi">387</span><span class="err">，没法测试。</span>
+</span><span class='line'>
+</span><span class='line'><span class="nl">Cloud</span><span class="p">:</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">C</span> <span class="err">语言规范：表达式里最高精度是</span> <span class="kt">float</span> <span class="err">，那么表达式的值精度就是</span> <span class="kt">float</span> <span class="err">。没有相乘提升到</span> <span class="kt">double</span> <span class="err">的说法。</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">第一个写成</span> <span class="p">(</span><span class="kt">int</span><span class="p">)((</span><span class="kt">float</span><span class="p">)(</span><span class="n">x</span> <span class="o">*</span> <span class="mf">0.01f</span><span class="p">))</span> <span class="err">也是一样的，并不是对</span> <span class="kt">double</span> <span class="err">取整的问题。</span>
+</span><span class='line'>
+</span><span class='line'><span class="nl">stirp</span><span class="p">:</span>
+</span><span class='line'><span class="err">多谢</span><span class="n">dwing</span><span class="err">，原来</span><span class="n">C89</span><span class="o">/</span><span class="mi">90</span><span class="err">就已经不提升精度了。</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在《C专家编程》一书中，是明确指出表达式中，float 会提升为 double ，这样会让编译器的处理起来更加方便。看了这几个评论信息后，结合以前看《C专家编程》的模糊记忆， 我随即去查阅了《C A Reference Manual》，发现的确如此，以二元操作符为例：</p>
+
+<p><img src="/images/Snip20170812_2.png" alt="" /></p>
+
+<p>可以看到，针对二元操作表达式，如果两边都是 float 类型，那么标准 C 已经不把精度提升为 double 了。</p>
 </div>
 
 
@@ -260,6 +300,10 @@
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017-08-09-longjmp,-setjmphe-try-catch/">Longjmp、setjmp和try-catch</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017-07-28-blockhe-nsmethodsignature/">用 Block 实现委托方法</a>
       </li>
     
@@ -273,10 +317,6 @@
     
       <li class="post">
         <a href="/blog/2017-06-08-cocoapodshe-localization/">CocoaPods和Localization</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017-05-13-wan-wan-ni-xiang-zhi-lan-jie-ding-ding-xin-xi-de-yi-du-zhuang-tai/">玩玩逆向之拦截钉钉消息已读状态</a>
       </li>
     
   </ul>
