@@ -288,6 +288,8 @@ FLAnimatedImageView(object) ---> displayLink ---> weakProxy ~~~> FLAnimatedImage
 ```
 这样一来， `displayLink` 间接弱引用了 FLAnimatedImageView 对象，使得 FLAnimatedImageView 对象得以正常释放。而且由于 `weakProxy` 将消息全部转发给了 FLAnimatedImageView 对象，`-displayDidRefresh:` 也得以正确地回调。
 
+事实上，以上问题也可以通过 block 回调的方式解决，具体实现就是让创建的定时器对象持有 NSTimer 类对象，并且在类回调方法中，执行经 userInfo 传过来的 block 回调。
+
 此外，苹果私有库 MIME.framework 中就有这种机制的应用 ---- MFWeakProxy ；YYKit 的 YYAnimatedImageView 也使用了相同的机制管理 CADisplayLink，其对应类为 YYWeakProxy 。
 
 ## Delegate Proxy
