@@ -192,15 +192,15 @@ addMethod(Class cls, SEL name, IMP imp, const char *types, BOOL replace)
 
 NSTimer、CADisplayLink 是实际项目中常用的计时器类，它们都使用 target - action 机制设置目标对象以及回调方法。相信很多人都遇到过 NSTimer 或者 CADisplayLink 对象造成的循环引用问题。实际上，这两个对象是强引用 target 的，如果使用者管理不当，轻则造成 target 对象的延迟释放，重则导致与 target 对象的循环引用。
 
-假如有个 UIViewController 持有了一个 NSTimer 对象，正确的管理方式是在控制器退出回调中手动 invalidate 并释放对 NSTimer 对象的引用 ：
+假如有个 UIViewController 引用了一个 repeat 的 NSTimer 对象 （先不论强弱引用） ，正确的管理方式是在控制器退出回调中手动 invalidate 并释放对 NSTimer 对象的引用 ：
 
 ```
 - (void)popViewController {
     [_timer invalidate];
-    _timer = nil;
+    _timer = nil; // 强引用需要，弱引用不需要
 }
 ```
-不过正所谓“人有失手，马有失蹄”，这种分散的管理方式，总会让使用者在某些场景下忘记了将 `_timer` 清空。那么有没有更加优雅的管理机制呢？下面就来看看 FLAnimatedImage 是如何管理 CADisplayLink 对象的。
+不过正所谓“人有失手，马有失蹄”，这种分散的管理方式，总会让使用者在某些场景下忘记了停止 `_timer` ，特别是使用者希望在 UIViewController 对象的 `dealloc` 方法中停止定时器时，很容易掉进这个坑里。有没有更加优雅的管理机制呢？下面就来看看 FLAnimatedImage 是如何管理 CADisplayLink 对象的。
 
 FLAnimatedImage 创建了以下弱引用代理：
 ```
@@ -286,7 +286,7 @@ FLAnimatedImage 创建了以下弱引用代理：
 FLAnimatedImageView(object) ---> displayLink ---> weakProxy ~~~> FLAnimatedImageView(object)
          
 ```
-这样一来， `displayLink` 间接弱引用了 FLAnimatedImageView 对象，它们之间也就不存在循环引用问题了。而且由于 `weakProxy` 将消息全部转发给了 FLAnimatedImageView 对象，`-displayDidRefresh:` 也得以正确地回调。
+这样一来， `displayLink` 间接弱引用了 FLAnimatedImageView 对象，使得 FLAnimatedImageView 对象得以正常释放。而且由于 `weakProxy` 将消息全部转发给了 FLAnimatedImageView 对象，`-displayDidRefresh:` 也得以正确地回调。
 
 此外，苹果私有库 MIME.framework 中就有这种机制的应用 ---- MFWeakProxy ；YYKit 的 YYAnimatedImageView 也使用了相同的机制管理 CADisplayLink，其对应类为 YYWeakProxy 。
 
