@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-08-21T22:24:30+08:00</updated>
+  <updated>2017-10-26T21:40:57+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,779 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[组件化之组件生命周期管理]]></title>
+    <link href="http://triplecc.github.io/blog/2017-10-25-zu-jian-sheng-ming-zhou-qi/"/>
+    <updated>2017-10-25T18:18:59+08:00</updated>
+    <id>http://triplecc.github.io/blog/zu-jian-sheng-ming-zhou-qi</id>
+    <content type="html"><![CDATA[<p>在没有实行组件化的项目中，经常会在 AppDelegate 看到各类初始化代码，这一部分代码一般用以配置某些 key 以及 secret ，或者开启某些服务，常见的有第三方推送、统计分析、IM服务等。当然，也有可能是开启一些自身的服务，比如 log 日志、 数据库初始化等。当一个 App 达到一定体量后， 未经整理的 AppDelegate 可能会变得臃肿。那么在实行组件化之后，该如何处理这部分代码呢？</p>
+
+<!--more-->
+
+
+<h2>不管理组件生命周期</h2>
+
+<p>不对组件生命周期进行管理，那么只能继续将这些初始化代码放在主工程的 AppDelegate 中，而针对上文所说的 AppDelegate 臃肿的问题，也可以通过简单的封装来优化。</p>
+
+<p>但是，这种做法会引发组件独立性问题。比如存在能独立运行的组件 A、B，B 依赖 A， A 生效需要在 App Launch 时调用配置代码 Code-A。如果采用上述做法，那么组件 A 所在示例工程的 AppDelegate 中，需要调用 Code-A 进行配置，而组件 B 因为依赖了 组件 A ，要使组件 B 能成功运行，也需要在 B 的示例工程添加 Code-A 进行配置。同样主工程的 AppDelegate 中也存在一份 Code-A 配置代码。可以看到，这种重复手动配置的做法是比较繁琐和难看的，这也是为什么要对组件生命周期进行管理的原因。</p>
+
+<h2>现有实现管理方案</h2>
+
+<p>从组件和主工程的关系切入，既然组件需要在 App 生命周期的某些阶段处理特定的事务，那么就提供特定的回调方法供组件使用。 App 生命周期各个阶段产生的事件，可以通过让 AppDelegate 遵守 UIApplicationDelegate 协议并实现不同的代理方法进行捕获。</p>
+
+<p>要想把当前阶段 App 产生的事件分发给各个组件，最简单的方案就是如 <a href="http://www.jianshu.com/p/48fbcbb36c75">limboy</a> 所说，在 AppDelegate 的各个代理方法里，手动调一遍组件的对应方法，如果组件实现了对应的代理方法，就执行：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">application:</span><span class="p">(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span> <span class="nf">didFinishLaunchingWithOptions:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">launchOptions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">MGJApp</span> <span class="n">startApp</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[[</span><span class="n">ModuleManager</span> <span class="n">sharedInstance</span><span class="p">]</span> <span class="nl">loadModuleFromPlist</span><span class="p">:[[</span><span class="bp">NSBundle</span> <span class="n">mainBundle</span><span class="p">]</span> <span class="nl">pathForResource</span><span class="p">:</span><span class="s">@&quot;modules&quot;</span> <span class="nl">ofType</span><span class="p">:</span><span class="s">@&quot;plist&quot;</span><span class="p">]];</span>
+</span><span class='line'>    <span class="bp">NSArray</span> <span class="o">*</span><span class="n">modules</span> <span class="o">=</span> <span class="p">[[</span><span class="n">ModuleManager</span> <span class="n">sharedInstance</span><span class="p">]</span> <span class="n">allModules</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">ModuleProtocol</span><span class="o">&gt;</span> <span class="n">module</span> <span class="k">in</span> <span class="n">modules</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">([</span><span class="n">module</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">_cmd</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>            <span class="p">[</span><span class="n">module</span> <span class="nl">application</span><span class="p">:</span><span class="n">application</span> <span class="nl">didFinishLaunchingWithOptions</span><span class="p">:</span><span class="n">launchOptions</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">trackLaunchTime</span><span class="p">];</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过这种方式缺点也很明显，组件需要依赖主工程的 AppDelegate 是否实现了 UIApplicationDelegate 的代理方法，如果没有的话，即使组件方实现了对应的代理方法，依然无法捕获到事件。</p>
+
+<p>再来看下 <a href="http://www.jianshu.com/u/d8a653fc1cb1">caojun</a> 的处理方案 <a href="https://github.com/mdsb100/YTXModule">YTXModule</a>。
+这个方案主要思路是通过 runtime method swizzling，替换 AppDelegate 中实现的 UIApplicationDelegate 代理方法，然后在 swizzled method 中，执行事件分发。 YTXModule 提供了一些宏定义，精简了方法替换流程：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="bp">UIApplication</span> <span class="nl">(YTXModule)</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">module_setDelegate:</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="bp">UIApplicationDelegate</span><span class="o">&gt;</span><span class="p">)</span> <span class="nv">delegate</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">delegateOnceToken</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">delegateOnceToken</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">SWIZZLE_DELEGATE_METHOD</span><span class="p">(</span><span class="nl">applicationDidFinishLaunching</span><span class="p">:);</span>
+</span><span class='line'>        <span class="p">...</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">module_setDelegate</span><span class="p">:</span><span class="n">delegate</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">YTXModule</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="o">+</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nl">ytxmodule_application</span><span class="p">:(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="n">application</span> <span class="nl">didFinishLaunchingWithOptions</span><span class="p">:(</span><span class="n">nullable</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="n">launchOptions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">DEF_APPDELEGATE_METHOD_CONTAIN_RESULT</span><span class="p">(</span><span class="n">application</span><span class="p">,</span> <span class="n">launchOptions</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="p">...</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里需要注意的是，由于 method swizzling 是在不同类型载体（AppDelegate对象 <-> YTXModule类）间交换的方法，所以会造成在 <code>+ytxmodule_applicationDidFinishLaunching:</code> 中调用 <code>self</code> 时，获取的并不是 YTXModule类，而是 AppDelegate对象，因为方法替换实际上替换了 IMP，并没有改变实参，参照 <code>objc_msgSend(id self, SEL op, ... )</code> 的参数排列，可以明确第一个参数是消息接收者，也就是 AppDelegate对象。通过上述分析可以知道，如果直接进行方法替换，不做特殊处理，使用以下代码将会抛出 <code>unrecognized selector</code> 异常 ：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">ytxmodule_application:</span><span class="p">(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span> <span class="nf">didFinishLaunchingWithOptions:</span><span class="p">(</span><span class="n">nullable</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">launchOptions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="c1">// self is AppDelegate instance</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">ytxmodule_application</span><span class="p">:</span><span class="n">application</span> <span class="nl">didFinishLaunchingWithOptions</span><span class="p">:</span><span class="n">launchOptions</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>而以下代码，是可以正常运行的：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">ytxmodule_application:</span><span class="p">(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span> <span class="nf">didFinishLaunchingWithOptions:</span><span class="p">(</span><span class="n">nullable</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">launchOptions</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="p">[</span><span class="n">YTXModule</span> <span class="nl">ytxmodule_application</span><span class="p">:</span><span class="n">application</span> <span class="nl">didFinishLaunchingWithOptions</span><span class="p">:</span><span class="n">launchOptions</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>所以 caojun 在方法替换时，给 AppDelegate 添加了相同命名的实例方法，规避了这个异常 ：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="kt">void</span> <span class="nf">Swizzle</span><span class="p">(</span><span class="kt">Class</span> <span class="k">class</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">originalSelector</span><span class="p">,</span> <span class="n">Method</span> <span class="n">swizzledMethod</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">originalMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span> <span class="n">originalSelector</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">SEL</span> <span class="n">swizzledSelector</span> <span class="o">=</span> <span class="n">method_getName</span><span class="p">(</span><span class="n">swizzledMethod</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">BOOL</span> <span class="n">didAddMethod</span> <span class="o">=</span>
+</span><span class='line'>    <span class="n">class_addMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span>
+</span><span class='line'>                    <span class="n">originalSelector</span><span class="p">,</span>
+</span><span class='line'>                    <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">swizzledMethod</span><span class="p">),</span>
+</span><span class='line'>                    <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">swizzledMethod</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">didAddMethod</span> <span class="o">&amp;&amp;</span> <span class="n">originalMethod</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">class_replaceMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span>
+</span><span class='line'>                            <span class="n">swizzledSelector</span><span class="p">,</span>
+</span><span class='line'>                            <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">),</span>
+</span><span class='line'>                            <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">));</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">,</span> <span class="n">swizzledMethod</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="c1">// 这一步给 AppDelegate 添加相同命名的实例方法，并且其 IMP 是 AppDelegate 自身方法的原实现</span>
+</span><span class='line'>    <span class="n">class_addMethod</span><span class="p">(</span><span class="k">class</span><span class="p">,</span>
+</span><span class='line'>                    <span class="n">swizzledSelector</span><span class="p">,</span>
+</span><span class='line'>                    <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">swizzledMethod</span><span class="p">),</span>
+</span><span class='line'>                    <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">swizzledMethod</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>虽说这种方案也能实现事件的分发，但是在不同类型载体间使用 method swizzling  还是应该避免的，对其他开发者不是很友好。并且这种方案也存在依赖 YTXModule 是否替换了 UIApplicationDelegate 的代理方法问题，如果没有，组件方是无法捕获事件的。</p>
+
+<h2>一种更加优雅的方案</h2>
+
+<blockquote><p>分发、代理</p></blockquote>
+
+<p>看到这两个关键词，可以直接联想到 runtime 的另一重要组成部分，消息转发。以下是我结合消息转发实现的组件生命周期管理方案。</p>
+
+<p>首先是 TDFModule ，模块基类，所有想要捕获 App 生命周期事件的模块都需要创建一个继承 TDFModule 的类，并且遵守 TDFModuleProtocol 协议：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> 模块子类必须遵守此协议</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">@protocol</span> <span class="nc">TDFModuleProtocol</span> <span class="o">&lt;</span><span class="bp">UIApplicationDelegate</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> 模块优先级</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm"> - TDFModulePriorityVeryLow: 极底</span>
+</span><span class='line'><span class="cm"> - TDFModulePriorityLow: 低</span>
+</span><span class='line'><span class="cm"> - TDFModulePriorityMedium: 中</span>
+</span><span class='line'><span class="cm"> - TDFModulePriorityHigh: 高</span>
+</span><span class='line'><span class="cm"> - TDFModulePriorityVeryHigh: 极高</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="k">typedef</span> <span class="n">NS_ENUM</span><span class="p">(</span><span class="bp">NSInteger</span><span class="p">,</span> <span class="n">TDFModulePriority</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">TDFModulePriorityVeryLow</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">TDFModulePriorityLow</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">TDFModulePriorityMedium</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">TDFModulePriorityHigh</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+</span><span class='line'>    <span class="n">TDFModulePriorityVeryHigh</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+</span><span class='line'><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@interface</span> <span class="nc">TDFModule</span> : <span class="bp">NSObject</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">module</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> 在 load 中调用，以注册模块</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">registerModule</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/**</span>
+</span><span class='line'><span class="cm"> 模块优先级</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm"> 主工程模块的调用最先进行，剩余附属模块，</span>
+</span><span class='line'><span class="cm"> 内部会根据优先级，依次调用 UIApplicationDelegate 代理</span>
+</span><span class='line'><span class="cm"> 默认是 TDFModulePriorityMedium</span>
+</span><span class='line'><span class="cm"> </span>
+</span><span class='line'><span class="cm"> @return 优先级</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="n">TDFModulePriority</span><span class="p">)</span><span class="nf">priority</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TDFModule</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">init</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="nb">self</span> <span class="nl">conformsToProtocol</span><span class="p">:@</span><span class="n">protocol</span><span class="p">(</span><span class="n">TDFModuleProtocol</span><span class="p">)])</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">@throw</span> <span class="p">[</span><span class="bp">NSException</span> <span class="nl">exceptionWithName</span><span class="p">:</span><span class="s">@&quot;TDFModuleRegisterProgress&quot;</span> <span class="nl">reason</span><span class="p">:</span><span class="s">@&quot;subclass should confirm to &lt;TDFModuleProtocol&gt;.&quot;</span> <span class="nl">userInfo</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">module</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[[</span><span class="nb">self</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">registerModule</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">TDFModuleManager</span> <span class="nl">addModuleClass</span><span class="p">:</span><span class="nb">self</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="n">TDFModulePriority</span><span class="p">)</span><span class="nf">priority</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">TDFModulePriorityMedium</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>子类需要在 <code>+load</code> 方法中调用 <code>registerModule</code> 才能让模块具备捕获 App 事件的能力。因为 TDFModuleProtocol 直接遵守的 UIApplicationDelegate 协议，子类可以和 AppDelegate 一样，直接实现自己感兴趣的代理方法即可：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TDFAModule</span> : <span class="nc">TDFModule</span> <span class="o">&lt;</span><span class="n">TDFModuleProtocol</span><span class="o">&gt;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TDFAModule</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">load</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="n">registerModule</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="n">TDFModulePriority</span><span class="p">)</span><span class="nf">priority</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">TDFModulePriorityHigh</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">application:</span><span class="p">(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span> <span class="nf">didFinishLaunchingWithOptions:</span><span class="p">(</span><span class="bp">NSDictionary</span> <span class="o">*</span><span class="p">)</span><span class="nv">launchOptions</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@, %@&quot;</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">([</span><span class="nb">self</span> <span class="k">class</span><span class="p">]),</span> <span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">_cmd</span><span class="p">));</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">applicationWillEnterForeground:</span><span class="p">(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@, %@&quot;</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">([</span><span class="nb">self</span> <span class="k">class</span><span class="p">]),</span> <span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">_cmd</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">applicationDidBecomeActive:</span><span class="p">(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@, %@&quot;</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">([</span><span class="nb">self</span> <span class="k">class</span><span class="p">]),</span> <span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">_cmd</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">applicationWillTerminate:</span><span class="p">(</span><span class="bp">UIApplication</span> <span class="o">*</span><span class="p">)</span><span class="nv">application</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSLog</span><span class="p">(</span><span class="s">@&quot;%@, %@&quot;</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">([</span><span class="nb">self</span> <span class="k">class</span><span class="p">]),</span> <span class="n">NSStringFromSelector</span><span class="p">(</span><span class="n">_cmd</span><span class="p">));</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上就是一个简单的使用示例。</p>
+
+<p>接下来是 TDFModuleManager ，模块管理类。这个单例类主要负责模块的储存，以及在 UIApplication 的 <code>-setDelegate:</code> 中，把原来 delegate 替换成自己的 delegate proxy 。</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TDFModuleManager</span> : <span class="bp">NSObject</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">@</span><span class="n">package</span>
+</span><span class='line'>    <span class="n">TDFApplicationDelegateProxy</span> <span class="o">*</span><span class="n">_proxy</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="n">TDFApplicationDelegateProxy</span> <span class="o">*</span><span class="n">proxy</span><span class="p">;</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSArray</span> <span class="o">&lt;</span><span class="n">TDFModule</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="n">modules</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">shared</span><span class="p">;</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">addModuleClass:</span><span class="p">(</span><span class="kt">Class</span><span class="p">)</span><span class="nv">cls</span><span class="p">;</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">removeModuleClass:</span><span class="p">(</span><span class="kt">Class</span><span class="p">)</span><span class="nv">cls</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="bp">NSMutableArray</span> <span class="k">const</span> <span class="o">*</span> <span class="n">TDFModuleClassArray</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TDFModuleManager</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">shared</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">onceToken</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">static</span> <span class="n">TDFModuleManager</span> <span class="o">*</span><span class="n">singleton</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">onceToken</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">singleton</span> <span class="o">=</span> <span class="p">[[</span><span class="nb">self</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">singleton</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">addModuleClass:</span><span class="p">(</span><span class="kt">Class</span><span class="p">)</span><span class="nv">cls</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">NSParameterAssert</span><span class="p">(</span><span class="n">cls</span> <span class="o">&amp;&amp;</span> <span class="p">[</span><span class="n">cls</span> <span class="nl">isSubclassOfClass</span><span class="p">:[</span><span class="n">TDFModule</span> <span class="k">class</span><span class="p">]]);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">TDFModuleClassArray</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">TDFModuleClassArray</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="n">TDFModuleClassArray</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">cls</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">TDFModuleClassArray</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">cls</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">removeModuleClass:</span><span class="p">(</span><span class="kt">Class</span><span class="p">)</span><span class="nv">cls</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">TDFModuleClassArray</span> <span class="nl">removeObject</span><span class="p">:</span><span class="n">cls</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">generateRegistedModules</span> <span class="p">{</span>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">mModules</span> <span class="n">removeAllObjects</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="n">TDFModuleClassArray</span> <span class="nl">sortUsingDescriptors</span><span class="p">:</span><span class="l">@[</span><span class="p">[[</span><span class="bp">NSSortDescriptor</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithKey</span><span class="p">:</span><span class="s">@&quot;priority&quot;</span> <span class="nl">ascending</span><span class="p">:</span><span class="nb">NO</span><span class="p">]</span><span class="l">]</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">Class</span> <span class="n">cls</span> <span class="k">in</span> <span class="n">TDFModuleClassArray</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">TDFModule</span> <span class="o">*</span><span class="n">module</span> <span class="o">=</span> <span class="p">[</span><span class="n">cls</span> <span class="n">module</span><span class="p">];</span>
+</span><span class='line'>        <span class="n">NSAssert</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s">@&quot;module can&#39;t be nil of class %@&quot;</span><span class="p">,</span> <span class="n">NSStringFromClass</span><span class="p">(</span><span class="n">cls</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">mModules</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">module</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>            <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">mModules</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">module</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">TDFApplicationDelegateProxy</span> <span class="o">*</span><span class="p">)</span><span class="nf">proxy</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_proxy</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_proxy</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TDFApplicationDelegateProxy</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">_proxy</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSArray</span><span class="o">&lt;</span><span class="n">TDFModule</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nf">modules</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">(</span><span class="bp">NSArray</span><span class="o">&lt;</span><span class="n">TDFModule</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nb">self</span><span class="p">.</span><span class="n">mModules</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSMutableArray</span><span class="o">&lt;</span><span class="n">TDFModule</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nf">mModules</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_mModules</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">_mModules</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="n">_mModules</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">static</span> <span class="kt">void</span> <span class="n">MCDSwizzleInstanceMethod</span><span class="p">(</span><span class="kt">Class</span> <span class="n">cls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">originalSelector</span><span class="p">,</span> <span class="kt">Class</span> <span class="n">targetCls</span><span class="p">,</span> <span class="kt">SEL</span> <span class="n">swizzledSelector</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">originalMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">originalSelector</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">Method</span> <span class="n">swizzledMethod</span> <span class="o">=</span> <span class="n">class_getInstanceMethod</span><span class="p">(</span><span class="n">targetCls</span><span class="p">,</span> <span class="n">swizzledSelector</span><span class="p">);</span>
+</span><span class='line'>    <span class="kt">BOOL</span> <span class="n">didAddMethod</span> <span class="o">=</span> <span class="n">class_addMethod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">originalSelector</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">swizzledMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">swizzledMethod</span><span class="p">));</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">didAddMethod</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">class_replaceMethod</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">swizzledSelector</span><span class="p">,</span> <span class="n">method_getImplementation</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">),</span> <span class="n">method_getTypeEncoding</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">));</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">method_exchangeImplementations</span><span class="p">(</span><span class="n">originalMethod</span><span class="p">,</span> <span class="n">swizzledMethod</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="bp">UIApplication</span> <span class="nl">(TDFModule)</span>
+</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">load</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">static</span> <span class="kt">dispatch_once_t</span> <span class="n">onceToken</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">dispatch_once</span><span class="p">(</span><span class="o">&amp;</span><span class="n">onceToken</span><span class="p">,</span> <span class="o">^</span><span class="p">{</span>
+</span><span class='line'>        <span class="n">MCDSwizzleInstanceMethod</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="k">@selector</span><span class="p">(</span><span class="nl">setDelegate</span><span class="p">:),</span> <span class="nb">self</span><span class="p">,</span> <span class="k">@selector</span><span class="p">(</span><span class="nl">mcd_setDelegate</span><span class="p">:));</span>
+</span><span class='line'>    <span class="p">});</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">mcd_setDelegate:</span><span class="p">(</span><span class="kt">id</span> <span class="o">&lt;</span><span class="bp">UIApplicationDelegate</span><span class="o">&gt;</span><span class="p">)</span><span class="nv">delegate</span> <span class="p">{</span>
+</span><span class='line'>    <span class="n">TDFModuleManager</span><span class="p">.</span><span class="n">shared</span><span class="p">.</span><span class="n">proxy</span><span class="p">.</span><span class="n">realDelegate</span> <span class="o">=</span> <span class="n">delegate</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">TDFModuleManager</span><span class="p">.</span><span class="n">shared</span> <span class="n">generateRegistedModules</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">mcd_setDelegate</span><span class="p">:(</span><span class="kt">id</span> <span class="o">&lt;</span><span class="bp">UIApplicationDelegate</span><span class="o">&gt;</span><span class="p">)</span><span class="n">TDFModuleManager</span><span class="p">.</span><span class="n">shared</span><span class="p">.</span><span class="n">proxy</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>最后是这个方案的重点，也就是 TDFApplicationDelegateProxy 类：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TDFApplicationDelegateProxy</span> : <span class="bp">NSObject</span>
+</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">id</span> <span class="o">&lt;</span><span class="bp">UIApplicationDelegate</span><span class="o">&gt;</span> <span class="n">realDelegate</span><span class="p">;</span>
+</span><span class='line'><span class="k">@end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">@implementation</span> <span class="nc">TDFApplicationDelegateProxy</span>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">Protocol</span> <span class="o">*</span><span class="p">)</span><span class="nf">targetProtocol</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">return</span> <span class="p">@</span><span class="n">protocol</span><span class="p">(</span><span class="bp">UIApplicationDelegate</span><span class="p">);</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">isTargetProtocolMethod:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">selector</span> <span class="p">{</span>
+</span><span class='line'>    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">outCount</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">objc_method_description</span> <span class="o">*</span><span class="n">methodDescriptions</span> <span class="o">=</span> <span class="n">protocol_copyMethodDescriptionList</span><span class="p">([</span><span class="nb">self</span> <span class="n">targetProtocol</span><span class="p">],</span> <span class="nb">NO</span><span class="p">,</span> <span class="nb">YES</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outCount</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">idx</span> <span class="o">&lt;</span> <span class="n">outCount</span><span class="p">;</span> <span class="n">idx</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">selector</span> <span class="o">==</span> <span class="n">methodDescriptions</span><span class="p">[</span><span class="n">idx</span><span class="p">].</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="n">free</span><span class="p">(</span><span class="n">methodDescriptions</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">respondsToSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">aSelector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="n">TDFModule</span> <span class="o">*</span><span class="n">module</span> <span class="k">in</span> <span class="p">[</span><span class="n">TDFModuleManager</span> <span class="n">shared</span><span class="p">].</span><span class="n">modules</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">([</span><span class="nb">self</span> <span class="nl">isTargetProtocolMethod</span><span class="p">:</span><span class="n">aSelector</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="p">[</span><span class="n">module</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">aSelector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">YES</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="nb">super</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">aSelector</span><span class="p">];</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nf">forwardingTargetForSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="nb">self</span> <span class="nl">isTargetProtocolMethod</span><span class="p">:</span><span class="n">aSelector</span><span class="p">]</span> <span class="o">&amp;&amp;</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">aSelector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSMethodSignature</span> <span class="o">*</span><span class="p">)</span><span class="nf">methodSignatureForSelector:</span><span class="p">(</span><span class="kt">SEL</span><span class="p">)</span><span class="nv">aSelector</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">struct</span> <span class="n">objc_method_description</span> <span class="n">methodDescription</span> <span class="o">=</span> <span class="n">protocol_getMethodDescription</span><span class="p">([</span><span class="nb">self</span> <span class="n">targetProtocol</span><span class="p">],</span> <span class="n">aSelector</span><span class="p">,</span> <span class="nb">NO</span><span class="p">,</span> <span class="nb">YES</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">methodDescription</span><span class="p">.</span><span class="n">name</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="o">&amp;&amp;</span> <span class="n">methodDescription</span><span class="p">.</span><span class="n">types</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="p">[[</span><span class="nb">self</span> <span class="k">class</span><span class="p">]</span> <span class="nl">instanceMethodSignatureForSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">doNothing</span><span class="p">)];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="bp">NSMethodSignature</span> <span class="nl">signatureWithObjCTypes</span><span class="p">:</span><span class="n">methodDescription</span><span class="p">.</span><span class="n">types</span><span class="p">];;</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">forwardInvocation:</span><span class="p">(</span><span class="bp">NSInvocation</span> <span class="o">*</span><span class="p">)</span><span class="nv">anInvocation</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">anInvocation</span><span class="p">.</span><span class="n">selector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>        <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="n">TDFModule</span> <span class="o">*</span><span class="n">module</span> <span class="k">in</span> <span class="p">[</span><span class="n">TDFModuleManager</span> <span class="n">shared</span><span class="p">].</span><span class="n">modules</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">if</span> <span class="p">([</span><span class="n">module</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">anInvocation</span><span class="p">.</span><span class="n">selector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>            <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="n">module</span><span class="p">];</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">doNothing</span> <span class="p">{}</span>
+</span><span class='line'><span class="k">@end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>先说 <code>-respondsToSelector:</code> ，由于系统内部会调用这个方法，判断是否实现了对应的 UIApplicationDelegate 代理方法，所以这里结合 AppDelegate 以及所有注册的 Module 判断是否有相应实现。</p>
+
+<p>当 <code>-respondsToSelector:</code> 返回 YES 后，程序来到消息转发第二步 Fast forwarding path ，对应方法 <code>-forwardingTargetForSelector:</code>，在这一步，我们判断转发的方法是否为 UIApplicationDelegate 的代理方法，如果不是，并且 realDelegate（也就是 AppDelegate） 能响应，就直接把消息转发给 realDelegate。</p>
+
+<p>如果在上一步中没有把消息转发给 realDelegate，那么就到了消息转发的最后一步 Normal forwarding path ，对应方法 <code>-methodSignatureForSelector:</code> 和 <code>-forwardInvocation:</code>，在这一步我们首先根据协议直接返回代理方法的签名，然后在 <code>-forwardInvocation:</code> 方法中，按照优先级，依次把消息转发给注册的模块。</p>
+
+<p>经过上面几步，就可以把 App 的事件分发给各个组件了，而且组件对事件的捕获是不依赖于外界（AppDelegate）实现的，只要进行注册就可以了，个人认为还是比较优雅的。</p>
+
+<h2>Demo地址</h2>
+
+<p><a href="https://github.com/tripleCC/TDFModuleKit">TDFModuleKit</a></p>
+
+<h2>参考</h2>
+
+<p><a href="http://www.jianshu.com/p/48fbcbb36c75">iOS App组件化开发实践</a><br>
+<a href="http://www.jianshu.com/p/48fbcbb36c75">蘑菇街 App 的组件化之路</a><br></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[C 表达式中 Float 精度提升问题]]></title>
@@ -7634,1209 +8407,6 @@ TBVImageProgressPresenterProtocol的声明如下：</p>
 
 <p>TBVImageBrowser遵循了一个原则：使用者应该知道自己如何得到资源，并向框架提供获取资源的方法，这样才能让框架具有更好的扩展性。<br>
 详细的使用方法在<a href="https://github.com/tobevoid/TBVImageBrowser">仓库说明</a>中。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[使用AssetsLibrary和PhotoKit做一个简易的相片选择器]]></title>
-    <link href="http://triplecc.github.io/blog/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-%5B%3F%5D-ge-xiang-pian-xuan-ze-qi/"/>
-    <updated>2016-09-10T21:25:36+08:00</updated>
-    <id>http://triplecc.github.io/blog/shi-yong-assetslibraryhe-photokitzuo-[?]-ge-xiang-pian-xuan-ze-qi</id>
-    <content type="html"><![CDATA[<p>iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业务时，可以更加得心应手。github上的开发者针对PhotoKit做了一层很优秀的封装<a href="https://github.com/chiunam/CTAssetsPickerController">CTAssetsPickerController</a>，如果只需要支持iOS8+，那么可定制程度非常高的<a href="https://github.com/chiunam/CTAssetsPickerController">CTAssetsPickerController</a>是个不错的选择。<br>
-但是由于现有的业务还是需要支持iOS7，所以并不能完全舍弃使用<code>AssetsLibrary</code>的方式来访问相册。因此也就需要自己封装一套兼容iOS7的相册管理器。</p>
-
-<p>本文涉及代码：<a href="https://github.com/tobevoid/TBVAssetsPicker">TBVAssetsPicker</a></p>
-
-<!--more-->
-
-
-<h3>统一asset以及collection</h3>
-
-<table>
-<thead>
-<tr>
-<th style="text-align:left;"> AssetsLibrary </th>
-<th style="text-align:left;"> PhotoKit </th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;"> ALAssetsGroup </td>
-<td style="text-align:left;"> PHAssetCollection </td>
-</tr>
-<tr>
-<td style="text-align:left;"> ALAsset </td>
-<td style="text-align:left;"> PHAsset </td>
-</tr>
-<tr>
-<td style="text-align:left;"> TBVAsset </td>
-<td style="text-align:left;"> TBVCollection </td>
-</tr>
-</tbody>
-</table>
-
-
-<p>相片选择器最终需要向外部提供统一的标识相片的结构。同样，统一结构能让相片选择器更加优雅地实现内部逻辑。所以这里我声明了两个对应的类：<code>TBVAsset</code>、<code>TBVCollection</code>，并提供一些最基本的功能。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TBVAsset</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> *  PHAsset or ALAsset</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSObject</span>  <span class="o">*</span><span class="n">asset</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">assetWithOriginAsset:</span><span class="p">(</span><span class="bp">NSObject</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span><span class="p">;</span>
-</span><span class='line'><span class="cm">/** 本地标识 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">assetLocalIdentifer</span><span class="p">;</span>
-</span><span class='line'><span class="cm">/** 源照片尺寸 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nf">assetPixelSize</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">@interface</span> <span class="nc">TBVCollection</span> : <span class="bp">NSObject</span>
-</span><span class='line'><span class="cm">/**</span>
-</span><span class='line'><span class="cm"> *  ALAssetsGroup or PHAssetCollection</span>
-</span><span class='line'><span class="cm"> */</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSObject</span>  <span class="o">*</span><span class="n">collection</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">collectionWithOriginCollection:</span><span class="p">(</span><span class="bp">NSObject</span> <span class="o">*</span><span class="p">)</span><span class="nv">aCollection</span><span class="p">;</span>
-</span><span class='line'><span class="cm">/** 相簿名 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSString</span> <span class="o">*</span><span class="p">)</span><span class="nf">collectionTitle</span><span class="p">;</span>
-</span><span class='line'><span class="cm">/** 估算的相簿相片个数 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">collectionEstimatedAssetCount</span><span class="p">;</span>
-</span><span class='line'><span class="cm">/** 精确的相簿相片个数 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">collectionAccurateAssetCountWithFetchOptions:</span><span class="p">(</span><span class="kt">id</span><span class="p">)</span><span class="nv">filterOptions</span><span class="p">;</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="bp">NSInteger</span><span class="p">)</span><span class="nf">collectionAccurateAssetCountWithMediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>有了这些最基本的功能，在实现相册选择器时，就可以方便地对资源进行操作了。<br>
-其实对于这部分的兼容处理，主要就是对两个不同的库进行封装，使其呈现同样的外观，后续的几步大体也是围绕这个目标进行。</p>
-
-<h3>封装manager</h3>
-
-<p>由于是两个不同版本的库，并且AssetsLibrary已经在iOS9时被弃用，使用时会产生<code>deprecated</code>警告，所以我分别对<code>ALAssetsLibrary</code>和<code>PHCachingImageManager</code>进行了封装，然后通过统一的接口<code>TBVAssetsManagerProtocol</code>暴露其功能。</p>
-
-<p>一般相册选择器具有如下页面及对应功能（UI展示）：</p>
-
-<ul>
-<li>首页
-
-<ul>
-<li>相簿名</li>
-<li>相簿缩略图</li>
-<li>相簿拥有相片数</li>
-</ul>
-</li>
-<li>预览页
-
-<ul>
-<li>相片缩略图</li>
-<li>选中相片大小</li>
-</ul>
-</li>
-<li>浏览页
-
-<ul>
-<li>相片大图</li>
-<li>选中相片大小</li>
-</ul>
-</li>
-</ul>
-
-
-<p>所以我提供的接口如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">//====================================</span>
-</span><span class='line'><span class="c1">//              image</span>
-</span><span class='line'><span class="c1">//====================================</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** requestImage返回都是一个RACTuple，first是Image，second是是否为degraded */</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求特定大小的图片 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span>
-</span><span class='line'>                         <span class="nf">targetSize:</span><span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nv">targetSize</span>
-</span><span class='line'>                        <span class="nf">contentMode:</span><span class="p">(</span><span class="n">TBVAssetsPickerContentMode</span><span class="p">)</span><span class="nv">contentMode</span><span class="p">;</span>
-</span><span class='line'><span class="cm">/** 请求相簿缩略图 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestPosterImageForCollection:</span><span class="p">(</span><span class="n">TBVCollection</span> <span class="o">*</span><span class="p">)</span><span class="nv">collection</span>
-</span><span class='line'>                                     <span class="nf">mediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求相片缩略图 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestPosterImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求相片原图 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestFullResolutionImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//====================================</span>
-</span><span class='line'><span class="c1">//              asset / collection</span>
-</span><span class='line'><span class="c1">//====================================</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求相片资源大小 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestSizeForAssets:</span><span class="p">(</span><span class="bp">NSArray</span> <span class="o">&lt;</span><span class="n">TBVAsset</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nv">assets</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求所有相簿 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestAllCollections</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求所有相片资源 */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestAssetsForCollection:</span><span class="p">(</span><span class="n">TBVCollection</span> <span class="o">*</span><span class="p">)</span><span class="nv">collection</span>
-</span><span class='line'>                                <span class="nf">mediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求相机胶卷相簿（针对一般业务首先进入相机胶卷的预览页） */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestCameraRollCollection</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">//====================================</span>
-</span><span class='line'><span class="c1">//              video</span>
-</span><span class='line'><span class="c1">//====================================</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求AVPlayerItem */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestVideoForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'><span class="cm">/** 请求AVURLAsset */</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestURLAssetForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span><span class="p">;</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>实现以上接口，一般相册选择器的功能点就已经完成大半了。<br></p>
-
-<h2>TBVAssetsPickerManager</h2>
-
-<p>由于自定义的相册manager都遵守<code>TBVAssetsManagerProtocol</code>，<code>TBVAssetsPickerManager</code>
-的实现就变得相对简单，没有一大串令人厌烦的<code>if-else</code>。当然<code>TBVAssetsPickerManager</code>本身也是遵守<code>TBVAssetsManagerProtocol</code>的。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TBVAssetsPickerManager</span><span class="p">()</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSObject</span><span class="o">&lt;</span><span class="n">TBVAssetsManagerProtocol</span><span class="o">&gt;</span> <span class="o">*</span><span class="n">realManager</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">requestIdList</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">BOOL</span> <span class="n">photoKitAvailable</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#pragma mark life cycle</span>
-</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="n">init</span> <span class="p">{</span>
-</span><span class='line'>    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">_photoKitAvailable</span> <span class="o">=</span> <span class="n">NSClassFromString</span><span class="p">(</span><span class="s">@&quot;PHImageManager&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#pragma mark TBVAssetsManagerProtocol</span>
-</span><span class='line'><span class="p">....</span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#pragma mark getter setter</span>
-</span><span class='line'><span class="o">-</span> <span class="p">(</span><span class="bp">NSObject</span> <span class="o">*</span><span class="p">)</span><span class="n">realManager</span>
-</span><span class='line'><span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">_realManager</span> <span class="o">==</span> <span class="nb">nil</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">photoKitAvailable</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">_realManager</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TBVCachingImageManager</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">_realManager</span> <span class="o">=</span> <span class="p">[[</span><span class="n">TBVAssetsLibrary</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="n">_realManager</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这样<code>_realManager</code>拿到的就是当前版本最新的相册manager了。</p>
-
-<h3>接口的实现</h3>
-
-<p>其实接口文档描述的还是非常清晰的，所以这里只是罗列了下代码，并没有针对每一步做解释，因为这些基本的操作进去头文件看看就全明白了。</p>
-
-<h6>- requestImageForAsset:targetSize:(CGSize)targetSize:contentMode:</h6>
-
-<p>这个接口主要用来获取非原图。</p>
-
-<ul>
-<li>TBVCachingImageManager
-
-<ul>
-<li>关于PHImageRequestOptions的deliveryMode，
-
-<ul>
-<li>设置为PHImageRequestOptionsDeliveryModeOpportunistic并且synchronous为NO时，请求可能会先返回一张缩略图，然后再返回一张大图，这个可以通过获取请求回调字典中PHImageResultIsDegradedKey对应value来判别</li>
-<li>PHImageRequestOptionsDeliveryModeHighQualityFormat和PHImageRequestOptionsDeliveryModeFastFormat都返回一张图片，只不过前者返回的图片的质量高于或等于请求的质量，而后者可能返回一张质量稍低的图片</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>TBVAssetsLibrary
-
-<ul>
-<li>由于AssetsLibrary并没有提供获取特定尺寸的相片接口，所以这里只是返回thumbnail、aspectRatioThumbnail、fullScreenImage中尺寸和目标大小最接近的一张图片。</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-<span class='line-number'>53</span>
-<span class='line-number'>54</span>
-<span class='line-number'>55</span>
-<span class='line-number'>56</span>
-<span class='line-number'>57</span>
-<span class='line-number'>58</span>
-<span class='line-number'>59</span>
-<span class='line-number'>60</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span>
-</span><span class='line'>                         <span class="nf">targetSize:</span><span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nv">targetSize</span>
-</span><span class='line'>                        <span class="nf">contentMode:</span><span class="p">(</span><span class="n">TBVAssetsPickerContentMode</span><span class="p">)</span><span class="nv">contentMode</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">PHImageRequestID</span> <span class="n">requestId</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span>
-</span><span class='line'>                                      <span class="nl">requestImageForAsset</span><span class="p">:(</span><span class="n">PHAsset</span> <span class="o">*</span><span class="p">)</span><span class="n">asset</span><span class="p">.</span><span class="n">asset</span>
-</span><span class='line'>                                      <span class="nl">targetSize</span><span class="p">:</span><span class="n">targetSize</span>
-</span><span class='line'>                                      <span class="nl">contentMode</span><span class="p">:[</span><span class="nb">self</span> <span class="nl">contentModeForCustomContentMode</span><span class="p">:</span><span class="n">contentMode</span><span class="p">]</span>
-</span><span class='line'>                                      <span class="nl">options</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">defaultImageRequestOptions</span>
-</span><span class='line'>                                      <span class="nl">resultHandler</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">result</span><span class="p">,</span>
-</span><span class='line'>                                                      <span class="bp">NSDictionary</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">info</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                                          <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">RACTuplePack</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="n">PHImageResultIsDegradedKey</span><span class="p">])];</span>
-</span><span class='line'>                                          <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="n">info</span><span class="p">[</span><span class="n">PHImageResultIsDegradedKey</span><span class="p">]</span> <span class="n">boolValue</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>                                              <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>                                          <span class="p">}</span>
-</span><span class='line'>                                      <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="p">[</span><span class="n">RACDisposable</span> <span class="nl">disposableWithBlock</span><span class="p">:</span><span class="o">^</span><span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span> <span class="nl">cancelImageRequest</span><span class="p">:</span><span class="n">requestId</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">aAsset</span>
-</span><span class='line'>                         <span class="nf">targetSize:</span><span class="p">(</span><span class="bp">CGSize</span><span class="p">)</span><span class="nv">targetSize</span>
-</span><span class='line'>                        <span class="nf">contentMode:</span><span class="p">(</span><span class="n">TBVAssetsPickerContentMode</span><span class="p">)</span><span class="nv">contentMode</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[[[</span><span class="n">RACSignal</span> <span class="k">return</span><span class="o">:</span><span class="n">aAsset</span><span class="p">.</span><span class="n">asset</span><span class="p">]</span>
-</span><span class='line'>                <span class="nl">deliverOn</span><span class="p">:[</span><span class="n">RACScheduler</span> <span class="n">scheduler</span><span class="p">]]</span>
-</span><span class='line'>                <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="bp">ALAsset</span> <span class="o">*</span> <span class="n">asset</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">CGImageRef</span> <span class="n">resultImageRef</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="kt">BOOL</span> <span class="n">degraded</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">targetSize</span><span class="p">.</span><span class="n">width</span> <span class="o">&lt;</span> <span class="n">CGImageGetWidth</span><span class="p">(</span><span class="n">asset</span><span class="p">.</span><span class="n">thumbnail</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
-</span><span class='line'>            <span class="n">targetSize</span><span class="p">.</span><span class="n">height</span> <span class="o">&lt;</span> <span class="n">CGImageGetHeight</span><span class="p">(</span><span class="n">asset</span><span class="p">.</span><span class="n">thumbnail</span><span class="p">))</span> <span class="p">{</span>
-</span><span class='line'>            <span class="c1">// TBVAssetsPickerContentModeFill</span>
-</span><span class='line'>            <span class="n">resultImageRef</span> <span class="o">=</span> <span class="n">asset</span><span class="p">.</span><span class="n">thumbnail</span><span class="p">;</span>
-</span><span class='line'>            <span class="n">degraded</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">resultImageRef</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">CGImageRef</span> <span class="n">aspectRatioThumbnail</span> <span class="o">=</span> <span class="n">asset</span><span class="p">.</span><span class="n">aspectRatioThumbnail</span><span class="p">;</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">targetSize</span><span class="p">.</span><span class="n">width</span> <span class="o">&lt;</span> <span class="n">CGImageGetWidth</span><span class="p">(</span><span class="n">aspectRatioThumbnail</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
-</span><span class='line'>                <span class="n">targetSize</span><span class="p">.</span><span class="n">height</span> <span class="o">&lt;</span> <span class="n">CGImageGetHeight</span><span class="p">(</span><span class="n">aspectRatioThumbnail</span><span class="p">))</span> <span class="p">{</span>
-</span><span class='line'>                <span class="c1">// TBVAssetsPickerContentModeFit</span>
-</span><span class='line'>                <span class="n">resultImageRef</span> <span class="o">=</span> <span class="n">aspectRatioThumbnail</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">resultImageRef</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="bp">ALAssetRepresentation</span> <span class="o">*</span><span class="n">assetRepresentation</span> <span class="o">=</span> <span class="p">[</span><span class="n">asset</span> <span class="n">defaultRepresentation</span><span class="p">];</span>
-</span><span class='line'>                <span class="n">resultImageRef</span> <span class="o">=</span> <span class="p">[</span><span class="n">assetRepresentation</span> <span class="n">fullScreenImage</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="bp">UIImage</span> <span class="o">*</span><span class="n">resultImage</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="n">resultImageRef</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">resultImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithCGImage</span><span class="p">:</span><span class="n">resultImageRef</span>
-</span><span class='line'>                                              <span class="nl">scale</span><span class="p">:</span><span class="n">BQAP_SCREEN_SCALE</span>
-</span><span class='line'>                                        <span class="nl">orientation</span><span class="p">:</span><span class="n">UIImageOrientationUp</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">RACTuplePack</span><span class="p">(</span><span class="n">resultImage</span><span class="p">,</span> <span class="l">@(</span><span class="n">degraded</span><span class="l">)</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestPosterImageForCollection:mediaType:</h6>
-
-<ul>
-<li>TBVCachingImageManager
-
-<ul>
-<li>通过-fetchKeyAssetsInAssetCollection:options:获取相簿keyAssets，最多可以返回三个</li>
-<li>最终还是通过requestPosterImageForAsset:获取缩略图</li>
-<li>获取keyAssets前，需要设置options对资源进行过滤：</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">tbv_fetchOptionsWithCustomMediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="bp">NSArray</span> <span class="o">*</span><span class="n">mediaTypes</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span> <span class="nl">tbv_mediaTypesWithCustonMediaType</span><span class="p">:</span><span class="n">mediaType</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">mediaTypes</span><span class="p">.</span><span class="n">count</span><span class="p">)</span> <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">PHFetchOptions</span> <span class="o">*</span><span class="n">options</span> <span class="o">=</span> <span class="p">[[</span><span class="n">PHFetchOptions</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span><span class='line'>    <span class="bp">NSMutableString</span> <span class="o">*</span><span class="n">predicateString</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableString</span> <span class="n">string</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="bp">NSNumber</span> <span class="o">*</span><span class="n">mediaType</span> <span class="k">in</span> <span class="n">mediaTypes</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">predicateString</span> <span class="nl">appendFormat</span><span class="p">:</span><span class="s">@&quot;mediaType = %@&quot;</span><span class="p">,</span> <span class="n">mediaType</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="n">mediaType</span> <span class="nl">isEqual</span><span class="p">:</span><span class="n">mediaTypes</span><span class="p">.</span><span class="n">lastObject</span><span class="p">])</span> <span class="p">[</span><span class="n">predicateString</span> <span class="nl">appendString</span><span class="p">:</span><span class="s">@&quot; || &quot;</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="n">options</span><span class="p">.</span><span class="n">predicate</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSPredicate</span> <span class="nl">predicateWithFormat</span><span class="p">:</span><span class="n">predicateString</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">options</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<ul>
-<li>TBVAssetsLibrary
-
-<ul>
-<li>ALAssetsGroup有posterImage属性，直接返回相簿缩略图</li>
-<li>和PhotoKit不同，AssetLibrary通过ALAssetsGroup的setAssetsFilter方法进行过滤</li>
-</ul>
-</li>
-</ul>
-
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">[</span><span class="n">group</span> <span class="nl">setAssetsFilter</span><span class="p">:[</span><span class="bp">ALAssetsFilter</span> <span class="nl">tbv_assetsFilterWithCustomMediaType</span><span class="p">:</span><span class="n">mediaType</span><span class="p">]];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这样设置以后，后续针对group的操作都会在过滤的结果中进行了。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestPosterImageForCollection:</span><span class="p">(</span><span class="n">TBVCollection</span> <span class="o">*</span><span class="p">)</span><span class="nv">collection</span>
-</span><span class='line'>                              <span class="nf">mediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">PHFetchOptions</span> <span class="o">*</span><span class="n">fetchOptions</span> <span class="o">=</span> <span class="p">[</span><span class="n">PHFetchOptions</span> <span class="nl">tbv_fetchOptionsWithCustomMediaType</span><span class="p">:</span><span class="n">mediaType</span><span class="p">];</span>
-</span><span class='line'>        <span class="n">fetchOptions</span><span class="p">.</span><span class="n">sortDescriptors</span> <span class="o">=</span> <span class="l">@[</span><span class="p">[</span><span class="bp">NSSortDescriptor</span> <span class="nl">sortDescriptorWithKey</span><span class="p">:</span><span class="s">@&quot;creationDate&quot;</span>
-</span><span class='line'>                                                                       <span class="nl">ascending</span><span class="p">:</span><span class="nb">YES</span><span class="p">]</span><span class="l">]</span><span class="p">;</span>
-</span><span class='line'>        <span class="n">PHAssetCollection</span> <span class="o">*</span><span class="n">realCollection</span> <span class="o">=</span> <span class="p">(</span><span class="n">PHAssetCollection</span> <span class="o">*</span><span class="p">)</span><span class="n">collection</span><span class="p">.</span><span class="n">collection</span><span class="p">;</span>
-</span><span class='line'>        <span class="cm">/* fetchKeyAssetsInAssetCollection 获取至多三张 */</span>
-</span><span class='line'>        <span class="n">PHFetchResult</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="p">[</span><span class="n">PHAsset</span> <span class="nl">fetchKeyAssetsInAssetCollection</span><span class="p">:</span><span class="n">realCollection</span>
-</span><span class='line'>                                                                 <span class="nl">options</span><span class="p">:</span><span class="n">fetchOptions</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">result</span><span class="p">.</span><span class="n">count</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:[</span><span class="n">RACSignal</span> <span class="n">empty</span><span class="p">]];</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>            <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="n">TBVAsset</span> <span class="o">*</span><span class="n">posterAsset</span> <span class="o">=</span> <span class="p">[</span><span class="n">TBVAsset</span> <span class="nl">assetWithOriginAsset</span><span class="p">:</span><span class="n">result</span><span class="p">.</span><span class="n">firstObject</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:[</span><span class="nb">self</span> <span class="nl">requestPosterImageForAsset</span><span class="p">:</span><span class="n">posterAsset</span><span class="p">]];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}]</span> <span class="n">switchToLatest</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestAssetsForCollection:</span><span class="p">(</span><span class="n">TBVCollection</span> <span class="o">*</span><span class="p">)</span><span class="nv">collection</span>
-</span><span class='line'>                                <span class="nf">mediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">assets</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
-</span><span class='line'>        <span class="bp">ALAssetsGroup</span> <span class="o">*</span><span class="n">group</span> <span class="o">=</span> <span class="p">(</span><span class="bp">ALAssetsGroup</span> <span class="o">*</span><span class="p">)</span><span class="n">collection</span><span class="p">.</span><span class="n">collection</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">group</span> <span class="nl">setAssetsFilter</span><span class="p">:[</span><span class="bp">ALAssetsFilter</span> <span class="nl">tbv_assetsFilterWithCustomMediaType</span><span class="p">:</span><span class="n">mediaType</span><span class="p">]];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">group</span> <span class="nl">enumerateAssetsUsingBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">ALAsset</span> <span class="o">*</span><span class="n">result</span><span class="p">,</span> <span class="bp">NSUInteger</span> <span class="n">index</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="o">*</span><span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">assets</span> <span class="nl">addObject</span><span class="p">:[</span><span class="n">TBVAsset</span> <span class="nl">assetWithOriginAsset</span><span class="p">:</span><span class="n">result</span><span class="p">]];</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">assets</span><span class="p">];</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestPosterImageForAsset:</h6>
-
-<p>获取asset的缩略图，需要注意的一点就是：在获取缩略图的情况下，Fill比Fit获取的图片要清晰</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestPosterImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="bp">CGSize</span> <span class="n">posterSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">kBQPosterImageWidth</span> <span class="o">*</span> <span class="n">BQAP_SCREEN_SCALE</span><span class="p">,</span>
-</span><span class='line'>                                       <span class="n">kBQPosterImageHeight</span> <span class="o">*</span> <span class="n">BQAP_SCREEN_SCALE</span><span class="p">);</span>
-</span><span class='line'>        <span class="cm">/* 在获取缩略图的情况下，Fill比Fit获取的图片要清晰 */</span>
-</span><span class='line'>        <span class="n">PHImageRequestID</span> <span class="n">requestId</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span>
-</span><span class='line'>                                      <span class="nl">requestImageForAsset</span><span class="p">:(</span><span class="n">PHAsset</span> <span class="o">*</span><span class="p">)</span><span class="n">asset</span><span class="p">.</span><span class="n">asset</span>
-</span><span class='line'>                                      <span class="nl">targetSize</span><span class="p">:</span><span class="n">posterSize</span>
-</span><span class='line'>                                      <span class="nl">contentMode</span><span class="p">:</span><span class="n">PHImageContentModeAspectFill</span>
-</span><span class='line'>                                      <span class="nl">options</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">defaultImageRequestOptions</span>
-</span><span class='line'>                                      <span class="nl">resultHandler</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">result</span><span class="p">,</span>
-</span><span class='line'>                                                      <span class="bp">NSDictionary</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">info</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                                          <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">RACTuplePack</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="n">PHImageResultIsDegradedKey</span><span class="p">])];</span>
-</span><span class='line'>                                          <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="n">info</span><span class="p">[</span><span class="n">PHImageResultIsDegradedKey</span><span class="p">]</span> <span class="n">boolValue</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>                                              <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>                                          <span class="p">}</span>
-</span><span class='line'>                                      <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="p">[</span><span class="n">RACDisposable</span> <span class="nl">disposableWithBlock</span><span class="p">:</span><span class="o">^</span><span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span> <span class="nl">cancelImageRequest</span><span class="p">:</span><span class="n">requestId</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestPosterImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="bp">CGSize</span> <span class="n">posterSize</span> <span class="o">=</span> <span class="n">CGSizeMake</span><span class="p">(</span><span class="n">kBQPosterImageWidth</span> <span class="o">*</span> <span class="n">BQAP_SCREEN_SCALE</span><span class="p">,</span>
-</span><span class='line'>                                       <span class="n">kBQPosterImageHeight</span> <span class="o">*</span> <span class="n">BQAP_SCREEN_SCALE</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:[</span><span class="nb">self</span> <span class="nl">requestImageForAsset</span><span class="p">:</span><span class="n">asset</span>
-</span><span class='line'>                                             <span class="nl">targetSize</span><span class="p">:</span><span class="n">posterSize</span>
-</span><span class='line'>                                            <span class="nl">contentMode</span><span class="p">:</span><span class="n">TBVAssetsPickerContentModeFill</span><span class="p">]];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}]</span> <span class="n">switchToLatest</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestFullResolutionImageForAsset:</h6>
-
-<p>获取原图时有一点很重要，就是尽量不要快速连续地获取原图，大图也可以列入这个范畴。连续地获取大图或者原图，设备的内存会急剧增高，甚至崩溃，这种情况通常在上传图片时比较常见。
-所以在上传图片时，尽量上传一张原图后再获取下一张原图进行上传，而不是全部获取完成之后再上传。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestFullResolutionImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">defaultImageRequestOptions</span><span class="p">.</span><span class="n">networkAccessAllowed</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
-</span><span class='line'>        <span class="n">PHImageRequestID</span> <span class="n">requestId</span> <span class="o">=</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span>
-</span><span class='line'>                                      <span class="nl">requestImageForAsset</span><span class="p">:(</span><span class="n">PHAsset</span> <span class="o">*</span><span class="p">)</span><span class="n">asset</span><span class="p">.</span><span class="n">asset</span>
-</span><span class='line'>                                      <span class="nl">targetSize</span><span class="p">:</span><span class="n">PHImageManagerMaximumSize</span>
-</span><span class='line'>                                      <span class="nl">contentMode</span><span class="p">:</span><span class="n">PHImageContentModeDefault</span>
-</span><span class='line'>                                      <span class="nl">options</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">defaultImageRequestOptions</span>
-</span><span class='line'>                                      <span class="nl">resultHandler</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">UIImage</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">result</span><span class="p">,</span>
-</span><span class='line'>                                                      <span class="bp">NSDictionary</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">info</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                                          <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">RACTuplePack</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">info</span><span class="p">[</span><span class="n">PHImageResultIsDegradedKey</span><span class="p">])];</span>
-</span><span class='line'>                                          <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">[</span><span class="n">info</span><span class="p">[</span><span class="n">PHImageResultIsDegradedKey</span><span class="p">]</span> <span class="n">boolValue</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>                                              <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>                                          <span class="p">}</span>
-</span><span class='line'>                                      <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="p">[</span><span class="n">RACDisposable</span> <span class="nl">disposableWithBlock</span><span class="p">:</span><span class="o">^</span><span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span> <span class="nl">cancelImageRequest</span><span class="p">:</span><span class="n">requestId</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestFullResolutionImageForAsset:</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="p">)</span><span class="nv">asset</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[[[</span><span class="n">RACSignal</span> <span class="k">return</span><span class="o">:</span><span class="n">asset</span><span class="p">.</span><span class="n">asset</span><span class="p">]</span>
-</span><span class='line'>        <span class="nl">deliverOn</span><span class="p">:[</span><span class="n">RACScheduler</span> <span class="n">scheduler</span><span class="p">]]</span>
-</span><span class='line'>        <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="bp">ALAsset</span> <span class="o">*</span> <span class="n">asset</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="bp">ALAssetRepresentation</span> <span class="o">*</span><span class="n">assetRepresentation</span> <span class="o">=</span> <span class="p">[</span><span class="n">asset</span> <span class="n">defaultRepresentation</span><span class="p">];</span>
-</span><span class='line'>            <span class="n">CGImageRef</span> <span class="n">fullResolutionImage</span> <span class="o">=</span> <span class="p">[</span><span class="n">assetRepresentation</span> <span class="n">fullResolutionImage</span><span class="p">];</span>
-</span><span class='line'>            <span class="bp">UIImage</span> <span class="o">*</span><span class="n">resultImage</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIImage</span> <span class="nl">imageWithCGImage</span><span class="p">:</span><span class="n">fullResolutionImage</span>
-</span><span class='line'>                                                       <span class="nl">scale</span><span class="p">:</span><span class="n">BQAP_SCREEN_SCALE</span>
-</span><span class='line'>                                                 <span class="nl">orientation</span><span class="p">:</span><span class="n">UIImageOrientationUp</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>            <span class="k">return</span> <span class="n">RACTuplePack</span><span class="p">(</span><span class="n">resultImage</span><span class="p">,</span> <span class="l">@(</span><span class="nb">NO</span><span class="l">)</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestSizeForAssets:</h6>
-
-<p>请求大小是针对的图片，所以对非图片的asset进行了过滤</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-<span class='line-number'>44</span>
-<span class='line-number'>45</span>
-<span class='line-number'>46</span>
-<span class='line-number'>47</span>
-<span class='line-number'>48</span>
-<span class='line-number'>49</span>
-<span class='line-number'>50</span>
-<span class='line-number'>51</span>
-<span class='line-number'>52</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestSizeForAssets:</span><span class="p">(</span><span class="bp">NSArray</span><span class="o">&lt;</span><span class="n">TBVAsset</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nv">assets</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">RACSequence</span> <span class="o">*</span><span class="n">requestSequence</span> <span class="o">=</span> <span class="p">[[</span><span class="n">assets</span><span class="p">.</span><span class="n">rac_sequence</span>
-</span><span class='line'>        <span class="nl">filter</span><span class="p">:</span><span class="o">^</span><span class="kt">BOOL</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="n">asset</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="p">((</span><span class="n">PHAsset</span> <span class="o">*</span><span class="p">)</span><span class="n">asset</span><span class="p">.</span><span class="n">asset</span><span class="p">).</span><span class="n">mediaType</span> <span class="o">==</span> <span class="n">PHAssetMediaTypeImage</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}]</span>
-</span><span class='line'>        <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="n">asset</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="nb">self</span><span class="p">.</span><span class="n">defaultImageRequestOptions</span><span class="p">.</span><span class="n">deliveryMode</span> <span class="o">=</span> <span class="n">PHImageRequestOptionsDeliveryModeHighQualityFormat</span><span class="p">;</span>
-</span><span class='line'>                <span class="n">PHImageRequestID</span> <span class="n">requestId</span> <span class="o">=</span><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span>
-</span><span class='line'>                                             <span class="nl">requestImageDataForAsset</span><span class="p">:(</span><span class="n">PHAsset</span> <span class="o">*</span><span class="p">)</span><span class="n">asset</span><span class="p">.</span><span class="n">asset</span>
-</span><span class='line'>                                             <span class="nl">options</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">defaultImageRequestOptions</span>
-</span><span class='line'>                                             <span class="nl">resultHandler</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSData</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">imageData</span><span class="p">,</span>
-</span><span class='line'>                                                             <span class="bp">NSString</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">dataUTI</span><span class="p">,</span>
-</span><span class='line'>                                                             <span class="n">UIImageOrientation</span> <span class="n">orientation</span><span class="p">,</span>
-</span><span class='line'>                                                             <span class="bp">NSDictionary</span> <span class="o">*</span> <span class="n">_Nullable</span> <span class="n">info</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                                                 <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="l">@(</span><span class="n">imageData</span><span class="p">.</span><span class="n">length</span><span class="l">)</span><span class="p">];</span>
-</span><span class='line'>                                                 <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>                                             <span class="p">}];</span>
-</span><span class='line'>                <span class="k">return</span> <span class="p">[</span><span class="n">RACDisposable</span> <span class="nl">disposableWithBlock</span><span class="p">:</span><span class="o">^</span><span class="p">{</span>
-</span><span class='line'>                    <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">imageManager</span> <span class="nl">cancelImageRequest</span><span class="p">:</span><span class="n">requestId</span><span class="p">];</span>
-</span><span class='line'>                <span class="p">}];</span>
-</span><span class='line'>            <span class="p">}];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[[</span><span class="n">RACSignal</span>
-</span><span class='line'>        <span class="nl">zip</span><span class="p">:</span><span class="n">requestSequence</span><span class="p">]</span>
-</span><span class='line'>        <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="n">RACTuple</span> <span class="o">*</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="p">[</span><span class="n">value</span><span class="p">.</span><span class="n">rac_sequence</span> <span class="nl">foldLeftWithStart</span><span class="p">:</span><span class="mi">@0</span> <span class="nl">reduce</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="kt">id</span> <span class="n">accumulator</span><span class="p">,</span> <span class="kt">id</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">return</span> <span class="l">@(</span><span class="p">[</span><span class="n">accumulator</span> <span class="n">integerValue</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">value</span> <span class="n">integerValue</span><span class="p">]</span><span class="l">)</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestSizeForAssets:</span><span class="p">(</span><span class="bp">NSArray</span><span class="o">&lt;</span><span class="n">TBVAsset</span> <span class="o">*&gt;</span> <span class="o">*</span><span class="p">)</span><span class="nv">assets</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span>
-</span><span class='line'>        <span class="k">return</span><span class="o">:</span><span class="p">[[[[</span><span class="n">assets</span><span class="p">.</span><span class="n">rac_sequence</span>
-</span><span class='line'>            <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="n">TBVAsset</span> <span class="o">*</span><span class="n">asset</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>               <span class="k">return</span> <span class="n">asset</span><span class="p">.</span><span class="n">asset</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}]</span>
-</span><span class='line'>            <span class="nl">filter</span><span class="p">:</span><span class="o">^</span><span class="kt">BOOL</span><span class="p">(</span><span class="bp">ALAsset</span> <span class="o">*</span><span class="n">asset</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">return</span> <span class="p">[</span><span class="n">asset</span> <span class="nl">valueForProperty</span><span class="p">:</span><span class="n">ALAssetPropertyType</span><span class="p">]</span> <span class="o">==</span> <span class="n">ALAssetTypePhoto</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}]</span>
-</span><span class='line'>            <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="bp">ALAsset</span> <span class="o">*</span><span class="n">asset</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">return</span> <span class="l">@(</span><span class="p">[</span><span class="n">asset</span> <span class="n">defaultRepresentation</span><span class="p">].</span><span class="n">size</span><span class="l">)</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}]</span>
-</span><span class='line'>            <span class="nl">foldLeftWithStart</span><span class="p">:</span><span class="l">@(</span><span class="mi">0</span><span class="l">)</span> <span class="nl">reduce</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="kt">id</span> <span class="n">accumulator</span><span class="p">,</span> <span class="kt">id</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">return</span> <span class="l">@(</span><span class="p">[</span><span class="n">accumulator</span> <span class="n">integerValue</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">value</span> <span class="n">integerValue</span><span class="p">]</span><span class="l">)</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">}]];</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestAllCollections</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-<span class='line-number'>41</span>
-<span class='line-number'>42</span>
-<span class='line-number'>43</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestAllCollections</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">PHFetchResult</span> <span class="o">*</span><span class="n">smartResult</span> <span class="o">=</span> <span class="p">[</span><span class="n">PHAssetCollection</span>
-</span><span class='line'>                                      <span class="nl">fetchAssetCollectionsWithType</span><span class="p">:</span><span class="n">PHAssetCollectionTypeSmartAlbum</span>
-</span><span class='line'>                                      <span class="nl">subtype</span><span class="p">:</span><span class="n">PHAssetCollectionSubtypeAlbumRegular</span>
-</span><span class='line'>                                      <span class="nl">options</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>        <span class="n">PHFetchResult</span> <span class="o">*</span><span class="n">topLevelUserCollections</span> <span class="o">=</span> <span class="p">[</span><span class="n">PHCollectionList</span> <span class="nl">fetchTopLevelUserCollectionsWithOptions</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">collections</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="n">PHAssetCollection</span> <span class="o">*</span><span class="n">aCollection</span> <span class="k">in</span> <span class="n">smartResult</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">TBVCollection</span> <span class="o">*</span><span class="n">collection</span> <span class="o">=</span> <span class="p">[</span><span class="n">TBVCollection</span> <span class="nl">collectionWithOriginCollection</span><span class="p">:</span><span class="n">aCollection</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">collections</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">collection</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="n">PHAssetCollection</span> <span class="o">*</span><span class="n">aCollection</span> <span class="k">in</span> <span class="n">topLevelUserCollections</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">TBVCollection</span> <span class="o">*</span><span class="n">collection</span> <span class="o">=</span> <span class="p">[</span><span class="n">TBVCollection</span> <span class="nl">collectionWithOriginCollection</span><span class="p">:</span><span class="n">aCollection</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">collections</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">collection</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">collections</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestAllCollections</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">collections</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">assetsLibrary</span> <span class="nl">enumerateGroupsWithTypes</span><span class="p">:</span><span class="n">ALAssetsGroupAll</span>
-</span><span class='line'>                                          <span class="nl">usingBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">ALAssetsGroup</span> <span class="o">*</span><span class="n">group</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="o">*</span><span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">group</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">TBVCollection</span> <span class="o">*</span><span class="n">collection</span> <span class="o">=</span> <span class="p">[</span><span class="n">TBVCollection</span> <span class="nl">collectionWithOriginCollection</span><span class="p">:</span><span class="n">group</span><span class="p">];</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">collections</span> <span class="nl">addObject</span><span class="p">:</span><span class="n">collection</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">collections</span><span class="p">];</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span> <span class="nl">failureBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendError</span><span class="p">:</span><span class="n">error</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestAssetsForCollection:mediaType:</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestAssetsForCollection:</span><span class="p">(</span><span class="n">TBVCollection</span> <span class="o">*</span><span class="p">)</span><span class="nv">collection</span>
-</span><span class='line'>                                <span class="nf">mediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">PHFetchOptions</span> <span class="o">*</span><span class="n">options</span> <span class="o">=</span> <span class="p">[</span><span class="n">PHFetchOptions</span> <span class="nl">tbv_fetchOptionsWithCustomMediaType</span><span class="p">:</span><span class="n">mediaType</span><span class="p">];</span>
-</span><span class='line'>        <span class="n">PHFetchResult</span> <span class="o">*</span><span class="n">fetchResult</span> <span class="o">=</span> <span class="p">[</span><span class="n">PHAsset</span> <span class="nl">fetchAssetsInAssetCollection</span><span class="p">:(</span><span class="n">PHAssetCollection</span> <span class="o">*</span><span class="p">)</span><span class="n">collection</span><span class="p">.</span><span class="n">collection</span>
-</span><span class='line'>                                                                   <span class="nl">options</span><span class="p">:</span><span class="n">options</span><span class="p">];</span>
-</span><span class='line'>        <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">assets</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="nl">arrayWithCapacity</span><span class="p">:</span><span class="n">fetchResult</span><span class="p">.</span><span class="n">count</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="n">PHAsset</span> <span class="o">*</span><span class="n">asset</span> <span class="k">in</span> <span class="n">fetchResult</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">assets</span> <span class="nl">addObject</span><span class="p">:[</span><span class="n">TBVAsset</span> <span class="nl">assetWithOriginAsset</span><span class="p">:</span><span class="n">asset</span><span class="p">]];</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">assets</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestAssetsForCollection:</span><span class="p">(</span><span class="n">TBVCollection</span> <span class="o">*</span><span class="p">)</span><span class="nv">collection</span>
-</span><span class='line'>                                <span class="nf">mediaType:</span><span class="p">(</span><span class="n">TBVAssetsPickerMediaType</span><span class="p">)</span><span class="nv">mediaType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">assets</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="n">array</span><span class="p">];</span>
-</span><span class='line'>        <span class="bp">ALAssetsGroup</span> <span class="o">*</span><span class="n">group</span> <span class="o">=</span> <span class="p">(</span><span class="bp">ALAssetsGroup</span> <span class="o">*</span><span class="p">)</span><span class="n">collection</span><span class="p">.</span><span class="n">collection</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">group</span> <span class="nl">setAssetsFilter</span><span class="p">:[</span><span class="bp">ALAssetsFilter</span> <span class="nl">tbv_assetsFilterWithCustomMediaType</span><span class="p">:</span><span class="n">mediaType</span><span class="p">]];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">group</span> <span class="nl">enumerateAssetsUsingBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">ALAsset</span> <span class="o">*</span><span class="n">result</span><span class="p">,</span> <span class="bp">NSUInteger</span> <span class="n">index</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="o">*</span><span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">assets</span> <span class="nl">addObject</span><span class="p">:[</span><span class="n">TBVAsset</span> <span class="nl">assetWithOriginAsset</span><span class="p">:</span><span class="n">result</span><span class="p">]];</span>
-</span><span class='line'>            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="n">assets</span><span class="p">];</span>
-</span><span class='line'>                <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestCameraRollCollection</h6>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="c1">// TBVCachingImageManager</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestCameraRollCollection</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">PHFetchResult</span> <span class="o">*</span><span class="n">smartAlbums</span> <span class="o">=</span> <span class="p">[</span><span class="n">PHAssetCollection</span>
-</span><span class='line'>                                      <span class="nl">fetchAssetCollectionsWithType</span><span class="p">:</span><span class="n">PHAssetCollectionTypeSmartAlbum</span>
-</span><span class='line'>                                      <span class="nl">subtype</span><span class="p">:</span><span class="n">PHAssetCollectionSubtypeSmartAlbumUserLibrary</span>
-</span><span class='line'>                                      <span class="nl">options</span><span class="p">:</span><span class="nb">nil</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:[</span><span class="n">TBVCollection</span> <span class="nl">collectionWithOriginCollection</span><span class="p">:</span><span class="n">smartAlbums</span><span class="p">.</span><span class="n">firstObject</span><span class="p">]];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="c1">// TBVAssetsLibrary</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">requestCameraRollCollection</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">assetsLibrary</span> <span class="nl">enumerateGroupsWithTypes</span><span class="p">:</span><span class="n">ALAssetsGroupSavedPhotos</span> <span class="nl">usingBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">ALAssetsGroup</span> <span class="o">*</span><span class="n">group</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="o">*</span><span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:[</span><span class="n">TBVCollection</span> <span class="nl">collectionWithOriginCollection</span><span class="p">:</span><span class="n">group</span><span class="p">]];</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span> <span class="nl">failureBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendError</span><span class="p">:</span><span class="n">error</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>-requestVideoForAsset:和-requestURLAssetForAsset:</h6>
-
-<p>由于业务上没有视频的需求，所以这一块还没有去实现。</p>
-
-<h3>实现过程中的一些小坑</h3>
-
-<h6>用ALAssetsLibrary申请访问相册权限</h6>
-
-<p>这一点貌似有些代码用authorizationStatus就能实现，不过
-应用的时候还是发现不能触发请求权限alert，所以这里需要访问下相册的资源<a href="http://stackoverflow.com/questions/13572220/ask-permission-to-access-camera-roll">ask-permission-to-access-camera-roll</a>，
-来触发这个请求动作：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">+</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">tbv_forceTriggerPermissionAsking</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kt">void</span> <span class="p">(</span><span class="o">^</span><span class="n">sendStatus</span><span class="p">)()</span> <span class="o">=</span> <span class="o">^</span><span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:</span><span class="l">@(</span><span class="p">[</span><span class="nb">self</span> <span class="n">tbv_authorizationStatus</span><span class="p">]</span><span class="l">)</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">};</span>
-</span><span class='line'>
-</span><span class='line'>        <span class="k">if</span> <span class="p">([</span><span class="nb">self</span> <span class="n">tbv_authorizationStatus</span><span class="p">]</span> <span class="o">!=</span> <span class="n">BQAuthorizationStatusNotDetermined</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">sendStatus</span><span class="p">();</span>
-</span><span class='line'>            <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="bp">ALAssetsLibrary</span> <span class="o">*</span><span class="n">lib</span> <span class="o">=</span> <span class="p">[[</span><span class="bp">ALAssetsLibrary</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">lib</span> <span class="nl">enumerateGroupsWithTypes</span><span class="p">:</span><span class="n">ALAssetsGroupSavedPhotos</span> <span class="nl">usingBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">ALAssetsGroup</span> <span class="o">*</span><span class="n">group</span><span class="p">,</span> <span class="kt">BOOL</span> <span class="o">*</span><span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">sendStatus</span><span class="p">();</span>
-</span><span class='line'>            <span class="o">*</span><span class="n">stop</span> <span class="o">=</span> <span class="nb">YES</span><span class="p">;</span>
-</span><span class='line'>        <span class="p">}</span> <span class="nl">failureBlock</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">sendStatus</span><span class="p">();</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}]</span> <span class="n">deliverOnMainThread</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h6>ALAssetsLibrary请求的ALAsset被置空问题</h6>
-
-<p>官方文档里面有这么一句：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">The</span> <span class="n">lifetimes</span> <span class="n">of</span> <span class="n">objects</span> <span class="n">you</span> <span class="n">get</span> <span class="n">back</span> <span class="n">from</span> <span class="n">a</span> <span class="n">library</span> <span class="n">instance</span> <span class="n">are</span> <span class="n">tied</span> <span class="n">to</span> <span class="n">the</span> <span class="n">lifetime</span> <span class="n">of</span> <span class="n">the</span> <span class="n">library</span> <span class="n">instance</span><span class="p">.</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>可以看到，在使用ALAssetsLibrary请求回来的资源时，是不能释放对应的ALAssetsLibrary对象的。在发送多图的场合，如果不注意保持住ALAssetsLibrary对象，很容易发生后面几张图片获取不到的情况。</p>
-
-<p>所以，要么在选择器返回选中的资源时，强引用对应的manager，要么这个manager由调用者传给相册选择器。</p>
-
-<h6>更改应用权限并切回前台</h6>
-
-<p>如果应用在后台时，更改了权限，当切回前台后，App会重新启动 。这里如果设置了断点，别以为是程序崩了。</p>
-
-<h3>不足</h3>
-
-<p>一个很明显的问题是使用了RAC的版本后，相册选择器滚动的性能会下降，没有以前通过回调来的顺畅。如果稍微快速一点滚动的话，CPU很容易就上100%。</p>
-
-<p>可能是使用RAC的方式不是很正确造成的，后续尽可能优化这一块。</p>
-
-<h2>2016-9-25补充</h2>
-
-<p>关于grid界面卡顿的原因:<br>
-因为这个界面的cell非常多，如果快速滚动时不对获取图片的信号进行throttle，那么CPU的占用率就会很高，从而界面就会变得卡顿。<br>
-在这里设置throttle为0.05左右就可以使界面变得比较顺畅，并且不会有太大的刷新延迟以至于影响用户体验。如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">RAC</span><span class="p">(</span><span class="nb">self</span><span class="p">,</span> <span class="n">contentImageView</span><span class="p">.</span><span class="n">image</span><span class="p">)</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">viewModel</span><span class="p">.</span><span class="n">contentImageSignal</span>
-</span><span class='line'>        <span class="nl">throttle</span><span class="p">:</span><span class="mf">0.05</span><span class="p">]</span>
-</span><span class='line'>        <span class="nl">takeUntil</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">rac_prepareForReuseSignal</span><span class="p">]</span>
-</span><span class='line'>        <span class="nl">map</span><span class="p">:</span><span class="o">^</span><span class="kt">id</span><span class="p">(</span><span class="n">RACTuple</span> <span class="o">*</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="p">[</span><span class="n">value</span> <span class="n">first</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
 ]]></content>
   </entry>
   

@@ -7,21 +7,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="对于这个问题的思考，起源于云风的这篇文章 浮点运算潜在的结果不一致问题，其中有几个评论我比较在意： 1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-stirp:
-刚刚被小伙伴提示默认情况下float相乘是自动提升精度到double的，因此第一次输出就应该是对double取整的。 x87 &hellip;">
+  <meta name="description" content="在没有实行组件化的项目中，经常会在 AppDelegate 看到各类初始化代码，这一部分代码一般用以配置某些 key 以及 secret ，或者开启某些服务，常见的有第三方推送、统计分析、IM服务等。当然，也有可能是开启一些自身的服务，比如 log 日志、 数据库初始化等。当一个 App &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -75,6 +61,40 @@ stirp:
     <div id="content">
       <div class="blog-index">
   
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2017-10-25-zu-jian-sheng-ming-zhou-qi/">组件化之组件生命周期管理</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2017-10-25T18:18:59+08:00'><span class='date'><span class='date-month'>Oct</span> <span class='date-day'>25</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>6:18 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>在没有实行组件化的项目中，经常会在 AppDelegate 看到各类初始化代码，这一部分代码一般用以配置某些 key 以及 secret ，或者开启某些服务，常见的有第三方推送、统计分析、IM服务等。当然，也有可能是开启一些自身的服务，比如 log 日志、 数据库初始化等。当一个 App 达到一定体量后， 未经整理的 AppDelegate 可能会变得臃肿。那么在实行组件化之后，该如何处理这部分代码呢？</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2017-10-25-zu-jian-sheng-ming-zhou-qi/">阅读全文 &rarr;</a>
+    </footer>
+  
+
+
+    </article>
   
   
     <article>
@@ -464,57 +484,6 @@ ssh 一直不结束，没提示成功，也没有提示失败。<br></p>
 
     </article>
   
-  
-    <article>
-      
-  <header>
-    
-      <h1 class="entry-title"><a href="/blog/2017-03-09-nsjsonserializationhe-nsnumber/">NSJSONSerialization和NSNumber的事故现场</a></h1>
-    
-    
-      <p class="meta">
-        
-
-
-
-
-<time class='entry-date' datetime='2017-03-09T17:20:39+08:00'><span class='date'><span class='date-month'>Mar</span> <span class='date-day'>9</span><span class='date-suffix'>th</span>, <span class='date-year'>2017</span></span> <span class='time'>5:20 pm</span></time>
-        
-      </p>
-    
-  </header>
-
-
-  <div class="entry-content"><p>最近同事在和后台联调时，出现了一个诡异的问题：后台传输的价格为 0.07 ，但是到了 iOS 这边，就变成了 0.07000000000000001 。奇怪的是安卓端并没有此问题，并且从 charles 抓包内容来看，后台传输的价格确实是0.07。</p>
-
-<p>在排除了业务层转化因素后，我们进入了 AFNetworking 框架内部，看能不能找到一点线索，然后就定位到了以下方法：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">URLSession:</span><span class="p">(</span><span class="n">__unused</span> <span class="bp">NSURLSession</span> <span class="o">*</span><span class="p">)</span><span class="nv">session</span>
-</span><span class='line'>              <span class="nf">task:</span><span class="p">(</span><span class="bp">NSURLSessionTask</span> <span class="o">*</span><span class="p">)</span><span class="nv">task</span>
-</span><span class='line'><span class="nf">didCompleteWithError:</span><span class="p">(</span><span class="bp">NSError</span> <span class="o">*</span><span class="p">)</span><span class="nv">error</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>  在拿到原始的 data 后，我尝试在调试终端使用 NSJSONSerialization 对其进行反序列化，结果发现价格在这里已经变成了 0.07000000000000001 。</p>
-
-<p>众所周知，由于计算机无法精确存储浮点数，实际上存储的浮点型变量实际数值就是取范围允许内最接近的值，也就是上面接收到的那样。（注：<a href="http://justjavac.com/codepuzzle/2012/11/11/codepuzzle-float-who-stole-your-accuracy.html">Float who stole your accuracy</a>）</p>
-
-<p>难道是 NSJSONSerialization 在反序列化的时候出了问题？</p>
-
-</div>
-  
-  
-    <footer>
-      <a rel="full-article" href="/blog/2017-03-09-nsjsonserializationhe-nsnumber/">阅读全文 &rarr;</a>
-    </footer>
-  
-
-
-    </article>
-  
   <div class="pagination">
     
       <a class="prev" href="/posts/2">&larr; Older</a>
@@ -537,6 +506,10 @@ ssh 一直不结束，没提示成功，也没有提示失败。<br></p>
   <ul id="recent_posts">
     
       <li class="post">
+        <a href="/blog/2017-10-25-zu-jian-sheng-ming-zhou-qi/">组件化之组件生命周期管理</a>
+      </li>
+    
+      <li class="post">
         <a href="/blog/2017-08-12-cbiao-da-shi-zhong-floatjing-du-ti-sheng-wen-ti/">C 表达式中 Float 精度提升问题</a>
       </li>
     
@@ -550,10 +523,6 @@ ssh 一直不结束，没提示成功，也没有提示失败。<br></p>
     
       <li class="post">
         <a href="/blog/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/">闲谈 IGListKit</a>
-      </li>
-    
-      <li class="post">
-        <a href="/blog/2017-06-08-cocoapodshe-localization/">CocoaPods和Localization</a>
       </li>
     
   </ul>
