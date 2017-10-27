@@ -125,7 +125,7 @@ void Swizzle(Class class, SEL originalSelector, Method swizzledMethod)
 
 看到这两个关键词，可以直接联想到 runtime 的另一重要组成部分，消息转发。以下是我结合消息转发实现的组件生命周期管理方案。
 
-先看下类图：
+先看下 UML 类图：
 
 ![](./images/1509036372427.jpg)
 
@@ -426,7 +426,7 @@ static void MCDSwizzleInstanceMethod(Class cls, SEL originalSelector, Class targ
 
 总结起来，流程如下：
 
-
+![](./images/1509083789825.jpg)
 
 经过上面几步，就可以把 App 的事件分发给各个组件了，而且组件对事件的捕获是不依赖于外界（AppDelegate）实现的，只要进行注册就可以了，个人认为还是比较优雅的。
 
