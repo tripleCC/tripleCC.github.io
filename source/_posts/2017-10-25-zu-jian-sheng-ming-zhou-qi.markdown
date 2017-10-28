@@ -127,7 +127,7 @@ void Swizzle(Class class, SEL originalSelector, Method swizzledMethod)
 
 先看下 UML 类图：
 
-![](/images/1509084344756.jpg)
+![](/images/Snip20171028_1.png)
 
 首先是 TDFModule ，模块基类，所有想要捕获 App 生命周期事件的模块都需要创建一个继承 TDFModule 的类，并且遵守 TDFModuleProtocol 协议：
 
