@@ -19,7 +19,7 @@ categories:
 
 从组件和主工程的关系切入，既然组件需要在 App 生命周期的某些阶段处理特定的事务，那么就提供特定的回调方法供组件使用。 App 生命周期各个阶段产生的事件，可以通过让 AppDelegate 遵守 UIApplicationDelegate 协议并实现不同的代理方法进行捕获。
 
-要想把当前阶段 App 产生的事件分发给各个组件，最简单的方案就是如 [limboy](http://www.jianshu.com/p/48fbcbb36c75) 所说，在 AppDelegate 的各个代理方法里，手动调一遍组件的对应方法，如果组件实现了对应的代理方法，就执行：
+要想把当前阶段 App 产生的事件分发给各个组件，最简单的方案就是如 [limboy](http://limboy.me/tech/2016/03/10/mgj-components.html) 所说，在 AppDelegate 的各个代理方法里，手动调一遍组件的对应方法，如果组件实现了对应的代理方法，就执行：
 
 ```objc
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
