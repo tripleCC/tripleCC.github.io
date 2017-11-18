@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-10-28T16:07:52+08:00</updated>
+  <updated>2017-11-18T12:51:48+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,613 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[编写自己的cocoapods插件]]></title>
+    <link href="http://triplecc.github.io/blog/2017-11-08-chuang-jian-cocoapodscha-jian/"/>
+    <updated>2017-11-08T22:19:01+08:00</updated>
+    <id>http://triplecc.github.io/blog/chuang-jian-cocoapodscha-jian</id>
+    <content type="html"><![CDATA[<p>经过对旧项目持续地拆分，组件库已经初具规模，组件粒度也变得越来越小，管理组件的成本也逐渐显现出来。目前团队采用的方式是，每个组件由特定的负责人进行管理，只有责任人才拥有 master 分支的访问权限，并且打 tag、发布组件版本都需要由负责人操作。</p>
+
+<p>当一个特性涉及到的组件库不多时，直接在钉钉上通知相关负责人升级下组件版本即可，然后将各个组件的新版本重新写入 Podfile。刚开始我会查下负责人是谁，然后在群组里罗列他需要升级的组件。但是修改的组件一多就比较麻烦了，如果直接把涉及的所有组件名往群组里一扔，组员有时候也会看漏了。</p>
+
+<p>于是我就有了下面的想法：<br>
+用脚本获取 Podfile 指向分支的组件名，然后去本地私有源获取组件的作者，再匹配本地存储的组员名，最后将负责人和所负责的组件发送到钉钉群组中。</p>
+
+<!--more-->
+
+
+<h2>准备</h2>
+
+<p>cocoapods 有许多好用的小插件，比如 <code>cocoapods-open</code> （ 执行 <code>pod open</code> 可以直接打开 <code>.xcworkspace</code> 文件），这些插件 gem 都有特定的目录分层。刚开始以为自己要从零开始配置，后来发现 <a href="https://github.com/CocoaPods/cocoapods-plugins">cocoapods-plugin</a> 本身就提供了用来创建一个模版工程的 <code>create</code> 命令。</p>
+
+<p>输入以下命令即可创建一个模版工程：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>// 安装
+</span><span class='line'>gem install cocoapods-plugins
+</span><span class='line'>// 创建
+</span><span class='line'>pod plugins create NAME <span class="o">[</span>TEMPLATE_URL<span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在这个需求中，我创建了 <code>author</code> 子命令，所以输入：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>pod plugins create author
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>当前路径下会生成 <code>cocoapods-author</code> 目录，其结构如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='sh'><span class='line'>.
+</span><span class='line'>├── Gemfile
+</span><span class='line'>├── LICENSE.txt
+</span><span class='line'>├── README.md
+</span><span class='line'>├── Rakefile
+</span><span class='line'>├── cocoapods-author.gemspec
+</span><span class='line'>├── lib
+</span><span class='line'>│   ├── cocoapods-author
+</span><span class='line'>│   │   ├── <span class="nb">command</span>
+</span><span class='line'>│   │   │   └── author.rb
+</span><span class='line'>│   │   ├── command.rb
+</span><span class='line'>│   │   └── gem_version.rb
+</span><span class='line'>│   ├── cocoapods-author.rb
+</span><span class='line'>│   └── cocoapods_plugin.rb
+</span><span class='line'>└── spec
+</span><span class='line'>    ├── <span class="nb">command</span>
+</span><span class='line'>    │   └── author_spec.rb
+</span><span class='line'>    └── spec_helper.rb
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>其中 <code>author.rb</code> 的初始内容如下（添加了点注释）：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">module</span> <span class="nn">Pod</span>
+</span><span class='line'>  <span class="k">class</span> <span class="nc">Command</span>
+</span><span class='line'>    <span class="c1"># This is an example of a cocoapods plugin adding a top-level subcommand</span>
+</span><span class='line'>    <span class="c1"># to the &#39;pod&#39; command.</span>
+</span><span class='line'>    <span class="c1">#</span>
+</span><span class='line'>    <span class="c1"># You can also create subcommands of existing or new commands. Say you</span>
+</span><span class='line'>    <span class="c1"># wanted to add a subcommand to `list` to show newly deprecated pods,</span>
+</span><span class='line'>    <span class="c1"># (e.g. `pod list deprecated`), there are a few things that would need</span>
+</span><span class='line'>    <span class="c1"># to change.</span>
+</span><span class='line'>    <span class="c1">#</span>
+</span><span class='line'>    <span class="c1"># - move this file to `lib/pod/command/list/deprecated.rb` and update</span>
+</span><span class='line'>    <span class="c1">#   the class to exist in the the Pod::Command::List namespace</span>
+</span><span class='line'>    <span class="c1"># - change this class to extend from `List` instead of `Command`. This</span>
+</span><span class='line'>    <span class="c1">#   tells the plugin system that it is a subcommand of `list`.</span>
+</span><span class='line'>    <span class="c1"># - edit `lib/cocoapods_plugins.rb` to require this file</span>
+</span><span class='line'>    <span class="c1">#</span>
+</span><span class='line'>    <span class="c1"># @todo Create a PR to add your plugin to CocoaPods/cocoapods.org</span>
+</span><span class='line'>    <span class="c1">#       in the `plugins.json` file, once your plugin is released.</span>
+</span><span class='line'>    <span class="c1">#</span>
+</span><span class='line'>    <span class="k">class</span> <span class="nc">Author</span> <span class="o">&lt;</span> <span class="no">Command</span>
+</span><span class='line'>      <span class="c1"># pod plugins list 时，展示的概要信息</span>
+</span><span class='line'>      <span class="nb">self</span><span class="o">.</span><span class="n">summary</span> <span class="o">=</span> <span class="s1">&#39;Short description of cocoapods-author.&#39;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1"># --help / 命令错误时展示的描述信息</span>
+</span><span class='line'>      <span class="nb">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="o">&lt;&lt;-</span><span class="no">DESC</span>
+</span><span class='line'><span class="sh">        Longer description of cocoapods-author.</span>
+</span><span class='line'><span class="no">      DESC</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1"># --help / 命令错误时展示的参数信息</span>
+</span><span class='line'>      <span class="nb">self</span><span class="o">.</span><span class="n">arguments</span> <span class="o">=</span> <span class="s1">&#39;NAME&#39;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+</span><span class='line'>        <span class="vi">@name</span> <span class="o">=</span> <span class="n">argv</span><span class="o">.</span><span class="n">shift_argument</span>
+</span><span class='line'>        <span class="k">super</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1"># 校验方法（查看文件是否存在等）</span>
+</span><span class='line'>      <span class="k">def</span> <span class="nf">validate!</span>
+</span><span class='line'>        <span class="k">super</span>
+</span><span class='line'>        <span class="n">help!</span> <span class="s1">&#39;A Pod name is required.&#39;</span> <span class="k">unless</span> <span class="vi">@name</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="c1"># 运行命令</span>
+</span><span class='line'>      <span class="k">def</span> <span class="nf">run</span>
+</span><span class='line'>        <span class="no">UI</span><span class="o">.</span><span class="n">puts</span> <span class="s2">&quot;Add your implementation for the cocoapods-author plugin in </span><span class="si">#{</span><span class="bp">__FILE__</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>注释文档说明了如何创建 <code>list</code> 的子命令 <code>deprecated</code>：</p>
+
+<p>1、移动目标文件至 <code>lib/pod/command/list/deprecated.rb</code>，并且将这个子命令类放进 Pod::Command::List 命名空间中；  <br>
+2、更改子命令类的父类为 <code>List</code> ； <br>
+3、在 <code>lib/cocoapods_plugins.rb</code> 中载入该文件 <br></p>
+
+<p>由于我暂时不需要子命令，所以直接继承 Command 就可以了。</p>
+
+<h2>获取 Podfile untagged 组件名</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">UNTAGGED_FLAGS</span> <span class="o">=</span> <span class="o">[</span><span class="ss">:path</span><span class="p">,</span> <span class="ss">:git</span><span class="p">,</span> <span class="ss">:branch</span><span class="p">,</span> <span class="ss">:commit</span><span class="o">]</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">load_untageed_dependencies_hash</span>
+</span><span class='line'>  <span class="n">file_path</span> <span class="o">=</span> <span class="no">Dir</span><span class="o">.</span><span class="n">pwd</span> <span class="o">+</span> <span class="s1">&#39;/Podfile&#39;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">raise</span> <span class="sx">%Q[没有找到 Podfile，请确认是否在 Podfile 所在文件夹</span><span class="se">\n</span><span class="sx">]</span> <span class="k">unless</span> <span class="no">File</span><span class="o">.</span><span class="n">file?</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">podfile</span> <span class="o">=</span> <span class="no">Podfile</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">dependencies</span> <span class="o">=</span> <span class="n">podfile</span><span class="o">.</span><span class="n">to_hash</span><span class="o">[</span><span class="s1">&#39;target_definitions&#39;</span><span class="o">].</span><span class="n">first</span><span class="o">[</span><span class="s1">&#39;dependencies&#39;</span><span class="o">]</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1"># UI.puts dependencies</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">untageed_dependencies</span> <span class="o">=</span> <span class="n">dependencies</span><span class="o">.</span><span class="n">select</span> <span class="k">do</span> <span class="o">|</span><span class="n">dependency</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">tagged</span> <span class="o">=</span> <span class="kp">true</span>
+</span><span class='line'>    <span class="k">if</span> <span class="n">dependency</span><span class="o">.</span><span class="n">kind_of?</span> <span class="no">Hash</span>
+</span><span class='line'>      <span class="n">first</span> <span class="o">=</span> <span class="n">dependency</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">first</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">first</span><span class="o">.</span><span class="n">kind_of?</span> <span class="no">Hash</span>
+</span><span class='line'>        <span class="n">tagged</span> <span class="o">=</span> <span class="n">first</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="kp">true</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">result</span><span class="p">,</span> <span class="n">flag</span><span class="o">|</span>
+</span><span class='line'>          <span class="o">!</span><span class="no">UNTAGGED_FLAGS</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="n">flag</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">result</span>
+</span><span class='line'>        <span class="k">end</span>
+</span><span class='line'>      <span class="k">elsif</span> <span class="n">first</span><span class="o">.</span><span class="n">kind_of?</span> <span class="nb">String</span>
+</span><span class='line'>        <span class="n">tagged</span> <span class="o">=</span> <span class="kp">true</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">elsif</span> <span class="n">dependency</span><span class="o">.</span><span class="n">is_a?</span><span class="p">(</span><span class="nb">String</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">tagged</span> <span class="o">=</span> <span class="kp">true</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>    <span class="o">!</span><span class="n">tagged</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">untageed_dependencies</span><span class="o">.</span><span class="n">reduce</span><span class="p">({})</span> <span class="k">do</span> <span class="o">|</span><span class="n">result</span><span class="p">,</span> <span class="n">dependency</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">result</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">dependency</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上方法返回没有依赖 tag 的组件哈希。这里我为了简单处理，直接获取 <code>target_definitions</code> 第一个元素的 <code>dependencies</code> 作为工程的依赖进行遍历。</p>
+
+<h2>获取本地私有源获取组件的作者</h2>
+
+<p>获取本地私有源的组件作者：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">load_pod_authors</span><span class="p">(</span><span class="n">spec_files</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">author_hash</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span class='line'>  <span class="n">spec_files</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">file</span><span class="o">|</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">!</span><span class="n">file</span><span class="o">.</span><span class="n">nil?</span> <span class="o">&amp;&amp;</span> <span class="no">File</span><span class="o">.</span><span class="n">file?</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">podspec</span> <span class="o">=</span> <span class="no">Specification</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">pod_authors</span> <span class="o">=</span> <span class="n">podspec</span><span class="o">.</span><span class="n">attributes_hash</span><span class="o">[</span><span class="s1">&#39;authors&#39;</span><span class="o">]</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">if</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">kind_of?</span> <span class="no">Hash</span>
+</span><span class='line'>        <span class="n">author</span> <span class="o">=</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">first</span>
+</span><span class='line'>      <span class="k">elsif</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">kind_of?</span> <span class="nb">Array</span>
+</span><span class='line'>        <span class="n">author</span> <span class="o">=</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">first</span>
+</span><span class='line'>      <span class="k">else</span>
+</span><span class='line'>        <span class="n">author</span> <span class="o">=</span> <span class="n">pod_authors</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>      <span class="n">author</span> <span class="o">=</span> <span class="n">author</span><span class="o">.</span><span class="n">downcase</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">if</span> <span class="o">!</span><span class="n">author</span><span class="o">.</span><span class="n">nil?</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">podspec</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'>        <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">]</span> <span class="o">=</span>  <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">nil?</span> <span class="p">?</span> <span class="o">[]</span> <span class="p">:</span> <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">]</span>
+</span><span class='line'>        <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">append</span><span class="p">(</span><span class="n">podspec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="n">author_hash</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>获取组员信息：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">load_boss_keeper_members</span>
+</span><span class='line'>  <span class="n">member_hash</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span class='line'>  <span class="vi">@memebrs_hash</span><span class="o">.</span><span class="n">uniq</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">nickname</span><span class="o">|</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">reform_memeber_hash_proc</span> <span class="o">=</span> <span class="o">-&gt;</span> <span class="n">nickname</span><span class="p">,</span> <span class="n">realname</span> <span class="k">do</span>
+</span><span class='line'>      <span class="n">nickname</span> <span class="o">=</span> <span class="n">nickname</span><span class="o">.</span><span class="n">downcase</span> <span class="k">unless</span> <span class="o">!</span><span class="n">nickname</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'>      <span class="n">pinyin</span> <span class="o">=</span> <span class="no">Pinyin</span><span class="o">.</span><span class="n">t</span><span class="p">(</span><span class="n">nickname</span><span class="p">,</span> <span class="ss">splitter</span><span class="p">:</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">downcase</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">pinyin</span> <span class="o">!=</span> <span class="n">nickname</span>
+</span><span class='line'>        <span class="n">member_hash</span><span class="o">[</span><span class="n">nickname</span><span class="o">]</span> <span class="o">=</span> <span class="n">realname</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">member_hash</span><span class="o">[</span><span class="n">pinyin</span><span class="o">]</span> <span class="o">=</span> <span class="n">realname</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="n">nickname</span><span class="o">.</span><span class="n">kind_of?</span> <span class="no">Hash</span>
+</span><span class='line'>      <span class="nb">name</span> <span class="o">=</span> <span class="n">nickname</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">dup</span><span class="o">.</span><span class="n">force_encoding</span><span class="p">(</span><span class="s2">&quot;UTF-8&quot;</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">nickname</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">first</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">name</span><span class="p">)</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">nickname</span><span class="o">|</span>
+</span><span class='line'>        <span class="n">reform_memeber_hash_proc</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">nickname</span><span class="p">,</span> <span class="nb">name</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">enddef</span> <span class="n">load_pod_authors</span><span class="p">(</span><span class="n">spec_files</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">author_hash</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span class='line'>  <span class="n">spec_files</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">file</span><span class="o">|</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">!</span><span class="n">file</span><span class="o">.</span><span class="n">nil?</span> <span class="o">&amp;&amp;</span> <span class="no">File</span><span class="o">.</span><span class="n">file?</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">podspec</span> <span class="o">=</span> <span class="no">Specification</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">pod_authors</span> <span class="o">=</span> <span class="n">podspec</span><span class="o">.</span><span class="n">attributes_hash</span><span class="o">[</span><span class="s1">&#39;authors&#39;</span><span class="o">]</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">if</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">kind_of?</span> <span class="no">Hash</span>
+</span><span class='line'>        <span class="n">author</span> <span class="o">=</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">first</span>
+</span><span class='line'>      <span class="k">elsif</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">kind_of?</span> <span class="nb">Array</span>
+</span><span class='line'>        <span class="n">author</span> <span class="o">=</span> <span class="n">pod_authors</span><span class="o">.</span><span class="n">first</span>
+</span><span class='line'>      <span class="k">else</span>
+</span><span class='line'>        <span class="n">author</span> <span class="o">=</span> <span class="n">pod_authors</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>      <span class="n">author</span> <span class="o">=</span> <span class="n">author</span><span class="o">.</span><span class="n">downcase</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">if</span> <span class="o">!</span><span class="n">author</span><span class="o">.</span><span class="n">nil?</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">podspec</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'>        <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">]</span> <span class="o">=</span>  <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">nil?</span> <span class="p">?</span> <span class="o">[]</span> <span class="p">:</span> <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">]</span>
+</span><span class='line'>        <span class="n">author_hash</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">append</span><span class="p">(</span><span class="n">podspec</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="n">author_hash</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>    <span class="k">else</span>
+</span><span class='line'>      <span class="n">reform_memeber_hash_proc</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">nickname</span><span class="p">,</span> <span class="n">nickname</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="n">member_hash</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在钉钉上 <code>@</code> 组员 需要手机号码，这一部分数据都从本地的 yaml 文件读取：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">file_path</span> <span class="o">=</span> <span class="no">File</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="no">File</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">__FILE__</span><span class="p">),</span><span class="s2">&quot;boss_keeper_members.yaml&quot;</span><span class="p">)</span>
+</span><span class='line'><span class="n">yaml_hash</span> <span class="o">=</span>
+</span><span class='line'><span class="k">begin</span>
+</span><span class='line'>  <span class="no">YAML</span><span class="o">.</span><span class="n">load_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+</span><span class='line'><span class="k">rescue</span> <span class="no">Psych</span><span class="o">::</span><span class="no">SyntaxError</span><span class="p">,</span> <span class="no">Errno</span><span class="o">::</span><span class="no">EACCES</span><span class="p">,</span> <span class="no">Errno</span><span class="o">::</span><span class="no">ENOENT</span>
+</span><span class='line'>  <span class="p">{}</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="vi">@memebrs_hash</span> <span class="o">=</span> <span class="n">yaml_hash</span><span class="o">[</span><span class="s1">&#39;members&#39;</span><span class="o">]</span>
+</span><span class='line'><span class="vi">@mobiles</span> <span class="o">=</span> <span class="n">yaml_hash</span><span class="o">[</span><span class="s2">&quot;mobiles&quot;</span><span class="o">].</span><span class="n">reduce</span><span class="p">({}){</span> <span class="o">|</span><span class="n">result</span><span class="p">,</span> <span class="n">mobile</span><span class="o">|</span> <span class="n">result</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">mobile</span><span class="p">)</span> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>由于作者一栏存在用花名、原名、昵称的情况，所以 yaml 文件基本格式如下：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="ss">members</span><span class="p">:</span>
+</span><span class='line'><span class="o">-</span> <span class="err">青木</span><span class="p">:</span>
+</span><span class='line'>  <span class="o">-</span> <span class="n">tripleCC</span>
+</span><span class='line'>
+</span><span class='line'><span class="ss">mobiles</span><span class="p">:</span>
+</span><span class='line'><span class="o">-</span> <span class="err">青木</span><span class="p">:</span>
+</span><span class='line'>  <span class="o">-</span> <span class="mi">1</span><span class="n">xxxxxxx</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>匹配本地存储的组员名</h2>
+
+<p>首先匹配是组内组员管理的组件，如果是其他组创建的组件，暂时忽略：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">load_valid_pod_authors_hash</span>
+</span><span class='line'>  <span class="n">authors_hash</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span class='line'>  <span class="vi">@pod_authors</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="nb">name</span><span class="p">,</span> <span class="n">pods</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">member_name</span> <span class="o">=</span> <span class="vi">@boss_keeper_members</span><span class="o">[</span><span class="nb">name</span><span class="o">.</span><span class="n">downcase</span><span class="o">]</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">!</span><span class="n">member_name</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'>      <span class="n">member_name</span> <span class="o">=</span> <span class="n">member_name</span><span class="o">.</span><span class="n">downcase</span>
+</span><span class='line'>      <span class="n">author_pods</span> <span class="o">=</span> <span class="n">authors_hash</span><span class="o">[</span><span class="n">member_name</span><span class="o">].</span><span class="n">nil?</span> <span class="p">?</span> <span class="o">[]</span> <span class="p">:</span> <span class="n">authors_hash</span><span class="o">[</span><span class="n">member_name</span><span class="o">]</span>
+</span><span class='line'>      <span class="n">authors_hash</span><span class="o">[</span><span class="n">member_name</span><span class="o">]</span> <span class="o">=</span> <span class="n">author_pods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pods</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="n">authors_hash</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>然后将结果和未指定 tag 的组件哈希匹配：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">load_untageed_dependencies_authors_hash</span>
+</span><span class='line'>  <span class="n">authors_hash</span> <span class="o">=</span> <span class="p">{}</span>
+</span><span class='line'>  <span class="n">valid_pod_authors</span> <span class="o">=</span> <span class="n">load_valid_pod_authors_hash</span>
+</span><span class='line'>  <span class="n">untageed_dependencies_hash</span> <span class="o">=</span> <span class="n">load_untageed_dependencies_hash</span>
+</span><span class='line'>  <span class="n">untageed_dependencies_hash</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">pod</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">valid_pod_authors</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span>  <span class="o">|</span><span class="n">author</span><span class="p">,</span> <span class="n">pods</span><span class="o">|</span>
+</span><span class='line'>      <span class="k">if</span> <span class="n">pods</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="n">pod</span><span class="p">)</span>
+</span><span class='line'>        <span class="n">authors_hash</span><span class="o">[</span><span class="n">author</span><span class="o">]</span> <span class="o">=</span> <span class="n">authors_hash</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">nil?</span> <span class="p">?</span> <span class="o">[]</span> <span class="p">:</span> <span class="n">authors_hash</span><span class="o">[</span><span class="n">author</span><span class="o">]</span>
+</span><span class='line'>        <span class="n">authors_hash</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">append</span><span class="p">(</span><span class="n">pod</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="n">authors_hash</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>整合发送至钉钉</h2>
+
+<p>通过 <code>git rev-parse --abbrev-ref HEAD</code> 获取当前所在分支，然后根据作者、组件名、手机号码创建 curl 命令并执行：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">post_message_to_ding_talk</span>
+</span><span class='line'>  <span class="n">current_branch</span> <span class="o">=</span> <span class="sb">`git rev-parse --abbrev-ref HEAD`</span><span class="o">.</span><span class="n">strip</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="n">untageed_dependencies_authors_hash</span> <span class="o">=</span> <span class="n">load_untageed_dependencies_authors_hash</span>
+</span><span class='line'>  <span class="n">untageed_dependencies_authors_hash</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">author</span><span class="p">,</span> <span class="n">pods</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">content</span> <span class="o">=</span> <span class="n">author</span> <span class="o">+</span> <span class="s2">&quot;，</span><span class="si">#{</span><span class="n">current_branch</span><span class="si">}</span><span class="s2">分支&quot;</span> <span class="o">+</span> <span class="s2">&quot;，下面的仓库打个版本：&quot;</span> <span class="o">+</span> <span class="n">pods</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;，&#39;</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">!</span><span class="vi">@mobiles</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">nil?</span>
+</span><span class='line'>      <span class="n">mobile</span> <span class="o">=</span> <span class="vi">@mobiles</span><span class="o">[</span><span class="n">author</span><span class="o">].</span><span class="n">first</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">curl</span> <span class="o">=</span> <span class="sx">%Q[</span>
+</span><span class='line'><span class="sx">    curl &#39;https://oapi.dingtalk.com/robot/send?access_token=xxxxxxx&#39; \</span>
+</span><span class='line'><span class="sx">       -H &#39;Content-Type: application/json&#39; \</span>
+</span><span class='line'><span class="sx">       -d &#39;</span>
+</span><span class='line'><span class="sx">      {</span>
+</span><span class='line'><span class="sx">        &quot;msgtype&quot;: &quot;text&quot;, </span>
+</span><span class='line'><span class="sx">        &quot;text&quot;: {</span>
+</span><span class='line'><span class="sx">            &quot;content&quot;: &quot;</span><span class="si">#{</span><span class="n">content</span><span class="si">}</span><span class="sx">&quot;</span>
+</span><span class='line'><span class="sx">         },</span>
+</span><span class='line'><span class="sx">         &quot;at&quot;: {</span>
+</span><span class='line'><span class="sx">            &quot;atMobiles&quot;: [</span>
+</span><span class='line'><span class="sx">              &quot;</span><span class="si">#{</span><span class="n">mobile</span><span class="si">}</span><span class="sx">&quot;</span>
+</span><span class='line'><span class="sx">            ], </span>
+</span><span class='line'><span class="sx">            &quot;isAtAll&quot;: false</span>
+</span><span class='line'><span class="sx">        }</span>
+</span><span class='line'><span class="sx">      }&#39;]</span>
+</span><span class='line'>      <span class="c1"># UI.puts curl</span>
+</span><span class='line'>    <span class="no">Kernel</span><span class="o">.</span><span class="n">system</span> <span class="n">curl</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h2>总结</h2>
+
+<p>后续如果对这个插件进行扩展的话，应该会考虑根据私有源自动生成 Podfile ，解决封版时，需要手动修改 Podfile 的情况，麻烦而且可能存在把版本号写错的情况。</p>
+
+<p>最后， ruby 的语法还需要多熟悉熟悉，虽然这个插件能用，但是看起来代码质量还是渣。</p>
+
+<h2>参考</h2>
+
+<p><a href="https://github.com/CocoaPods/cocoapods-plugins">cocoapods-plugins</a></p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[组件化之组件生命周期管理]]></title>
@@ -8098,323 +8705,6 @@ Rx操作大体分为两种：</p>
 <p>这样在运行单元测试的时候，会出现 Undefined 编译错误。如果强制在 Configurations 中设置 Test 的配置和 Framework 一致，会造成工程里实际存在了两个单例类，单例对象实际上并不唯一。</p>
 
 <p>这种情况下，只要像上面演示的那样，给 Test 设置单独的依赖即可，一般为空即可。参考 <a href="https://stackoverflow.com/questions/21014843/ios-testing-dispatch-once-get-called-twice-first-in-app-second-in-test-probl">iOS Testing: dispatch_once get called twice. First in App, second in Test. Problems with Observers</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[利用策略模式增强图片浏览器的扩展性]]></title>
-    <link href="http://triplecc.github.io/blog/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/"/>
-    <updated>2016-09-15T10:33:54+08:00</updated>
-    <id>http://triplecc.github.io/blog/li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing</id>
-    <content type="html"><![CDATA[<p>说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的<a href="https://github.com/mwaterfall/MWPhotoBrowser">MWPhotoBrowser</a>，<a href="https://github.com/ideaismobile/IDMPhotoBrowser">IDMPhotoBrowser</a>或者Swift版本的<a href="https://github.com/suzuki-0000/SKPhotoBrowser">SKPhotoBrowser</a>。<br></p>
-
-<p>从核心功能来看，MWPhotoBrowser，IDMPhotoBrowser这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，在我看来，这是他的优势，但同时，高度的集成也催生了一些不足。<br></p>
-
-<p>这样做的优势不言而喻，调用者只需要很少的几行代码，就可以集成一个图片浏览器框架，省时省力。以MWPhotoBrowser为例，在不设置额外属性的情况下，只需要下面两行代码就可以创建：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">MWPhotoBrowser</span> <span class="o">*</span><span class="n">browser</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MWPhotoBrowser</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithPhotos</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">photos</span><span class="p">];</span>
-</span><span class='line'><span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">navigationController</span> <span class="nl">pushViewController</span><span class="p">:</span><span class="n">browser</span> <span class="nl">animated</span><span class="p">:</span><span class="nb">YES</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>使用者只要关注如何提供MWPhotoBrowser所要展示资源就可以了，不需要做额外的操作，非常地简洁方便。<br></p>
-
-<p>关于不足，由于MWPhotoBrowser内部实现了获取网络图片功能，在追求内部实现尽量精简的前提下，不可避免地要依赖加载图片的第三方库(SDWebImage)。如果原来项目并没有使用SDWebImage，而是用YYWebImage或者Kingfisher，那么使用MWPhotoBrowser便会引入冗余的框架，从而让项目额外增加了一种图片缓存机制，不利于内存以及磁盘使用率的优化。<br></p>
-
-<p>对于相册资源的访问，MWPhotoBrowser内部也实现了通过PHAsset或者ALAsset获取相片的功能。不过一般来说，项目会有自己的一套相册选择器，进而会有相应的相册资源获取策略。所以以个人观点来看，如何获取相册资源，应该由使用者告知，而不是在框架内部自己实现一套，这样更加符合DRY。<br></p>
-
-<p>接下来，我会针对上面的不足，实现一套兼容本地资源、相册资源、网络资源的简易图片选择器。<br>
-本文章对应的所有代码在仓库<a href="https://github.com/tobevoid/TBVImageBrowser">TBVImageBrowser</a>中。</p>
-
-<!--More-->
-
-
-<h3>框架概览</h3>
-
-<p>TBVImageBrowser的主要组成如下：<br>
-<img src="http://triplecc.github.io/images/Snip20160915_3.png" alt="图一" /><br>
-<img src="http://triplecc.github.io/images/Snip20160915_4.png" alt="图二" /><br></p>
-
-<p>从图一可以看出，TBVImageBrowserView持有了一个遵守TBVImageProviderManagerProtocol的对象。根据此持有的策略管理对象，可以通过抽象策略接口TBVImageProviderProtocol访问对应的具体策略类：TBVWebImageProvider、TBVLocalImageProvider、TBVAssetImageProvider和自定义的Provider。<br></p>
-
-<p>实际上具体的策略都可以由使用者实现，也就是说图一中的TBVWebImageProvider、TBVLocalImageProvider、TBVAssetImageProvider都可以去除，只要提供遵守策略接口TBVImageProviderProtocol的具体策略类就行了。一般来说，访问资源的策略由使用者提供，因为使用者知道自己实际的获取方式。<br></p>
-
-<p>从图二中可以看出，TBVImageBrowserView持有的策略管理对象的内部组成。只要遵守TBVImageProviderManagerProtocol协议，都可以成为策略管理对象。</p>
-
-<p>除了以上几个协议，我还抽出了TBVImageIdentifierProtocol、TBVImageElementProtocol以及TBVImageProgressPresenterProtocol协议。
-TBVImageProviderIdentifierProtocol的声明如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">TBVImageIdentifierProtocol</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span>
-</span><span class='line'><span class="k">@required</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">,</span> <span class="k">readonly</span><span class="p">)</span> <span class="bp">NSString</span> <span class="o">*</span><span class="n">identifier</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>identifier作为匹配Provider和资源类型的标志，是每个策略必须要实现的。<br>
-TBVImageElementProtocol的声明如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">TBVImageElementProtocol</span> <span class="o">&lt;</span><span class="n">TBVImageIdentifierProtocol</span><span class="o">&gt;</span>
-</span><span class='line'><span class="k">@required</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSObject</span> <span class="o">*</span><span class="n">resource</span><span class="p">;</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">assign</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="n">CGFloat</span> <span class="n">progress</span><span class="p">;</span>
-</span><span class='line'><span class="k">@optional</span>
-</span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="bp">NSDictionary</span> <span class="o">*</span><span class="n">options</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>TBVImageElementProtocol遵守了TBVImageProviderIdentifierProtocol协议，提供解析自身资源的Provider标志。resource用来存储实际需要获取的资源，progress则表示获取的进度。<br>
-TBVImageProgressPresenterProtocol的声明如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@protocol</span> <span class="nc">TBVImageProgressPresenterProtocol</span> <span class="o">&lt;</span><span class="bp">NSObject</span><span class="o">&gt;</span>
-</span><span class='line'><span class="o">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="n">presenter</span><span class="p">;</span>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setPresenterProgress:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">progress</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span><span class="p">;</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>由于项目中可能有自己的一套loading progress控件，仅仅为了图片选择器而引入另一套控件是不划算的，所以BVImageBrowser的loading progress控件也让使用者来提供，尽量减少不必要依赖。</p>
-
-<h3>TBVImageProviderManager</h3>
-
-<p>TBVImageProviderManager帮助TBVImageBrowserView管理所有添加的策略，让TBVImageBrowserView得以关注其浏览业务本身，而不必掺杂获取资源的具体逻辑。<br></p>
-
-<p>首先是添加删除策略接口：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">addImageProvider:</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">TBVImageProviderProtocol</span><span class="o">&gt;</span><span class="p">)</span><span class="nv">provider</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">NSCParameterAssert</span><span class="p">(</span><span class="n">provider</span><span class="p">);</span>
-</span><span class='line'>    <span class="n">NSAssert</span><span class="p">(</span><span class="n">provider</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span> <span class="s">@&quot;identifier of %@ can not be nil.&quot;</span><span class="p">,</span> <span class="n">provider</span><span class="p">);</span>
-</span><span class='line'>    <span class="n">TBVLogInfo</span><span class="p">(</span><span class="s">@&quot;add provider %@&quot;</span><span class="p">,</span> <span class="n">provider</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">@synchronized</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">providerMap</span><span class="p">[</span><span class="n">provider</span><span class="p">.</span><span class="n">identifier</span><span class="p">]</span> <span class="o">=</span> <span class="n">provider</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nf">removeImageProvider:</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">TBVImageProviderProtocol</span><span class="o">&gt;</span><span class="p">)</span><span class="nv">provider</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">NSAssert</span><span class="p">(</span><span class="n">provider</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span> <span class="s">@&quot;identifier of %@ can not be nil.&quot;</span><span class="p">,</span> <span class="n">provider</span><span class="p">);</span>
-</span><span class='line'>    <span class="n">TBVLogInfo</span><span class="p">(</span><span class="s">@&quot;remove provider %@&quot;</span><span class="p">,</span> <span class="n">provider</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">@synchronized</span> <span class="p">(</span><span class="nb">self</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">providerMap</span> <span class="nl">removeObjectForKey</span><span class="p">:</span><span class="n">provider</span><span class="p">.</span><span class="n">identifier</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">return</span> <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">providerMap</span><span class="p">.</span><span class="n">allKeys</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">provider</span><span class="p">.</span><span class="n">identifier</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>TBVImageProviderManager中会声明一个providerMap字典，以策略的identifier作key，策略作为value。
-接下来是获取资源的接口：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">imageSignalForElement:</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">TBVImageElementProtocol</span><span class="o">&gt;</span><span class="p">)</span><span class="nv">element</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">NSAssert</span><span class="p">(</span><span class="n">element</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span> <span class="s">@&quot;identifier of %@ can not be nil.&quot;</span><span class="p">,</span> <span class="n">element</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="p">@</span><span class="n">weakify</span><span class="p">(</span><span class="nb">self</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">return</span> <span class="p">[[[</span><span class="n">RACSignal</span> <span class="nl">createSignal</span><span class="p">:</span><span class="o">^</span><span class="n">RACDisposable</span> <span class="o">*</span><span class="p">(</span><span class="kt">id</span><span class="o">&lt;</span><span class="n">RACSubscriber</span><span class="o">&gt;</span> <span class="n">subscriber</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">@</span><span class="n">strongify</span><span class="p">(</span><span class="nb">self</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">TBVLogInfo</span><span class="p">(</span><span class="s">@&quot;</span><span class="se">\n</span><span class="s">image resource:</span><span class="se">\n\t</span><span class="s">%@;</span><span class="se">\n</span><span class="s">identifier:</span><span class="se">\n\t</span><span class="s">%@;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">element</span><span class="p">.</span><span class="n">resource</span><span class="p">,</span> <span class="n">element</span><span class="p">.</span><span class="n">identifier</span><span class="p">);</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">providerMap</span><span class="p">.</span><span class="n">allKeys</span> <span class="nl">containsObject</span><span class="p">:</span><span class="n">element</span><span class="p">.</span><span class="n">identifier</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendNext</span><span class="p">:[</span><span class="nb">self</span><span class="p">.</span><span class="n">providerMap</span><span class="p">[</span><span class="n">element</span><span class="p">.</span><span class="n">identifier</span><span class="p">]</span>
-</span><span class='line'>                    <span class="nl">imageSignalForElement</span><span class="p">:</span><span class="n">element</span>
-</span><span class='line'>                    <span class="nl">progress</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">CGFloat</span> <span class="n">progress</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                        <span class="n">element</span><span class="p">.</span><span class="n">progress</span> <span class="o">=</span> <span class="n">progress</span><span class="p">;</span>
-</span><span class='line'>                    <span class="p">}]];</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="n">sendCompleted</span><span class="p">];</span>
-</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="bp">NSMutableDictionary</span> <span class="o">*</span><span class="n">userInfo</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableDictionary</span> <span class="n">dictionary</span><span class="p">];</span>
-</span><span class='line'>            <span class="n">userInfo</span><span class="p">[</span><span class="n">kTBVImageBrowserErrorKey</span><span class="p">]</span> <span class="o">=</span>
-</span><span class='line'>            <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;image provider with identifier %@ was not found&quot;</span><span class="p">,</span> <span class="n">element</span><span class="p">.</span><span class="n">identifier</span><span class="p">];</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">subscriber</span> <span class="nl">sendError</span><span class="p">:[</span><span class="bp">NSError</span> <span class="nl">errorWithDomain</span><span class="p">:</span><span class="s">@&quot;TBVImageProviderManager&quot;</span>
-</span><span class='line'>                                                        <span class="nl">code</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span>
-</span><span class='line'>                                                    <span class="nl">userInfo</span><span class="p">:</span><span class="n">userInfo</span><span class="p">]];</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
-</span><span class='line'>    <span class="p">}]</span>
-</span><span class='line'>        <span class="n">switchToLatest</span><span class="p">]</span>
-</span><span class='line'>        <span class="nl">catch</span><span class="p">:</span><span class="o">^</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">(</span><span class="bp">NSError</span> <span class="o">*</span><span class="n">error</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">TBVLogError</span><span class="p">(</span><span class="s">@&quot;</span><span class="se">\n</span><span class="s">error domain: </span><span class="se">\n\t</span><span class="s">%@; </span><span class="se">\n</span><span class="s">error code: </span><span class="se">\n\t</span><span class="s">%ld; </span><span class="se">\n</span><span class="s">error info: </span><span class="se">\n\t</span><span class="s">%@;</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">.</span><span class="n">domain</span><span class="p">,</span> <span class="n">error</span><span class="p">.</span><span class="n">code</span><span class="p">,</span> <span class="n">error</span><span class="p">.</span><span class="n">userInfo</span><span class="p">);</span>
-</span><span class='line'>            <span class="k">return</span> <span class="p">[</span><span class="n">RACSignal</span> <span class="n">empty</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}];</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>TBVImageProviderManager根据element提供的identifier，去providerMap字典中查找匹配的策略，并调用策略接口，获取element的resource中存储的资源。</p>
-
-<h3>载入自定义loading progress控件</h3>
-
-<p>在加载一个loading progress控件时，我需要什么样的接口?<br>
-首先是控件本身，TBVImageBrowserView需要使用者创建这个控件的实体给TBVImageBrowserView，而控件的具体属性则由调用者在创建控件时一并设置。然后因为是loading progress控件，理所当然地应该提供设置progress的接口。由这两个需求催生TBVImageProgressPresenterProtocol协议，来对使用者提供的loading progress控件进行限定。<br></p>
-
-<p>有了满足要求的控件，如何在内部进行创建？TBVImageBrowserView需要使用者提供控件对应Class，然后在内部以以下方式进行添加：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setupProgressPresenter:</span><span class="p">(</span><span class="kt">Class</span><span class="p">)</span><span class="nv">progressPresenter</span><span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">progressView</span> <span class="o">||</span> <span class="o">!</span><span class="n">progressPresenter</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="n">progressPresenter</span> <span class="nl">conformsToProtocol</span><span class="p">:@</span><span class="n">protocol</span><span class="p">(</span><span class="n">TBVImageProgressPresenterProtocol</span><span class="p">)])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="kt">id</span> <span class="n">presenter</span> <span class="o">=</span> <span class="p">[</span><span class="n">progressPresenter</span> <span class="n">presenter</span><span class="p">];</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">([</span><span class="n">presenter</span> <span class="nl">isKindOfClass</span><span class="p">:[</span><span class="bp">UIView</span> <span class="k">class</span><span class="p">]])</span> <span class="p">{</span>
-</span><span class='line'>            <span class="nb">self</span><span class="p">.</span><span class="n">progressView</span> <span class="o">=</span> <span class="n">presenter</span><span class="p">;</span>
-</span><span class='line'>            <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">contentView</span> <span class="nl">addSubview</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">progressView</span><span class="p">];</span>
-</span><span class='line'>            <span class="bp">CGSize</span> <span class="n">size</span> <span class="o">=</span> <span class="n">CGSizeEqualToSize</span><span class="p">(</span><span class="n">CGSizeZero</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">progressView</span><span class="p">.</span><span class="n">frame</span><span class="p">.</span><span class="n">size</span><span class="p">)</span> <span class="o">?</span>
-</span><span class='line'>                <span class="n">CGSizeMake</span><span class="p">(</span><span class="mf">40.0f</span><span class="p">,</span> <span class="mf">40.0f</span><span class="p">)</span> <span class="o">:</span> <span class="nb">self</span><span class="p">.</span><span class="n">progressView</span><span class="p">.</span><span class="n">frame</span><span class="p">.</span><span class="n">size</span> <span class="p">;</span>
-</span><span class='line'>            <span class="p">[</span><span class="nb">self</span><span class="p">.</span><span class="n">progressView</span> <span class="nl">mas_makeConstraints</span><span class="p">:</span><span class="o">^</span><span class="p">(</span><span class="n">MASConstraintMaker</span> <span class="o">*</span><span class="n">make</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">make</span><span class="p">.</span><span class="n">width</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="l">@(</span><span class="n">size</span><span class="p">.</span><span class="n">width</span><span class="l">)</span><span class="p">);</span>
-</span><span class='line'>                <span class="n">make</span><span class="p">.</span><span class="n">height</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="l">@(</span><span class="n">size</span><span class="p">.</span><span class="n">height</span><span class="l">)</span><span class="p">);</span>
-</span><span class='line'>                <span class="n">make</span><span class="p">.</span><span class="n">center</span><span class="p">.</span><span class="n">equalTo</span><span class="p">(</span><span class="nb">self</span><span class="p">.</span><span class="n">contentView</span><span class="p">);</span>
-</span><span class='line'>            <span class="p">}];</span>
-</span><span class='line'>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="n">TBVLogError</span><span class="p">(</span><span class="s">@&quot;progressPresenter should be subclass of UIView.&quot;</span><span class="p">);</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">TBVLogError</span><span class="p">(</span><span class="s">@&quot;progressPresenter should comfirm TBVImageProgressPresenterProtocol.&quot;</span><span class="p">);</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>至此，载入自定义的loading progress控件已经实现了。接下来以DACircularProgress控件为例，说明如何使用。<br>
-首先，创建DALabeledCircularProgressView的分类，然后在分类中遵守TBVImageProgressPresenterProtocol协议，并实现其中的接口:</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@implementation</span> <span class="nc">DALabeledCircularProgressView</span> <span class="nl">(TBVImageProgressPresenter)</span>
-</span><span class='line'><span class="p">+</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">presenter</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">DALabeledCircularProgressView</span> <span class="o">*</span><span class="n">progressView</span> <span class="o">=</span> <span class="p">[[</span><span class="n">DALabeledCircularProgressView</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">initWithFrame</span><span class="p">:</span><span class="n">CGRectMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">40</span><span class="p">)];</span>
-</span><span class='line'>    <span class="n">progressView</span><span class="p">.</span><span class="n">thicknessRatio</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">;</span>
-</span><span class='line'>    <span class="n">progressView</span><span class="p">.</span><span class="n">progressLabel</span><span class="p">.</span><span class="n">textColor</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIColor</span> <span class="n">whiteColor</span><span class="p">];</span>
-</span><span class='line'>    <span class="n">progressView</span><span class="p">.</span><span class="n">progressLabel</span><span class="p">.</span><span class="n">font</span> <span class="o">=</span> <span class="p">[</span><span class="bp">UIFont</span> <span class="nl">systemFontOfSize</span><span class="p">:</span><span class="mi">12</span><span class="p">];</span>
-</span><span class='line'>    <span class="n">progressView</span><span class="p">.</span><span class="n">userInteractionEnabled</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">progressView</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setPresenterProgress:</span><span class="p">(</span><span class="n">CGFloat</span><span class="p">)</span><span class="nv">progress</span> <span class="nf">animated:</span><span class="p">(</span><span class="kt">BOOL</span><span class="p">)</span><span class="nv">animated</span> <span class="p">{</span>
-</span><span class='line'>    <span class="p">[</span><span class="nb">self</span> <span class="nl">setProgress</span><span class="p">:</span><span class="n">progress</span> <span class="nl">animated</span><span class="p">:</span><span class="n">animated</span><span class="p">];</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">progress</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">progress</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)</span> <span class="n">TBVLogDebug</span><span class="p">(</span><span class="s">@&quot;load progress %f&quot;</span><span class="p">,</span> <span class="n">progress</span><span class="p">);</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="nb">self</span><span class="p">.</span><span class="n">progressLabel</span><span class="p">.</span><span class="n">text</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSString</span> <span class="nl">stringWithFormat</span><span class="p">:</span><span class="s">@&quot;%.02f&quot;</span><span class="p">,</span> <span class="n">progress</span><span class="p">];</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'><span class="k">@end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>并且在初始化TBVImageBrowserView时，传入DALabeledCircularProgressView类：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">_configuration</span><span class="p">.</span><span class="n">progressPresenterClass</span> <span class="o">=</span> <span class="p">[</span><span class="n">DALabeledCircularProgressView</span> <span class="k">class</span><span class="p">];</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<h3>总结</h3>
-
-<p>TBVImageBrowser是在自己做IM发送相册图片时造的轮子，由于后期项目本身并没有使用SDWebImage，并且有一套自己访问相册的策略，所以MWPhotoBrowser并不是很符合自己的需求。<br></p>
-
-<p>TBVImageBrowser遵循了一个原则：使用者应该知道自己如何得到资源，并向框架提供获取资源的方法，这样才能让框架具有更好的扩展性。<br>
-详细的使用方法在<a href="https://github.com/tobevoid/TBVImageBrowser">仓库说明</a>中。</p>
 ]]></content>
   </entry>
   
