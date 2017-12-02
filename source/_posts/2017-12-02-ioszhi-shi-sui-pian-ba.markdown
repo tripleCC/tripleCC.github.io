@@ -17,7 +17,7 @@ categories:
 
 一般来说，iOS11 以下版本可以通过 UIBarButtonSystemItemFixedSpace 类型的 SystemItem 来填充距离，只要把 width 设置成负数，就可以让自定义的按钮往两边靠：
 
-```
+```objc
 static const CGFloat kTDFNBCButtonMargin = 15.0f;
 
 UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
@@ -30,9 +30,9 @@ item.width = -kTDFNBCButtonMargin;
 self.navigationItem.leftBarButtonItems = @[item, [[UIBarButtonItem alloc] initWithCustomView:self.tdf_backButton]];
 ```
 
-iOS11 以上 FixedSpace 方案就不生效了，所以需要手动更改父控件的布局，可以用 hook UINavigationBar 或者继承的方式重写 `layoutSubviews` ：
+iOS11 以上 FixedSpace 方案就不生效了，因为整个层级都变了，中间多了两层父控件，所以需要手动更改父控件的布局，可以用 hook UINavigationBar 或者继承的方式重写 `layoutSubviews` ：
 
-```
+```objc
 self.layoutMargins = UIEdgeInsetsZero;
 for (UIView *view in self.subviews) {
     if ([NSStringFromClass([view class]) containsString:@"ContentView"]) {
