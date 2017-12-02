@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-11-18T12:51:48+08:00</updated>
+  <updated>2017-12-02T14:50:41+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -12,6 +12,92 @@
   </author>
   <generator uri="http://octopress.org/">Octopress</generator>
 
+  
+  <entry>
+    <title type="html"><![CDATA[iOS知识碎片八]]></title>
+    <link href="http://triplecc.github.io/blog/2017-12-02-ioszhi-shi-sui-pian-ba/"/>
+    <updated>2017-12-02T14:29:02+08:00</updated>
+    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-ba</id>
+    <content type="html"><![CDATA[<p>1、适配iOS11、iOS10导航栏返回按钮<br></p>
+
+<!--more-->
+
+
+<h2>适配iOS11、iOS10导航栏返回按钮</h2>
+
+<p>关于导航栏返回按钮的定制，很多时候都是通过设置 navigationItem 的 rightBarButtonItem 属性实现的。这种方式可以设置自己的 customView ，灵活度高。但是和原生的返回按钮相比较，设置 customView 的返回按钮会偏右，而且左边大概会有15个像素的空间，点击不会触发回调。</p>
+
+<p>针对返回按钮偏右问题，一般设置 UIButton 的 contentEdgeInsets 就可以解决。不过自定义返回按钮默认距离屏幕左边15像素的问题，处理起来就比较麻烦了。</p>
+
+<p>一般来说，iOS11 以下版本可以通过 UIBarButtonSystemItemFixedSpace 类型的 SystemItem 来填充距离，只要把 width 设置成负数，就可以让自定义的按钮往两边靠：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static const CGFloat kTDFNBCButtonMargin = 15.0f;
+</span><span class='line'>
+</span><span class='line'>UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+</span><span class='line'>item.width = -kTDFNBCButtonMargin;
+</span><span class='line'>self.navigationItem.rightBarButtonItems = @[item, [[UIBarButtonItem alloc] initWithCustomView:self.tdf_sureButton]];
+</span><span class='line'>
+</span><span class='line'>UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+</span><span class='line'>item.width = -kTDFNBCButtonMargin;
+</span><span class='line'>
+</span><span class='line'>self.navigationItem.leftBarButtonItems = @[item, [[UIBarButtonItem alloc] initWithCustomView:self.tdf_backButton]];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>iOS11 以上 FixedSpace 方案就不生效了，所以需要手动更改父控件的布局，可以用 hook UINavigationBar 或者继承的方式重写 <code>layoutSubviews</code> ：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>self.layoutMargins = UIEdgeInsetsZero;
+</span><span class='line'>for (UIView *view in self.subviews) {
+</span><span class='line'>    if ([NSStringFromClass([view class]) containsString:@"ContentView"]) {
+</span><span class='line'>        UIEdgeInsets inset = view.layoutMargins;
+</span><span class='line'>        view.layoutMargins = UIEdgeInsetsMake(inset.top, 0, inset.bottom, 0);
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    for (UIView *subview in view.subviews) {
+</span><span class='line'>        if([subview isKindOfClass:[UIStackView class]]) {
+</span><span class='line'>            for(NSLayoutConstraint *layout in subview.constraints) {
+</span><span class='line'>                if(layout.firstAttribute == NSLayoutAttributeWidth ||
+</span><span class='line'>                   layout.secondAttribute == NSLayoutAttributeWidth) {
+</span><span class='line'>                    layout.constant = 0.f;
+</span><span class='line'>                }
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 <code>hitTest</code> 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足了。</p>
+
+<p>这种解决方式是在采用原生导航栏的情况下不得已而为之的，如果需要的导航栏花样比较复杂，还是隐藏系统的，自己实现来的舒服。</p>
+]]></content>
+  </entry>
   
   <entry>
     <title type="html"><![CDATA[编写自己的cocoapods插件]]></title>
@@ -8578,133 +8664,6 @@ Rx操作大体分为两种：</p>
 <h3>参考</h3>
 
 <p><a href="http://tech.meituan.com/RACSignalSubscription.html">RACSignal的Subscription深入分析</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[iOS知识碎片七]]></title>
-    <link href="http://triplecc.github.io/blog/2016-09-24-ioszhi-shi-sui-pian-qi/"/>
-    <updated>2016-09-24T10:43:37+08:00</updated>
-    <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-qi</id>
-    <content type="html"><![CDATA[<p>1、Xcode8日志及Pod的Swift3.0问题 <br>
-2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 <br>
-3、解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题 <br>
-4、单例在 Unit Test 中不唯一问题<br></p>
-
-<!--more-->
-
-
-<h2>Xcode8日志及Pod的Swift3.0问题</h2>
-
-<p>目前的Xcode8会打印多余的日志，需要进入对应scheme中的enviroment variables设置下：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>OS_ACTIVITY_MODE    disable</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果设置了以上信息后，出现了真机调试不会打印日志的情况的话，去掉<code>disable</code>，保留<code>OS_ACTIVITY_MODE</code>。</p>
-
-<p>Pod更新Swift三方库后编译，会出现转换语法的错误，需要在podfile中添加以下语句再更新：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>post_install do |installer|
-</span><span class='line'>    installer.pods_project.targets.each do |target|
-</span><span class='line'>        target.build_configurations.each do |config|
-</span><span class='line'>            config.build_settings['SWIFT_VERSION'] = '3.0'
-</span><span class='line'>            config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
-</span><span class='line'>        end
-</span><span class='line'>    end
-</span><span class='line'>end</span></code></pre></td></tr></table></div></figure>
-
-
-<p>如果还想使用2.3的话：</p>
-
-<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-</pre></td><td class='code'><pre><code class=''><span class='line'>post_install do |installer|
-</span><span class='line'>  installer.pods_project.targets.each do |target|
-</span><span class='line'>    target.build_configurations.each do |config|
-</span><span class='line'>      config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = '10.10'
-</span><span class='line'>      #### IT IS IMPORTANT TO SET IT TO 2.3
-</span><span class='line'>      config.build_settings['SWIFT_VERSION'] = '2.3' 
-</span><span class='line'>    end
-</span><span class='line'>  end
-</span><span class='line'>end</span></code></pre></td></tr></table></div></figure>
-
-
-<h2>UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进</h2>
-
-<p><img src="http://triplecc.github.io/images/Snip20170205_2.png" alt="" /></p>
-
-<p>在上图箭头处输入空格，光标和文字不会向前移动。</p>
-
-<p><a href="http://stackoverflow.com/questions/19569688/right-aligned-uitextfield-spacebar-does-not-advance-cursor-in-ios-7">解决方案</a></p>
-
-<h2>解决使用UIAlertController时，Attempt to present vc whose view is not in the window hierarchy! 问题</h2>
-
-<p>假设现有有控制器 A ， present 了控制器 B ，而在控制器 B 还没有 dimiss 完全时，再 present 新的控制器 C 就会出现这个警告，控制器 C 也并不会如预期显示。</p>
-
-<p>把上面的控制器 C 当成 UIAlertController ，就切合某些业务场景了。 结合业务场景，这个问题可以看成：如何让UIAlertController 使用起来和 UIAlertView 一样“万金油” ，并且不用受控制器层级约束。</p>
-
-<p>下面是 stackoverflow 上一个比较详细的解决方案：
-<a href="http://stackoverflow.com/questions/26554894/how-to-present-uialertcontroller-when-not-in-a-view-controller">How to present UIAlertController when not in a ViewController</a></p>
-
-<p>简单来说，就是创建一个新的 window ( 优先级比当前最高优先级大 1 )， 然后通过这个 window 的根控制器 present UIAlertController，并且在 UIAlertController 被释放的同时，释放此 window。</p>
-
-<p>这个方案本身目前看来并没有问题，问题出现 agilityvision 在 stackoverflow 上给的 demo 多了下面代码 (<a href="https://github.com/agilityvision/FFGlobalAlertController">FFGlobalAlertController</a> 并没有这几句代码)：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">if</span> <span class="p">([</span><span class="n">delegate</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="k">@selector</span><span class="p">(</span><span class="n">window</span><span class="p">)])</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// we inherit the main window&#39;s tintColor</span>
-</span><span class='line'>  <span class="nb">self</span><span class="p">.</span><span class="n">alertWindow</span><span class="p">.</span><span class="n">tintColor</span> <span class="o">=</span> <span class="n">delegate</span><span class="p">.</span><span class="n">window</span><span class="p">.</span><span class="n">tintColor</span><span class="p">;</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>上面代码在以下情况下，存在 alert 按钮文字无法显示的问题 ：</p>
-
-<ul>
-<li>设置 -> 通用 -> 辅助功能 -> 增强对比度 -> 打开加深颜色 。</li>
-</ul>
-
-
-<p>这个问题挺奇葩的，要不是刚好有测试人员打开了这个开关，基本也发现不了。最终我也不知道为什么会这样，从 Xcode 可视化工具看， alert 按钮上的确是有文字的，颜色也没错。</p>
-
-<p>想要使用 agilityvision 的方案，删除这几句代码就可以不会出现上述问题了。</p>
-
-<h2>单例在 Unit Test 中不唯一问题</h2>
-
-<p>项目中有两个 Target ，一个 Framework ，一个 Test ，不过 Podfile 只是指定了 Framework 的依赖，并没有像下面那样给 Test 设置依赖（或者继承主 Target）：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">target</span> <span class="err">&#39;</span><span class="n">XXXTests</span><span class="err">&#39;</span> <span class="k">do</span>
-</span><span class='line'><span class="cp">#    pod </span>
-</span><span class='line'><span class="n">end</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>这样在运行单元测试的时候，会出现 Undefined 编译错误。如果强制在 Configurations 中设置 Test 的配置和 Framework 一致，会造成工程里实际存在了两个单例类，单例对象实际上并不唯一。</p>
-
-<p>这种情况下，只要像上面演示的那样，给 Test 设置单独的依赖即可，一般为空即可。参考 <a href="https://stackoverflow.com/questions/21014843/ios-testing-dispatch-once-get-called-twice-first-in-app-second-in-test-probl">iOS Testing: dispatch_once get called twice. First in App, second in Test. Problems with Observers</a></p>
 ]]></content>
   </entry>
   

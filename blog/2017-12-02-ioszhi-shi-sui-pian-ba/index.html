@@ -1,0 +1,297 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>iOS知识碎片八 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="1、适配iOS11、iOS10导航栏返回按钮 适配iOS11、iOS10导航栏返回按钮 关于导航栏返回按钮的定制，很多时候都是通过设置 navigationItem 的 rightBarButtonItem 属性实现的。这种方式可以设置自己的 customView ，灵活度高。 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2017-12-02-ioszhi-shi-sui-pian-ba/">
+  <link href="/favicon.png" rel="shortcut icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <!--[good job! gfw]><script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script><!-->
+  <script src="http://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
+  <link href="/stylesheets/google-fonts.css" rel="stylesheet" type="text/css">
+  
+
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">iOS知识碎片八</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2017-12-02T14:29:02+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2017</span></span> <span class='time'>2:29 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>1、适配iOS11、iOS10导航栏返回按钮<br></p>
+
+<!--more-->
+
+
+<h2>适配iOS11、iOS10导航栏返回按钮</h2>
+
+<p>关于导航栏返回按钮的定制，很多时候都是通过设置 navigationItem 的 rightBarButtonItem 属性实现的。这种方式可以设置自己的 customView ，灵活度高。但是和原生的返回按钮相比较，设置 customView 的返回按钮会偏右，而且左边大概会有15个像素的空间，点击不会触发回调。</p>
+
+<p>针对返回按钮偏右问题，一般设置 UIButton 的 contentEdgeInsets 就可以解决。不过自定义返回按钮默认距离屏幕左边15像素的问题，处理起来就比较麻烦了。</p>
+
+<p>一般来说，iOS11 以下版本可以通过 UIBarButtonSystemItemFixedSpace 类型的 SystemItem 来填充距离，只要把 width 设置成负数，就可以让自定义的按钮往两边靠：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>static const CGFloat kTDFNBCButtonMargin = 15.0f;
+</span><span class='line'>
+</span><span class='line'>UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+</span><span class='line'>item.width = -kTDFNBCButtonMargin;
+</span><span class='line'>self.navigationItem.rightBarButtonItems = @[item, [[UIBarButtonItem alloc] initWithCustomView:self.tdf_sureButton]];
+</span><span class='line'>
+</span><span class='line'>UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+</span><span class='line'>item.width = -kTDFNBCButtonMargin;
+</span><span class='line'>
+</span><span class='line'>self.navigationItem.leftBarButtonItems = @[item, [[UIBarButtonItem alloc] initWithCustomView:self.tdf_backButton]];</span></code></pre></td></tr></table></div></figure>
+
+
+<p>iOS11 以上 FixedSpace 方案就不生效了，所以需要手动更改父控件的布局，可以用 hook UINavigationBar 或者继承的方式重写 <code>layoutSubviews</code> ：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>self.layoutMargins = UIEdgeInsetsZero;
+</span><span class='line'>for (UIView *view in self.subviews) {
+</span><span class='line'>    if ([NSStringFromClass([view class]) containsString:@"ContentView"]) {
+</span><span class='line'>        UIEdgeInsets inset = view.layoutMargins;
+</span><span class='line'>        view.layoutMargins = UIEdgeInsetsMake(inset.top, 0, inset.bottom, 0);
+</span><span class='line'>    }
+</span><span class='line'>    
+</span><span class='line'>    for (UIView *subview in view.subviews) {
+</span><span class='line'>        if([subview isKindOfClass:[UIStackView class]]) {
+</span><span class='line'>            for(NSLayoutConstraint *layout in subview.constraints) {
+</span><span class='line'>                if(layout.firstAttribute == NSLayoutAttributeWidth ||
+</span><span class='line'>                   layout.secondAttribute == NSLayoutAttributeWidth) {
+</span><span class='line'>                    layout.constant = 0.f;
+</span><span class='line'>                }
+</span><span class='line'>            }
+</span><span class='line'>        }
+</span><span class='line'>    }
+</span><span class='line'>}</span></code></pre></td></tr></table></div></figure>
+
+
+<p>需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 <code>hitTest</code> 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足了。</p>
+
+<p>这种解决方式是在采用原生导航栏的情况下不得已而为之的，如果需要的导航栏花样比较复杂，还是隐藏系统的，自己实现来的舒服。</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2017-12-02T14:29:02+08:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>2</span><span class='date-suffix'>nd</span>, <span class='date-year'>2017</span></span> <span class='time'>2:29 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2017-11-08-chuang-jian-cocoapodscha-jian/" title="Previous Post: 编写自己的cocoapods插件">&laquo; 编写自己的cocoapods插件</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 曾经的嵌入式软件开发者，现已皈依苹果大法门下。目前混迹杭州，喜欢没事就去西湖压马路。轻微完美主义者，跑步爱好者。 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc"> 我的简书 </a><br>
+  <a href="https://github.com/tripleCC"> 我的GitHub </a><br>
+  <a href="https://twitter.com/tripleCCBrian"> 我的Twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2017-12-02-ioszhi-shi-sui-pian-ba/">iOS知识碎片八</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-11-08-chuang-jian-cocoapodscha-jian/">编写自己的cocoapods插件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-10-25-zu-jian-sheng-ming-zhou-qi/">组件化之组件生命周期管理</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-08-12-cbiao-da-shi-zhong-floatjing-du-ti-sheng-wen-ti/">C 表达式中 Float 精度提升问题</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-07-28-blockhe-nsmethodsignature/">用 Block 实现委托方法</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+        <li>
+        	<a href="http://www.swiftyper.com/">Swiftyper-小锅</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'tripleCC';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://triplecc.github.io/blog/2017-12-02-ioszhi-shi-sui-pian-ba/';
+        var disqus_url = 'http://triplecc.github.io/blog/2017-12-02-ioszhi-shi-sui-pian-ba/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
