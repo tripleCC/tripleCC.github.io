@@ -53,6 +53,6 @@ for (UIView *view in self.subviews) {
 }
 ```
 
-需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 `hitTest` 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足了。
+需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则会干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 `hitTest` 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足条件了了。
 
 这种解决方式是在采用原生导航栏的情况下不得已而为之的，如果需要的导航栏花样比较复杂，还是隐藏系统的，自己实现来的舒服。
