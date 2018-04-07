@@ -7,8 +7,7 @@
   <meta name="author" content="tripleCC">
 
   
-  <meta name="description" content="1、适配iOS11、iOS10导航栏返回按钮
-2、让CocoaPods组件支持Carthage打包 适配iOS11、iOS10导航栏返回按钮 关于导航栏返回按钮的定制，很多时候都是通过设置 navigationItem 的 rightBarButtonItem 属性实现的。这种方式可以设置自己的 &hellip;">
+  <meta name="description" content="1、适配iOS11、iOS10导航栏返回按钮 适配iOS11、iOS10导航栏返回按钮 关于导航栏返回按钮的定制，很多时候都是通过设置 navigationItem 的 rightBarButtonItem 属性实现的。这种方式可以设置自己的 customView ，灵活度高。 &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -81,8 +80,7 @@
   </header>
 
 
-<div class="entry-content"><p>1、适配iOS11、iOS10导航栏返回按钮<br>
-2、让CocoaPods组件支持Carthage打包<br></p>
+<div class="entry-content"><p>1、适配iOS11、iOS10导航栏返回按钮<br></p>
 
 <!--more-->
 
@@ -162,30 +160,6 @@
 <p>需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则会干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 <code>hitTest</code> 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足条件了了。</p>
 
 <p>这种解决方式是在采用原生导航栏的情况下不得已而为之的，如果需要的导航栏花样比较复杂，还是隐藏系统的，自己实现来的舒服。</p>
-
-<h2>让CocoaPods组件支持Carthage打包</h2>
-
-<p>虽说 CocoaPods 有 <a href="https://github.com/CocoaPods/cocoapods-packager">cocoapods-packager</a> 插件可以生成二进制版本，但是这个库的维护者并不是很活跃，很多 issue 和 pr 过了挺久了还堆积在那里。于是我决定试试 Carthage ，不过依赖不利用 Cartfile 生成，还是用的 CocoaPods 那一套。</p>
-
-<p>要让组件支持 Carthage ，只需要工程里有一个 <code>shared framework target</code> 即可。那么针对 CocoaPods 生成的工程，我们先满足 <code>framework target</code> 这个要求，这个只需要在 Podfile 里面设置 <code>use_frameworks!</code> 就可以了。</p>
-
-<p>对于剩下的就是 <code>share</code> 部分，可以用 <a href="https://github.com/CocoaPods/CocoaPods/pull/5254">Add share schemes for development pods</a> 这个 pr 里面的方法解决：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">install</span><span class="o">!</span> <span class="err">&#39;</span><span class="n">cocoapods</span><span class="err">&#39;</span><span class="p">,</span> <span class="o">:</span><span class="n">share_schemes_for_development_pods</span> <span class="o">=&gt;</span> <span class="nb">false</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>不过上面的那种方式把所有的 <code>development pods</code> 对应的 target 都 share 了，这里我们可以这样设置特定的 <code>development pods</code> ：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">install</span><span class="o">!</span> <span class="err">&#39;</span><span class="n">cocoapods</span><span class="err">&#39;</span><span class="p">,</span> <span class="o">:</span><span class="n">share_schemes_for_development_pods</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="err">&#39;</span><span class="n">PodA</span><span class="err">&#39;</span><span class="p">]</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>在 CocoaPods 1.4.0 版本中，<code>share_schemes_for_development_pods</code> 默认是 false 的，所以需要手动在 Podfile 里面去添加这一句。</p>
-
-<p>最后执行一下 <code>pod install</code> ，然后再执行 <code>carthage build --no-skip-current --platform ios</code> 就可以打出 ios 版本的 dynamic framework 了，想利用 Carthage 打出 static framework 的可以查看 <a href="https://github.com/Carthage/Carthage/blob/master/Documentation/StaticFrameworks.md">Build static frameworks to speed up your app’s launch times</a></p>
 </div>
 
 
