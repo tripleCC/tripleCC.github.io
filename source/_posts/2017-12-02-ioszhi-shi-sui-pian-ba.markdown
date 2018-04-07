@@ -6,7 +6,6 @@ comments: true
 categories: 
 ---
 1、适配iOS11、iOS10导航栏返回按钮<br>
-2、让CocoaPods组件支持Carthage打包<br>
 
 <!--more-->
 
@@ -57,26 +56,3 @@ for (UIView *view in self.subviews) {
 需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则会干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 `hitTest` 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足条件了了。
 
 这种解决方式是在采用原生导航栏的情况下不得已而为之的，如果需要的导航栏花样比较复杂，还是隐藏系统的，自己实现来的舒服。
-
-## 让CocoaPods组件支持Carthage打包
-
-虽说 CocoaPods 有 [cocoapods-packager](https://github.com/CocoaPods/cocoapods-packager) 插件可以生成二进制版本，但是这个库的维护者并不是很活跃，很多 issue 和 pr 过了挺久了还堆积在那里。于是我决定试试 Carthage ，不过依赖不利用 Cartfile 生成，还是用的 CocoaPods 那一套。
-
-要让组件支持 Carthage ，只需要工程里有一个 `shared framework target` 即可。那么针对 CocoaPods 生成的工程，我们先满足 `framework target` 这个要求，这个只需要在 Podfile 里面设置 `use_frameworks!` 就可以了。
-
-对于剩下的就是 `share` 部分，可以用 [Add share schemes for development pods](https://github.com/CocoaPods/CocoaPods/pull/5254) 这个 pr 里面的方法解决：
-
-```
-install! 'cocoapods', :share_schemes_for_development_pods => false
-```
-不过上面的那种方式把所有的 `development pods` 对应的 target 都 share 了，这里我们可以这样设置特定的 `development pods` ：
-
-```
-install! 'cocoapods', :share_schemes_for_development_pods => ['PodA']
-```
-
-在 CocoaPods 1.4.0 版本中，`share_schemes_for_development_pods` 默认是 false 的，所以需要手动在 Podfile 里面去添加这一句。
-
-最后执行一下 `pod install` ，然后再执行 `carthage build --no-skip-current --platform ios` 就可以打出 ios 版本的 dynamic framework 了，想利用 Carthage 打出 static framework 的可以查看 [Build static frameworks to speed up your app’s launch times](https://github.com/Carthage/Carthage/blob/master/Documentation/StaticFrameworks.md)
-
-

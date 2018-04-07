@@ -10,6 +10,8 @@ categories:
 
 要让组件支持 Carthage ，只需要工程里有一个 `shared framework target` 即可。那么针对 CocoaPods 生成的工程，我们先满足 `framework target` 这个要求，这个只需要在 Podfile 里面设置 `use_frameworks!` 就可以了。
 
+<!--more-->
+
 对于剩下的 `share` 部分，可以用 [Add share schemes for development pods](https://github.com/CocoaPods/CocoaPods/pull/5254) 这个 pr 里面的方法解决：
 
 ```
