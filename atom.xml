@@ -4,7 +4,7 @@
   <title><![CDATA[tripleCC的技术博客]]></title>
   <link href="http://triplecc.github.io/atom.xml" rel="self"/>
   <link href="http://triplecc.github.io/"/>
-  <updated>2017-12-03T11:26:52+08:00</updated>
+  <updated>2018-04-07T20:09:32+08:00</updated>
   <id>http://triplecc.github.io/</id>
   <author>
     <name><![CDATA[tripleCC]]></name>
@@ -14,11 +14,71 @@
 
   
   <entry>
+    <title type="html"><![CDATA[让CocoaPods组件支持Carthage打包]]></title>
+    <link href="http://triplecc.github.io/blog/2018-04-07-rang-cocoapodszu-jian-zhi-chi-carthageda-bao/"/>
+    <updated>2018-04-07T19:24:40+08:00</updated>
+    <id>http://triplecc.github.io/blog/rang-cocoapodszu-jian-zhi-chi-carthageda-bao</id>
+    <content type="html"><![CDATA[<p>虽说 CocoaPods 有 <a href="https://github.com/CocoaPods/cocoapods-packager">cocoapods-packager</a> 这个插件可以生成二进制版本，但是这个库的维护者似乎并不是很活跃，很多 issue 和 pr 过了挺久了还堆积在那里。于是我决定试试 Carthage ，不过不利用 Cartfile 生成依赖，还是用的 CocoaPods 那一套。</p>
+
+<p>要让组件支持 Carthage ，只需要工程里有一个 <code>shared framework target</code> 即可。那么针对 CocoaPods 生成的工程，我们先满足 <code>framework target</code> 这个要求，这个只需要在 Podfile 里面设置 <code>use_frameworks!</code> 就可以了。</p>
+
+<p>对于剩下的 <code>share</code> 部分，可以用 <a href="https://github.com/CocoaPods/CocoaPods/pull/5254">Add share schemes for development pods</a> 这个 pr 里面的方法解决：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>install! 'cocoapods', :share_schemes_for_development_pods =&gt; false</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过上面的那种方式把所有的 <code>development pods</code> 对应的 target 都 share 了，这里我们可以这样设置特定的 <code>development pods</code> ：</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>install! 'cocoapods', :share_schemes_for_development_pods =&gt; ['PodA']</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在 CocoaPods 1.4.0 版本中，<code>share_schemes_for_development_pods</code> 默认是 false 的，所以需要手动在 Podfile 里面去添加这一句。</p>
+
+<p>最后执行一下 <code>pod install</code> ，然后再执行 <code>carthage build --no-skip-current --platform ios</code> 就可以打出 ios 版本的 dynamic framework 了，想利用 Carthage 打出 static framework 的可以查看 <a href="https://github.com/Carthage/Carthage/blob/master/Documentation/StaticFrameworks.md">Build static frameworks to speed up your app’s launch times</a></p>
+
+<p>再进一步，我们可以把这个默认设置写入团队专有的 CocoaPods 插件中，比如 <code>cocoapods-xxx-plugin</code>：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Pod</span><span class="o">::</span><span class="no">HooksManager</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">&#39;cocoapods-xxx-plugin&#39;</span><span class="p">,</span> <span class="ss">:pre_install</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">context</span><span class="p">,</span> <span class="n">_</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">first_target_definition</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">podfile</span><span class="o">.</span><span class="n">target_definition_list</span><span class="o">.</span><span class="n">select</span><span class="p">{</span> <span class="o">|</span><span class="n">d</span><span class="o">|</span> <span class="n">d</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;Pods&#39;</span> <span class="p">}</span><span class="o">.</span><span class="n">first</span>
+</span><span class='line'>  <span class="n">development_pod</span> <span class="o">=</span> <span class="n">first_target_definition</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">first</span> <span class="k">unless</span> <span class="n">first_target_definition</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="no">Pod</span><span class="o">::</span><span class="no">UI</span><span class="o">.</span><span class="n">section</span><span class="p">(</span><span class="s2">&quot;Auto set share scheme for development pod: </span><span class="se">\&#39;</span><span class="si">#{</span><span class="n">development_pod</span><span class="si">}</span><span class="se">\&#39;</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">do</span>
+</span><span class='line'>      <span class="c1"># carthage 需要 shared scheme 构建 framework</span>
+</span><span class='line'>      <span class="n">context</span><span class="o">.</span><span class="n">podfile</span><span class="o">.</span><span class="n">install!</span><span class="p">(</span><span class="s1">&#39;cocoapods&#39;</span><span class="p">,</span> <span class="ss">:share_schemes_for_development_pods</span> <span class="o">=&gt;</span> <span class="o">[</span><span class="n">development_pod</span><span class="o">]</span><span class="p">)</span>
+</span><span class='line'>  <span class="k">end</span> <span class="k">unless</span> <span class="n">development_pod</span><span class="o">.</span><span class="n">nil?</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在 Podfile 添加以下代码，让插件生效：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">plugin</span> <span class="s1">&#39;cocoapods-xxx-plugin&#39;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>好处就是以后有更多相似配置的话都可以通过更改这个插件解决，而不用每次都去 Podfile 里面改 <code>pre_install</code>。</p>
+]]></content>
+  </entry>
+  
+  <entry>
     <title type="html"><![CDATA[iOS知识碎片八]]></title>
     <link href="http://triplecc.github.io/blog/2017-12-02-ioszhi-shi-sui-pian-ba/"/>
     <updated>2017-12-02T14:29:02+08:00</updated>
     <id>http://triplecc.github.io/blog/ioszhi-shi-sui-pian-ba</id>
-    <content type="html"><![CDATA[<p>1、适配iOS11、iOS10导航栏返回按钮<br></p>
+    <content type="html"><![CDATA[<p>1、适配iOS11、iOS10导航栏返回按钮<br>
+2、让CocoaPods组件支持Carthage打包<br></p>
 
 <!--more-->
 
@@ -98,6 +158,30 @@
 <p>需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则会干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 <code>hitTest</code> 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足条件了了。</p>
 
 <p>这种解决方式是在采用原生导航栏的情况下不得已而为之的，如果需要的导航栏花样比较复杂，还是隐藏系统的，自己实现来的舒服。</p>
+
+<h2>让CocoaPods组件支持Carthage打包</h2>
+
+<p>虽说 CocoaPods 有 <a href="https://github.com/CocoaPods/cocoapods-packager">cocoapods-packager</a> 插件可以生成二进制版本，但是这个库的维护者并不是很活跃，很多 issue 和 pr 过了挺久了还堆积在那里。于是我决定试试 Carthage ，不过依赖不利用 Cartfile 生成，还是用的 CocoaPods 那一套。</p>
+
+<p>要让组件支持 Carthage ，只需要工程里有一个 <code>shared framework target</code> 即可。那么针对 CocoaPods 生成的工程，我们先满足 <code>framework target</code> 这个要求，这个只需要在 Podfile 里面设置 <code>use_frameworks!</code> 就可以了。</p>
+
+<p>对于剩下的就是 <code>share</code> 部分，可以用 <a href="https://github.com/CocoaPods/CocoaPods/pull/5254">Add share schemes for development pods</a> 这个 pr 里面的方法解决：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">install</span><span class="o">!</span> <span class="err">&#39;</span><span class="n">cocoapods</span><span class="err">&#39;</span><span class="p">,</span> <span class="o">:</span><span class="n">share_schemes_for_development_pods</span> <span class="o">=&gt;</span> <span class="nb">false</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>不过上面的那种方式把所有的 <code>development pods</code> 对应的 target 都 share 了，这里我们可以这样设置特定的 <code>development pods</code> ：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="n">install</span><span class="o">!</span> <span class="err">&#39;</span><span class="n">cocoapods</span><span class="err">&#39;</span><span class="p">,</span> <span class="o">:</span><span class="n">share_schemes_for_development_pods</span> <span class="o">=&gt;</span> <span class="p">[</span><span class="err">&#39;</span><span class="n">PodA</span><span class="err">&#39;</span><span class="p">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>在 CocoaPods 1.4.0 版本中，<code>share_schemes_for_development_pods</code> 默认是 false 的，所以需要手动在 Podfile 里面去添加这一句。</p>
+
+<p>最后执行一下 <code>pod install</code> ，然后再执行 <code>carthage build --no-skip-current --platform ios</code> 就可以打出 ios 版本的 dynamic framework 了，想利用 Carthage 打出 static framework 的可以查看 <a href="https://github.com/Carthage/Carthage/blob/master/Documentation/StaticFrameworks.md">Build static frameworks to speed up your app’s launch times</a></p>
 ]]></content>
   </entry>
   
@@ -8179,493 +8263,6 @@ RxSwift就可以这样实现：</p>
 
 <p><a href="https://github.com/ReactiveX/RxSwift/blob/master/Documentation/Warnings.md">Warnings</a><br>
 <a href="https://github.com/ReactiveX/RxSwift/blob/master/Documentation/GettingStarted.md">GettingStarted</a></p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[RxSwift实现初探]]></title>
-    <link href="http://triplecc.github.io/blog/2016-10-01-rxswiftshi-xian-chu-tan/"/>
-    <updated>2016-10-01T16:08:36+08:00</updated>
-    <id>http://triplecc.github.io/blog/rxswiftshi-xian-chu-tan</id>
-    <content type="html"><![CDATA[<p>和ReactiveCocoa的实现类似，RxSwift也是通过不停地订阅上游的Observable来实现数据的流动。<br>
-Rx操作大体分为两种：</p>
-
-<ul>
-<li>创建: create、just、of、from等</li>
-<li>处理: map、flatMap、do等</li>
-</ul>
-
-
-<p>接下来通过下面的操作来简单分析下代码执行过程：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">Observable</span><span class="p">.</span><span class="n">just</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">.</span><span class="n">map</span> <span class="p">{</span> <span class="err">$</span><span class="mi">0</span> <span class="p">}</span>
-</span><span class='line'>    <span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="nl">onNext</span><span class="p">:</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">print</span><span class="p">(</span><span class="err">$</span><span class="mi">0</span><span class="p">)</span>
-</span><span class='line'><span class="p">})</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-
-
-<!--More-->
-
-
-<p>以下是执行过程中创建实例的过程:</p>
-
-<ul>
-<li>just操作创建Just实例（Just类是一个Observable）</li>
-<li>map操作创建Map实例，Map实例保存了上游的Observable，这里是Just（Map类是一个Observable）</li>
-<li>Map实例的subscribe操作创建了AnonymousObserver实例（AnonymousObserver是一个Observer）</li>
-</ul>
-
-
-<p>以下是执行Map实例执行subscribe后，代码的执行过程：</p>
-
-<ul>
-<li>AnonymousObserver通过Map实例的subscribeSafe方法订阅了Map实例</li>
-<li>Map实例通过subscribe方法间接调用了自身的run方法</li>
-<li>run方法创建了MapSink实例，MapSink保存了下游的Observer，即AnonymousObserver（MapSink是一个Observer）；同时run方法让MapSink订阅Map实例保存的上游Observable，即Just。</li>
-<li>Just执行subscribe方法，在其中直接调用<code>observer.on(.next(_element))</code>向下游的Observer，即MapSink发送消息</li>
-<li>MapSink接收到消息进行处理，然后向下游的Observer发送消息，即AnonymousObserver</li>
-<li>AnonymousObserver执行最终处理</li>
-</ul>
-
-
-<p>上面就是Rx操作执行过程的全部内容，可以总结两点：</p>
-
-<ul>
-<li>创建操作的subscribe方法会直接向下游Observer发送消息</li>
-<li>处理操作一般会创建两个实例，一个是Observable，一个是Observer。Observable用来保存上游Observable并且让下游Observer可以进行订阅，而Observer则用来保存下游的Observer以及订阅上游的Observable</li>
-</ul>
-
-
-<p>接下来结合代码分析下实现。<br></p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-<span class='line-number'>37</span>
-<span class='line-number'>38</span>
-<span class='line-number'>39</span>
-<span class='line-number'>40</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="n">public</span> <span class="k">func</span> <span class="n">subscribe</span><span class="p">(</span><span class="nl">file</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="err">#</span><span class="n">file</span><span class="p">,</span> <span class="nl">line</span><span class="p">:</span> <span class="n">UInt</span> <span class="o">=</span> <span class="err">#</span><span class="n">line</span><span class="p">,</span> <span class="nl">function</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="err">#</span><span class="n">function</span><span class="p">,</span> <span class="nl">onNext</span><span class="p">:</span> <span class="p">((</span><span class="n">E</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Void</span><span class="p">)</span><span class="o">?</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">,</span> <span class="nl">onError</span><span class="p">:</span> <span class="p">((</span><span class="n">Swift</span><span class="p">.</span><span class="n">Error</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Void</span><span class="p">)</span><span class="o">?</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">,</span> <span class="nl">onCompleted</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">Void</span><span class="p">)</span><span class="o">?</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">,</span> <span class="nl">onDisposed</span><span class="p">:</span> <span class="p">(()</span> <span class="o">-&gt;</span> <span class="n">Void</span><span class="p">)</span><span class="o">?</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">)</span>
-</span><span class='line'>    <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="p">{</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">let</span> <span class="nl">disposable</span><span class="p">:</span> <span class="n">Disposable</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">if</span> <span class="k">let</span> <span class="n">disposed</span> <span class="o">=</span> <span class="n">onDisposed</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">disposable</span> <span class="o">=</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">(</span><span class="nl">with</span><span class="p">:</span> <span class="n">disposed</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">disposable</span> <span class="o">=</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>  <span class="c1">// 创建匿名Observer</span>
-</span><span class='line'>    <span class="k">let</span> <span class="n">observer</span> <span class="o">=</span> <span class="n">AnonymousObserver</span><span class="o">&lt;</span><span class="n">E</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">e</span> <span class="k">in</span>
-</span><span class='line'>        <span class="k">switch</span> <span class="n">e</span> <span class="p">{</span>
-</span><span class='line'>        <span class="c1">// 调用对应的回调函数</span>
-</span><span class='line'>        <span class="k">case</span> <span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="k">let</span> <span class="n">value</span><span class="p">)</span><span class="o">:</span>
-</span><span class='line'>            <span class="n">onNext</span><span class="o">?</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-</span><span class='line'>        <span class="k">case</span> <span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="k">let</span> <span class="n">e</span><span class="p">)</span><span class="o">:</span>
-</span><span class='line'>            <span class="k">if</span> <span class="k">let</span> <span class="n">onError</span> <span class="o">=</span> <span class="n">onError</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">onError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">print</span><span class="p">(</span><span class="s">&quot;Received unhandled error: \(file):\(line):\(function) -&gt; \(e)&quot;</span><span class="p">)</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="n">disposable</span><span class="p">.</span><span class="n">dispose</span><span class="p">()</span>
-</span><span class='line'>        <span class="k">case</span> <span class="p">.</span><span class="nl">completed</span><span class="p">:</span>
-</span><span class='line'>            <span class="n">onCompleted</span><span class="o">?</span><span class="p">()</span>
-</span><span class='line'>            <span class="n">disposable</span><span class="p">.</span><span class="n">dispose</span><span class="p">()</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">(</span>
-</span><span class='line'>        <span class="nb">self</span><span class="p">.</span><span class="n">subscribeSafe</span><span class="p">(</span><span class="n">observer</span><span class="p">),</span>
-</span><span class='line'>        <span class="n">disposable</span>
-</span><span class='line'>    <span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'><span class="k">func</span> <span class="n">subscribeSafe</span><span class="o">&lt;</span><span class="nl">O</span><span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">E</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 让observer订阅自身</span>
-</span><span class='line'>    <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">asObservable</span><span class="p">().</span><span class="n">subscribe</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Observable可以调用subscribe方法来设置对应的回调。其内部实现是创建一个匿名的Observer，然后
-让这个匿名Observer订阅Observable。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">Producer</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span> <span class="p">{</span>
-</span><span class='line'>    <span class="kr">override</span> <span class="k">init</span><span class="p">()</span> <span class="p">{</span>
-</span><span class='line'>        <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kr">override</span> <span class="k">func</span> <span class="n">subscribe</span><span class="o">&lt;</span><span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">Element</span> <span class="p">{</span>
-</span><span class='line'>      <span class="c1">// 执行子类的run方法，在run方法中，一般会保存传入的Observer</span>
-</span><span class='line'>        <span class="k">if</span> <span class="o">!</span><span class="n">CurrentThreadScheduler</span><span class="p">.</span><span class="n">isScheduleRequired</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="n">run</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="k">else</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span> <span class="n">CurrentThreadScheduler</span><span class="p">.</span><span class="n">instance</span><span class="p">.</span><span class="n">schedule</span><span class="p">(())</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
-</span><span class='line'>                <span class="k">return</span> <span class="nb">self</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">observer</span><span class="p">)</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">func</span> <span class="n">run</span><span class="o">&lt;</span><span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">Element</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">abstractMethod</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>Producer是Just和Map的父类，同时也是一个Observable。通过调用subscribe方法来设置对应的Observer。</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-<span class='line-number'>36</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="p">,</span> <span class="n">ResultType</span><span class="o">&gt;:</span> <span class="n">Producer</span><span class="o">&lt;</span><span class="n">ResultType</span><span class="o">&gt;</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">typealias</span> <span class="n">Selector</span> <span class="o">=</span> <span class="p">(</span><span class="n">SourceType</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">ResultType</span>
-</span><span class='line'>  <span class="c1">// 上游的Obervable</span>
-</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_source</span><span class="p">:</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="o">&gt;</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_selector</span><span class="p">:</span> <span class="n">Selector</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">source</span><span class="p">:</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="o">&gt;</span><span class="p">,</span> <span class="nl">selector</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="n">Selector</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">_source</span> <span class="o">=</span> <span class="n">source</span>
-</span><span class='line'>        <span class="n">_selector</span> <span class="o">=</span> <span class="n">selector</span>
-</span><span class='line'>
-</span><span class='line'><span class="cp">#if TRACE_RESOURCES</span>
-</span><span class='line'>        <span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">AtomicIncrement</span><span class="p">(</span><span class="o">&amp;</span><span class="n">numberOfMapOperators</span><span class="p">)</span>
-</span><span class='line'><span class="cp">#endif</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kr">override</span> <span class="k">func</span> <span class="n">composeMap</span><span class="o">&lt;</span><span class="n">R</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">selector</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="p">(</span><span class="n">ResultType</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">R</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Observable</span><span class="o">&lt;</span><span class="n">R</span><span class="o">&gt;</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">let</span> <span class="n">originalSelector</span> <span class="o">=</span> <span class="n">_selector</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">Map</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="p">,</span> <span class="n">R</span><span class="o">&gt;</span><span class="p">(</span><span class="nl">source</span><span class="p">:</span> <span class="n">_source</span><span class="p">,</span> <span class="nl">selector</span><span class="p">:</span> <span class="p">{</span> <span class="p">(</span><span class="nl">s</span><span class="p">:</span> <span class="n">SourceType</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">R</span> <span class="k">in</span>
-</span><span class='line'>            <span class="k">let</span> <span class="nl">r</span><span class="p">:</span> <span class="n">ResultType</span> <span class="o">=</span> <span class="n">try</span> <span class="n">originalSelector</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
-</span><span class='line'>            <span class="k">return</span> <span class="n">try</span> <span class="n">selector</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-</span><span class='line'>        <span class="p">})</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kr">override</span> <span class="k">func</span> <span class="n">run</span><span class="o">&lt;</span><span class="nl">O</span><span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">ResultType</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">let</span> <span class="n">sink</span> <span class="o">=</span> <span class="n">MapSink</span><span class="p">(</span><span class="nl">selector</span><span class="p">:</span> <span class="n">_selector</span><span class="p">,</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">observer</span><span class="p">)</span>
-</span><span class='line'>        <span class="n">sink</span><span class="p">.</span><span class="n">disposable</span> <span class="o">=</span> <span class="n">_source</span><span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">sink</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="cp">#if TRACE_RESOURCES</span>
-</span><span class='line'>    <span class="k">deinit</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">AtomicDecrement</span><span class="p">(</span><span class="o">&amp;</span><span class="n">numberOfMapOperators</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>    <span class="cp">#endif</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>其中的_source表示上游的Observable。run方法的实现如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="kr">override</span> <span class="k">func</span> <span class="n">run</span><span class="o">&lt;</span><span class="nl">O</span><span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">ResultType</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 创建Observer，并且保存下游的Observer</span>
-</span><span class='line'>    <span class="k">let</span> <span class="n">sink</span> <span class="o">=</span> <span class="n">MapSink</span><span class="p">(</span><span class="nl">selector</span><span class="p">:</span> <span class="n">_selector</span><span class="p">,</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">observer</span><span class="p">)</span>
-</span><span class='line'>    <span class="c1">// 订阅上游的Observable</span>
-</span><span class='line'>    <span class="n">sink</span><span class="p">.</span><span class="n">disposable</span> <span class="o">=</span> <span class="n">_source</span><span class="p">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">sink</span><span class="p">)</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">sink</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>先是创建了MapSink，并保存了下游的Observer，然后让sink去订阅上游的Observable。</p>
-
-<p>MapSink的实现如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-<span class='line-number'>30</span>
-<span class='line-number'>31</span>
-<span class='line-number'>32</span>
-<span class='line-number'>33</span>
-<span class='line-number'>34</span>
-<span class='line-number'>35</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">MapSink</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="p">,</span> <span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">Sink</span><span class="o">&lt;</span><span class="n">O</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">ObserverType</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">typealias</span> <span class="n">Selector</span> <span class="o">=</span> <span class="p">(</span><span class="n">SourceType</span><span class="p">)</span> <span class="n">throws</span> <span class="o">-&gt;</span> <span class="n">ResultType</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">typealias</span> <span class="n">ResultType</span> <span class="o">=</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span>
-</span><span class='line'>    <span class="k">typealias</span> <span class="n">Element</span> <span class="o">=</span> <span class="n">SourceType</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_selector</span><span class="p">:</span> <span class="n">Selector</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">selector</span><span class="p">:</span> <span class="p">@</span><span class="n">escaping</span> <span class="n">Selector</span><span class="p">,</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">_selector</span> <span class="o">=</span> <span class="n">selector</span>
-</span><span class='line'>        <span class="nb">super</span><span class="p">.</span><span class="k">init</span><span class="p">(</span><span class="nl">observer</span><span class="p">:</span> <span class="n">observer</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>  
-</span><span class='line'>  <span class="c1">// 这里由上游进行调用，Observable或者Observer都可以</span>
-</span><span class='line'>  <span class="c1">// 不过在流的源头还是需要Observable手动调用_observer.on</span>
-</span><span class='line'>    <span class="k">func</span> <span class="n">on</span><span class="p">(</span><span class="n">_</span> <span class="nl">event</span><span class="p">:</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">SourceType</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">switch</span> <span class="n">event</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">case</span> <span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="k">let</span> <span class="n">element</span><span class="p">)</span><span class="o">:</span>
-</span><span class='line'>            <span class="k">do</span> <span class="p">{</span>
-</span><span class='line'>                <span class="k">let</span> <span class="n">mappedElement</span> <span class="o">=</span> <span class="n">try</span> <span class="n">_selector</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
-</span><span class='line'>                <span class="n">forwardOn</span><span class="p">(.</span><span class="n">next</span><span class="p">(</span><span class="n">mappedElement</span><span class="p">))</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>            <span class="n">catch</span> <span class="k">let</span> <span class="n">e</span> <span class="p">{</span>
-</span><span class='line'>                <span class="n">forwardOn</span><span class="p">(.</span><span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-</span><span class='line'>                <span class="n">dispose</span><span class="p">()</span>
-</span><span class='line'>            <span class="p">}</span>
-</span><span class='line'>        <span class="k">case</span> <span class="p">.</span><span class="n">error</span><span class="p">(</span><span class="k">let</span> <span class="n">error</span><span class="p">)</span><span class="o">:</span>
-</span><span class='line'>            <span class="n">forwardOn</span><span class="p">(.</span><span class="n">error</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
-</span><span class='line'>            <span class="n">dispose</span><span class="p">()</span>
-</span><span class='line'>        <span class="k">case</span> <span class="p">.</span><span class="nl">completed</span><span class="p">:</span>
-</span><span class='line'>            <span class="n">forwardOn</span><span class="p">(.</span><span class="n">completed</span><span class="p">)</span>
-</span><span class='line'>            <span class="n">dispose</span><span class="p">()</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>MapSink继承自Sink，Sink的实现如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-<span class='line-number'>14</span>
-<span class='line-number'>15</span>
-<span class='line-number'>16</span>
-<span class='line-number'>17</span>
-<span class='line-number'>18</span>
-<span class='line-number'>19</span>
-<span class='line-number'>20</span>
-<span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
-<span class='line-number'>26</span>
-<span class='line-number'>27</span>
-<span class='line-number'>28</span>
-<span class='line-number'>29</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">Sink</span><span class="o">&lt;</span><span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">SingleAssignmentDisposable</span> <span class="p">{</span>
-</span><span class='line'>  <span class="c1">// 保存的下游Observer</span>
-</span><span class='line'>    <span class="n">fileprivate</span> <span class="k">let</span> <span class="nl">_observer</span><span class="p">:</span> <span class="n">O</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'><span class="cp">#if TRACE_RESOURCES</span>
-</span><span class='line'>        <span class="k">let</span> <span class="n">_</span> <span class="o">=</span> <span class="n">AtomicIncrement</span><span class="p">(</span><span class="o">&amp;</span><span class="n">resourceCount</span><span class="p">)</span>
-</span><span class='line'><span class="cp">#endif</span>
-</span><span class='line'>        <span class="n">_observer</span> <span class="o">=</span> <span class="n">observer</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">final</span> <span class="k">func</span> <span class="n">forwardOn</span><span class="p">(</span><span class="n">_</span> <span class="nl">event</span><span class="p">:</span> <span class="n">Event</span><span class="o">&lt;</span><span class="n">O</span><span class="p">.</span><span class="n">E</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="n">isDisposed</span> <span class="p">{</span>
-</span><span class='line'>            <span class="k">return</span>
-</span><span class='line'>        <span class="p">}</span>
-</span><span class='line'>        <span class="c1">// 调用子类的on方法时，会调用Sink的forwardOn方法，从而把事件传递到下游的Observer</span>
-</span><span class='line'>        <span class="n">_observer</span><span class="p">.</span><span class="n">on</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="n">final</span> <span class="k">func</span> <span class="n">forwarder</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">SinkForward</span><span class="o">&lt;</span><span class="n">O</span><span class="o">&gt;</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">SinkForward</span><span class="p">(</span><span class="nl">forward</span><span class="p">:</span> <span class="nb">self</span><span class="p">)</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">deinit</span> <span class="p">{</span>
-</span><span class='line'><span class="cp">#if TRACE_RESOURCES</span>
-</span><span class='line'>       <span class="k">let</span> <span class="n">_</span> <span class="o">=</span>  <span class="n">AtomicDecrement</span><span class="p">(</span><span class="o">&amp;</span><span class="n">resourceCount</span><span class="p">)</span>
-</span><span class='line'><span class="cp">#endif</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>一旦上游调用了Observer的on方法，Observer会调用保存的下游Observer的on方法，从而触发一个链式调用。</p>
-
-<p>Just的实现如下：</p>
-
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
-<span class='line-number'>2</span>
-<span class='line-number'>3</span>
-<span class='line-number'>4</span>
-<span class='line-number'>5</span>
-<span class='line-number'>6</span>
-<span class='line-number'>7</span>
-<span class='line-number'>8</span>
-<span class='line-number'>9</span>
-<span class='line-number'>10</span>
-<span class='line-number'>11</span>
-<span class='line-number'>12</span>
-<span class='line-number'>13</span>
-</pre></td><td class='code'><pre><code class='swift'><span class='line'><span class="k">class</span> <span class="n">Just</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span> <span class="o">:</span> <span class="n">Producer</span><span class="o">&lt;</span><span class="n">Element</span><span class="o">&gt;</span> <span class="p">{</span>
-</span><span class='line'>    <span class="n">private</span> <span class="k">let</span> <span class="nl">_element</span><span class="p">:</span> <span class="n">Element</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="k">init</span><span class="p">(</span><span class="nl">element</span><span class="p">:</span> <span class="n">Element</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">_element</span> <span class="o">=</span> <span class="n">element</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'>
-</span><span class='line'>    <span class="kr">override</span> <span class="k">func</span> <span class="n">subscribe</span><span class="o">&lt;</span><span class="nl">O</span> <span class="p">:</span> <span class="n">ObserverType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nl">observer</span><span class="p">:</span> <span class="n">O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Disposable</span> <span class="k">where</span> <span class="n">O</span><span class="p">.</span><span class="n">E</span> <span class="o">==</span> <span class="n">Element</span> <span class="p">{</span>
-</span><span class='line'>        <span class="n">observer</span><span class="p">.</span><span class="n">on</span><span class="p">(.</span><span class="n">next</span><span class="p">(</span><span class="n">_element</span><span class="p">))</span>
-</span><span class='line'>        <span class="n">observer</span><span class="p">.</span><span class="n">on</span><span class="p">(.</span><span class="n">completed</span><span class="p">)</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">Disposables</span><span class="p">.</span><span class="n">create</span><span class="p">()</span>
-</span><span class='line'>    <span class="p">}</span>
-</span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
-
-
-<p>很明显，Just是流的源头，所以它直接重载了subscribe方法，通过主动调用Observer的on方法，让数据能向下游流动。</p>
-
-<hr />
-
-<h3>总结</h3>
-
-<p>从just到subscribe，方法的调用方向大致如下：</p>
-
-<p><img src="http://triplecc.github.io/images/Snip20161007_1.png" alt="" /></p>
-
-<p>首先是通过<code>.</code>的方法调用，期间创建了各类Observable。<br>
-直到外部调用了subscribe，即订阅了Observable，在(1)中创建的Observable开始依次调用subscribe，期间创建了各类Observer。<br>
-最后subscribe到达源头，源头调用Observer的on方法，在(2)中创建的Observer开始依次调用on，最终把结果输出到subscribe回调中。</p>
-
-<hr />
-
-<h3>参考</h3>
-
-<p><a href="http://tech.meituan.com/RACSignalSubscription.html">RACSignal的Subscription深入分析</a></p>
 ]]></content>
   </entry>
   
