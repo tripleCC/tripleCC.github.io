@@ -6,9 +6,9 @@ comments: true
 categories: 
 ---
 
-虽说 CocoaPods 有 [cocoapods-packager](https://github.com/CocoaPods/cocoapods-packager) 这个插件可以生成二进制版本，但是这个库的维护者似乎并不是很活跃，很多 issue 和 pr 过了挺久了还堆积在那里。于是我决定试试 Carthage ，不过不利用 Cartfile 生成依赖，还是用的 CocoaPods 那一套。
+虽说 CocoaPods 有 [cocoapods-packager](https://github.com/CocoaPods/cocoapods-packager) 这个插件可以生成二进制版本，但这个库的维护者似乎并不活跃，很多 issue 和 pr 过了一两年还堆积着没处理。于是我决定试试 Carthage ，不过不利用 Cartfile 生成依赖，还是用的 CocoaPods 那一套。
 
-要让组件支持 Carthage ，只需要工程里有一个 `shared framework target` 即可。那么针对 CocoaPods 生成的工程，我们先满足 `framework target` 这个要求，这个只需要在 Podfile 里面设置 `use_frameworks!` 就可以了。
+要让组件支持 Carthage ，工程里只需要有一个 `shared framework target` 即可。针对 CocoaPods 生成的工程，我们先在 Podfile 里面设置  `use_frameworks!` ，来满足  `framework target` 。
 
 <!--more-->
 
@@ -25,7 +25,7 @@ install! 'cocoapods', :share_schemes_for_development_pods => ['PodA']
 
 在 CocoaPods 1.4.0 版本中，`share_schemes_for_development_pods` 默认是 false 的，所以需要手动在 Podfile 里面去添加这一句。
 
-最后执行一下 `pod install` ，然后再执行 `carthage build --no-skip-current --platform ios` 就可以打出 ios 版本的 dynamic framework 了，想利用 Carthage 打出 static framework 的可以查看 [Build static frameworks to speed up your app’s launch times](https://github.com/Carthage/Carthage/blob/master/Documentation/StaticFrameworks.md)
+最后执行一下 `pod install` ，然后再执行 `carthage build --no-skip-current --platform ios` 就可以打出 ios 版本的 dynamic framework 了。想利用 Carthage 打出 static framework 的可以查看 [Build static frameworks to speed up your app’s launch times](https://github.com/Carthage/Carthage/blob/master/Documentation/StaticFrameworks.md)。
 
 
 再进一步，我们可以把这个默认设置写入团队专有的 CocoaPods 插件中，比如 `cocoapods-xxx-plugin`：
