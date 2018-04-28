@@ -762,6 +762,23 @@
 <span class='line-number'>66</span>
 <span class='line-number'>67</span>
 <span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
 </pre></td><td class='code'><pre><code class='objc'><span class='line'><span class="k">@interface</span> <span class="nc">TDFApplicationDelegateProxy</span> : <span class="bp">NSObject</span>
 </span><span class='line'><span class="k">@property</span> <span class="p">(</span><span class="k">strong</span><span class="p">,</span> <span class="k">nonatomic</span><span class="p">)</span> <span class="kt">id</span> <span class="o">&lt;</span><span class="bp">UIApplicationDelegate</span><span class="o">&gt;</span> <span class="n">realDelegate</span><span class="p">;</span>
 </span><span class='line'><span class="k">@end</span>
@@ -817,13 +834,30 @@
 </span><span class='line'><span class="p">}</span>
 </span><span class='line'>
 </span><span class='line'><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">forwardInvocation:</span><span class="p">(</span><span class="bp">NSInvocation</span> <span class="o">*</span><span class="p">)</span><span class="nv">anInvocation</span> <span class="p">{</span>
-</span><span class='line'>    <span class="k">if</span> <span class="p">([</span><span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">anInvocation</span><span class="p">.</span><span class="n">selector</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>        <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span><span class="p">];</span>
-</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'>    <span class="bp">NSMutableArray</span> <span class="o">*</span><span class="n">allModules</span> <span class="o">=</span> <span class="p">[</span><span class="bp">NSMutableArray</span> <span class="nl">arrayWithObjects</span><span class="p">:</span><span class="nb">self</span><span class="p">.</span><span class="n">realDelegate</span><span class="p">,</span> <span class="nb">nil</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">[</span><span class="n">allModules</span> <span class="nl">addObjectsFromArray</span><span class="p">:[</span><span class="n">TDFModuleManager</span> <span class="n">shared</span><span class="p">].</span><span class="n">modules</span><span class="p">];</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="k">for</span> <span class="p">(</span><span class="n">TDFModule</span> <span class="o">*</span><span class="n">module</span> <span class="k">in</span> <span class="p">[</span><span class="n">TDFModuleManager</span> <span class="n">shared</span><span class="p">].</span><span class="n">modules</span><span class="p">)</span> <span class="p">{</span>
-</span><span class='line'>        <span class="k">if</span> <span class="p">([</span><span class="n">module</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">anInvocation</span><span class="p">.</span><span class="n">selector</span><span class="p">])</span> <span class="p">{</span>
-</span><span class='line'>            <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="n">module</span><span class="p">];</span>
+</span><span class='line'>    <span class="c1">// BOOL 型返回值做特殊 | 处理</span>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">anInvocation</span><span class="p">.</span><span class="n">methodSignature</span><span class="p">.</span><span class="n">methodReturnType</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="sc">&#39;B&#39;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="kt">BOOL</span> <span class="n">realReturnValue</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="n">TDFModule</span> <span class="o">*</span><span class="n">module</span> <span class="k">in</span> <span class="n">allModules</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">([</span><span class="n">module</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">anInvocation</span><span class="p">.</span><span class="n">selector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>                <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="n">module</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="kt">BOOL</span> <span class="n">returnValue</span> <span class="o">=</span> <span class="nb">NO</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">getReturnValue</span><span class="p">:</span><span class="o">&amp;</span><span class="n">returnValue</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">realReturnValue</span> <span class="o">=</span> <span class="n">returnValue</span> <span class="o">||</span> <span class="n">realReturnValue</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">setReturnValue</span><span class="p">:</span><span class="o">&amp;</span><span class="n">realReturnValue</span><span class="p">];</span>
+</span><span class='line'>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span><span class='line'>        <span class="k">for</span> <span class="p">(</span><span class="n">TDFModule</span> <span class="o">*</span><span class="n">module</span> <span class="k">in</span> <span class="n">allModules</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">([</span><span class="n">module</span> <span class="nl">respondsToSelector</span><span class="p">:</span><span class="n">anInvocation</span><span class="p">.</span><span class="n">selector</span><span class="p">])</span> <span class="p">{</span>
+</span><span class='line'>                <span class="p">[</span><span class="n">anInvocation</span> <span class="nl">invokeWithTarget</span><span class="p">:</span><span class="n">module</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
 </span><span class='line'>        <span class="p">}</span>
 </span><span class='line'>    <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
@@ -838,6 +872,8 @@
 <p>当 <code>-respondsToSelector:</code> 返回 YES 后，程序来到消息转发第二步 Fast forwarding path ，对应方法 <code>-forwardingTargetForSelector:</code>，在这一步，我们判断转发的方法是否为 UIApplicationDelegate 的代理方法，如果不是，并且 realDelegate（也就是 AppDelegate） 能响应，就直接把消息转发给 realDelegate。</p>
 
 <p>如果在上一步中没有把消息转发给 realDelegate，那么就到了消息转发的最后一步 Normal forwarding path ，对应方法 <code>-methodSignatureForSelector:</code> 和 <code>-forwardInvocation:</code>，在这一步我们首先根据协议直接返回代理方法的签名，然后在 <code>-forwardInvocation:</code> 方法中，按照优先级，依次把消息转发给注册的模块。</p>
+
+<p>在不做额外操作的前提下， <code>-forwardInvocation:</code> 中只有最后一次调用的返回值会成为实际返回值，当实现类似 <code>- (BOOL)application:(UIApplication *)app openURL:(NSURL *)url options:(NSDictionary&lt;UIApplicationOpenURLOptionsKey,id&gt; *)options</code> 等返回 BOOL 值的代理方法时，就会出现问题。所以这里通过判断返回值是否为 BOOL 类型，去执行不同的操作。如果为 BOOL 类型，则对所有返回值执行逻辑或操作，并将结果设置成实际返回值。</p>
 
 <p>总结起来，流程如下：</p>
 
