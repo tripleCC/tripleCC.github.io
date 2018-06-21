@@ -1,0 +1,480 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CocoaPods忽略三方组件编译警告 - tripleCC的技术博客</title>
+  <meta name="author" content="tripleCC">
+
+  
+  <meta name="description" content="为了减少组件化后的工程集成时间，我们一般都会将三方库放到私有 GitLab 中，这也有利于开发者根据自家业务，对三方库进行定制包装。但是如果有些三方库更新较慢，以至于让新版本的 Xcode 产生很多警告，这就比较烦了，因为大部分情况下，更改三方库并不是一个明智的选择。 Podfile 提供了 &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="/atom.xml" rel="alternate" title="tripleCC的技术博客" type="application/atom+xml">
+  
+  <link rel="canonical" href="http://triplecc.github.io/blog/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/">
+  <link href="/favicon.png" rel="shortcut icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <!--[good job! gfw]><script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script><!-->
+  <script src="http://cdn.staticfile.org/jquery/1.9.1/jquery.min.js"></script>
+  <link href="/stylesheets/google-fonts.css" rel="stylesheet" type="text/css">
+  
+
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">tripleCC的技术博客</a></h1>
+  
+    <h2>ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="sitesearch" value="triplecc.github.io">
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">首页</a></li>
+  <li><a href="/blog/archives">所有文章</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">CocoaPods忽略三方组件编译警告</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2018-06-20T21:58:25+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2018</span></span> <span class='time'>9:58 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>为了减少组件化后的工程集成时间，我们一般都会将三方库放到私有 GitLab 中，这也有利于开发者根据自家业务，对三方库进行定制包装。但是如果有些三方库更新较慢，以至于让新版本的 Xcode 产生很多警告，这就比较烦了，因为大部分情况下，更改三方库并不是一个明智的选择。</p>
+
+<p>Podfile 提供了 <code>inhibit_all_warnings!</code> 以屏蔽所有 pod target 的警告，但其中也包括了非三方组件。同时，Podfile 提供了 <code>inhibit_warnings</code> 去针对单个 pod 的编译警告进行控制，比如：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">pod</span> <span class="s1">&#39;SSZipArchive&#39;</span><span class="p">,</span> <span class="ss">:inhibit_warnings</span> <span class="o">=&gt;</span> <span class="kp">true</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>以上代码只会屏蔽 SSZipArchive 组件的警告，这比较符合我们的诉求。不过 <code>inhibit_warnings</code> 只会禁止当前 pod 的警告，并不会一同处理依赖组件的警告，这就要求我们在 Podfile 中显式依赖所有三方组件，并且设置 <code>inhibit_warnings</code>。</p>
+
+<!--more-->
+
+
+<p>暂时搁置下这种体力活，我们看下有没有更好的处理方式。遇到这种问题，首先想到的是可以在 <code>pre_install</code> / <code>post_install</code> 中统一设置。在 CocoaPods 源码中搜索 <code>inhibit_warnings</code>，定位到以下代码 ：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">add_files_to_build_phases</span><span class="p">(</span><span class="n">native_target</span><span class="p">,</span> <span class="n">test_native_targets</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>  <span class="n">flags</span> <span class="o">=</span> <span class="n">compiler_flags_for_consumer</span><span class="p">(</span><span class="n">consumer</span><span class="p">,</span> <span class="n">arc</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">regular_file_refs</span> <span class="o">=</span> <span class="n">project_file_references_array</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="s1">&#39;source&#39;</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">native_target</span><span class="o">.</span><span class="n">add_file_references</span><span class="p">(</span><span class="n">regular_file_refs</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">compiler_flags_for_consumer</span><span class="p">(</span><span class="n">consumer</span><span class="p">,</span> <span class="n">arc</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>  <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">inhibit_warnings?</span>
+</span><span class='line'>    <span class="n">flags</span> <span class="o">&lt;&lt;</span> <span class="s1">&#39;-w -Xanalyzer -analyzer-disable-all-checks&#39;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="n">flags</span> <span class="o">*</span> <span class="s1">&#39; &#39;</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>可以看到，在添加文件至对应 target 时，<code>-w -Xanalyzer -analyzer-disable-all-checks</code> 同时被添加到了文件的 compiler flags （在Target -> Build Phases -> Compile Sources 中可见）。结合 Installer 的 install! 代码：</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">install!</span>
+</span><span class='line'>  <span class="n">prepare</span>
+</span><span class='line'>  <span class="n">resolve_dependencies</span>
+</span><span class='line'>  <span class="n">download_dependencies</span>
+</span><span class='line'>  <span class="n">validate_targets</span>
+</span><span class='line'>  <span class="n">generate_pods_project</span>
+</span><span class='line'>  <span class="k">if</span> <span class="n">installation_options</span><span class="o">.</span><span class="n">integrate_targets?</span>
+</span><span class='line'>    <span class="n">integrate_user_project</span>
+</span><span class='line'>  <span class="k">else</span>
+</span><span class='line'>    <span class="no">UI</span><span class="o">.</span><span class="n">section</span> <span class="s1">&#39;Skipping User Project Integration&#39;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'>  <span class="n">perform_post_install_actions</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">download_dependencies</span>
+</span><span class='line'>  <span class="no">UI</span><span class="o">.</span><span class="n">section</span> <span class="s1">&#39;Downloading dependencies&#39;</span> <span class="k">do</span>
+</span><span class='line'>    <span class="n">install_pod_sources</span>
+</span><span class='line'>    <span class="n">run_podfile_pre_install_hooks</span>
+</span><span class='line'>    <span class="n">clean_pod_sources</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><code>generate_pods_project</code> 方法执行了 PodTargetInstaller 的 install! 操作，将文件添加到了 pod target ，那么只能在其之前的 <code>pre_install</code> 设置相关属性了。从上面的代码还可以看出，执行 <code>pre_install</code> 前就已经 <code>resolve_dependencies</code> 了，也就是说我们可以拿到 Analyzer 分析的完整结果 AnalysisResult :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="c1"># @return [Hash{TargetDefinition =&gt; Array&lt;Specification&gt;}] the</span>
+</span><span class='line'><span class="c1">#         specifications grouped by target.</span>
+</span><span class='line'><span class="c1">#</span>
+</span><span class='line'><span class="kp">attr_accessor</span> <span class="ss">:specs_by_target</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># @return [Array&lt;Specification&gt;] the specifications of the resolved</span>
+</span><span class='line'><span class="c1">#         version of Pods that should be installed.</span>
+</span><span class='line'><span class="c1">#</span>
+</span><span class='line'><span class="kp">attr_accessor</span> <span class="ss">:specifications</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># @return [Array&lt;AggregateTarget&gt;] The aggregate targets created for each</span>
+</span><span class='line'><span class="c1">#         {TargetDefinition} from the {Podfile}.</span>
+</span><span class='line'><span class="c1">#</span>
+</span><span class='line'><span class="kp">attr_accessor</span> <span class="ss">:targets</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>上面列出了此次需要涉及到的 AnalysisResult 属性。这里要注意的是 <code>targets</code> 属性是不包含 Pods Target 的，它只包含了 Podfile 里面声明的 target ，一般为组件本身，以及组件Tests。如果不确定要设置哪个 target ，可以手动设置 <code>inhibit_warnings</code> ，然后通过以下代码打印出 hash :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'><span class="n">pod</span> <span class="s1">&#39;SSZipArchive&#39;</span><span class="p">,</span> <span class="ss">:inhibit_warnings</span> <span class="o">=&gt;</span> <span class="kp">true</span>
+</span><span class='line'><span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">pre_install</span> <span class="k">do</span> <span class="o">|</span><span class="n">installer</span><span class="o">|</span>
+</span><span class='line'>  <span class="nb">require</span> <span class="s1">&#39;pp&#39;</span>
+</span><span class='line'>  <span class="n">installer</span><span class="o">.</span><span class="n">analysis_result</span><span class="o">.</span><span class="n">specs_by_target</span><span class="o">.</span><span class="n">each_key</span> <span class="k">do</span> <span class="o">|</span><span class="n">target_definition</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">pp</span> <span class="n">target_definition</span><span class="o">.</span><span class="n">to_hash</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>这里我们对所有涉及到的 target 都进行设置。接着看下 CocoaPods Core 代码中 Podfile 是如何设置 <code>inhibit_warnings</code> 的 :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="k">def</span> <span class="nf">pod</span><span class="p">(</span><span class="nb">name</span> <span class="o">=</span> <span class="kp">nil</span><span class="p">,</span> <span class="o">*</span><span class="n">requirements</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>  <span class="n">current_target_definition</span><span class="o">.</span><span class="n">store_pod</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="o">*</span><span class="n">requirements</span><span class="p">)</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">store_pod</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="o">*</span><span class="n">requirements</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>  <span class="n">parse_inhibit_warnings</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="n">requirements</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">def</span> <span class="nf">parse_inhibit_warnings</span><span class="p">(</span><span class="nb">name</span><span class="p">,</span> <span class="n">requirements</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'>  <span class="n">set_inhibit_warnings_for_pod</span><span class="p">(</span><span class="n">pod_name</span><span class="p">,</span> <span class="n">should_inhibit</span><span class="p">)</span>
+</span><span class='line'>  <span class="o">.</span><span class="n">.</span><span class="o">.</span>
+</span><span class='line'><span class="k">end</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1"># Inhibits warnings for a specific pod during compilation.</span>
+</span><span class='line'><span class="k">def</span> <span class="nf">set_inhibit_warnings_for_pod</span><span class="p">(</span><span class="n">pod_name</span><span class="p">,</span> <span class="n">should_inhibit</span><span class="p">)</span>
+</span><span class='line'>  <span class="n">hash_key</span> <span class="o">=</span> <span class="k">case</span> <span class="n">should_inhibit</span>
+</span><span class='line'>             <span class="k">when</span> <span class="kp">true</span>
+</span><span class='line'>               <span class="s1">&#39;for_pods&#39;</span>
+</span><span class='line'>             <span class="k">when</span> <span class="kp">false</span>
+</span><span class='line'>               <span class="s1">&#39;not_for_pods&#39;</span>
+</span><span class='line'>             <span class="k">when</span> <span class="kp">nil</span>
+</span><span class='line'>               <span class="k">return</span>
+</span><span class='line'>             <span class="k">else</span>
+</span><span class='line'>               <span class="k">raise</span> <span class="no">ArgumentError</span><span class="p">,</span> <span class="s2">&quot;Got `</span><span class="si">#{</span><span class="n">should_inhibit</span><span class="o">.</span><span class="n">inspect</span><span class="si">}</span><span class="s2">`, should be a boolean&quot;</span>
+</span><span class='line'>             <span class="k">end</span>
+</span><span class='line'>  <span class="n">raw_inhibit_warnings_hash</span><span class="o">[</span><span class="n">hash_key</span><span class="o">]</span> <span class="o">||=</span> <span class="o">[]</span>
+</span><span class='line'>  <span class="n">raw_inhibit_warnings_hash</span><span class="o">[</span><span class="n">hash_key</span><span class="o">]</span> <span class="o">&lt;&lt;</span> <span class="n">pod_name</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>找到了设置 inhibit_warnings 的 public 方法 <code>set_inhibit_warnings_for_pod</code>。</p>
+
+<p>由于我们的三方库集中放在 cocoapods-repos 的 group 下，最终的 <code>pre_install</code> 长这样 :</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">pre_install</span> <span class="k">do</span> <span class="o">|</span><span class="n">installer</span><span class="o">|</span>
+</span><span class='line'>  <span class="n">installer</span><span class="o">.</span><span class="n">analysis_result</span><span class="o">.</span><span class="n">specs_by_target</span><span class="o">.</span><span class="n">each_key</span> <span class="k">do</span> <span class="o">|</span><span class="n">target_definition</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">installer</span><span class="o">.</span><span class="n">analysis_result</span><span class="o">.</span><span class="n">specifications</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">spec</span><span class="o">|</span>
+</span><span class='line'>      <span class="n">source</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">attributes_hash</span><span class="o">[</span><span class="s1">&#39;source&#39;</span><span class="o">]</span>
+</span><span class='line'>      <span class="n">source</span> <span class="o">&amp;&amp;=</span> <span class="n">source</span><span class="o">[</span><span class="s1">&#39;git&#39;</span><span class="o">]</span>
+</span><span class='line'>      <span class="k">next</span> <span class="k">unless</span> <span class="n">source</span> <span class="o">&amp;&amp;</span> <span class="n">source</span><span class="o">.</span><span class="n">include?</span><span class="p">(</span><span class="s1">&#39;cocoapods-repos&#39;</span><span class="p">)</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">targets</span> <span class="o">=</span> <span class="p">(</span><span class="nb">Array</span><span class="p">(</span><span class="n">target_definition</span><span class="p">)</span> <span class="o">+</span> <span class="n">target_definition</span><span class="o">.</span><span class="n">children</span><span class="p">)</span>
+</span><span class='line'>      <span class="n">targets</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">target</span><span class="o">|</span>
+</span><span class='line'>        <span class="n">target</span><span class="o">.</span><span class="n">set_inhibit_warnings_for_pod</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="kp">true</span><span class="p">)</span>
+</span><span class='line'>      <span class="k">end</span>
+</span><span class='line'>    <span class="k">end</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">tripleCC</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2018-06-20T21:58:25+08:00'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>20</span><span class='date-suffix'>th</span>, <span class='date-year'>2018</span></span> <span class='time'>9:58 pm</span></time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2018-04-07-rang-cocoapodszu-jian-zhi-chi-carthageda-bao/" title="Previous Post: 让CocoaPods组件支持Carthage打包">&laquo; 让CocoaPods组件支持Carthage打包</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>关于我</h1>
+  <p> 曾经的嵌入式软件开发者，现已皈依苹果大法门下。目前混迹杭州，喜欢没事就去西湖压马路。轻微完美主义者，跑步爱好者。 </p>
+  <a href="http://www.jianshu.com/users/97e39e95c2cc"> 我的简书 </a><br>
+  <a href="https://github.com/tripleCC"> 我的GitHub </a><br>
+  <a href="https://twitter.com/tripleCCBrian"> 我的Twitter </a>
+</section>
+<section>
+  <h1>最近发布</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/">CocoaPods忽略三方组件编译警告</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2018-04-07-rang-cocoapodszu-jian-zhi-chi-carthageda-bao/">让CocoaPods组件支持Carthage打包</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-12-02-ioszhi-shi-sui-pian-ba/">iOS知识碎片八</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-11-08-chuang-jian-cocoapodscha-jian/">编写自己的cocoapods插件</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2017-10-25-zu-jian-sheng-ming-zhou-qi/">组件化之组件生命周期管理</a>
+      </li>
+    
+  </ul>
+</section>
+
+
+
+
+<section>
+    <h1>友情链接</h1>
+    <ul>
+        <li>
+            <a href="http://wxgbridgeq.github.io/">小乔的个人学习博客</a>
+        </li>
+        <li>
+        	<a href="http://www.swiftyper.com/">Swiftyper-小锅</a>
+        </li>
+    </ul>
+</section>
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - tripleCC -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'tripleCC';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://triplecc.github.io/blog/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/';
+        var disqus_url = 'http://triplecc.github.io/blog/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
