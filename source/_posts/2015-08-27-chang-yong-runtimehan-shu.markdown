@@ -7,7 +7,8 @@ categories:
 ---
 这里主要纪录一些常用的函数：
 <!--more-->
-##类
+
+## 类
 
 ```objc
 // 根据类，获取类名
@@ -72,7 +73,7 @@ Class objc_getClass(const char *name)
 
 ```
 
-##动态创建
+## 动态创建
   - 类
 
 ```objc
@@ -98,7 +99,7 @@ Class objc_getClass(const char *name)
   void * objc_destructInstance ( id obj );
 ```
 
-##实例对象操作
+## 实例对象操作
 
 ```
 // 返回指定对象的一份拷贝
@@ -131,7 +132,7 @@ Class object_getClass ( id obj );
 // 设置对象的类
 Class object_setClass ( id obj, Class cls );
 ```
-##获取类定义
+## 获取类定义
 
 ```objc
 // 获取已注册的类定义的列表
@@ -149,7 +150,7 @@ Class objc_getRequiredClass ( const char *name );
 Class objc_getMetaClass ( const char *name );
 ```
 
-##成员变量、属性
+## 成员变量、属性
 
 ```objc
 // 获取成员变量名
@@ -183,7 +184,7 @@ char * property_copyAttributeValue ( objc_property_t property, const char *attri
 objc_property_attribute_t * property_copyAttributeList ( objc_property_t property, unsigned int *outCount );
 ```
 
-##方法
+## 方法
 
 ```objc
 // 调用指定方法的实现
@@ -226,7 +227,7 @@ IMP method_setImplementation ( Method m, IMP imp );
 void method_exchangeImplementations ( Method m1, Method m2 );
 ```
 
-##方法选择器
+## 方法选择器
 
 ```objc
 // 返回给定选择器指定的方法的名称
@@ -242,7 +243,7 @@ SEL sel_getUid ( const char *str );
 BOOL sel_isEqual ( SEL lhs, SEL rhs );
 ```
 
-##库相关
+## 库相关
 
 ```objc
 // 获取所有加载的Objective-C框架和动态库的名称

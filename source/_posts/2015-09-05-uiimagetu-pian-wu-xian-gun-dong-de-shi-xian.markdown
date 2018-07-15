@@ -13,8 +13,10 @@ categories:
 [封装轮播控件的应用](https://github.com/tripleCC/GiftPick)（图片从网络加载）：<br>
 ![](/images/2015-09-13 10_54_13.gif)
 <!--more-->
-##采用三个UIImageView+UIScrollView
+
+## 采用三个UIImageView+UIScrollView
 ## 核心步骤
+
 - 在图片显示完全（endDecelerating）时，重新设置三个UIImageView的图片内容
 - 调整UIScrollView的偏移量，始终显示中间的UIImageView
 
@@ -408,7 +410,8 @@ categories:
 
 ```
 
-##采用两个UIImageView＋UIScrollView
+## 采用两个UIImageView＋UIScrollView
+
 这个方法，和上面的方法原理是一样的。
 假设使用UIV1表示始终显示的UIImageView，使用UIV2表示备份的UIImageView
 
@@ -562,7 +565,8 @@ categories:
     self.currentView.tag = self.backupView.tag;
 }
 ```
-##使用UICollectionView
+## 使用UICollectionView
+
 因为UICollectionView有cell重用机制，所以只需要两个cell，即可完成上面的功能，内存压力也不会太大。
 
 - 设置UICollectionView的属性
@@ -611,5 +615,6 @@ UICollectionViewFlowLayout *collectionViewLayout = [[UICollectionViewFlowLayout 
 }
 ```
 
-##总结
+## 总结
+
 对于前面两种方法，我使用了UIImageView的tag来记录对应图片的下标，所以也省去了一个变量。

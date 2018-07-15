@@ -39,7 +39,7 @@ key : value
 既然这样，可以选择手动一个个去实现。但是这样在数据少的时候可以试试，在数据比较多时就不太现实了，程序的可扩展性也不好。<br>
 现在来了解下相对比较简单的两种解决方法：
 
-##方式1.重写setValue:forKey:
+## 方式1.重写setValue:forKey:
 setValuesForKeysWithDictionary:的底层是调用setValue:forKey:的，所以可以考虑重写这个方法，并且判断其key是id时，手动转换成模型的成员变量名，这里假设把id对应成以下属性：
 
 ```objc
@@ -61,7 +61,7 @@ setValuesForKeysWithDictionary:的底层是调用setValue:forKey:的，所以可
 ```
 这样，当使用setValuesForKeysWithDictionary:就不会出现模型中找不到对应的成员变量的错误了。
 
-##方式2.使用runtime
+## 方式2.使用runtime
 考虑到runtime和KVC的实现原理，可以使用另一种实现思路，就是`先在模型中找到对应的成员变量，然后从JSON字典中找到对应的数据进行赋值`。<br>
 这里先要了解runtime的两个实例变量操作方法：
 

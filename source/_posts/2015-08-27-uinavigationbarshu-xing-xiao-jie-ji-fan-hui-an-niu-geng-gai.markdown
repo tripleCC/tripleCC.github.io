@@ -6,7 +6,8 @@ comments: true
 categories: 
 ---
 
-##UINavigationBar属性
+## UINavigationBar属性
+
 - 如果想统一设置，可以通过以下方法，获取当前类下的所有对象的导航条，然后进行设置
 
 ```objc
@@ -87,7 +88,8 @@ self.navigationController.navigationBar.shadowImage = [[UIImage alloc] init];
   - (void)setTitleVerticalPositionAdjustment:(CGFloat)adjustment forBarMetrics:(UIBarMetrics)barMetrics
 ```
 
-##返回按钮更改
+## 返回按钮更改
+
 系统原装效果:<br>
 ![](/images/Snip20150724_13.png)<br>
 
@@ -95,7 +97,8 @@ self.navigationController.navigationBar.shadowImage = [[UIImage alloc] init];
 
 - 去除上面返回按钮上“我是标题”字样，并设置返回图片为白色
 
-######分析
+###### 分析
+
 - 图片修改
     - 方式1：设置返回图片颜色
     - 方式2：直接设置返回图片
@@ -105,7 +108,8 @@ self.navigationController.navigationBar.shadowImage = [[UIImage alloc] init];
     - 方式2：设置返回按钮文字偏移量，使其移出屏幕
     - 方式3：采用控制器navigationItem的leftBarButtonItem进行覆盖
     
-######解决
+###### 解决
+
 综合以上说明，这里给出三种方式(都是针对的自定义UINavigationController)：
 
   - 方式1:在`-pushViewController:animated:`中设置文字 ，在`+initialize`方法中设置返回图片或改变返回图片颜色
@@ -160,7 +164,8 @@ self.navigationController.navigationBar.shadowImage = [[UIImage alloc] init];
     }
 ```
 
-######方案对比
+###### 方案对比
+
 - 方案1和方案2改动较小，对系统自带的返回功能无影响。<br>
 - 方式3灵活性最高，但是会`使系统的滑动返回失效`，需要自己实现，具体实现参照[forkingdog全屏手势分类](https://github.com/forkingdog/FDFullscreenPopGesture)<br>
 - 方式3还会使按钮更加偏向右边：

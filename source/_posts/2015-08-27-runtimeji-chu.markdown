@@ -18,6 +18,7 @@ int main()
 }
 ```
 <!--more-->
+
 执行`clang -c`进行编译后，获取符号表`nm run.o`，可以得到全局唯一的符号`_run`，对函数run的调用直接参考链接后_run符号在代码段的地址
 
 ```objc
@@ -54,7 +55,8 @@ int main(int argc, const char * argv[]) {
 ```
 可以看到，对Objective-C编译前期，会将内部的方法调用，转换成调用`objc_msgSend`。也就是说，编译完成后，方法地址是不能确定的，需要在运行时，通过Selector进行查找，而这正是runtime的关键，也就是发送消息机制。
 
-##runtime的基本要素
+## runtime的基本要素
+
 如上面例子所示，在编译后`[dog run]`被编译器转化成了
 
 ```objc
@@ -77,7 +79,9 @@ objc_msgSend(receiver, selector, arg1, arg2, ...)
 ```
 消息的接收者receiver在接受到消息后，查找对应selector的实现，根据查找的结果可以进行若干种种不同的处理。<br>
 更深层的了解，需要了解下对应的数据结构
-###id
+
+### id
+
 上文中`objc_msgSend`的第一个参数有个强转类型，即id。id是可以指向对象的万能指针，查看runtime源码，得知其定义如下：
 
 ```objc
@@ -108,7 +112,8 @@ private:
 `objc_object`结构体包含了`Class isa`成员，而`isa`就是我们常说的创建一个对象时，用来指向所属类的`指针`。因此根据`isa`就可以获取对应的类。
 - 注：C++中结构的作用被拓宽了，也表示定义一个类的类型，struct和class的区别就在默认类型上一个是public,一个是private，这里就直接描述为结构体了
 
-###Class
+### Class
+
 上文中，`isa`为`Class`类型，而`Class`则是`objc_class`指针类型的别名：
 
 ```objc
@@ -308,7 +313,8 @@ objc_getClass(objc_getClass("Dog"))
 - 每个类对象的`isa`都指向了所属的类，即`元类`，其`superclass`指针指向继承的`父类`
 - 每个元类的`isa`都指向了`超类`，即`NSObject`
 
-###Ivar
+### Ivar
+
 `Ivar`，我把它理解成`instance variable`，也就是实例变量，可以观察它的定义：
 
 ```objc
@@ -332,7 +338,8 @@ struct ivar_t {
 `Ivar`其实是指向`ivar_t`结构体的指针，它包含了实例变量名（name）、类型（type）、相对对象地址偏移（offset）以及内存数据对齐等信息。<br>
 跟多关于实例变量的剖析可以查看[Objective-C类成员变量深度剖析](http://quotation.github.io/objc/2015/05/21/objc-runtime-ivar-access.html)
 
-###Method
+### Method
+
 从以下定义的结构体可以看出，`Method`主要住用为关联了方法名`SEL`和方法的实现`IMP`，当遍通过`Method`自己的定义的迭代器查找方法名`SEL`时，就可以找到对应的方法实现`IMP`，从而调用方法的实现执行相关的操作。`types`表示方法实现的参数以及返回值类型。
 
 ```objc
@@ -347,7 +354,8 @@ struct method_t {
 }
 ```
 
-###SEL
+### SEL
+
 `SEL`为方法选择器，观察下它的定义：
 
 ```objc
@@ -355,7 +363,8 @@ typedef struct objc_selector *SEL;
 ```
 可以看出`SEL`实际是`objc_selector`指针类型的别名，它用于表示运行时方法的名字，以便进行方法实现的查找。因为要对应方法实现，所以每一个方法对应的`SEL`都是唯一的。因此它不具备C++可以进行函数重载的特性，当两个方法名一样时，会发生编译错误，即使参数不一样。
 
-###IMP
+### IMP
+
 `IMP`的定义如下：
 
 ```objc
@@ -373,7 +382,8 @@ typedef id (*IMP)(id, SEL, ...);
 
 在某些情况下，通过获取`IMP`而直接调用方法实现，可以直接跳过消息传递机制，像C语言调用函数那样，在一定程度上，可以提供程序的性能。
 
-###消息传递
+### 消息传递
+
 了解完runtime中一些必要的元素，继续回到文章开头的代码：
 
 ```objc
@@ -428,7 +438,8 @@ objc_msgSend(receiver, selector, ...)
 `objc_msgSend`找到方法实现后，会在调用该实现时，传入这两个隐藏参数，这样就能够在方法实现里面里面获取消息接受对象，即方法调用者了。<br>
 `隐藏参数`表示这两个参数在源代码方法的定义中并没有声明这两个参数，这两个参数是在`代码编译期间`，被`插入`到实现中的。
 
-###self和super的联系
+### self和super的联系
+
 根据上文对`objc_msgSend`的了解，可以解决以下代码输出一致问题
 
 ```objc
@@ -502,7 +513,8 @@ struct objc_super { id receiver; Class class; };
 `[super class]->objc_msgSendSuper(objc_super{self, superclass)}, sel_registerName("class"))->objc_msgSend(objc_super->self, sel_registerName("class"))＝[self class]`。<br>
 可以看出两者输出结果一致的关键就是，`[self class]`的消息接收者和`[super class]`的消息接收者一样，都是调用方法的实例对象。
 
-###方法解析和消息转发
+### 方法解析和消息转发
+
 当上文`objc_msgSend`处理流程中，`selector`没有找到时，会触发三个阶段，在这三个阶段都可以进行相关处理使程序不抛出异常：
 - Method Resolution  (动态方法解析)
 - Fast Forwarding    (备用接收者)
@@ -511,7 +523,8 @@ struct objc_super { id receiver; Class class; };
 由于实际代码中很少有看到这种操作，所以这里不做详细解释，参考这个资料即可[Objective-C Runtime 运行时之三：方法与消息](http://southpeak.github.io/blog/2014/11/03/objective-c-runtime-yun-xing-shi-zhi-san-:fang-fa-yu-xiao-xi-zhuan-fa/)
 
 
-###参考
+### 参考
+
 [Objective-C Runtime 运行时之一：类与对象](http://southpeak.github.io/blog/2014/10/25/objective-c-runtime-yun-xing-shi-zhi-lei-yu-dui-xiang/)<br>
 [Objective-C Runtime](http://yulingtianxia.com/blog/2014/11/05/objective-c-runtime/)<br>
 [What is a meta-class in Objective-C?](https://www.cocoawithlove.com/2010/01/what-is-meta-class-in-objective-c.html)<br>

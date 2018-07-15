@@ -7,7 +7,9 @@ categories:
 ---
 
 [深入理解RunLoop](http://blog.ibireme.com)这篇文章写的很好！
-##简介
+
+## 简介
+
 RunLoop顾名思义，就是`运行循环`的意思。<br>
 基本作用：
 
@@ -91,7 +93,7 @@ int main(int argc, char * argv[]) {
 
 值得注意的是，获取当前RunLoop都是进行懒加载的，也就是调用时自动创建线程对应的RunLoop。<br>
 
-###RunLoop相关类：
+### RunLoop相关类：
 
 - CFRunLoopRef
 - CFRunLoopModeRef
@@ -201,7 +203,8 @@ CF的内存管理（Core Foundation）：
  * 比如CFRunLoopObserverCreate
 - 2.release函数：CFRelease(对象);
 
-###自动释放池释放的时间和RunLoop的关系：
+### 自动释放池释放的时间和RunLoop的关系：
+
   - 注意，这里的自动释放池指的是`主线程的自动释放池`，我们看不见它的创建和销毁。自己`手动创建@autoreleasepool {}`是`根据代码块来的`，`出了这个代码块就释放了`。
   -  App启动后，苹果在主线程 RunLoop 里注册了两个 Observer，其回调都是 `_wrapRunLoopWithAutoreleasePoolHandler()`。
   - 第一个 Observer 监视的事件是 Entry(`即将进入Loop`)，其回调内会调用 _objc_autoreleasePoolPush() `创建自动释放池`。其 order 是-2147483647，优先级最高，保证创建释放池发生在其他所有回调之前。
@@ -214,7 +217,7 @@ CF的内存管理（Core Foundation）：
 综合上面，可以得到以下结论：<br>
 ![](/images/Snip20150713_12.png)
 
-###@autoreleasepool {}内部实现
+### @autoreleasepool {}内部实现
 
 有以下代码：
 
@@ -251,8 +254,9 @@ struct __AtAutoreleasePool {
 
 结合以上信息，main函数里面的__autoreleasepool是一个局部变量。当其创建时，会调用构造函数创建线程池，出了{}代码块时，局部变量被销毁，调用其析构函数销毁线程池。
 
-##RunLoop实际应用
-###常驻线程
+## RunLoop实际应用
+### 常驻线程
+
 当创建一个线程，并且希望它一直存在时，就需要使用到RunLoop，否则线程一执行完任务就会停止。
 要向线程存在，需要有强指针引用他，其他的代码如下：
 
@@ -377,7 +381,7 @@ _thread = [[NSThread alloc] initWithTarget:self selector:@selector(test) object:
 }
 ```
 
-###给子线程开启定时器
+### 给子线程开启定时器
 
 ```objc
 _thread = [[NSThread alloc] initWithTarget:self selector:@selector(test) object:nil];
@@ -396,7 +400,8 @@ _thread = [[NSThread alloc] initWithTarget:self selector:@selector(test) object:
 }
 ```
 
-###让某些事件（行为、任务）在特定模式下执行
+### 让某些事件（行为、任务）在特定模式下执行
+
 比如图片的设置，在UIScrollView滚动的情况下，我不希望设置图片，等停止滚动了再设置图片，可以用以下代码：
 
 ```objc
@@ -406,10 +411,12 @@ _thread = [[NSThread alloc] initWithTarget:self selector:@selector(test) object:
 先设置任务在NSDefaultRunLoopMode模式在执行，这样，在滚动使RunLoop进入UITrackingRunLoopMode时，就不会进行图片的设置了。
 
 
-###控制定时器在特定模式下执行
+### 控制定时器在特定模式下执行
+
 上文的《`CFRunLoopTimerRef`说明：》中已经指出
 
-###添加Observer监听RunLoop的状态
+### 添加Observer监听RunLoop的状态
+
 监听点击事件的处理（在所有点击事件之前做一些事情）<br>
 具体步骤在《`CFRunLoopObserverRef`说明：》中已写明
 

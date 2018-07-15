@@ -9,8 +9,9 @@ categories:
 最近用到了sunnyxx的forkingdog系列([UIView-FDCollapsibleConstraints](https://github.com/forkingdog/UIView-FDCollapsibleConstraints))，纪录下关联对象和MethodSwizzling在实际场景中的应用。
 <!--more-->
 
-##基本概念
-####关联对象
+## 基本概念
+#### 关联对象
+
 - 关联对象操作函数
   - 设置关联对象：
 
@@ -121,7 +122,9 @@ public:
 大部分情况下，关联对像会使用`getter方法的SEL当作key`(getter方法中可以这样表示：_cmd)。
 
 更多和关联对象有关的底层信息，可以查看[Dive into Category](http://tech.meituan.com/DiveIntoCategory.html)
-####MethodSwizzling
+
+#### MethodSwizzling
+
 MethodSwizzling主要原理就是利用runtime的动态特性，`交换方法对应的实现`，也就是`IMP`。
 通常，MethodSwizzling的封装为：
 
@@ -198,13 +201,14 @@ void method_exchangeImplementations ( Method m1, Method m2 );
 介绍MethodSwizzling的文章很多，更多和MethodSwizzling有关的信息，可以查看[Objective-C的hook方案（一）:  Method Swizzling](http://blog.csdn.net/yiyaaixuexi/article/details/9374411)
 
 
-##针对UIView-FDCollapsibleConstraints的应用
+## 针对UIView-FDCollapsibleConstraints的应用
+
 UIView-FDCollapsibleConstraints是sunnyxx阳神写的一个UIView分类，可以实现仅在IB中对UIView上的约束进行设置，就达到以下效果，而不需要编写改变约束的代码：（图片来源[UIView-FDCollapsibleConstraints]
 
 ![](/images/screenshot0.gif)<br>
 ![](/images/screenshot1.gif)<br>
 
-##源代码解析
+## 源代码解析
 
 - 实现思路
   - `将需要和view关联且需要动态修改的约束添加进一个特定的数组里面`
@@ -498,7 +502,7 @@ UIView-FDCollapsibleConstraints是sunnyxx阳神写的一个UIView分类，可以
 }
 ```
 
-##总结
+## 总结
 
 总体来说，在分类中要想实现相对复杂的逻辑，却`不能添加成员变量`，也`不想对需要操作的类进行继承`，这时就需要runtime中的`关联对象和MethodSwizzling`技术了。
 
