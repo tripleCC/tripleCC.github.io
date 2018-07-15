@@ -6,7 +6,7 @@ comments: true
 categories: 
 ---
 
-#目录
+# 目录
 - Block底层解析
   - 什么是block？
      - block编译转换结构
@@ -36,7 +36,7 @@ categories:
 <!--more-->
 # Block底层解析
 最近看了一些block的资料，并动手做了一些实践，摘录并添加了一些结论。
-##什么是block？
+## 什么是block？
 首先，看一个极简的block：
 
 ```objc
@@ -48,7 +48,7 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 ```
-######block编译转换结构
+###### block编译转换结构
 对其执行`clang -rewrite-objc`编译转换成C++实现，得到以下代码：<br>
 
 ```objc
@@ -133,7 +133,7 @@ static struct __main_block_desc_0 {
 - `__main_block_impl_0`的`Desc`也指向了定义`__main_block_desc_0`时就创建的`__main_block_desc_0_DATA`，其中纪录了block结构体大小等信息。
 
 以上就是根据编译转换的结果，对一个简单block的解析，后面会将block操作`不同类型的外部变量`，对block结构的影响进行相应的说明。<br>
-######block实际结构
+###### block实际结构
 接下来观察下`Block_private.h`文件中对block的相关结构体的真实定义：
 
 ```objc
@@ -163,7 +163,7 @@ struct Block_layout {
 
 总体来说，block就是一个里面存储了指向`函数体中包含定义block时的代码块`的函数指针，以及`block外部上下文`变量等信息的结构体。
 
-##block的类型
+## block的类型
 block的常见类型有3种：
 
 - _NSConcreteGlobalBlock（全局）
@@ -175,7 +175,7 @@ block的常见类型有3种：
 
 其中前2种在`Block.h`种声明，后1种在`Block_private.h`中声明，所以最后1种基本不会在源码中出现。<br>
 由于无法直接创建`_NSConcreteMallocBlock`类型的block，所以这里只对前面2种进行手动创建分析，最后1种通过源代码分析。<br>
-######NSConcreteGlobalBlock和NSConcreteStackBlock
+###### NSConcreteGlobalBlock和NSConcreteStackBlock
 首先，根据前面两种类型，编写以下代码：
 
 ```objc
@@ -229,7 +229,7 @@ int main(int argc, const char * argv[]) {
 
 ```
 可以看出`globalBlock`的isa指向了`_NSConcreteGlobalBlock`，即在全局区域创建，编译时就已经确定了，位于上图中的代码段；`stackBlock`的isa指向了`_NSConcreteStackBlock`，即在栈区创建。<br>
-######NSConcreteMallocBlock
+###### NSConcreteMallocBlock
 接下来是在堆中的block，堆中的block无法直接创建，其需要由`_NSConcreteStackBlock`类型的block拷贝而来(也就是说`block需要执行copy之后才能存放到堆中`)。由于block的拷贝最终都会调用`_Block_copy_internal`函数，所以观察这个函数就可以知道堆中block是如何被创建的了：
 
 ```objc
@@ -264,10 +264,10 @@ static void *_Block_copy_internal(const void *arg, const int flags) {
 从以上代码以及注释可以很清楚的看出，函数通过`memmove`将栈中的block的内容拷贝到了堆中，并使isa指向了`_NSConcreteMallocBlock`。<br>
 block主要的一些学问就出在栈中block向堆中block的转移过程中了。
 
-##捕捉变量对block结构的影响
+## 捕捉变量对block结构的影响
 接下来会编译转换捕捉不同变量类型的block，以对比它们的区别。
 
-######局部变量
+###### 局部变量
 前：
 
 ```objc
@@ -328,7 +328,7 @@ static void _I_Person_test(Person * self, SEL _cmd) {
 ```
 但是变量a的生命周期是和方法test的栈相关联的，当test运行结束，栈随之销毁，那么变量a就会被销毁，p也就成为了野指针。如果block是作为参数或者返回值，这些类型都是跨栈的，也就是说再次调用会造成野指针错误。
 
-######全局变量
+###### 全局变量
 前：
 
 ```objc
@@ -381,7 +381,7 @@ static void _I_Person_test(Person * self, SEL _cmd) {
 ```
 可以看出，因为全局变量都是在`静态数据存储区`，在程序结束前不会被销毁，所以block直接访问了对应的变量，而没有在__Person__test_block_impl_0结构体中给变量预留位置。
 
-######局部静态变量
+###### 局部静态变量
 前
 
 ```objc
@@ -428,7 +428,7 @@ static void _I_Person_test(Person * self, SEL _cmd) {
 需要注意一点的是静态局部变量是存储在静态数据存储区域的，也就是和程序拥有一样的`生命周期`，也就是说在程序运行时，都能够保证block访问到一个有效的变量。但是其`作用范围`还是局限于定义它的函数中，所以只能在block通过静态局部变量的`地址`来进行访问。<br>
 关于变量的存储我原来的这篇博客有提及：[c语言臆想全局-局部变量](http://blog.csdn.net/triplecc/article/details/24808417)
 
-######__block修饰的变量
+###### __block修饰的变量
 前：
 
 ```objc
@@ -504,7 +504,7 @@ static void _Block_byref_assign_copy(void *dest, const void *arg, const int flag
 这样做是为了保证操作的值始终是堆中的拷贝，而不是栈中的值。（处理在局部变量所在栈还没销毁，就调用block来改变局部变量值的情况，如果没有__forwarding指针，则修改无效）<br>
 至于block如何实现对局部变量的拷贝，下面会详细说明。
 
-######self隐式循环引用
+###### self隐式循环引用
 前：
 
 ```objc
@@ -568,10 +568,10 @@ static void __Person__test_block_func_0(struct __Person__test_block_impl_0 *__cs
     }
 ```
 
-##不同类型block的复制
+## 不同类型block的复制
 `block`的复制代码在`_Block_copy_internal`函数中。
 
-######栈block
+###### 栈block
 从以下代码可以看出，栈block的复制不仅仅复制了其内容，还添加了一些额外的东西
 
    - 1、往flags中并入了`BLOCK_NEEDS_FREE`（这个标志表明block需要释放，在`release`以及`再次拷贝`时会用到）
@@ -594,7 +594,7 @@ static void __Person__test_block_func_0(struct __Person__test_block_impl_0 *__cs
   ...
 ```
 
-######堆block
+###### 堆block
 从以下代码看出，如果block的flags中有`BLOCK_NEEDS_FREE`标志（block从栈中拷贝到堆时添加的标志），就执行`latching_incr_int`操作，其功能就是让block的引用计数加1。所以堆中block的拷贝只是单纯地改变了引用计数
 
 ```objc
@@ -607,7 +607,7 @@ static void __Person__test_block_func_0(struct __Person__test_block_impl_0 *__cs
   ...
 ```
 
-######全局block
+###### 全局block
 从以下代码看出，对于全局block，函数没有做任何操作，直接返回了传入的block
 
 ```objc
@@ -618,11 +618,11 @@ static void __Person__test_block_func_0(struct __Person__test_block_impl_0 *__cs
   ...
 ```
 
-##block辅助函数
+## block辅助函数
 上文提及到了block辅助copy与dispose处理函数，这里分析下这两个函数的内部实现。在捕获变量为`__block`修饰的`基本类型`，或者为`对象`时，block才会有这两个辅助函数。<br>
 block`捕捉变量`拷贝函数为`_Block_object_assign`。在调用复制block的函数_Block_copy_internal时，会根据block有无辅助函数来对`捕捉变量`拷贝函数`_Block_object_assign`进行调用。而在`_Block_object_assign`函数中，也会判断`捕捉变量`包装而成的对象(Block_byref结构体)是否有辅助函数，来进行调用。
 
-######`__block`修饰的基本类型的辅助函数
+###### `__block`修饰的基本类型的辅助函数
 编写以下代码：
 
 ```objc
@@ -773,7 +773,7 @@ static void _Block_byref_assign_copy(void *dest, const void *arg, const int flag
 }
 ```
 主要操作都在代码注释中了，总体来说，`__block`修饰的基本类型会被包装为对象，并且只在最初block拷贝时复制一次，后面的拷贝只会增加这个捕获变量的引用计数。
-######对象的辅助函数
+###### 对象的辅助函数
 - 没有`__block`修饰
 
 ```objc
@@ -882,10 +882,10 @@ if (src->flags & BLOCK_HAS_COPY_DISPOSE) {
 
 ```
 
-##ARC中block的工作
+## ARC中block的工作
 ![](/images/Snip20150720_4.png)<br>
 苹果文档提及，在ARC模式下，在栈间传递block时，不需要手动copy栈中的block，即可让block正常工作。主要原因是ARC对栈中的block自动执行了copy，将`_NSConcreteStackBlock`类型的block转换成了`_NSConcreteMallocBlock`的block。<br>
-######block试验
+###### block试验
 下面对block做点实验：
 
 ```objc
@@ -926,7 +926,7 @@ int main(int argc, const char * argv[]) {
 }
 ```
 可以看出，ARC对`类型为strong`且`捕获了外部变量`的block进行了copy。并且当block`类型为strong`，但是创建时`没有捕获外部变量`，block最终会变成`__NSGlobalBlock__`类型（这里可能因为block中的代码没有捕获外部变量，所以不需要在栈中开辟变量，也就是说，在`编译`时，这个block的`所有内容已经在代码段中生成了`，所以就把block的类型转换为全局类型）<br>
-######block作为参数传递
+###### block作为参数传递
 再来看下使用在栈中的block需要注意的情况：
 
 ```objc
@@ -967,14 +967,14 @@ int main(int argc, const char * argv[]) {
 NSLog(@"%d", a);
 ```
 那么block就会变成全局类型，在main中访问也不会出崩溃。<br>
-######block作为返回值
+###### block作为返回值
 在非ARC情况下，如果返回值是block，则一般这样操作：
 
 ```objc
 return [[block copy] autorelease];
 ```
 对于外部要使用的block，更趋向于把它拷贝到堆中，使其脱离栈生命周期的约束。
-######block属性
+###### block属性
 这里还有一点关于block类型的ARC属性。上文也说明了，ARC会自动帮`strong类型`且`捕获外部变量`的block进行copy，所以在定义block类型的属性时也可以使用strong，不一定使用copy。也就是以下代码：
 
 ```objc
@@ -990,12 +990,12 @@ return [[block copy] autorelease];
 @property (copy, nonatomic) Block *copyBlock;
 
 ```
-##参考博文
+## 参考博文
 [谈Objective-C Block的实现](http://blog.devtang.com/blog/2013/07/28/a-look-inside-blocks/)<br>
 [iOS中block实现的探究](http://blog.csdn.net/jasonblog/article/details/7756763)<br>
 [A look inside blocks: Episode 3](http://www.galloway.me.uk/2013/05/a-look-inside-blocks-episode-3-block-copy/)<br>
 [runtime.c](http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/BlocksRuntime/runtime.c)<br>
 [Block_private.h](http://llvm.org/svn/llvm-project/compiler-rt/trunk/lib/BlocksRuntime/Block_private.h)
-##可以阅读的资料
+## 可以阅读的资料
 [llvm对于Block的编译规则](http://clang.llvm.org/docs/Block-ABI-Apple.html)<br>
 [ESBlockRuntime](https://github.com/EmbeddedSources/BlockRuntime)
