@@ -3,7 +3,7 @@ layout: post
 title: "编写自己的cocoapods插件"
 date: 2017-11-08 22:19:01 +0800
 comments: true
-categories: 
+categories: cocoapods 
 ---
 
 

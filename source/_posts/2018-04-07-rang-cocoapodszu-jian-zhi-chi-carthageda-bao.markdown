@@ -3,7 +3,7 @@ layout: post
 title: "让CocoaPods组件支持Carthage打包"
 date: 2018-04-07 19:24:40 +0800
 comments: true
-categories: 
+categories: cocoapods carthage 
 ---
 
 虽说 CocoaPods 有 [cocoapods-packager](https://github.com/CocoaPods/cocoapods-packager) 这个插件可以生成二进制版本，但这个库的维护者似乎并不活跃，很多 issue 和 pr 过了一两年还堆积着没处理。于是我决定试试 Carthage ，不过不利用 Cartfile 生成依赖，还是用的 CocoaPods 那一套。

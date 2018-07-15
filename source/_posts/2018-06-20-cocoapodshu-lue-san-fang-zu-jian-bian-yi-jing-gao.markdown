@@ -3,7 +3,7 @@ layout: post
 title: "CocoaPods忽略三方组件编译警告"
 date: 2018-06-20 21:58:25 +0800
 comments: true
-categories: 
+categories: cocoapods
 ---
 
 
