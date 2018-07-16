@@ -12,7 +12,7 @@ categories:
 5、UITabBarController调用viewDidLoad的时机<br>
 <!--more-->
 
-##dispatch_after及NSTimer造成对象无法释放
+## dispatch_after及NSTimer造成对象无法释放
 dispatch_after：<br>
 
 - 由于dispatch_after会持有block内的对象，所以会使这个对象延迟释放。使用时最好能确保block内的对象都是weak的，这样不容易出问题。
@@ -38,7 +38,7 @@ NSTimer:
 }
 ```
 
-##宏定义`##`与`#`
+## 宏定义`##`与`#`
 - `##`链接符
   - 将两个字串连接起来
   	- “##”是一种分隔连接方式，它的作用是先分隔，然后进行强制连接。
@@ -100,7 +100,7 @@ BQPushMessageTypeStringsMap = @{
                                     };
 ```
 
-####Swift实现原子属性
+#### Swift实现原子属性
 ```swift
 
 public struct SafeForm <U> {
@@ -136,7 +136,7 @@ public struct SafeForm <U> {
 
 实际上感觉原子属性的作用并不是很明显，对一个多步操作，还是需要自己手动加锁。
 
-##Xcode图像化调试错误
+## Xcode图像化调试错误
 报错：
 
 ```
@@ -179,7 +179,7 @@ func _baselineOffsetFromBottom() { }
 
 ```
 
-##UITabBarController调用viewDidLoad的时机
+## UITabBarController调用viewDidLoad的时机
 
 继承UITabBarController后，从外部调用init创建，即使没有加载它的view，它也会调用viewDidLoad，这点和UIViewController不一样。 <br>
 所以在使用Swift时，需要注意在UITableBarController中声明为!类型的属性，容易造成强制解包崩溃的问题。<br>

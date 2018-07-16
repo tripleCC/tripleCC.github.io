@@ -23,7 +23,7 @@ didCompleteWithError:(NSError *)error
 <!--more-->
 
 
-##解决过程
+## 解决过程
 
   **在确定了后台传的价格并不是字符串类型后** <br>(注： [Why not use double or float to represent currency](http://stackoverflow.com/questions/3730019/why-not-use-double-or-float-to-represent-currency))，<br>我开始查找相关资料，并写了以下代码进行测试：
 
@@ -90,7 +90,7 @@ NSLog(@"%@", [NSNumber numberWithDouble:a]);
 
 
 
-##反思
+## 反思
 
 针对当前的业务：
 
@@ -101,7 +101,7 @@ NSLog(@"%@", [NSNumber numberWithDouble:a]);
 另外小吐槽下，后台传输的数据应该遵守相关规范：[jsonapi](http://jsonapi.org/format/#document-top-level)，特别是后端开发的同学，更应该熟悉这套规范。
 
 
-##参考资料
+## 参考资料
 
 [JSON object with data wrong decimal places while parsing](http://stackoverflow.com/questions/36218949/jsonobjectwithdata-wrong-decimal-places-while-parsing)<br>
 [NSNumber calculations precision](http://stackoverflow.com/questions/2333755/nsnumber-calculations-precision)<br>

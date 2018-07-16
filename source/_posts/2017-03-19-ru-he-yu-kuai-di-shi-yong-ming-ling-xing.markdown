@@ -20,7 +20,7 @@ categories:
 
 
 
-##Alfred 
+## Alfred 
 
 Mac 上有一款软件，江湖人称 Mac 神器，多年来没有同类软件出其右，这款软件便是大名鼎鼎的  Alfred 。
 
@@ -41,7 +41,7 @@ Alfred 有很多扩展，感兴趣的可以查看 [hzlzh](https://github.com/hzl
 <br>
 不过仅仅借助这些基本用法，开发者就能够直接通过键盘快速打开程序 / 文件等，再也不需要用触控板 / 鼠标乱点一通了。
 
-##iTerm
+## iTerm
 
 iTerm 是一款针对 Mac 用户打造的一款免费终端工具，可以说是 Mac 下最好用的终端工具，没有之一 。对于经常需要和命令行打交道的开发者来说，选一款好用的终端工具是必不可少的。
 
@@ -59,7 +59,7 @@ iTerm 对复制、打开等操作做了优化，开发者可以双击选中单�
 
 下面继续列举一些个人比较常用的快捷键。
 
-#####命令行字符操作快捷键：
+##### 命令行字符操作快捷键：
 
 | 功能           |    快捷键     |
 | ------------- |:-------------:|
@@ -76,7 +76,8 @@ iTerm 对复制、打开等操作做了优化，开发者可以双击选中单�
 <br>
 需要留意的是，上面的快捷键不仅仅适用于 iTerm ，其中的绝大多数快捷键也可以在 mac 自带终端以及 Linux 的终端上使用。
 <br>
-#####功能操作快捷键：
+
+##### 功能操作快捷键：
 
 | 功能           |    快捷键     |
 | ------------- |:-------------:|
@@ -89,7 +90,8 @@ iTerm 对复制、打开等操作做了优化，开发者可以双击选中单�
 | 展开所有tab     | command + option + e |
 
 <br>
-#####分屏操作快捷键
+
+##### 分屏操作快捷键
 
 由于后面会使用 tmux 进行分屏，所以这一部分基本不使用。不过如果使用 tmux 集成版本的话，这一部分的使用频率还是比较高的。
 
@@ -97,7 +99,7 @@ iTerm 对复制、打开等操作做了优化，开发者可以双击选中单�
 
 
 
-##zsh
+## zsh
 
 关于脚本解释器，即 shell ， Mac 提供了以下几种：
 
@@ -120,13 +122,13 @@ Mac 默认的 shell 是 bash （ /bin/sh ），那么为什么不用系统默认
 
 前面说了， zsh 最大的优势在于定制性强，那么配置起来会不会很复杂？关于这个，开源社区已经有现成的了－－ [oh-my-zsh](https://github.com/robbyrussell/oh-my-zsh) 。这个就不展开了， [wiki](https://github.com/robbyrussell/oh-my-zsh/wiki) 上写的非常详细。
 
-#####安装方式
+##### 安装方式
 
 ```
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
 ```
 
-##autojump
+## autojump
 autojump 是一个优化目录切换的命令行工具。上文说了，zsh 不仅缩减了 cd 命令，而且优化了切换目录时的体验，那么我还要 autojump 干什么呢？
 
 答案是 autojump 可以用一行命令直达目标，而不需要开发者频繁地敲击 tab 来补全路径。 autojump 会以某种方式纪录使用者访问过的目录的次数，并以次数为基准进行跳转，次数越多的优先级越高。
@@ -148,7 +150,7 @@ autojump 是一个优化目录切换的命令行工具。上文说了，zsh 不�
 <br>
 更多信息，可以使用万能的 `--help` 查看。
 
-#####安装方式
+##### 安装方式
 
 ```
 brew install autojump
@@ -159,7 +161,7 @@ brew install autojump
 
 
 
-##tmux
+## tmux
 对于 tmux (terminal multiplexer) ，其自身的 man 手册是这么描述的：
 
 > tmux is a terminal multiplexer: it enables a number of terminals to be created,
@@ -260,7 +262,7 @@ set-option -g default-shell /bin/zsh
 | 分离当前窗格到窗口     | + |
 
 <br>
-#####其他操作
+##### 其他操作
 | 功能           |    快捷键     |
 | ------------- |:-------------:|
 | 显示所有快捷键          | ? |
@@ -275,13 +277,13 @@ set-option -g default-shell /bin/zsh
 
 更多命令可以查看 tmux 的 man 手册。
 
-#####安装方式
+##### 安装方式
 
 ```
 brew install tmux
 ```
 
-##fzf
+## fzf
 
 fzf 是在终端使用的一款模式搜索命令行工具，方便开发者快速地定位历史命令或者文件，并且可以和 tmux 结合起来使用。
 
@@ -294,7 +296,7 @@ fzf 是在终端使用的一款模式搜索命令行工具，方便开发者快�
 
 <br>
 
-#####安装方式
+##### 安装方式
 
 ```
 brew install fzf
@@ -316,7 +318,7 @@ brew install fzf
 	- 可以绑定快捷键，快速打开应用
 	
 
-##参考文章
+## 参考文章
 
 [Tmux - Linux从业者必备利器](http://cenalulu.github.io/linux/tmux/)<br>
 [A tmux crash course tips and tweaks](http://tangosource.com/blog/a-tmux-crash-course-tips-and-tweaks/)

@@ -8,8 +8,8 @@ categories:
 
 Swift开源之后，虽然大部分代码对于作为应用程序猿的我来说，花费大量时间去阅读，性价比有点不高，但是阅读下Foundation，学习学习Swift的编码范式还是不错的。
 
-#####NSEnumerator.swift
-######1.遵循多个约束<br>
+##### NSEnumerator.swift
+###### 1.遵循多个约束<br>
 其中范型NSGeneratorEnumerator定义如下：
 
 ```swift
@@ -27,8 +27,8 @@ internal class NSGeneratorEnumerator<Base : GeneratorType where Base.Element : A
 上面有一点，就是范型类型的约束：遵守协议GeneratorType，并且是AnyObject类型。这个上次写的时候忘了，刚好这次记下这种写法。
 
 <!--more-->
-#####NSObjCRuntime.swift
-######1.实现OC中NS_OPTIONS效果的swift形式的Option<br>
+##### NSObjCRuntime.swift
+###### 1.实现OC中NS_OPTIONS效果的swift形式的Option<br>
 
 ```
 public struct NSSortOptions : OptionSetType {
@@ -54,7 +54,8 @@ public struct AnyOption: OptionSetType {
 ```
 值得注意的一点是，在OC中使用`kNilOptions`来表示NoneOption，swift中则是实用`[]`。<br>
 所以可以进行`位与`操作的选项最好创建成遵守OptionSetType的struct，而不是enum。
-######2.范型协议
+
+###### 2.范型协议
 
 ```
 internal protocol _CFBridgable {
@@ -112,8 +113,8 @@ struct ExplicitStruct : EquatableTypealias {
 这里有一篇不错的文章，对范型协议进行了介绍[Swift Generic Protocols
 ](http://milen.me/writings/swift-generic-protocols/)
 
-#####NSObject.swift
-######1.运算符重载
+##### NSObject.swift
+###### 1.运算符重载
 
 ```
 public func ==(lhs: NSObject, rhs: NSObject) -> Bool {
@@ -132,15 +133,19 @@ public func isEqual(object: AnyObject?) -> Bool {
 在实现运算符重载时，需要注意对`前后缀运算符`重载，需要添加`prefix`和`postfix`关键字：
 
 ```
-prefix func - (vector: Vector2D) -> Vector2D {	return Vector2D(x: -vector.x, y: -vector.y)}
+prefix func - (vector: Vector2D) -> Vector2D {
+	return Vector2D(x: -vector.x, y: -vector.y)
+}
 ```
 对`改变左表达式`的复合运算符，需要在对应的参数中添加`inout`关键字:
 
 ```
-func += (inout left: Vector2D, right: Vector2D) {	left = left + right}
+func += (inout left: Vector2D, right: Vector2D) {
+	left = left + right
+}
 ```
 
-#####NSSwiftRuntime.swift
+##### NSSwiftRuntime.swift
 这个文件主要实现了Swift对于NS基础类型映射（基本也只能摸个大概，大部分还是不懂= =）。
 
 其中有一个`__CFInitializeSwift`函数，本分函数体如下:

@@ -5,7 +5,7 @@ date: 2015-11-05 18:44:59 +0800
 comments: true
 categories: 
 ---
-##使用Git开发总结
+## 使用Git开发总结
 
 现在很多互联网公司都是通过分布式的Git进行代码管理，SVN则逐渐被淘汰了。以下就是自己在Git开发中的流程与注意点：<br>
 1、所有人fork一份 project, 在自己的repository上开发，开发完成后向 project 提 pull request.
@@ -18,7 +18,8 @@ categories:
 
 5、另外，iOS 项目中有一些 .gitignore 也无法忽略的文件，比如 project.pbxproj 和 *.xcodecheckout，需要每次手动来忽略其中的改动，务必确保这些文件内所有改动的行都是必要的，除非特殊情况不要提交其中的 PROVISIONING_PROFILE 和 Build Settings 相关的改动。
 <!--more-->
-####默认工作流程
+
+#### 默认工作流程
 
 - 把 project fork 一份到 yourname/project,并clone到本地
 
@@ -64,20 +65,20 @@ git push origin
 
 最后你需要做的，就是打开 https://github.com/yourname/project ，提交一个Pull Request，并assign给某人帮你review.Pull Request的名称尽量取的有意义，比如`优化cell性能`等词语
 
-##Git学习资料
+## Git学习资料
 
 基本操作和概念： Try Git： http://try.github.com/
 图解Git 了解Git的一些特性：http://marklodato.github.com/visual-git-guide/index-zh-cn.html
 [推荐]一堆实用技巧，让你爱上命令行： http://blog.jobbole.com/25808/
 
-##Git操作备忘
+## Git操作备忘
 
 ```
 git diff <branch1> <branch2> -- <file> 比较不同分支同一个文件
 git push origin :refs/tags/<tagname> 删除远程tag
 ```
 
-##Git关于rebase资料
+## Git关于rebase资料
 (可以保持History的整洁，把新的修改作为标签打入要合并的commit, 么有merge from xxxx记录)
 
 注意：
@@ -97,7 +98,7 @@ git pull --rebase
 
 [Git-分支-分支的衍合](https://git-scm.com/book/zh/v1/Git-分支-分支的衍合)
 
-##找回commit
+## 找回commit
 rebase掉的commit通过以下方式找回：
 
 - 进入**.git/logs/refs/heads/**，打开对应分支文件，查看提交记录。

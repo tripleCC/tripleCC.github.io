@@ -20,7 +20,7 @@ MQTT开源的iOS客户端有以下几种：
 而MQTT的broker一般选择[Mosquitto](http://mosquitto.org/)，Mosquitto是一个由C编写的集客户端和服务端为一体的开源项目，所以相对来说风格较为友好，可以无障碍地阅读并调试源码（[开源地址](https://github.com/eclipse/mosquitto)）。可以看到，以上客户端开源库中的前四种就是基于Mosquitto的一层封装。
 <!--more-->
 
-####Mosquitto的安装和使用
+#### Mosquitto的安装和使用
 Mosquitto在Linux下的安装相对比Mac-OS简单很多，主要是因为openssl的一些路径问题，后者需要多一些步骤。Mac-OS下可以通过两种方法运行Mosquitto，一种是通过brew命令安装Mosquitto:
 
 ```swift
@@ -101,7 +101,7 @@ Process 57680 stopped
 lldb很多命令和gdb相似，具体更多命令可以在lldb中执行help进行查看。
 更加详细的使用教程可以参考[Mosquitto简要教程（安装/使用/测试）](http://blog.csdn.net/shagoo/article/details/7910598)
 
-####使用Wireshark抓取报文
+#### 使用Wireshark抓取报文
 测试时使用的host一般为lo0，即本地回环地址，所以选择对应的过滤器：
 
 ![](/images/Snip20160512_2.png)
@@ -120,8 +120,8 @@ lldb很多命令和gdb相似，具体更多命令可以在lldb中执行help进�
 // 这里还是用回环地址举例
 tcpdump -i lo0 'tcp port 1883' -s 65535 -w packet.pcap
 ```
-####MQTT协议的实践
-#####MQTT协议消息类型
+#### MQTT协议的实践
+##### MQTT协议消息类型
 为了能够更好地熟悉协议，我用struct+protocol的方式重写了CocoaMQTT的代码（[SwiftMQTT](https://github.com/tripleCC/SwiftMQTT)）。CocoaMQTT库使用的是传统的面相对象编程方式，所以阅读起来并没有什么障碍，只不过小小吐槽下代码风格。<br>
 
 MQTT协议总共有14种消息类型，使用枚举表示如下：
@@ -389,7 +389,8 @@ struct Message: MessageProtocol {
 ```
 为了能在protocol extension实现一个默认的init?(_ bytes: [UInt8])方法，就必须要多定义一个没什么意义的init()方法。这让我直接放弃了这个念头，转而直接在每个消息类型的struct中实现对应的解析init方法，虽然这样会让部分代码重复。<br>
 至此，MQTT协议的消息类型实现差不多完成了，因为后续的12种消息和前面这2种大同小异。<br>
-#####MQTT协议消息解析
+
+##### MQTT协议消息解析
 和CocoaMQTT一样，SwiftMQTT也是使用GCDAsyncSocket来进行socket通信。在调用GCDAsyncSocket实例的readData系列方法并读取到数据后，便可以从以下代理方法中解析读取到的数据：
 
 ```swift
@@ -438,11 +439,11 @@ mutating func unpackData(data: NSData, part: SwiftMQTTMessagePart, nextReader:Sw
 ```
 报文分三个部分进行读取。需要注意的是读取剩余长度时，需要循环读取一个字节，以便确定剩余长度的最高字节。
 
-####小结
+#### 小结
 最后对比各个协议库，如果需要使用到MQTT的大部分功能，那么阅读Mosquitto源码会是个不错的选择，毕竟其实现的功能还是相对完善的。<br>
 而对于这次实践，总感觉有些地方使用面向协议没有面向对象来的更加简洁，不过这也是利弊的权衡吧，还是在可以接受的范围。
 
-####参考链接
+#### 参考链接
 [MosquittoDocumentation](http://mosquitto.org/documentation/)<br>
 [MQTT中文文档](https://mcxiaoke.gitbooks.io/mqtt-cn/content/)<br>
 [MQTT英文文档](http://docs.oasis-open.org/mqtt/mqtt/v3.1.1/os/mqtt-v3.1.1-os.html)

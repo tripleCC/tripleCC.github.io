@@ -168,7 +168,7 @@ CGImageRef MyCreateThumbnailImageFromData (NSData * data, int imageSize)
 在宽度或者高度可能超过3000的地方，提前设置placeholder，否则显示的将是一个空白UIImageView。<br>
 对于苹果提供的那种方法，后面再继续研究下，和[YYWebImage](https://github.com/ibireme/YYWebImage)的显示方式有点像，都是进行逐步显示，而不是直接对整个原图进行渲染。
 
-##2016-9-12 新动态
+## 2016-9-12 新动态
 ```objc
 
 UIGraphicsBeginImageContext(size);
@@ -185,7 +185,7 @@ UIGraphicsEndImageContext();
 ```
 以上代码针对jpg是有效的，针对png会出现原来说的那种情况。
 
-##2016-9-23 新动态＝＝，我傻逼了！
+## 2016-9-23 新动态＝＝，我傻逼了！
 嗯，苹果提供的方法是可行的，下面代码创建字典的时候漏了一个限定图片大小的键值对。＝＝|
 
 ```objc

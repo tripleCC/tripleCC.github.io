@@ -31,7 +31,7 @@ class AboutMe: NSObject, NSCoding {
 
 但是如果要对Struct进行归档，可以转换思维，使用按照以下步骤实现。
 <!--more-->
-######实现一个归档、解档协议：
+###### 实现一个归档、解档协议：
 
 ```
 public protocol Archivable {
@@ -41,7 +41,7 @@ public protocol Archivable {
 ```
 因为NSKeyedArchiver可以直接对Foundation类进行操作，所以可以将结构体中的属性都转换成字典，然后进行后续操作；archive函数返回一个归档好的字典，而可失败构造函数传入一个需要解档的字典。
 
-######让AboutMe遵守并实现以上声明的协议
+###### 让AboutMe遵守并实现以上声明的协议
 
 ```
 extension AboutMe: Archivable{
@@ -63,7 +63,7 @@ extension AboutMe: Archivable{
 ```
 这里使用扩展进行归解档方法的添加，可以看到，原先结构体的属性在接口上都是以字典的形势在传输。
 
-######实现归解档函数
+###### 实现归解档函数
 
 ```
 public func unarchiveObjectWithFile<T: Archivable>(path: String) -> T? {
@@ -100,6 +100,6 @@ public func unarchiveObjectListsWithFile<T: Archivable>(path: String) -> [T]? {
 }
 ```
 
-###参考博客
+### 参考博客
 1.[NSCoding And Swift Structs](http://swiftandpainless.com/nscoding-and-swift-structs/)<br>
 2.[Property Lists And User Defaults in Swift](http://redqueencoder.com/property-lists-and-user-defaults-in-swift/)

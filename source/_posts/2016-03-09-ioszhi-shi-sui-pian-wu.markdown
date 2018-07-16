@@ -11,7 +11,8 @@ categories:
 4、聊天界面输入框换行抖动<br>
 5、UITapGestureRecognizer与tableView:didSelectRowAtIndexPath:<br>
 <!--more-->
-##iOS中文斜体
+
+## iOS中文斜体
 iOS系统UIFont中的斜体对中文并不支持，所以需要用另一种方式实现：
 
 ```objc
@@ -24,7 +25,7 @@ textView.font = [UIFont fontWithDescriptor:desc size:17];
 
 另外，使用富文本属性`NSObliquenessAttributeName`也可以改变倾斜度，不过`TTTAttributeLabel`并不支持，所以只能用第一种方法。
 
-##Swift中替代#ifdef以及关于Target管理
+## Swift中替代#ifdef以及关于Target管理
 
 [ifdef-replacement-in-swift-language](http://stackoverflow.com/questions/24003291/ifdef-replacement-in-swift-language)
 
@@ -32,7 +33,7 @@ textView.font = [UIFont fontWithDescriptor:desc size:17];
 
 [xcode-6-how-to-rename-copied-target](http://stackoverflow.com/questions/27283716/xcode-6-how-to-rename-copied-target)
 
-##UIRefreshControl下拉抖动
+## UIRefreshControl下拉抖动
 
 ```
 Because the refresh control is specifically designed for use in a table view that's managed by a table view controller, using it in a different context can result in undefined behavior.
@@ -83,10 +84,10 @@ func refreshAction(sender: AnyObject) {
 
 ![](/images/pull_refreshing_right.gif)<br>
 
-###2016-9-25补充
+### 2016-9-25补充
 iOS10之后，苹果似乎修复了这个问题。UIScrollView也有refreshControl属性了。
 
-##聊天界面输入框换行抖动
+## 聊天界面输入框换行抖动
 以下是错误演示，分别为boss直聘、刷脸：<br>
 ![](/images/boss_zhi_pin.gif)<br>
 ![](/images/shua_lian.gif)<br>
@@ -97,7 +98,7 @@ iOS10之后，苹果似乎修复了这个问题。UIScrollView也有refreshContr
 可以看出前面两者在换行时有明显的抖动情况，结合自身项目的开发情况，前两者应该是`监听UITextViewTextDidChangeNotification`或者`使用UITextView代理方法`的方式实现UITextView以及输入框frame的改变。<br>
 正确做法：使用观察者监听UITextView的`contentSize`，利用contentSize的改变设置UITextView以及输入框的frame。
 
-##UITapGestureRecognizer与tableView:didSelectRowAtIndexPath:
+## UITapGestureRecognizer与tableView:didSelectRowAtIndexPath:
 假设以下View层级关系(->表示右边为左边的子控件)：<br>
 - UIView(1)->UIView(2)->UITabelView(3)
 

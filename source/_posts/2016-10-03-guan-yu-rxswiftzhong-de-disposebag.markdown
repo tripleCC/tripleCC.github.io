@@ -118,6 +118,6 @@ public override func prepareForReuse() {
 所以，一般一个界面中有非常多的cell时，对其中元素进行绑定最好加上throttle操作，以使界面更加流畅。
 
 ---
-###参考
+### 参考
 [Warnings](https://github.com/ReactiveX/RxSwift/blob/master/Documentation/Warnings.md)<br>
 [GettingStarted](https://github.com/ReactiveX/RxSwift/blob/master/Documentation/GettingStarted.md)

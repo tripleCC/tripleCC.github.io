@@ -24,7 +24,8 @@ MWPhotoBrowser *browser = [[MWPhotoBrowser alloc] initWithPhotos:self.photos];
 接下来，我会针对上面的不足，实现一套兼容本地资源、相册资源、网络资源的简易图片选择器。<br>
 本文章对应的所有代码在仓库[TBVImageBrowser](https://github.com/tobevoid/TBVImageBrowser)中。
 <!--More-->
-###框架概览
+
+### 框架概览
 TBVImageBrowser的主要组成如下：<br>
 ![图一](/images/Snip20160915_3.png)<br>
 ![图二](/images/Snip20160915_4.png)<br>
@@ -66,8 +67,8 @@ TBVImageProgressPresenterProtocol的声明如下：
 @end
 ```
 由于项目中可能有自己的一套loading progress控件，仅仅为了图片选择器而引入另一套控件是不划算的，所以BVImageBrowser的loading progress控件也让使用者来提供，尽量减少不必要依赖。
-
-###TBVImageProviderManager
+ 
+### TBVImageProviderManager
 TBVImageProviderManager帮助TBVImageBrowserView管理所有添加的策略，让TBVImageBrowserView得以关注其浏览业务本身，而不必掺杂获取资源的具体逻辑。<br>
 
 首先是添加删除策略接口：
@@ -130,7 +131,7 @@ TBVImageProviderManager中会声明一个providerMap字典，以策略的identif
 ```
 TBVImageProviderManager根据element提供的identifier，去providerMap字典中查找匹配的策略，并调用策略接口，获取element的resource中存储的资源。
 
-###载入自定义loading progress控件
+### 载入自定义loading progress控件
 在加载一个loading progress控件时，我需要什么样的接口?<br>
 首先是控件本身，TBVImageBrowserView需要使用者创建这个控件的实体给TBVImageBrowserView，而控件的具体属性则由调用者在创建控件时一并设置。然后因为是loading progress控件，理所当然地应该提供设置progress的接口。由这两个需求催生TBVImageProgressPresenterProtocol协议，来对使用者提供的loading progress控件进行限定。<br>
 
@@ -187,7 +188,8 @@ TBVImageProviderManager根据element提供的identifier，去providerMap字典�
 ```objc
 _configuration.progressPresenterClass = [DALabeledCircularProgressView class];
 ```
-###总结
+
+### 总结
 TBVImageBrowser是在自己做IM发送相册图片时造的轮子，由于后期项目本身并没有使用SDWebImage，并且有一套自己访问相册的策略，所以MWPhotoBrowser并不是很符合自己的需求。<br>
 
 TBVImageBrowser遵循了一个原则：使用者应该知道自己如何得到资源，并向框架提供获取资源的方法，这样才能让框架具有更好的扩展性。<br>

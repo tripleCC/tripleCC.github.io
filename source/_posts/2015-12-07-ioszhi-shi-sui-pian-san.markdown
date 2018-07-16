@@ -11,12 +11,13 @@ categories:
 4、Swift中inout和C/C++中指针/引用的区别<br>
 5、获取UICollectionView的高度<br>
 <!--more-->
-##NSSetUncaughtExceptionHandler注册捕获错误无法调用
+
+## NSSetUncaughtExceptionHandler注册捕获错误无法调用
 原因是老代码中集成了友盟分析，并且没有关闭友盟错误收集机制。友盟内部的错误收集方式也是采用这个方式，所以自己注册的错误处理函数被友盟覆盖，因此不会被执行。
 
 同理，多种第三方的错误日志应该是不能同时实现捕获的。也是看到了友盟的文件夹才想到这点，stackoverflow上面说的都不是很符合这种情况。
 
-##自动提示宏
+## 自动提示宏
 什么情况下需要用到自动提示宏
 
   - 使用KVO，KVC时使用(归档的时候也可以使用，这样就不用设置一堆宏了)
@@ -28,7 +29,7 @@ keyPath(objc, keyPath) @(((void)objc.keyPath, #keyPath))
 // , 逗号表达式，取最右的值
 // @() 基本类型转oc类型
 ```
-##frame和bounds
+## frame和bounds
 今天要实现图片浏览器中的一个需求，然后就遇到了这个问题，需要明确两者之间的区别。后来google了一些资料，有一篇[UIScrollView原理](https://www.objc.io/issues/3-views/scroll-view/)解决了我的问题。
 
 里面对于我最重要的就是这句话了：
@@ -70,7 +71,7 @@ extension UIView {
 }
 ```
 
-##Swift中inout和C/C++中指针/引用的区别
+## Swift中inout和C/C++中指针/引用的区别
 首先明确概念：
 
 - inout是passed-in-passed-back形式
@@ -132,7 +133,7 @@ sleep(1)
 print(x)
 ```
 
-##获取UICollectionView的高度
+## 获取UICollectionView的高度
 
 UICollectionView的高度通过其布局属性，也就是以下属性进行获取：
 

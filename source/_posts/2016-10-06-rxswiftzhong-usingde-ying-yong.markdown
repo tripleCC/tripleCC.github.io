@@ -52,7 +52,7 @@ dispose
 
 ---
 
-###监听Obervable
+### 监听Obervable
 先看下RxSwift官方Demo中的一段关于GitHub登陆的代码：
 
 ```swift
@@ -92,7 +92,7 @@ signedIn体现的事件流如下:
 
 ---
 
-###困惑点
+### 困惑点
 接下来当时比较困扰我的一个点：这段代码是如何做到监听当前是否正在登陆的？<br>
 其中涉及到记录开始登陆的操作如下：
 
@@ -133,7 +133,7 @@ public extension ObservableConvertibleType {
 - A4、登陆操作执行完毕后，设置当前状态为没有执行登陆
 
 ---
-###解惑
+### 解惑
 下面时signingIn所属类ActivityIndicator的实现：
 
 ```swift
@@ -268,7 +268,7 @@ private struct ActivityToken<E> : ObservableConvertibleType, Disposable {
 总结一下，就是通过using操作hold主需要监听的Observable，然后在执行了想要的额外动作后，重新暴露Observable给外部的Observer。
 
 ---
-###using内部实现
+### using内部实现
 最后，研究下using的内部实现：
 
 ```swift
@@ -384,7 +384,7 @@ class UsingSink<SourceType, ResourceType: Disposable, O: ObserverType> : Sink<O>
 
 ---
 
-###参考
+### 参考
 [.Net中关于Using的例子](http://www.introtorx.com/Content/v1.0.10621.0/11_AdvancedErrorHandling.html#Using)<br>
 [Rx操作图示](http://rxmarbles.com)<br>
 [官方文档中对于using的说明](http://reactivex.io/documentation/operators/using.html)

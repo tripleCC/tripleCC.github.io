@@ -12,7 +12,7 @@ categories:
 5、OC变参函数
 <!--more-->
 
-##显示CoreData执行的SQL语句
+## 显示CoreData执行的SQL语句
 设置步骤(`-com.apple.CoreData.SQLDebug 1`): <br>
 ![](/images/Snip20160202_1.png)<br>
 
@@ -44,7 +44,7 @@ sqlite>
 ```
 更多详细的操作可以通过help查看。
 
-##监听UITextView键盘的发送按钮
+## 监听UITextView键盘的发送按钮
 UITextField有代理方法监听是否点击了发送按钮：
 
 ```
@@ -65,7 +65,7 @@ UITextField有代理方法监听是否点击了发送按钮：
 ```
 上面的代码块就是一种实现方式，只是需要去除输入换行的功能，不过作为聊天输入框，舍弃这个功能也是可以接受的。
 
-##设置CoreData实体唯一约束
+## 设置CoreData实体唯一约束
 在iOS9以前，不希望CoreData中出现相同的实体可以通过先查询后判断的形式实现。在iOS9以后，iOS提供了另外的设置，可以直接达到这个目的。设置步骤如下：
 
 首先需要在CoreData配置实体属性中添加作为唯一标识的属性：
@@ -146,14 +146,14 @@ Optional("3") 4 Optional(2)
 不过需要注意的一点是当执行save操作后，`后面创建的约束值相同的实体会被清为default`，即除了第一个person，后面的person实体都会被清为default。
 
 还有唯一约束一般结合NSFetchedResultsController使用，由NSFetchedResultsController来管理实体，就不用担心自己已经存储的有值的实体被清为defalut了（这里可以用先查后创建的方式避免，不过这样的话代码逻辑就和没有用这个约束一样了），因为在约束值相同的情况下，NSFetchedResultsController根本不会将其存入，进而不会触发对应的刷新代理方法。
-##iOS9关于canOpenURL不生效
+## iOS9关于canOpenURL不生效
 系统在iOS9之后加强了隐私保护，需要在info.plist中设置`LSApplicationQueriesSchemes`来添加要跳转的对应URL scheme，canOpenURL才会生效。
 
 详细地址:
 
 [session 703 privacy and your app](https://developer.apple.com/videos/play/wwdc2015/703/)
 
-##OC变参函数
+## OC变参函数
 
 一个项目中各个API的host可能并不一样，所以最好有一个方法能够预置对应API的host，除了宏，变参函数是个很好的选择，如下：
 

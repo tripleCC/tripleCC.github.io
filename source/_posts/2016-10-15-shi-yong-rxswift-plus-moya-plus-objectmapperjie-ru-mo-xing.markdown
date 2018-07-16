@@ -139,7 +139,7 @@ extension ObservableType where E == Response {
 文中提到的代码可以在这里[这里](https://github.com/tobevoid/V2exLogin)找到。
 
 ---
-###参考
+### 参考
 [ObjectMapper](https://github.com/Hearst-DD/ObjectMapper)<br>
 [Moya](https://github.com/Moya/Moya)<br>
 [通过 Moya+RxSwift+Argo 完成网络请求](http://blog.callmewhy.com/2015/11/01/moya-rxswift-argo-lets-go/)<br>

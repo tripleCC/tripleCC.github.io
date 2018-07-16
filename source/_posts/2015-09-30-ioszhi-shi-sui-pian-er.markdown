@@ -11,7 +11,8 @@ categories:
 4、UIActionSheet和UIAlertView出现边角抖动情况<br>
 5、WKWebView开启新页面时无法跳转
 <!--more-->
-##UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题
+
+## UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题
 今天解决了一个奇怪的问题。老代码使用UITableView来进行类似网易新闻首页的TitleIndex的切换（UITableView旋转90度，cell也相应旋转，主要说是因为这样不用计算contentSize；个人比较喜欢直接用UIScrollView或者UICollectionView），然后会存在一个奇怪的bug：<br>
 
 当drag到顶部或者底部时，再drag一次或以上，然后点击对应的cell，会出现第一次点击没有效果（cell使用touchBegin可以捕获到），第二次才调用tableView: didSelectRowAtIndexPath:的情况。<br>
@@ -62,7 +63,7 @@ categories:
 
 最后我采用的情况3，因为最方便，也不会造成大影响～～
 
-##高德、百度地图定位不准确问题
+## 高德、百度地图定位不准确问题
 APP中需要向百度和高德传递一个目的地坐标，但是发现百度和高德的定位坐标都是不准确的Bug，只有苹果自带地图才是正确的。然后搜索了下得知关于`火星坐标`、`地球坐标`、`百度坐标`的一些信息。<br>
 
 原先不知道后台传递过来的是火星坐标还是地球坐标，所以先将后台传递的坐标给打印出来，并且在网页高德地图中输入打印的坐标，然后和网页地图中搜索对应的地址相对比，发现基本无偏差，所以确认后台传递过来的是火星地图（高德地图用的火星坐标）<br>
@@ -121,20 +122,20 @@ url跳转资料:
 
 [URI跳转方式地图导航的代码实践](http://adad184.com/2015/08/11/practice-in-mapview-navigation-with-URI/)
 
-##tableView在Group模式下section从1开始
+## tableView在Group模式下section从1开始
 在设置sectionHeaderHeight为固定值后，发现viewForHeaderInSection是从section为1开始的，很疑惑，然后google了下原因，stackoverflow上已经有了答案：[解决方案](http://stackoverflow.com/questions/18932476/in-ios-7-viewforheaderinsection-section-is-starting-from-1-not-from-0)
 
 还有手册中对于这个方法的说明：
 ![](/images/Snip20151118_2.png)
 
-##UIActionSheet和UIAlertView出现边角抖动情况
+## UIActionSheet和UIAlertView出现边角抖动情况
 如下情况：
 
 ![](/images/2015-11-19.gif)
 
 被这个问题困扰了很久，因为在iOS7和iOS8中，现象都没那么明显，所以忽略了，但是在iOS9中就特别明显，虽然不影响用户的正常使用，优先级并不高，但总归是需要解决的bug。在stackoverflow询问后之后，很久才有人回复，原因是`UIViewEdgeAntialiasing`，如果有设置过这个字段为true，就会出现这样的问题，所以只要把它设置为false即可。[更多解释](http://stackoverflow.com/questions/19960108/renders-with-edge-antialiasing-causes-delay-in-uialertview-in-ios-7)
 
-##WKWebView开启新页面时无法跳转
+## WKWebView开启新页面时无法跳转
 使用WKWebView发现某些界面无法跳转，然后试了下UIWebView是可以的，使用浏览器打开，发现是打开一个新界面。于是就去google了下，发现了以下解决方法：
 
 ```

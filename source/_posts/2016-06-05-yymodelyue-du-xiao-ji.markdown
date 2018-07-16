@@ -10,7 +10,7 @@ YYModel是由ibireme开发的一套小而精美的模型转换框架，采用分
 
 <!--more-->
 
-####基本结构
+#### 基本结构
 YYModel总共由5个文件组成，其中核心文件只有以下四个：
 
 ```objc
@@ -41,10 +41,10 @@ YYEncodingTypePropertyMask      = 0xFF0000		//属性修饰类型
 [Declared Properties](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtPropertyIntrospection.html)<br>
 [Type Encodings](https://developer.apple.com/library/mac/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html)<br>
 
-###核心代码
+### 核心代码
 模型转换的核心功能无非两种：model->json、json->model，所以这里主要纪录下框架中这两个主要功能的阅读笔记。
 
-####json->model
+#### json->model
 `yy_modelWithJSON`是json转模型的入口，可以先从这个方法入手。
 
  ```objc
@@ -414,7 +414,7 @@ if (meta->_genericCls) {
 <br>
 YYModel给使用者提供了极强的扩展性。在解析的过程中，使用者可以根据在`modelCustomClassForDictionary:`方法中传入的字典，决定想要生成实例的类型。
 
-####model->json
+#### model->json
 model->json的入口方法为`yy_modelToJSONObject` ：
 
 ```objc
@@ -515,5 +515,5 @@ if (propertyMeta->_mappedToKeyPath) {
     }
 }
 ```
-###小结
+### 小结
 很粗略地记录下部分阅读过程。YYModel有不少值得学习的地方，不管是代码风格还是考虑问题的全面性，这些都需要通过阅读源码来了解。

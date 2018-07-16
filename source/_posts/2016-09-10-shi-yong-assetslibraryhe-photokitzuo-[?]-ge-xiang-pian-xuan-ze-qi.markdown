@@ -12,7 +12,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
 
 <!--more-->
 
-###统一asset以及collection
+### 统一asset以及collection
 | AssetsLibrary | PhotoKit |
 | :--- | :--- |
 | ALAssetsGroup | PHAssetCollection |
@@ -54,7 +54,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
 有了这些最基本的功能，在实现相册选择器时，就可以方便地对资源进行操作了。<br>
 其实对于这部分的兼容处理，主要就是对两个不同的库进行封装，使其呈现同样的外观，后续的几步大体也是围绕这个目标进行。
 
-###封装manager
+### 封装manager
 由于是两个不同版本的库，并且AssetsLibrary已经在iOS9时被弃用，使用时会产生`deprecated`警告，所以我分别对`ALAssetsLibrary`和`PHCachingImageManager`进行了封装，然后通过统一的接口`TBVAssetsManagerProtocol`暴露其功能。
 
 一般相册选择器具有如下页面及对应功能（UI展示）：
@@ -122,7 +122,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
 ```
 实现以上接口，一般相册选择器的功能点就已经完成大半了。<br>
 
-##TBVAssetsPickerManager
+## TBVAssetsPickerManager
 由于自定义的相册manager都遵守`TBVAssetsManagerProtocol`，`TBVAssetsPickerManager`
 的实现就变得相对简单，没有一大串令人厌烦的`if-else`。当然`TBVAssetsPickerManager`本身也是遵守`TBVAssetsManagerProtocol`的。
 
@@ -161,10 +161,10 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
 ```
 这样`_realManager`拿到的就是当前版本最新的相册manager了。
 
-###接口的实现
+### 接口的实现
 其实接口文档描述的还是非常清晰的，所以这里只是罗列了下代码，并没有针对每一步做解释，因为这些基本的操作进去头文件看看就全明白了。
 
-######- requestImageForAsset:targetSize:(CGSize)targetSize:contentMode:
+###### - requestImageForAsset:targetSize:(CGSize)targetSize:contentMode:
 这个接口主要用来获取非原图。
 
 - TBVCachingImageManager
@@ -236,7 +236,8 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
     }];
 }
 ```
-######-requestPosterImageForCollection:mediaType:
+
+###### -requestPosterImageForCollection:mediaType:
 - TBVCachingImageManager
   - 通过-fetchKeyAssetsInAssetCollection:options:获取相簿keyAssets，最多可以返回三个
   - 最终还是通过requestPosterImageForAsset:获取缩略图
@@ -311,7 +312,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
 }
 ```
 
-######-requestPosterImageForAsset:
+###### -requestPosterImageForAsset:
 获取asset的缩略图，需要注意的一点就是：在获取缩略图的情况下，Fill比Fit获取的图片要清晰
 
 ```objc
@@ -353,7 +354,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
 }
 ```
 
-######-requestFullResolutionImageForAsset:
+###### -requestFullResolutionImageForAsset:
 获取原图时有一点很重要，就是尽量不要快速连续地获取原图，大图也可以列入这个范畴。连续地获取大图或者原图，设备的内存会急剧增高，甚至崩溃，这种情况通常在上传图片时比较常见。
 所以在上传图片时，尽量上传一张原图后再获取下一张原图进行上传，而不是全部获取完成之后再上传。
 
@@ -395,7 +396,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
         }];
 }
 ```
-######-requestSizeForAssets:
+###### -requestSizeForAssets:
 请求大小是针对的图片，所以对非图片的asset进行了过滤
 
 ```objc
@@ -452,7 +453,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
     
 }
 ```
-######-requestAllCollections
+###### -requestAllCollections
 
 ```objc
 // TBVCachingImageManager
@@ -499,7 +500,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
     }];
 }
 ```
-######-requestAssetsForCollection:mediaType:
+###### -requestAssetsForCollection:mediaType:
 
 ```objc
 // TBVCachingImageManager
@@ -538,7 +539,8 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
     }];
 }
 ```
-######-requestCameraRollCollection
+
+###### -requestCameraRollCollection
 ```objc
 // TBVCachingImageManager
 - (RACSignal *)requestCameraRollCollection {
@@ -566,11 +568,13 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
     }];
 }
 ```
-######-requestVideoForAsset:和-requestURLAssetForAsset:
+
+###### -requestVideoForAsset:和-requestURLAssetForAsset:
 由于业务上没有视频的需求，所以这一块还没有去实现。
 
-###实现过程中的一些小坑
-######用ALAssetsLibrary申请访问相册权限
+### 实现过程中的一些小坑
+###### 用ALAssetsLibrary申请访问相册权限
+
 这一点貌似有些代码用authorizationStatus就能实现，不过
 应用的时候还是发现不能触发请求权限alert，所以这里需要访问下相册的资源[ask-permission-to-access-camera-roll](http://stackoverflow.com/questions/13572220/ask-permission-to-access-camera-roll)，
 来触发这个请求动作：
@@ -598,7 +602,8 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
     }] deliverOnMainThread];
 }
 ```
-######ALAssetsLibrary请求的ALAsset被置空问题
+
+###### ALAssetsLibrary请求的ALAsset被置空问题
 官方文档里面有这么一句：
 
 ```
@@ -608,15 +613,15 @@ The lifetimes of objects you get back from a library instance are tied to the li
 
 所以，要么在选择器返回选中的资源时，强引用对应的manager，要么这个manager由调用者传给相册选择器。
 
-######更改应用权限并切回前台
+###### 更改应用权限并切回前台
 如果应用在后台时，更改了权限，当切回前台后，App会重新启动 。这里如果设置了断点，别以为是程序崩了。
 
-###不足
+### 不足
 一个很明显的问题是使用了RAC的版本后，相册选择器滚动的性能会下降，没有以前通过回调来的顺畅。如果稍微快速一点滚动的话，CPU很容易就上100%。
 
 可能是使用RAC的方式不是很正确造成的，后续尽可能优化这一块。
 
-##2016-9-25补充
+## 2016-9-25补充
 关于grid界面卡顿的原因:<br>
 因为这个界面的cell非常多，如果快速滚动时不对获取图片的信号进行throttle，那么CPU的占用率就会很高，从而界面就会变得卡顿。<br>
 在这里设置throttle为0.05左右就可以使界面变得比较顺畅，并且不会有太大的刷新延迟以至于影响用户体验。如下：

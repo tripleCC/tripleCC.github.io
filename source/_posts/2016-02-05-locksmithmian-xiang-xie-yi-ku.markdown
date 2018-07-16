@@ -7,7 +7,7 @@ categories:
 ---
 Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。<br>
 
-##Locksmith基本实现
+## Locksmith基本实现
 iOS系统中有5种keychain类型：generic passwords, internet passwords, certificates, keys,以及 identities。并且针对每个类型都有4种操作：create, read, update,以及 delete。<br>
 
 对于以上复杂的逻辑关系，Cocoa采用了一系列字符串常量以及对应的key/value进行操作。只是对于Swift来说，这种方式过于冗余而且难以记忆，并没有充分利用到其语言特性。<br>
@@ -111,11 +111,13 @@ struct GenericPasswordResult: GenericPasswordSecureStorableResultType {
 上面两个结构体给ReadableSecureStorable的readFromSecureStore做读取数据的存储中转，最终我们想要的数据还是需要分别到InternetPasswordSecureStorableResultType或者GenericPasswordSecureStorableResultType对应的属性中获取。<br>
 
 Locksmith中大量应用了protocol的extension特性，暂且不论其做法是否真的可取，但也算是面向协议编程强大之处的一种体现。
-##参考文章
+
+## 参考文章
 [protocol-oriented-programming-in-the-real-world](http://matthewpalmer.net/blog/2015/08/30/protocol-oriented-programming-in-the-real-world/)<br>
 为现有类型添加新功能/解藕以增加灵活性与可测试性/方便同步快速发展的API/更少的代码更多的功能<br>
 [Locksmith源码－有更详细的使用说明](https://github.com/matthewpalmer/Locksmith)
-##一些其它关于面向协议编程应用文章
+
+## 一些其它关于面向协议编程应用文章
 [Protocol-Oriented Programming in Swift 2](http://code.tutsplus.com/tutorials/protocol-oriented-programming-in-swift-2--cms-24979)<br> 
 解决多继承/协议扩展/Classes的重要性<br>
 [iOS 9 Tutorial Series: Protocol-Oriented Programming with UIKit](http://www.captechconsulting.com/blogs/ios-9-tutorial-series-protocol-oriented-programming-with-uikit)<br> 

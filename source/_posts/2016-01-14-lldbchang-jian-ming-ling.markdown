@@ -7,12 +7,13 @@ categories:
 ---
 准备在这里记录一些常用开发工具的介绍博客，以备忘。
 <!--more-->
-##LLDB
+
+## LLDB
 [小笨狼与LLDB的故事](http://www.jianshu.com/p/e89af3e9a8d7)<br>
 [小笨狼的LLDB技巧:chisel](http://www.jianshu.com/p/afaaacc55460)<br>
 [与调试器共舞 - LLDB 的华尔兹](http://objccn.io/issue-19-2/)
 
-##Git
+## Git
 [git rebase的图示](https://schacon.github.io/gitbook/4_rebasing.html)<br>
 [git flow介绍](http://nvie.com/posts/a-successful-git-branching-model/)<br>
 [通过命令行过关的git游戏](https://github.com/git-game/git-game )<br>

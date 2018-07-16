@@ -262,7 +262,7 @@ class Just<Element> : Producer<Element> {
 很明显，Just是流的源头，所以它直接重载了subscribe方法，通过主动调用Observer的on方法，让数据能向下游流动。
 
 ---
-###总结
+### 总结
 从just到subscribe，方法的调用方向大致如下：
 
 ![](/images/Snip20161007_1.png)
@@ -272,5 +272,5 @@ class Just<Element> : Producer<Element> {
 最后subscribe到达源头，源头调用Observer的on方法，在(2)中创建的Observer开始依次调用on，最终把结果输出到subscribe回调中。
 
 ---
-###参考
+### 参考
 [RACSignal的Subscription深入分析](http://tech.meituan.com/RACSignalSubscription.html)

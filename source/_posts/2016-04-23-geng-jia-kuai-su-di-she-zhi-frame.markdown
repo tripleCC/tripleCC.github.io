@@ -6,7 +6,8 @@ comments: true
 categories: 
 ---
 由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。<br>
-####令人蛋疼的frame布局
+
+#### 令人蛋疼的frame布局
 老代码对界面的坐标尺寸设置都是通过下面的方式：
 
 ```
@@ -138,7 +139,7 @@ v3.tpc_quickAttribute
 ```
 顿时感觉整个世界又变清新了。。。<br>
 
-####实现的思路<br>
+#### 实现的思路<br>
 首先，给UIView绑定一个布局实例：
 
 ```
@@ -226,7 +227,7 @@ xxx.alignLeftToLeft(0)
 ```
 同理，综合上面的代码，就可以链式地写出设置frame的代码了。<br>
 
-####小结
+#### 小结
 当然，现在有了自动布局，一般界面已经不需要使用frame进行布局了，代码的自动布局可以使用masonry，我私下也喜欢用storyboard+xib的方式写一些小demo。<br>
 所以以上代码纯属玩票＝＝。<br>
 [代码链接](https://github.com/tripleCC/TPCQuickAttribute)

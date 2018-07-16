@@ -16,13 +16,14 @@ categories:
 编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。
 
 <!--more-->
-##结构描述
+## 结构描述
 在编码之前，我将对UI的结构做一个简单的介绍。<br>
 
 打开Main.storyboard文件。在唯一的一个控制器view中，你可以发现两个主要的对象。第一个是显示Header的视图，第二个是一个包含个人头像(我们叫它Avatar)和其他与账号相关，比如用户名、follow按钮的ScrollView。Sizer控件只是用来确认ScrollView内容是否能进行垂直滚动。<br>
 
 就像你所看到的，这个结构非常简单。需要的注意的是，我将Header放在ScrollView外面，而不是把它和其他ScrollView子控件放在一起。因为这样做可以让这个结构具备更好的扩展性。<br>
-##开始编码
+
+## 开始编码
 如果你仔细看完动画，你会注意到你可以管理两个不同的动作：<br>
 
 1) 用户下拉（当ScrollView内容已经在屏幕的顶部时）<br>
@@ -41,7 +42,7 @@ categories:
 
 打开ViewController.swift，让我们一步一步地实现这些功能<br>
 
-##设置控制器
+## 设置控制器
 第一件需要去做的事是获取ScrollView的offset信息。通过实现UIScrollViewDelegate协议的scrollViewDidScroll方法，我们可以很容易地做到这一点。<br>
 
 一种最简单的展示一个view上变化的方式是使用CoreAnimation三维变换，并且设置新值给layer.transform属性。<br>
@@ -58,7 +59,7 @@ var headerTransform = CATransform3DIdentity
 ```
 我们可以在这个方法里面获取当前的竖直偏移，并且初始化两个将要在方法后面设置的转换信息。
 
-##下拉
+## 下拉
 让我们对下拉动作进行处理：
 
 ```objc  
@@ -86,7 +87,7 @@ if offset < 0 {
 
 我们需要处理的第二个动作是上下滚动。让我们看看如何一步一步地完成主要视图的变换。<br>
 
-##Header（第一阶段）
+## Header（第一阶段）
 当前的偏移量应该大于0。Header控件应该根据以下的偏移量来进行竖直移动，直到它到达指定高度（我们下面将会对Header模糊进行讲解）。
 
 ```objc
@@ -97,7 +98,7 @@ headerTransform = CATransform3DTranslate(headerTransform, 0, max(-offset_HeaderS
 
 因为我比较懒，所以我写死了一些数值，比如offset_HeaderStop。我们可以通过更加优雅的方式，比如计算UI控件的位置来实现相同的效果。或许在下一次我会试试。<br>
 
-##AVATAR（头像）
+## AVATAR（头像）
 这个头像（图片）以和下拉相同的逻辑进行缩放，只是在这种情况下，图片是和底部贴合而不是顶部。这段代码和上面比较相似，除了减小缩放的比例为1.4。<br>
 
 ```objc
@@ -125,7 +126,7 @@ if offset <= offset_HeaderStop {
 }
 
 ```
-##白色Label
+## 白色Label
 以下是白色Label执行动画的代码：
 
 ```objc
@@ -145,7 +146,7 @@ distance_W_LabelHeader是Header控件的底部和Header中的白色Label中点�
 max(-distance_W_LabelHeader, offset_B_LabelHeader - offset)
 ```
 
-##模糊
+## 模糊
 
 最后一个效果是模糊Header控件。为了得到合适的解决方案，我使用了三个不同的库...我还尝试创建自己的OpenGL ES，但是实时更新模糊效果总是非常迟缓。<br>
 
