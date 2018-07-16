@@ -29,11 +29,9 @@ categories: GitLab
 
 GitLab 在 8.0 版本之后，就集成了 GitLab CI ，随着版本的迭代，其功能越来越强大。使用者只需要在仓库根目录下 （可以通过仓库的 Setting -> CI/CD -> General pipelines settings -> Custom CI config path 设置加载路径，默认根目录）添加 `.gitlab-ci.yml` 配置文件，并且存在可用的 GitLab Runner ，就可以实现持续集成。
 
-如果在仓库中没有发现 CI/CD 设置项，则需要先打开 XXXX + 图片
+如果在仓库中没有发现 CI/CD 设置项，则需要到 Setting -> CI/CD -> Permissions -> Pipeline 打开设置。
 
-
-
-首先需要明确的是和 GitLab CI 任务相关的几个概念： pipeline、stage、job
+首先需要明确的是和 GitLab CI 任务相关的几个概念： pipeline、stage、job。
 
 #### pipeline
 
