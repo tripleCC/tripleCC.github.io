@@ -4,6 +4,7 @@ title: "NSJSONSerialization和NSNumber的事故现场"
 date: 2017-03-09 17:20:39 +0800
 comments: true
 categories: objective-c
+tags: [NSJSONSerialization]
 ---
 最近同事在和后台联调时，出现了一个诡异的问题：后台传输的价格为 0.07 ，但是到了 iOS 这边，就变成了 0.07000000000000001 。奇怪的是安卓端并没有此问题，并且从 charles 抓包内容来看，后台传输的价格确实是0.07。
 

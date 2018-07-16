@@ -4,6 +4,7 @@ title: "关于keychain封装库Locksmith"
 date: 2016-02-05 14:57:48 +0800
 comments: true
 categories: swift
+tags: [Swift,Locksmith]
 ---
 Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。<br>
 

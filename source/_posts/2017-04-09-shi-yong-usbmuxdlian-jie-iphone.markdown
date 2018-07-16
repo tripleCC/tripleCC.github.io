@@ -5,6 +5,7 @@ date: 2017-04-09 14:28:11 +0800
 comments: true
 styles: [data-table]
 categories: 逆向
+tags: [逆向]
 ---
 
 最近通过 wifi ssh 到越狱设备上时，出了个奇怪的问题： <br>

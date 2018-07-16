@@ -4,6 +4,7 @@ title: "RxSwift实现初探"
 date: 2016-10-01 16:08:36 +0800
 comments: true
 categories: swift
+tags: [Swift,RxSwift]
 ---
 
 和ReactiveCocoa的实现类似，RxSwift也是通过不停地订阅上游的Observable来实现数据的流动。<br>

@@ -4,6 +4,7 @@ title: "Swift源码阅读Runtime"
 date: 2015-12-07 21:46:23 +0800
 comments: true
 categories: swift
+tags: [Swift,runtime]
 ---
 
 Swift开源之后，虽然大部分代码对于作为应用程序猿的我来说，花费大量时间去阅读，性价比有点不高，但是阅读下Foundation，学习学习Swift的编码范式还是不错的。

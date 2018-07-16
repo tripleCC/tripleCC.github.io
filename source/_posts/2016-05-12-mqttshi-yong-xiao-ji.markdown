@@ -4,6 +4,7 @@ title: "MQTT使用小记"
 date: 2016-05-12 17:12:43 +0800
 comments: true
 categories: mqtt
+tags: [Swift,MQTT]
 ---
 MQTT全称Message Queue Telemetry Transport，是一个针对轻量级的发布/订阅式消息传输场景的协议，同时也是被推崇的物联网传输协议。MQTT详细的介绍文章可以从[官方网站](http://mqtt.org/)获得，所以这里就不进行详细的展开了，而是针对这些天的使用经历与感受做一番纪录。
 

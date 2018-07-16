@@ -4,6 +4,7 @@ title: "UITextFiled文字抖动效果"
 date: 2015-07-27 20:17:49 +0800
 comments: true
 categories: ios
+tags: [UITextField,kvc]
 ---
 
 最终设置UITextField的placeholder效果：<br>

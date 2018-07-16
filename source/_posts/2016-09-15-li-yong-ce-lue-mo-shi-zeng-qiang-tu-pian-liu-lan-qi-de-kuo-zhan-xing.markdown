@@ -4,6 +4,7 @@ title: "利用策略模式增强图片浏览器的扩展性"
 date: 2016-09-15 10:33:54 +0800
 comments: true
 categories: ios
+tags: [PhotoBrowser,策略模式]
 ---
 说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的[MWPhotoBrowser](https://github.com/mwaterfall/MWPhotoBrowser)，[IDMPhotoBrowser](https://github.com/ideaismobile/IDMPhotoBrowser)或者Swift版本的[SKPhotoBrowser](https://github.com/suzuki-0000/SKPhotoBrowser)。<br>
 

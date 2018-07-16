@@ -4,6 +4,7 @@ title: "Swift2.0中的case匹配"
 date: 2015-12-29 17:15:29 +0800
 comments: true
 categories: swift
+tags: [Swift,case]
 ---
 Swift在2.0版本之后，对if、guard、for的匹配进行了一定的加强，其中case匹配模式感觉还是挺新奇的。
 

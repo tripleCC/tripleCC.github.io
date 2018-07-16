@@ -4,6 +4,7 @@ title: "ReactiveX中Using操作的应用"
 date: 2016-10-06 23:22:34 +0800
 comments: true
 categories: swift
+tags: [Swift,RxSwift]
 ---
 `create a disposable resource that has the same lifespan as the Observable`，即创建一个和Observable具有相同生命周期的disposable资源。<br>
 这是ReactiveX对于Using的描述。

@@ -4,6 +4,7 @@ title: "翻译篇：实现Twitter个人详情动态效果"
 date: 2015-09-08 01:32:07 +0800
 comments: true
 categories: ios
+tags: [Animation]
 ---
 原文由[ariok](https://github.com/ariok)发表，地址是[implementing-the-twitter-ios-app-ui](http://www.thinkandbuild.it/implementing-the-twitter-ios-app-ui/)
 

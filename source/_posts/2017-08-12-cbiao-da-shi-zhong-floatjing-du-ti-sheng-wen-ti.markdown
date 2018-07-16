@@ -4,6 +4,7 @@ title: "C 表达式中 float 精度提升问题"
 date: 2017-08-12 10:32:25 +0800
 comments: true
 categories: c
+tags: [c,float]
 ---
 
 

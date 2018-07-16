@@ -4,6 +4,7 @@ title: "PHP后台编程初探"
 date: 2015-09-26 20:40:04 +0800
 comments: true
 categories: php
+tags: [PHP]
 ---
 这一个星期主要需要理解的代码主要是实现这样的一个功能：<br>
 

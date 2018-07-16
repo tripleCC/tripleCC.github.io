@@ -4,6 +4,7 @@ title: "新浪微博iOS底部功能按钮简单实现"
 date: 2015-06-29 20:31:41 +0800
 comments: true
 categories: ios
+tags: [Animation]
 ---
 
 ![效果图](/images/2015-09-08 01_23_36.gif)

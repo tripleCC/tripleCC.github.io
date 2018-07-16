@@ -4,6 +4,7 @@ title: "Xcode快捷键"
 date: 2015-12-20 23:02:11 +0800
 comments: true
 categories: xcode
+tags: [Xcode]
 ---
 - command + shift + o 快速定位文件
 - command + shift + y 隐藏下方debug框

@@ -4,6 +4,7 @@ title: "使用RxSwift+Moya+ObjectMapper接入模型"
 date: 2016-10-15 11:40:37 +0800
 comments: true
 categories: swift
+tags: [Swift,RxSwift,Moya,ObjectMapper]
 ---
 一般情况下，从业务方从API中请求JSON数据时，一般都会经过以下三步：
 

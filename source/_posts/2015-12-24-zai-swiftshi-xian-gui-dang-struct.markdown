@@ -4,6 +4,7 @@ title: "用Swift实现Struct归档"
 date: 2015-12-24 15:08:29 +0800
 comments: true
 categories: swift
+tags: [Swift,struct,archive]
 ---
 ```swift
 struct AboutMe {

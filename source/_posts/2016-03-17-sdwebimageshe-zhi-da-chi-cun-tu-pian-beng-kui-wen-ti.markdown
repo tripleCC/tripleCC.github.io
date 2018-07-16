@@ -4,6 +4,7 @@ title: "SDWebImage设置大尺寸图片崩溃问题"
 date: 2016-03-17 18:41:01 +0800
 comments: true
 categories: ios
+tags: [Crash]
 ---
 昨天产品在teambition上提了一个bug：点击特定的页面app闪退。<br>
 我很是纳闷，因为通过其它类型索引进入的详情页面都不会出现这样的情况，为什么偏偏是这个页面？还是因为memory warning而闪退？而且内存不是慢慢增加，而是从80M左右激增到600M＋<br>

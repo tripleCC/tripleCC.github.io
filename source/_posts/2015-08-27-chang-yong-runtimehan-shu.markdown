@@ -4,6 +4,7 @@ title: "常用Runtime函数"
 date: 2015-07-12 11:28:20 +0800
 comments: true
 categories: runtime
+tags: [objective-c,runtime]
 ---
 这里主要纪录一些常用的函数：
 <!--more-->

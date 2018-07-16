@@ -4,6 +4,7 @@ title: "工具速查博客"
 date: 2016-01-14 20:16:07 +0800
 comments: true
 categories: blog
+tags: [blog,tool]
 ---
 准备在这里记录一些常用开发工具的介绍博客，以备忘。
 <!--more-->

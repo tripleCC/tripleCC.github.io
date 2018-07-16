@@ -4,6 +4,7 @@ title: "在Ubuntu下编译Swift"
 date: 2016-01-05 22:00:18 +0800
 comments: true
 categories: swift
+tags: [Swift,ubuntu]
 ---
 哎，近半年没有在Ubuntu的字符终端下畅爽地码代码了（那种Ctrl+Alt+F1~F6然后只有不同颜色的字符在屏幕上跳跃的感觉现在想起来还是超爽啊！），今天恰好来试下在Ubuntu下编译Swift，因为要截图，所以只能在图形界面的虚拟终端下码了- -。
 

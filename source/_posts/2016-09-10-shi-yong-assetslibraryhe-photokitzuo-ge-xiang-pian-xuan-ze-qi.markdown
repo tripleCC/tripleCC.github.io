@@ -4,6 +4,7 @@ title: "使用AssetsLibrary和PhotoKit做一个简易的相片选择器"
 date: 2016-09-10 21:25:36 +0800
 comments: true
 categories: ios
+tags: [AssetsLibrary,PhotoKit]
 ---
 iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业务时，可以更加得心应手。github上的开发者针对PhotoKit做了一层很优秀的封装[CTAssetsPickerController](https://github.com/chiunam/CTAssetsPickerController)，如果只需要支持iOS8+，那么可定制程度非常高的[CTAssetsPickerController](https://github.com/chiunam/CTAssetsPickerController)是个不错的选择。<br>
 但是由于现有的业务还是需要支持iOS7，所以并不能完全舍弃使用`AssetsLibrary`的方式来访问相册。因此也就需要自己封装一套兼容iOS7的相册管理器。

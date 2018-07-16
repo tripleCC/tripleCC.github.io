@@ -4,6 +4,7 @@ title: "UITableView右侧滚动标签"
 date: 2015-09-01 20:30:39 +0800
 comments: true
 categories: ios
+tags: [UITableView,kvc]
 ---
 看到有些APP在tableView右侧增加了一个滚动标签，并且显示滑条所指向的cell的部分数据。这里写下自己的想法，实现还是简单的。
 

@@ -4,6 +4,7 @@ title: "iOS知识碎片三"
 date: 2015-12-07 17:10:05 +0800
 comments: true
 categories: 碎片系列
+tags: [碎片系列]
 ---
 1、NSSetUncaughtExceptionHandler注册捕获错误无法调用<br>
 2、自定义提示宏<br>

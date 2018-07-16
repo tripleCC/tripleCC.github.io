@@ -4,6 +4,7 @@ title: "更加快速地设置Frame"
 date: 2016-04-23 13:14:55 +0800
 comments: true
 categories: objective-c
+tags: [objective-c,frame]
 ---
 由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。<br>
 

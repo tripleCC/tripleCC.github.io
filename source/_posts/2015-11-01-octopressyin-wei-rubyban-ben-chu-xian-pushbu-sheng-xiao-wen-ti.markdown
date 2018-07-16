@@ -4,6 +4,7 @@ title: "Octopress因为Ruby版本出现push不生效问题"
 date: 2015-11-01 15:51:24 +0800
 comments: true
 categories: blog
+tags: [blog]
 ---
 使用Octopress提交改的博客配置，但是发现配置并没有生效，然后本地预览也报以下错误：
 

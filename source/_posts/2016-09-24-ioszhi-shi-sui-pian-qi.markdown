@@ -4,6 +4,7 @@ title: "iOS知识碎片七"
 date: 2016-09-24 10:43:37 +0800
 comments: true
 categories: 碎片系列
+tags: [碎片系列]
 ---
 1、Xcode8日志及Pod的Swift3.0问题 <br>
 2、UITextFiled使用UITextAlignmentRight输入空格光标不实时跟进 <br>

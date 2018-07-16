@@ -4,6 +4,7 @@ title: "Objective-C使用范型实现map提示"
 date: 2016-11-12 14:45:35 +0800
 comments: true
 categories: objective-c
+tags: [objective-c]
 ---
 在当前项目的一些内容加工逻辑较多的界面，我会使用`ViewModel`来对`Model`进行一层包装，这样可以保持`Model`的纯净，也可以减少`Controller`中弱逻辑代码的堆叠。当然，部分公用内容也是可以通过给`Model`添加分类来实现的，`ViewModel`更多是提供特定页面的定制化内容。
 

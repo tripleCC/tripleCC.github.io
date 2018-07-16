@@ -4,6 +4,7 @@ title: "iOS知识碎片二"
 date: 2015-09-30 23:08:45 +0800
 comments: true
 categories: 碎片系列
+tags: [碎片系列]
 ---
 1、UITableView点击Cell不触发tableView: didSelectRowAtIndexPath:问题<br>
 2、高德、百度地图定位不准确问题<br>

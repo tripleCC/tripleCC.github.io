@@ -4,6 +4,7 @@ title: "关于RxSwift中的DisposeBag"
 date: 2016-10-03 16:08:31 +0800
 comments: true
 categories: swift
+tags: [Swift,RxSwift]
 ---
 在RxSwift中，订阅者都会返回一个Disposable（默认是Disposables），以便使用者可以在后续的操作中，取消此次订阅。<br>
 使用者可以调用dispose方法来进行取消订阅：

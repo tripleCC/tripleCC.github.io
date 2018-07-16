@@ -4,6 +4,7 @@ title: "iOS知识碎片四"
 date: 2016-02-02 15:57:22 +0800
 comments: true
 categories: 碎片系列
+tags: [碎片系列]
 ---
 1、显示CoreData执行的SQL语句<br>
 2、监听UITextView键盘的发送按钮<br>

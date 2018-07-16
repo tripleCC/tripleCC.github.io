@@ -4,6 +4,7 @@ title: "CocoaPods和Localization"
 date: 2017-06-08 09:23:01 +0800
 comments: true
 categories: cocoapods
+tags: [CocoaPods,Localization]
 ---
 
 一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。

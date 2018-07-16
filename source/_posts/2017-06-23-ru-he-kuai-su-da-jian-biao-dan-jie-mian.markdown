@@ -5,6 +5,7 @@ description: IGListKit, SectionController, 数据驱动, 构建表单, RETableVi
 date: 2017-06-23 16:13:46 +0800
 comments: true
 categories: ios
+tags: [IGListKit,DataDriven]
 ---
 IGListKit 是 Instagram 在 16 年出品的一款针对 UICollectionView 的***数据驱动***框架，旨在帮助开发者更加快速、灵活地构建列表页面。 
 

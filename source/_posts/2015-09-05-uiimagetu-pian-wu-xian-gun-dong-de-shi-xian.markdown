@@ -4,6 +4,7 @@ title: "UIImage图片无限滚动的实现"
 date: 2015-06-29 20:34:41 +0800
 comments: true
 categories: ios
+tags: [UIImage,UIScrollView]
 ---
 
 当app需要切换显示的图片少时，可以使用创建多个UIImageView，来实现多个图片切换显示；但是在图片较多时，这种做法显得很耗内存。所以以下总结了一下自己知道的几个方法与实现，并做了一个简易的封装。
