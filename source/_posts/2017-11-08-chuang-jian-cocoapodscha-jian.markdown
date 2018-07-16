@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "编写自己的cocoapods插件"
+title: "编写自己的 CocoaPods 插件"
 date: 2017-11-08 22:19:01 +0800
 comments: true
 categories: ruby 
