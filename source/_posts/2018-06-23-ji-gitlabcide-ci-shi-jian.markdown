@@ -94,7 +94,7 @@ test2:
 
 GitLab Runner 按服务对象可划分 shared runner  和 specific runner ，10.8 版本后还有 group runner，三者应用场景如下：
 
-- **shared runner ** 
+- **shared runner** 
   - 主要针对要求配置相似的工程，可以运行不同仓库上的任务。
 - **specific runner**
   - 主要针对要求特殊配置的工程，只能运行特定仓库上的任务。
@@ -253,6 +253,7 @@ check_interval = 0
 
 `Global Section`  常用部分：
 
+
 | Setting          | Description                                                  |
 | ---------------- | ------------------------------------------------------------ |
 | `concurrent`     | 可并发执行的最大任务数，0 不代表无限制                       |
@@ -271,20 +272,21 @@ check_interval = 0
 
  `[[runners]] Section` 常用部分
 
+
 | Setting              | Description                                                  |
 | -------------------- | ------------------------------------------------------------ |
 | `name`               | runner 名称                                                  |
 | `url`                | GitLab URL                                                   |
 | `token`              | runner 专有 token (不是注册 runner 时输入的 GitLab token)，unregister 时可以使用 |
 | `limit`              | 这个 token 下可并发执行的最大任务数，默认 0 ，表示无限制（**需要结合上述 CocoaPods 1.3.0 版本以下的限制考虑**） |
-| ` builds_dir`        | runner 工作目录，默认会在 `install` 目录下创建 builds 文件夹 |
-| ` cache_dir`         | cache 保存目录                                               |
-| ` environment`       | 添加/覆盖环境变量，如 ` environment = ["ENV=value", "LC_ALL=en_US.UTF-8"]` |
-| ` output_limit`      | 输出 log 大小限制，默认 4096 (4M)，建议设置成 0，不限制大小  |
-| ` pre_clone_script`  | clone 之前执行的脚本，可以用来调整 Git 客户端配置            |
-| ` pre_build_script`  | clone 之后，build 之前执行的脚本                             |
-| ` post_build_script` | build 之后，` after_script` 之前执行的脚本                   |
-| ` clone_url`         | 自定义 clone 仓库的 url                                      |
+| `builds_dir`        | runner 工作目录，默认会在 `install` 目录下创建 builds 文件夹 |
+| `cache_dir`         | cache 保存目录                                               |
+| `environment`       | 添加/覆盖环境变量，如 `environment = ["ENV=value", "LC_ALL=en_US.UTF-8"]` |
+| `output_limit`      | 输出 log 大小限制，默认 4096 (4M)，建议设置成 0，不限制大小  |
+| `pre_clone_script`  | clone 之前执行的脚本，可以用来调整 Git 客户端配置            |
+| `pre_build_script`  | clone 之后，build 之前执行的脚本                             |
+| `post_build_script` | build 之后，`after_script` 之前执行的脚本                   |
+| `clone_url`         | 自定义 clone 仓库的 url                                      |
 
 <br>
 

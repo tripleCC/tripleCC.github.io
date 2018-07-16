@@ -13,6 +13,7 @@ iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业�
 <!--more-->
 
 ### 统一asset以及collection
+
 | AssetsLibrary | PhotoKit |
 | :--- | :--- |
 | ALAssetsGroup | PHAssetCollection |
