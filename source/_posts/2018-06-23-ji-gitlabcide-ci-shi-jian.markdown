@@ -425,7 +425,7 @@ ruby $(dirname "$0")/validate_specification.rb
 
 result=$(echo $?)
 if [[ $result != 0 ]]; then
-	exit $result
+  exit $result
 fi
 ...
 ```
@@ -438,10 +438,10 @@ fi
 # publish_executor.sh
 ...
 if [[ -f "Gemfile" ]]; then 
-	bundle install
-	bundle exec pod binary publish --verbose
+  bundle install
+  bundle exec pod binary publish --verbose
 else
-	pod $(pod_gem_version) binary publish --verbose
+  pod $(pod_gem_version) binary publish --verbose
 fi
 ...
 ```
@@ -461,74 +461,74 @@ raise "can`t find specfile at #{Dir.pwd}" if spec_file.nil?
 spec = Pod::Specification.from_file(spec_file)
 
 Pod::UI.section('校验依赖限制') do
-	none_requirement_dependencies = spec.dependencies.select do |dep|
-		dep.requirement.none?
-	end
+  none_requirement_dependencies = spec.dependencies.select do |dep|
+    dep.requirement.none?
+  end
 
-	fire_source = Pod::Config.instance.sources_manager.all.select do |s|
-		s.url.downcase.include?('2dfire')
-	end.first
+  fire_source = Pod::Config.instance.sources_manager.all.select do |s|
+    s.url.downcase.include?('2dfire')
+  end.first
 
-	if none_requirement_dependencies.any?
-		version_hash = {}
-		none_requirement_dependencies.each do |dep|
-			versions = fire_source.versions(dep.root_name)
-			next if versions.nil?
+  if none_requirement_dependencies.any?
+    version_hash = {}
+    none_requirement_dependencies.each do |dep|
+      versions = fire_source.versions(dep.root_name)
+      next if versions.nil?
 
-			newest_version = versions.sort.last
-			version_hash[dep.root_name] = "#{newest_version.major}.#{newest_version.minor}"
-		end
+      newest_version = versions.sort.last
+      version_hash[dep.root_name] = "#{newest_version.major}.#{newest_version.minor}"
+    end
 
-		old_require = none_requirement_dependencies.map { |dep| "s.dependency '#{dep.name}'" }.join("\n")
-		new_require = none_requirement_dependencies.map { |dep| "s.dependency '#{dep.name}', '~> #{version_hash[dep.root_name]}'" }.join("\n")
-		err_message = "podspec 依赖需要设置限制，将：\n#{old_require} \n依赖更换为：\n#{new_require}"
-		Pod::UI.puts err_message.red
-		raise err_message
-	end
+    old_require = none_requirement_dependencies.map { |dep| "s.dependency '#{dep.name}'" }.join("\n")
+    new_require = none_requirement_dependencies.map { |dep| "s.dependency '#{dep.name}', '~> #{version_hash[dep.root_name]}'" }.join("\n")
+    err_message = "podspec 依赖需要设置限制，将：\n#{old_require} \n依赖更换为：\n#{new_require}"
+    Pod::UI.puts err_message.red
+    raise err_message
+  end
 end
 
 
 Pod::UI.section('校验版本层级标识') do
-	COMPONENTS_LABELS = %w[
-		basic
-		weakbusiness
-		business
-	].freeze
+  COMPONENTS_LABELS = %w[
+    basic
+    weakbusiness
+    business
+  ].freeze
 
-	labels = COMPONENTS_LABELS.select do |l|
-		spec.summary.start_with?(l)	
-	end
-	if labels.empty?
-		err_message = "podspec 需要在 summary 字段中，为组件添加层级标识。分为以下层级 #{COMPONENTS_LABELS}，如:\ns.summary = '#{COMPONENTS_LABELS.first} #{spec.summary}'"
-		Pod::UI.puts err_message.red
-		raise err_message
-	end
+  labels = COMPONENTS_LABELS.select do |l|
+    spec.summary.start_with?(l)	
+  end
+  if labels.empty?
+    err_message = "podspec 需要在 summary 字段中，为组件添加层级标识。分为以下层级 #{COMPONENTS_LABELS}，如:\ns.summary = '#{COMPONENTS_LABELS.first} #{spec.summary}'"
+    Pod::UI.puts err_message.red
+    raise err_message
+  end
 end
 
 
 Pod::UI.section('校验业务线私有组件包含关系') do
-	SPECIFiC_BUSSINESS_LINE_PODS =  %w[
-		TDFLoginAssistant
-		TDFBossBaseInfoDefaults
-	].freeze
+  SPECIFiC_BUSSINESS_LINE_PODS =  %w[
+    TDFLoginAssistant
+    TDFBossBaseInfoDefaults
+  ].freeze
 
-	specific_pods = spec.dependencies.select do |dep|
-		SPECIFiC_BUSSINESS_LINE_PODS.include?(dep.root_name)
-	end
+  specific_pods = spec.dependencies.select do |dep|
+    SPECIFiC_BUSSINESS_LINE_PODS.include?(dep.root_name)
+  end
 
-	if specific_pods.any?
-		err_message = "podspec 中不能包含业务线特殊组件/调试组件 #{specific_pods.map(&:name).join(', ')}"
-		Pod::UI.puts err_message.red
-		raise err_message
-	end
+  if specific_pods.any?
+    err_message = "podspec 中不能包含业务线特殊组件/调试组件 #{specific_pods.map(&:name).join(', ')}"
+    Pod::UI.puts err_message.red
+    raise err_message
+  end
 end
 
 Pod::UI.section('校验 pch 文件引用') do
-	if spec.prefix_header_file
-		err_message = "podspec 不能设置 pch 属性，删除 prefix_header_file 的设置，调整头文件引用"
-		Pod::UI.puts err_message.red
-		raise err_message
-	end
+  if spec.prefix_header_file
+    err_message = "podspec 不能设置 pch 属性，删除 prefix_header_file 的设置，调整头文件引用"
+    Pod::UI.puts err_message.red
+    raise err_message
+  end
 end
 ```
 
@@ -644,10 +644,10 @@ xcodebuild 编译时需要指定 `-destination` 参数，在有多台 runner 的
 
 ```sh
 build_destination(){
-	devices=$(instruments -s devices)
-	os=$(echo ${devices##*iPhone X} | grep -Eo '[0-9]+[.][0-9]+')
-	destination="platform=iOS Simulator,name=iPhone X,OS=$os"	
-	echo $destination
+  devices=$(instruments -s devices)
+  os=$(echo ${devices##*iPhone X} | grep -Eo '[0-9]+[.][0-9]+')
+  destination="platform=iOS Simulator,name=iPhone X,OS=$os"	
+  echo $destination
 }
 ```
 
@@ -665,11 +665,11 @@ infors = `xcodebuild -list`.split("\n").map(&:strip)
 scheme = nil
 flag = false
 infors.each do |i|
-	flag = true if i == 'Schemes:'
+  flag = true if i == 'Schemes:'
 
-	if flag && i.end_with?('Example')
-		scheme = i
-	end
+  if flag && i.end_with?('Example')
+    scheme = i
+  end
 end
 
 puts scheme
