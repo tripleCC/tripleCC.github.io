@@ -618,10 +618,10 @@ runner 默认通过 http / https 对代码进行 clone / fetch ，在没有配�
 
 ```
 [credential]
-	helper = store --file $HOME/.git-credentials
+  helper = store --file $HOME/.git-credentials
 [user]
-	name = gitlab-runner
-	email = xxxx
+  name = gitlab-runner
+  email = xxxx
 ```
 
 `--file` 是 `store ` 模式用来自定义存放密码的文件路径（默认是`~/.git-credentials`）。`.git-credentials` 文件内容格式如下：
