@@ -23,12 +23,11 @@ tags: [GitLab CI,组件化]
 > 本文使用 GitLab Community Edition 10.4.0 版本
 
 
-
 ![cicd_pipeline_infograph](/images/cicd_pipeline_infograph.png)
 
 
-
 GitLab 在 8.0 版本之后，就集成了 GitLab CI ，随着版本的迭代，其功能越来越强大。使用者只需要在仓库根目录下 （可以通过仓库的 Setting -> CI/CD -> General pipelines settings -> Custom CI config path 设置加载路径，默认根目录）添加 `.gitlab-ci.yml` 配置文件，并且存在可用的 GitLab Runner ，就可以实现持续集成。
+
 
 如果在仓库中没有发现 CI/CD 设置项，则需要到 Setting -> CI/CD -> Permissions -> Pipeline 打开设置。
 
@@ -93,6 +92,10 @@ test2:
 ## GitLab Runner
 
 > 下文操作基于 macOS 系统
+
+![how_does_gitlab_ci_work](/images/Snip20180718_1.png)
+
+GitLab Runner 和 GitLab 的关系大体如上所示， GitLab Runner 内部会起一个无限循环，根据 `check_interval` 字段设置的时间间隔，去 GitLab 请求需要执行的任务。更详细的信息可以查看 [How shared Runners pick jobs ](https://docs.gitlab.com/ce/ci/runners/#how-shared-runners-pick-jobs)，[How check_interval works](https://gitlab.com/gitlab-org/gitlab-runner/blob/master/docs/configuration/advanced-configuration.md#how-check_interval-works)。
 
 GitLab Runner 按服务对象可划分 shared runner  和 specific runner ，10.8 版本后还有 group runner，三者应用场景如下：
 
@@ -260,7 +263,7 @@ check_interval = 0
 | ---------------- | ------------------------------------------------------------ |
 | `concurrent`     | 可并发执行的最大任务数，0 不代表无限制                       |
 | `log_level`      | Log 等级  (可选择: debug, info, warn, error, fatal, panic)。优先级比通过命令行 —debug， -l 或 --log-level 设置低 |
-| `check_interval` | 设置轮训新任务的实践周期，单位（秒）。默认值为 3 秒，如果设置为 0 或者比 3 小，此字段使用默认值。 |
+| `check_interval` | 设置轮询新任务的周期，单位（秒）。默认值为 3 秒，如果设置为 0 或者比 3 小，此字段使用默认值。 |
 
 <br>
 
