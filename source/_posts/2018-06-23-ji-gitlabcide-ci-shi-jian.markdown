@@ -398,7 +398,7 @@ report_to_director:
 
 以上是掌柜团队目前采用的 `.gitlab-ci.yml`  配置，涉及的关键字在官方文档 [Configuration of your jobs with .gitlab-ci.yml](https://docs.gitlab.com/ce/ci/yaml/README.html) 有非常详细的介绍，这里不做赘述，只说下这样配置的几点考虑。
 
-1、所有 stage 脚本，都保存在 ci-yaml-shell 仓库中，在执行 global `before_script` 时下载。这是因为工程在组件化后会产生非常多的仓库 ，这样做有利于 CI 脚本的统一修改和管理，只要在每个仓库的 `.gitlab-ci.yml  `配置中预留足够多的入口即可，后期修改调试比较方便。比如需要新增 `xcpretty` 依赖，只需在 `before_shell_executor.sh` 脚本中添加 `gem install xcpretty --no-ri --no-rdoc`  即可辐射到所有组件。
+1、所有 stage 脚本，都保存在 ci-yaml-shell 仓库中，在执行 global `before_script` 时下载（通过 ssh ，不受 GitLab CI 权限影响）。这是因为工程在组件化后会产生非常多的仓库 ，这样做有利于 CI 脚本的统一修改和管理，只要在每个仓库的 `.gitlab-ci.yml  `配置中预留足够多的入口即可，后期修改调试比较方便。比如需要新增 `xcpretty` 依赖，只需在 `before_shell_executor.sh` 脚本中添加 `gem install xcpretty --no-ri --no-rdoc`  即可辐射到所有组件。
 
 
 
