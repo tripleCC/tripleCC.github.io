@@ -424,12 +424,7 @@ report_to_director:
 # framework_pack_executor.sh
 
 ...
-ruby $(dirname "$0")/validate_specification.rb
-
-result=$(echo $?)
-if [[ $result != 0 ]]; then
-  exit $result
-fi
+ruby $(dirname "$0")/validate_specification.rb || { exit 1; }
 ...
 ```
 
