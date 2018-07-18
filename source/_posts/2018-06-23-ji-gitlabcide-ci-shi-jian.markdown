@@ -681,6 +681,8 @@ puts scheme
 
 ## 参考
 
+[GitLab CI/CD Variables](https://docs.gitlab.com/ee/ci/variables/)
+
 [GitLab Continuous Integration ](https://docs.gitlab.com/ce/ci/README.html)
 
 [Configuring GitLab Runners](https://docs.gitlab.com/ce/ci/runners/)
