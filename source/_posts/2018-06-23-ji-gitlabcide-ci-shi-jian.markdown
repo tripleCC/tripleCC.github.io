@@ -632,7 +632,7 @@ https://用户名:密码@GitHost
 
 设置完后，可以使用 `git config --list` 查看配置信息，注意 helper 的先后顺序会影响最终执行结果。
 
-如果有需要用到 ssh 的情况，可以参考 [Using SSH keys with GitLab CI/CD](https://docs.gitlab.com/ee/ci/ssh_keys/)，[How do I enable cloning over SSH for a Gitlab runner?](https://stackoverflow.com/questions/39208420/how-do-i-enable-cloning-over-ssh-for-a-gitlab-runner)
+如果有需要用到 ssh 的情况，可以参考 [GitLab Runner The runners ssh section](https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-runners-ssh-section)，[Using SSH keys with GitLab CI/CD](https://docs.gitlab.com/ee/ci/ssh_keys/)，[How do I enable cloning over SSH for a Gitlab runner?](https://stackoverflow.com/questions/39208420/how-do-i-enable-cloning-over-ssh-for-a-gitlab-runner)
 
 
 
