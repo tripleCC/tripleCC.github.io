@@ -219,6 +219,8 @@ gitlab-runner install [--working-directory]
 gitlab-runner start
 ```
 
+如已经启动 runner 服务，添加了新的 runner ，直接执行 `gitlab-runner start` 即可。
+
 关闭操作：
 
 ```
