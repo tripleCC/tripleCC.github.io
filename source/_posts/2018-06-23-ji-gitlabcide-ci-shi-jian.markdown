@@ -691,7 +691,7 @@ ERROR: Job failed: exit status 1
 这时就需要 ssh 到 runner 的宿主机，使用 `--debug` 模式重启 runner ：
 
 ```shell
-gitlab-runner --debug start
+gitlab-runner --debug run
 ```
 然后在此 runner 上触发任务：
 ```
