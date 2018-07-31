@@ -289,7 +289,7 @@ check_interval = 0
 | `builds_dir`        | runner 工作目录，默认会在 `install` 目录下创建 builds 文件夹 |
 | `cache_dir`         | cache 保存目录                                               |
 | `environment`       | 添加/覆盖环境变量，如 `environment = ["ENV=value", "LC_ALL=en_US.UTF-8"]` |
-| `output_limit`      | 输出 log 大小限制，默认 4096 (4M)，建议设置成 0，不限制大小  |
+| `output_limit`      | 输出 log 大小限制，默认 4096 (4M)，建议设置成 4096000 |
 | `pre_clone_script`  | clone 之前执行的脚本，可以用来调整 Git 客户端配置            |
 | `pre_build_script`  | clone 之后，build 之前执行的脚本                             |
 | `post_build_script` | build 之后，`after_script` 之前执行的脚本                   |
