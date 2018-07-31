@@ -675,8 +675,54 @@ end
 puts scheme
 ```
 
+### GitLab Runner failed to requeue the runner
 
+遇到这类错误，网页输出就提供不了什么有价值的信息了：
 
+```
+Running with gitlab-runner 10.6.0 (a3543a27)
+  on iOS Runner on packgirl 935e8829
+Using Shell executor...
+Running on PackgirldeMac-mini.local...
+Fetching changes...
+ERROR: Job failed: exit status 1
+```
+
+这时就需要 ssh 到 runner 的宿主机，使用 `--debug` 模式重启 runner ：
+
+```shell
+gitlab-runner --debug start
+```
+然后在此 runner 上触发任务：
+```
+Checking for jobs... nothing                        runner=2ac70a89
+Feeding runners to channel                          builds=0
+Checking for jobs... received                       job=259319 repo_url=http://git.2dfire-inc.com/ios/TDFWebViewKit.git runner=2ac70a89
+Failed to requeue the runner:                       builds=1 runner=2ac70a89
+Running with gitlab-runner 10.6.0 (a3543a27)        job=259319 project=2941 runner=2ac70a89
+  on iOS Runner on packsun 2ac70a89                 job=259319 project=2941 runner=2ac70a89
+Shell configuration: environment: []
+dockercommand:
+- sh
+- -c
+- "if [ -x /usr/local/bin/bash ]; then\n\texec /usr/local/bin/bash --login\nelif [
+  -x /usr/bin/bash ]; then\n\texec /usr/bin/bash --login\nelif [ -x /bin/bash ]; then\n\texec
+  /bin/bash --login\nelif [ -x /usr/local/bin/sh ]; then\n\texec /usr/local/bin/sh
+  --login\nelif [ -x /usr/bin/sh ]; then\n\texec /usr/bin/sh --login\nelif [ -x /bin/sh
+  ]; then\n\texec /bin/sh --login\nelse\n\techo shell not found\n\texit 1\nfi\n\n"
+command: bash
+arguments:
+- --login
+passfile: false
+extension: ""
+  job=259319 project=2941 runner=2ac70a89
+Using Shell executor...                             job=259319 project=2941 runner=2ac70a89
+Waiting for signals...                              job=259319 project=2941 runner=2ac70a89
+WARNING: Job failed: exit status 1                  job=259319 project=2941 runner=2ac70a89
+Submitting job to coordinator... ok                 job=259319 runner=2ac70a89
+```
+
+解决方案是在 `.bashrc` / `.bash_profile` 中添加 `unset cd` 。详细讨论可以查看 [ERROR: Build failed with: exit status 1](https://gitlab.com/gitlab-org/gitlab-runner/issues/114#note_26832022) 。
 
 
 ## 参考
