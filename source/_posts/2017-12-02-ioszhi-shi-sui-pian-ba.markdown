@@ -7,6 +7,7 @@ categories: 碎片系列
 tags: [碎片系列]
 ---
 1、适配iOS11、iOS10导航栏返回按钮<br>
+2、CocoaPods 间接依赖静态库问题<br>
 
 <!--more-->
 
@@ -57,3 +58,20 @@ for (UIView *view in self.subviews) {
 需要注意的时，如果是iOS11，那么就不需要设置 FixedSpace SystemItem 了，否则会干扰第二种方式，出现不必要的动画效果。还有由于iOS11下 customView 多了 UIStackView 父控件，并且尺寸和 customView 一致，这就导致无法使用 customView 的 `hitTest` 对不在其 frame 内的事件进行拦截，因为父控件就已经不满足条件了了。
 
 这种解决方式是在采用原生导航栏的情况下不得已而为之的，如果需要的导航栏花样比较复杂，还是隐藏系统的，自己实现来的舒服。
+
+## CocoaPods Pod 间接依赖静态库问题
+
+CocoaPods 在 [CocoaPods 0.36 - Framework and Swift Support](http://blog.cocoapods.org/CocoaPods-0.36/) 一文中，宣布了支持 `use_frameworks!`。其中 And there were Swift & Dynamic Frameworks on iOS 一节说到
+
+> This is an all or nothing approach per integrated targets, because we can't ensure to properly build frameworks, whose transitive dependencies are static libraries
+
+当工程中存在间接依赖静态库时，使用 CocoaPods 的 `use_frameworks!` 会提示以下错误：
+
+```
+target has transitive dependencies that include static binaries
+```
+
+结合上诉提示，我们可以手动将静态库包装成 Embed Framework ，将其作为一个 Pod 。**也可以向承载静态库的 Pod 中加入空的 `.m` 文件，触发 CocoaPods 生成 Target，以便让其帮我们将静态库包装成动态库**。至于在什么情况下 CocoaPods 不会生成 Target，可以参照 [Cocoapods does not create framework target for Google analytics](https://github.com/CocoaPods/CocoaPods/issues/6615)。
+
+
+
