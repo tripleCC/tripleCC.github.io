@@ -21,7 +21,7 @@ fatal: Authentication failed for 'http://xxxxxx'
 <!--more-->
 
 
-clone 失败的组件都为 http 协议，通过此协议拉去代码，需要预置用户名与密码。我们在配置jenkins slave 时，已经通过在 `.gitconfig` 文件中指定 store 缓存模式以及 `.git-credentials` 路径处理了用户名密码问题（详情可查看 [Git 工具 - 凭证存储](https://git-scm.com/book/zh/v2/Git-%E5%B7%A5%E5%85%B7-%E5%87%AD%E8%AF%81%E5%AD%98%E5%82%A8) 一节）：
+clone 失败的组件都为 http 协议，通过此协议去拉代码，需要预置用户名与密码。我们在配置 jenkins slave 时，已经通过在 `.gitconfig` 文件中指定 store 缓存模式以及 `.git-credentials` 路径处理了用户名密码问题（详情可查看 [Git 工具 - 凭证存储](https://git-scm.com/book/zh/v2/Git-%E5%B7%A5%E5%85%B7-%E5%87%AD%E8%AF%81%E5%AD%98%E5%82%A8) 一节）：
 
 
 ```
@@ -36,7 +36,7 @@ clone 失败的组件都为 http 协议，通过此协议拉去代码，需要�
 http://slave:password@git.2dfire-inc.com
 ```
 
-由于 Mac mini 机器资源少，我们不得不在每台 Mac mini 上同时配置了 GitLab Runner 和 jenkins slave 。通过 [New CI job permissions model](https://docs.gitlab.com/ee/user/project/new_ci_build_permissions_model.html) 以及 [Cross-project permissions for CI tokens](https://gitlab.com/gitlab-org/gitlab-ce/issues/18994)，我们可以知道， GitLab 会创建一个 gitlab-ci-token 用户供 GitLab Runner 使用，问题恰恰就出现在这里。先看下运行 GitLab CI 任务后的 `.git-credentials` :
+由于 Mac mini 机器资源少，我们不得不在每台 Mac mini 上同时配置 GitLab Runner 和 jenkins slave 。通过 [New CI job permissions model](https://docs.gitlab.com/ee/user/project/new_ci_build_permissions_model.html) 以及 [Cross-project permissions for CI tokens](https://gitlab.com/gitlab-org/gitlab-ce/issues/18994)，可以知道， GitLab 会创建一个 gitlab-ci-token 用户供 GitLab Runner 使用，问题恰恰就出现在这里。先看下运行 GitLab CI 任务后的 `.git-credentials` :
 
 ```
 > .git-credentials
@@ -64,9 +64,9 @@ static void lookup_credential(const struct string_list *fns, struct credential *
 			return; /* Found credential */
 }
 ```
-也就是说， Git 会返回第一个与 `http://git.2dfire-inc.com` 匹配的凭证。在上文环境中，返回的是 `gitlab-ci-token:LyZVytacohmGRYVKooAo`。由于这个账户密码**只是为了让仓库在构建 CI job 期间，让 Runner 对构建仓库有操作权限，完成 job 后即无效**，导致 jenkins slave 使用此账户密码 clone 组件后，出现 Authentication failed 错误。
+也就是说， Git 会返回第一个与 `http://git.2dfire-inc.com` 匹配的凭证。在上文环境中，返回的是 `gitlab-ci-token:LyZVytacohmGRYVKooAo`。由于这个账户密码**只是 GitLab 为了让 Runner 能在执行任务时，对构建仓库有 Git 操作权限，在完成任务后即无效**，导致 jenkins slave 使用此账户密码 clone 组件后，出现 Authentication failed 错误。
 
-因为 Runner 每次执行 job 都会在 `.git-credentials` 首行生成 `gitlab-ci-token` 凭证，所以即使手动把 `gitlab-ci-token` 凭证移动到最后一行，也是没用的。
+因为 Runner 每次执行任务都会在 `.git-credentials` 首行生成 `gitlab-ci-token` 凭证，所以即使手动把 `gitlab-ci-token` 凭证移动到最后一行，也是没用的。
 
 最终的解决方法就是在 `.gitconfig` 添加[凭证匹配限制](https://git-scm.com/docs/gitcredentials) ，让内部 GitLab http 的 clone 请求都走 jenkins slave 用户：
 
