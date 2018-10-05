@@ -9,7 +9,7 @@ date: 2018-07-19 10:21:09
 ---
 
 
-最近组内在打包时，`bundle exec pod install` 频繁出现 clone 组件授权失败的情况:
+最近组内在打包时，`bundle exec pod install` 命令频繁出现 clone 组件授权失败的情况:
 
 ```
 remote: HTTP Basic: Access denied
