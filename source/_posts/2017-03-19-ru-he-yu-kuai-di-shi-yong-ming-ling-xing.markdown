@@ -300,10 +300,8 @@ fzf 是在终端使用的一款模式搜索命令行工具，方便开发者快�
 ### 安装方式
 
 ```
-brew install fzf
-
-// .zshrc 中添加下面语句
-/usr/local/opt/fzf/install
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
 ```
 
 ## 其他实用小软件
