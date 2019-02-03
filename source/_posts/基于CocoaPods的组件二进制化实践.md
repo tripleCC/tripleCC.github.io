@@ -1,6 +1,5 @@
 ---
 title: 基于 CocoaPods 的组件二进制化实践
-draft: true
 date: 2019-01-21 19:49:08
 tags: [CocoaPods,Ruby,二进制化]
 ---
