@@ -662,9 +662,11 @@ end
 
 - 我们默认 Development Pods 中的组件为未发布组件，没有二进制版本，所以始终采用原版本
 - 因为无法直接从 source 中获取组件的 subspec ，所以这里统一获取 root spec ，如果目标 spec 是 subspec 再从 root spec 中获取 subspec
-- 其他业务线的组件可能没有二进制化版本，这里我们如果没有找到组件目标版本的 spec ，会让组件采用原版本，这样就不会因为某个组件版本的缺失而导致 install 失败，
+- 其他业务线的组件可能没有二进制化版本，这里我们如果没有找到组件目标版本的 spec ，会让组件采用原版本，这样就不会因为某个组件版本的缺失而导致 install 失败。
 
-更多使用信息可以查看 [cocoapods-bin 的 README](https://github.com/tripleCC/cocoapods-bin) ，这里就不赘述了。
+存在两个私有源意味着会有两个不同的 podspec ，分别为源码 podspec 和二进制 podspec ，手动同步这两个 podspec 将会是一个很耗费精力的事情，这时候就需要 cocoapods-bin 插件的辅助命令了。针对没有 subspec 的组件，cocoapods-bin 会根据源码 podspec 自动生成对应的二进制 podspec ；针对有 subspec 的组件，cocoapods-bin 会根据使用者提供的 template podspec 和源码 podspec 自动生成对应的二进制 podspec 。由于源码 podspec 和二进制 podspec 的 diff 是可预见的，我们就可以通过这种半自动的方式避免同时维护两套 podspec 。
+
+更多使用信息可以查看 cocoapods-bin 的 [README](https://github.com/tripleCC/cocoapods-bin) ，这里就不赘述了。
 
 ## 整合 CI
 
@@ -777,7 +779,7 @@ report_to_director:
 
 整个组件二进制化的尝试与实践，耗费了我大半年的主要精力，并且我们还需要多维护一个二进制文件服务器，以及对应的二进制版本，在组件 / 代码不多时，做这件事情费时费力，还收效甚微，因此我并不建议还未进行**业务组件化**并且没有上 CI 的团队去做这件事情。
 
-结合我们团队目前的业务性质以及业务组件化进程，在团队实施了组件二进制化之后，团队内部工程编译速度的提升还是显而易见的，并且受益于编译时间的减少，组件自动发布平台的发布时间也大大减少，所以还是值得去做的一件事情。
+结合我们团队目前的业务性质以及业务组件化进程，在团队实施了组件二进制化之后，团队内部工程编译速度的提升还是显而易见的，并且受益于编译时间的减少，组件自动发布平台的发布时间也大大减少，所以对于我们来说，花时间去做这件事情还是值得的。
 
 ## 参考
 
