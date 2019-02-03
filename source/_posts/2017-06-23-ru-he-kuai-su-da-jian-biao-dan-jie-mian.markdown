@@ -17,38 +17,42 @@ IGListKit 是 Instagram 在 16 年出品的一款针对 UICollectionView 的***�
 ## 初识 IGListKit
 去年初次使用 IGListKit 时，除了数据驱动，它对传统 UICollectionView 所做的封装方式，以及流畅的编写体验同样让我感到惊艳和意外。
 
-下面是 IGListKit 的层级结构图：
+下面是 IGListKit 的层级结构图: 
 
 ```
 
-									|---- Cell
-		|---- SectionController ----|
-		|							|---- Cell		
-		|
-	    |							|---- Cell
-Adpter|---- SectionController ----|
-		|							|---- Cell
-		|
-		|							|---- Cell
-		|---- SectionController ----|
-									|---- Cell
-```	
+                                    |---- Cell
+        |---- SectionController ----|
+        |                           |---- Cell      
+        |
+        |                           |---- Cell
+Adpter  |---- SectionController ----|
+        |                           |---- Cell
+        |
+        |                           |---- Cell
+        |---- SectionController ----|
+                                    |---- Cell
 
-刚入手 IGListKit ，可能会感觉这种分层似曾相识 ------ UITableView 的 dataSource：
+```
+
+
+刚入手 IGListKit ，可能会感觉这种分层似曾相识 —————— UITableView 的 dataSource：
+
 
 ```
                                   |---- Cell
                 |---- Section ----|
-                |                 |---- Cell		
+                |                 |---- Cell        
                 |
                 |                 |---- Cell
-dataSource  |---- Section ----|
+dataSource      |---- Section ----|
                 |                 |---- Cell
                 |
                 |                 |---- Cell
                 |---- Section ----|
                                   |---- Cell
-```	
+
+```
 
 但是上面的分层只是概念上的，并没有直接在 UITableViewSource ，也就是在代码的层面体现出来，编写业务代码时，Cell 和 Section 的 View 只是分散在两个不同代理方法中。如果要进行分层，需要手动对 UITableView 进行一层封装。 
 
@@ -91,10 +95,10 @@ class Message {
 ```
                                       |---- Item ~~~~ Cell
                     |---- Section ----|
-                    |                 |---- Item ~~~~ Cell		
+                    |                 |---- Item ~~~~ Cell      
                     |
                     |                 |---- Item ~~~~ Cell
-TableViewManager|---- Section ----|
+TableViewManager    |---- Section ----|
                     |                 |---- Item ~~~~ Cell
                     |
                     |                 |---- Item ~~~~ Cell
@@ -113,13 +117,13 @@ TableViewManager|---- Section ----|
                                       |                   |---- Item ~~~~ Cell
                                       |
                     |---- Section ----|                   
-                    |                 |			
+                    |                 |         
                     |                 |                   |---- Item ~~~~ Cell
                     |                 |---- ItemBunch ----| 
                     |                                     |---- Item ~~~~ Cell        
                     |
                     |                                     
-AdapterManager  |
+AdapterManager      |
                     |
                     |
                     |
@@ -128,7 +132,7 @@ AdapterManager  |
                     |                 |                   |---- Item ~~~~ Cell
                     |                 |                  
                     |---- Section ----|                   
-                                      |			
+                                      |         
                                       |                   |---- Item ~~~~ Cell
                                       |---- ItemBunch ----| 
                                                           |---- Item ~~~~ Cell   
