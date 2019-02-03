@@ -1,5 +1,6 @@
 ---
 title: Git Commit 触发 Jenkins Job
+date: 2018-11-19 14:40:46
 tags: [GitLab, Jenkins, Ruby]
 ---
 
