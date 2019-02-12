@@ -445,8 +445,8 @@ Please decide to either use that pre-release version by
 adding the version requirement to your Podfile (e.g. `pod 'YYModel', '= 1.0.1-binary, ~> 1.0'`) or
 revert to a stable version by running `pod update YYModel`
 ```
-
-当然，我们也不可能会在 podspec 中显式依赖一个预发布版本，所以这条路最终失败了。实际上我们并不需要关心依赖是如何分析的，只需要等依赖分析完，将最终生成的 specification 替换掉即可，让我们看下 Pod::Resolver 的 resolve 方法：
+要解决这个问题，可以显式依赖一个预发布版本，也可以更改 `requirement_satisfied_by?` 方法的处理逻辑。
+当然，我们也不可能会在 podspec 中显式依赖一个预发布版本，也不想过多干涉 CocoaPods 的依赖分析逻辑，所以这条路最终失败了。实际上我们并不需要关心依赖是如何分析的，只需要等依赖分析完，将最终生成的 specification 替换掉即可，让我们看下 Pod::Resolver 的 resolve 方法：
 
 ```ruby
 def resolve
