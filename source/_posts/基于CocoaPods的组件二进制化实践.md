@@ -775,7 +775,7 @@ report_to_director:
 
 推送 tag 后，如果一切顺利，可以看到 pipeline 执行结果如下：
 
-![pipeline 结果](/images/Snip20190122_1.png)
+![pipeline 结果](https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190122_1.png)
 
 其中的 package 、 publish 这两个 stage 囊括了二进制化资源制作的主要工作，组件维护者依然可以像二进制化前一样，关注源码版本的发布流程即可。
 
