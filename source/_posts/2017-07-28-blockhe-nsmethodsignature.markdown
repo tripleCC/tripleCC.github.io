@@ -331,6 +331,7 @@ void *reallocf(void *p, size_t s) {
 ``` 
 
 ### 消息转发
+
 向动态委托类发送委托消息后，会触发消息转发机制。在消息转发的最后一步，可以构造委托方法对应的 NSInvocation 对象，这个对像可供**Invocation 调用**一节中描述的 Block Invocation 使用。
 
 ```objc
@@ -386,6 +387,7 @@ void *reallocf(void *p, size_t s) {
 ```
 
 下面是应用代码：
+
 ```objc
 TBVDynamicDelegate <ComputerDelegate> *dynamicDelegate = (id)[[TBVDynamicDelegate alloc] initWithProtocol:@protocol(ComputerDelegate)];
 [dynamicDelegate implementInstanceMethodOfSelector:@selector(computerWillStart:) withBlock:^(Computer *c) {
