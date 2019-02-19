@@ -118,7 +118,7 @@ NSString * kTDFRootAPI = @"xxx";
 // A
 #define TDF_THEME_BACKGROUNDCOLOR [[UIColor whiteColor] colorWithAlphaComponent:0.4]
 ```
-由于 B 中的 TDF_THEME_BACKGROUNDCOLOR 宏已经在二进制化打包预编译时被替换为 `[[UIColor whiteColor] colorWithAlphaComponent:0.7]` ，所以 B 并不会感知到此次 A 的变更，这时我们就不得不重新打包组件 B 以同步 A 的变更，即使 B 并未做任何更改。当存在较多使用 TDF_THEME_BACKGROUNDCOLOR 宏的组件时，就容易遗漏同步某些组件。
+由于 B 中的 TDF_THEME_BACKGROUNDCOLOR 宏已经在二进制化打包预编译时被替换为 `[[UIColor whiteColor] colorWithAlphaComponent:0.7]` ，所以 B 并不会感知到此次 A 的变更，这时我们就不得不重新打包组件 B 以同步 A 的变更，即使 B 并未做任何更改，当存在较多使用 TDF_THEME_BACKGROUNDCOLOR 宏的组件时，就容易遗漏同步某些组件。
 
 
 ## 制作二进制包
