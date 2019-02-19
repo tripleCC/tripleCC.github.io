@@ -128,6 +128,8 @@ pod package-pro TDFNavigationBarKit.podspec --exclude-deps --force --no-mangle -
 
 二级命令 package 改成 package-pro 即可。
 
+cocoapods-packager 创建二进制包中的 modulemap 时，会先查看目标组件的 podspec 是否设置了 module_map 字段，如有直接拷贝，否则会查看是否有和组件同名的头文件，如有会创建 modulemap ，并设置 `umbrella header` 为此文件，如无则不创建 modulemap 。所以使用 cocoapods-packager 给像 SDWebImage 这种没有和组件同名头文件，又没有指定 module_map 的组件打二进制包时，是不会创建 modulemap 的，需要我们自行添加，否则使用 swift 的 `import` 就会找不到对应的 module，这点需要注意下。
+
 CocoaPods 目前发布了 1.6.0 beta 版本，试用之后，发现由于某些类的构造函数参数发生了变更， 导致 cocoapods-packager 现有代码已经无法正常工作了，所以 cocoapods-packager  只适用低于 1.6.0 版本的 CocoaPods，后期如果官方 cocoapods-packager 还是没有更新的话，我们应该会在 cocoapods-packager-pro 中适配新版本 CocoaPods。
 
 cocoapods-packager 作者最近还创建了插件 [cocoapods-generate](https://github.com/square/cocoapods-generate) ，此插件可以直接根据 podspec 生成目标工程，相当于 cocoapods-packager 前半部分功能的增强版。目前这个插件支持 CocoaPods 1.6.0 beta 版本，不想用 cocoapods-packager 的开发者，可以先利用 cocoapods-generate 创建目标工程，然后接管构建二进制包的后续操作，可以选择自己实现打包脚本，也可以选择使用 Carthage。
