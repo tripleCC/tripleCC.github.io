@@ -103,6 +103,24 @@ NSString * const kTDFRootAPI = @"xxx";
 NSString * kTDFRootAPI = @"xxx";
 ```
 
+个人建议尽量不要跨模块使用宏定义，特别是可以用常量或函数代替的宏。比如有组件 A、B ，B 依赖 A，它们包含如下代码：
+
+```objc
+// A
+#define TDF_THEME_BACKGROUNDCOLOR [[UIColor whiteColor] colorWithAlphaComponent:0.7]
+
+// B
+// .m 使用了 TDF_THEME_BACKGROUNDCOLOR
+```
+假设 A 和 B 都已二进制化，假设后续我们修改了 A ：
+
+```objc
+// A
+#define TDF_THEME_BACKGROUNDCOLOR [[UIColor whiteColor] colorWithAlphaComponent:0.4]
+```
+由于 B 中的 TDF_THEME_BACKGROUNDCOLOR 宏已经在二进制化打包预编译时被替换为 `[[UIColor whiteColor] colorWithAlphaComponent:0.7]` ，所以 B 并不会感知到此次 A 的变更，这时我们就不得不重新打包组件 B ，即使 B 并未做任何更改。当存在较多使用 TDF_THEME_BACKGROUNDCOLOR 宏的组件时，就容易遗漏同步某些组件。
+
+
 ## 制作二进制包
 
 二进制化第一步，先要把组件的二进制包打出来。这里说下比较通用的打包工具 [cocoapods-packager](https://github.com/CocoaPods/cocoapods-packager) 和 [Carthage](https://github.com/Carthage/Carthage/issues) ，目前我们使用  [cocoapods-packager](https://github.com/CocoaPods/cocoapods-packager) 将组件构建 static-framework 。
@@ -128,7 +146,7 @@ pod package-pro TDFNavigationBarKit.podspec --exclude-deps --force --no-mangle -
 
 二级命令 package 改成 package-pro 即可。
 
-cocoapods-packager 创建二进制包中的 modulemap 时，会先查看目标组件的 podspec 是否设置了 module_map 字段，如有直接拷贝，否则会查看是否有和组件同名的头文件，如有会创建 modulemap ，并设置 `umbrella header` 为此文件，如无则不创建 modulemap 。所以使用 cocoapods-packager 给像 SDWebImage 这种没有和组件同名头文件，又没有指定 module_map 的组件打二进制包时，是不会创建 modulemap 的，需要我们自行添加，否则使用 swift 的 `import` 就会找不到对应的 module，这点需要注意下。
+cocoapods-packager 创建二进制包中的 modulemap 时，会先查看目标组件的 podspec 是否设置了 module_map 字段，如有直接拷贝，否则会查看是否有和组件同名的头文件，如有则创建 modulemap ，并设置 `umbrella header` 为此文件，如无则不创建 modulemap 。所以 cocoapods-packager 给没有和组件同名的头文件，又没有指定 module_map 的组件打二进制包时，是不会创建 modulemap 的，比如 SDWebImage ，这时候需要我们自行添加 modulemap，否则使用 swift 的 `import` 就会找不到对应的 module，这点需要注意下。
 
 CocoaPods 目前发布了 1.6.0 beta 版本，试用之后，发现由于某些类的构造函数参数发生了变更， 导致 cocoapods-packager 现有代码已经无法正常工作了，所以 cocoapods-packager  只适用低于 1.6.0 版本的 CocoaPods，后期如果官方 cocoapods-packager 还是没有更新的话，我们应该会在 cocoapods-packager-pro 中适配新版本 CocoaPods。
 
