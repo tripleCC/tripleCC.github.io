@@ -1,3 +1,7 @@
+[swift 面试题](https://www.jianshu.com/p/bdaa49f9d1a4)
+
+
+
 决定执行代码：
 
 消息结构->运行环境
@@ -87,10 +91,4 @@ objc_msgSend ––– 结构体、浮点数、超类/父类（_stret, _fpret, S
 
 
 越后代价越大，可操作空间越大
-
-
-
-
-
-
 
