@@ -28,7 +28,7 @@ copy 拷贝对象
 
 
 
-## Q: 为什么直接访问实例变量，不会触发 KVO 
+**Q: 为什么直接访问实例变量，不会触发 KVO** 
 
 看下 KVO 的实现方式
 
@@ -40,7 +40,7 @@ https://tech.glowing.com/cn/implement-kvo/
 
 
 
-## T: 查看有多少方法 ms
+**T: 查看有多少方法 ms**
 
 finish-hook ? -> 只能修改其他 dyld
 
@@ -49,6 +49,48 @@ finish-hook ? -> 只能修改其他 dyld
 
 
 类族-》工厂模式创建
+
+
+
+类的映射表-〉类方法 List -》继承体系-〉消息转发
+
+
+
+objc_msgSend ––– 结构体、浮点数、超类/父类（_stret, _fpret, Super）
+
+
+
+尾递归优化-》最后操作仅仅为调用其他函数，编译器生成跳转指令码，不会向调用栈推新栈帧
+
+
+
+动态方法解析 ––– +resolveInstanceMethod: +resolveClassMethod:
+
+​	@dynamic  CoreData
+
+​	本来就**已实现**，运行时插入
+
+
+
+备源接收者––– -forwardingTargetForSelector:
+
+​	组合模拟多重继承
+
+
+
+完整消息转发 ––– -forwardInvocation:
+
+​	selector、target、参数
+
+​	可修改消息
+
+
+
+越后代价越大，可操作空间越大
+
+
+
+
 
 
 

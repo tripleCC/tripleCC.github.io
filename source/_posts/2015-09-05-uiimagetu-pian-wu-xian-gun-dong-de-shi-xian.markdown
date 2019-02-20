@@ -11,8 +11,8 @@ tags: [UIImage,UIScrollView]
 
 [获取演示代码](https://github.com/tripleCC/TPCPageScrollView)
 
-[封装轮播控件的应用](https://github.com/tripleCC/GiftPick)（图片从网络加载）：<br>
-![](/images/2015-09-13 10_54_13.gif)
+<!-- [封装轮播控件的应用](https://github.com/tripleCC/GiftPick)（图片从网络加载）：<br>
+![](/images/2015-09-13 10_54_13.gif) -->
 <!--more-->
 
 ## 采用三个UIImageView+UIScrollView
