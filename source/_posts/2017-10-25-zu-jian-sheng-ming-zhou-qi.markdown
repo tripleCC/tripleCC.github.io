@@ -464,7 +464,7 @@ static void MCDSwizzleInstanceMethod(Class cls, SEL originalSelector, Class targ
 
 ## 更新
 
-最近看到了 sunnyxx 的 [Notification Once](https://blog.sunnyxx.com/2015/03/09/notification-once/) 文章，利用只接受一次通知来实现模块生命周期的管理 (利用 __block 会将局部变量从栈拷贝至堆的特性)，可以说是非常巧妙了，如果对生命周期的回调时间点不做特别精细的要求，可以使用以下代码：
+最近看到了 sunnyxx 的 [Notification Once](https://blog.sunnyxx.com/2015/03/09/notification-once/) 文章，利用一次通知来实现应用 Launch 的监测 (__block 会将局部变量从栈拷贝至堆)，可以说是非常巧妙了，如果对生命周期的回调时间点不做特别精细的要求，可以使用以下代码：
 
 ```objc
 + (void)load
