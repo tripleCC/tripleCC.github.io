@@ -461,3 +461,22 @@ static void MCDSwizzleInstanceMethod(Class cls, SEL originalSelector, Class targ
 
 [iOS App组件化开发实践](http://www.jianshu.com/p/48fbcbb36c75)<br>
 [蘑菇街 App 的组件化之路](http://www.jianshu.com/p/48fbcbb36c75)<br>
+
+## 更新
+
+最近看到了 sunnyxx 的 [Notification Once](https://blog.sunnyxx.com/2015/03/09/notification-once/) 文章，利用只接受一次通知来实现模块生命周期的管理 (利用 __block 会将局部变量从栈拷贝至堆的特性)，可以说是非常巧妙了，如果对生命周期的回调时间点不做特别精细的要求，可以使用以下代码：
+
+```objc
++ (void)load
+{
+    __block id observer =
+    [[NSNotificationCenter defaultCenter]
+     addObserverForName:UIApplicationDidFinishLaunchingNotification
+     object:nil
+     queue:nil
+     usingBlock:^(NSNotification *note) {
+         [self setup]; // Do whatever you want
+         [[NSNotificationCenter defaultCenter] removeObserver:observer];
+     }];
+}
+```
