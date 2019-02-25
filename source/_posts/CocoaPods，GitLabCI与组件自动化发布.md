@@ -48,7 +48,7 @@ labor 就是为了能在一定程度上解决以上问题而创建的。在 labo
 在发布页中，使用者可以查看依赖发布的组件，也可以修改发布组件的版本，labor 会在组件发布时同步到仓库的 podspec 文件中。
 
 
-执行自动发布后，labor 会和 GitLab 进行一系列交互。以组件 A 为例，labor 会先创建目标分支的 MR ：
+执行自动发布后，labor 会和 GitLab 进行一系列交互。以组件 A 为例，labor 会先创建**所有发布组件**目标分支的 MR ：
 
 ![1](https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190214_17.png)
 
