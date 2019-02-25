@@ -62,7 +62,7 @@ labor 就是为了能在一定程度上解决以上问题而创建的。在 labo
 
 ![1](https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190214_20.png)
 
-MR 合并成功后，组件会更新状态为发布中 ：
+MR 合并成功后，组件会更新状态为发布中（假如组件还有依赖未发布，那么这里的状态为已合并，等待依赖发布完成，状态才为发布中） ：
 
 ![1](https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190214_23.png)
 
@@ -70,7 +70,12 @@ MR 合并成功后，组件会更新状态为发布中 ：
 
 ![1](https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190214_22.png)
 
-在 tag 的 pipeline 执行成功后，我们就视 A 组件发布成功了，接着 labor 会同时触发 B、C MR 对应分支的 pipeline ，后续处理与组件 A 一致。受益于 GitLab 分布式的 runner ，我们可以通过 CI 同时发布多个组件。
+在 tag 的 pipeline 执行成功后，我们就视 A 组件发布成功了。A 发布成功后，labor 会查看 B、C 对应 MR 状态执行后续操作：
+
+1. MR pipeline 已经执行成功，并且对应的分支已经合并到 master （组件状态：已合并）
+2. MR pipeline 由于 A 没发布，lint 失败了，分支没有合并到 master（组件状态：等待中）
+
+如果是 1 状态，则直接创建 tag 发布，如果是 2 状态，则触发 MR 对应分支的 pipeline，假如此 MR 是因为 A 组件未发布导致合并失败的，那么在 A 发布后，重新触发的 MR pipeline 一般都能执行成功，当 MR 合并成功后，后续步骤与 1 一致。受益于 GitLab 分布式的 runner ，我们可以通过 CI 同时发布多个组件。
 
 当所有组件发布完成后，labor 会根据使用者输入的组件版本，更新发版工程的 Podfile：
 

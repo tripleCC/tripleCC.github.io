@@ -95,3 +95,108 @@ objc_msgSend ––– 结构体、浮点数、超类/父类（_stret, _fpret, S
 
 
 类对象是单例
+
+ARC 不是 “异常安全的”， 需要 -fobjc-arc-exceptions
+
+ARC 时 NSError ** -> NSError * __autoreleasing* 自动释放 NSError 对象
+
+
+
+使用分类规划同个类中不同功能代码
+
+Private 分类，对外不开放，对内开发方法
+
+
+
+C++混编，依赖C++关键字的文件都要 .mm
+
+
+
+自动释放池，保证对象在跨越方法调用边界后一定存活
+
+当前线程的下一次事件循环释放
+
+
+
+返回对象需调用者释放： alloc、new、copy、mutableCopy
+
+ARC通过命名将内存管理规则标准化：
+
+```
++ (A *)newA { // considring of new
+    A *a = [[A alloc] init];
+    return a; // no retains, releases, or autorelease are required when returning
+}
+
++ (A *)someA { // no new
+    A *a = [[A alloc] init];
+    return a; // add autorelease when returning
+}
+
+
+```
+
+
+
+ARC 返回自动释放对象时，执行 objc_autoreleaseReturnValue 根据调用方是否 retain 了返回值设置标识位（ARC 环境下，可以说实际上事没有 autorelease 了）
+
+objc_retainAutoreleasedReturnValue 查看标志位是否设置来决定是否 retain
+
+
+
+ARC 清理 Objective-C  对象实例变量内存 -> C++ 析构函数
+
+dealloc -> 不需要调用 super，生成代码会自动调用
+
+
+
+修改局部/实例变量语义：
+
+- __strong 默认，强引用
+
+- __unsafe_unretained 弱引用，对象回收后不清空指针
+
+- __weak 弱引用，对象回收后清空指针
+
+- __autoreleasing 对象 autorelease 自动释放
+
+  
+
+**Q: runloop 时间循环执行时机，怎么知道某个方法已经执行完成，在其执行完成后释放自动释放池中的内存？**
+
+
+
+ARC 下捕获异常，应使用 -fobjc-arc-exceptions ，否则易造成内存泄露
+
+
+
+主线程 && GCD 创建的线程，都默认有自动释放池； main 函数和自己创建的线程需要自行添加自动释放池
+
+自动释放池为嵌套架构-》栈
+
+
+
+自动释放池要等线程执行下一次事件循环时才会清空，这就意味着在执行 for 循环时，会持续有新对象创建并加入到自动释放池。
+
+
+
+**Q: 自动释放池和 runloop**
+
+
+
+使用 block 版本的枚举器-》内部会添加自动释放池
+
+
+
+**Q：继承类和拷贝类，哪个效率高**
+
+
+
+tagged pointer 优化小对象，如 NSNumber，NSDate，小的 NSString，其指针值不是地址，而是真正的值
+
+单例对象的引用计数很大，保留及释放操作都是空操作
+
+
+
+
+
