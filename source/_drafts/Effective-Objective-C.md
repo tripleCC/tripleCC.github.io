@@ -198,5 +198,13 @@ tagged pointer 优化小对象，如 NSNumber，NSDate，小的 NSString，其�
 
 
 
+Objective-C 对象: 一块连续的内存，其首地址为指向类的指针：
+
+```objective-c
+id cls = [NSObject class];
+void *obj = &cls;
+NSLog(@"%@", [(__bridge id)obj description]);
+```
+
 
 
