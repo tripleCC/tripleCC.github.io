@@ -208,3 +208,4 @@ NSLog(@"%@", [(__bridge id)obj description]);
 
 
 
+block 捕获变量是对象，会自动保留它（不然可能就被释放了，导致访问失败）

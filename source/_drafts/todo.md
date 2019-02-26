@@ -31,3 +31,7 @@ Objective-C对象内存布局
 
 
 http://melonteam.com/posts/objectc_dui_xiang_nei_cun_bu_ju_fen_xi
+
+
+
+到时候分享一波对象是什么
