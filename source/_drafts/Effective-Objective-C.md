@@ -198,14 +198,56 @@ tagged pointer 优化小对象，如 NSNumber，NSDate，小的 NSString，其�
 
 
 
-Objective-C 对象: 一块连续的内存，其首地址为指向类的指针：
+https://stackoverflow.com/questions/30228847/what-are-difference-between-a-and-a-in-objective-c-object
+
+https://stackoverflow.com/questions/16252343/are-all-objects-in-objective-c-basically-pointers
+
+**OC 对象实际是 struct 结构体，但因为在堆上创建（实际上一种特殊的对象也能在栈上创建，就是指向类的指针变量，其实也是一个对象），只能通过对象指针访问（发消息只能通过对象指针），所以一般也说将指向对象的指针描述为对象**(实际上就是 struct 指针)
+
+**OC 对象实际是 struct 结构体，只能通过对象指针即结构体指针，向 OC 对象发送消息**
+
+**如果一片连续内存中的首个指针大小的内存片段指向类(元类)，则此连续内存中所保存的结构可视为实例对象（单例类对象）**
+
+内存片段指向类————内存片段内容为类地址
+
+比如：
+
+```
+struct objc_object *classObjc = (__bridge void *)[A class]; (返回 objc_class 结构体指针)
+// classObjc 指向的内存地址中首个指针大小连续内存片段指向了 A 的元类
+// 所以 *classObjc 是一个单例类对象，可以通过 classObjc 指针对其发消息（类方法）
+
+struct objc_object *instanceObjc = &classObjc
+// instanceObjc 指向的内存地址中的首个指针大小连续内存片段(内容就是 classObjc 的值)指向了 A 类
+// 所以 classObjc 是一个实例对象，可以通过 &clsObjc 指针对其发消息（对象方法）
+
+所以 classObjc 既可以视为实例对象，又是指向单例类对象的指针
+```
+
+
+
+
+
+每个 OC 对象实例都是指向某块内存数据的指针（objc_object 只是描述对象的结构）
+
+Objective-C 对象: 一块连续的内存，其首地址指向类：
 
 ```objective-c
 id cls = [NSObject class];
-void *obj = &cls;
+//（这里的 cls 指针变量，严格意义上就可以作为 NSObject 的实例对象，然后取 cls 的地址访问实例对象）
+void *obj = &cls;   
 NSLog(@"%@", [(__bridge id)obj description]);
 ```
 
 
 
 block 捕获变量是对象，会自动保留它（不然可能就被释放了，导致访问失败）
+
+__block 如果修饰的是基本类型，则会将其转化成对象
+
+
+
+定义 block 时，内存区域分配在栈中 （在栈上创建结构体，没有 malloc），copy 后，从栈拷贝到了堆，在没有 copy 前，block **只在定义的范围内有效**
+
+
+

@@ -35,3 +35,16 @@ http://melonteam.com/posts/objectc_dui_xiang_nei_cun_bu_ju_fen_xi
 
 
 到时候分享一波对象是什么
+
+
+
+```
+id cls = [A class];
+void *obj = &cls;
+[(__bridge id)obj test];
+
+```
+
+
+
+https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/WorkingwithObjects/WorkingwithObjects.html#//apple_ref/doc/uid/TP40011210-CH4-SW6

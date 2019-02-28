@@ -19,8 +19,8 @@ author: 青木
 整个发版过程，组件负责人除了需要重复若干次以下操作，还需要知悉是否有下层组件还未发布：
 
 ```
->>>> 合并 release 分支 ，gitflow finish release
-    >>>> 查看组件应升级版本,更新 podspec 版本并 commit
+>>>> 查看组件应升级版本,更新 podspec 版本并 commit
+    >>>> 合并 release 分支 ，gitflow finish release
         >>>> 打 tag 并 push 
             >>>> CI 执行完毕，组件发布完成，可能需要通知上层组件的负责人
 ```
