@@ -251,3 +251,70 @@ __block 如果修饰的是基本类型，则会将其转化成对象
 
 
 
+block 使代码变得紧凑，delegate 则会分散代码（适合步骤分明的场景，比如 TableViewDataSource）
+
+
+
+需要循环依赖场景：需要等网络请求执行完成之后，才清除数据加载器，执行完回调后，需要清除回调 block
+
+
+
+队列 -> 按照任务加入顺序触发-> 串行、并行，是否要等上一个任务执行完再触发下个任务
+
+同步异步->是否需要等加入的任务返回再执行当前任务（是否立即返回）
+
+
+
+preformSelector 容易造成内存泄露，编译器不知道将要调用的选择子，无法用 ARC 内存管理规则判断是否需要释放返回值
+
+
+
+NSOperation 
+
+- 取消某个操纵
+- 指定操作间的依赖关系
+- KVO 监测对象属性（isCancelled、isFinished）
+- 指定操作的优先级，GCD 的优先级针对整个队列，非单个任务
+- 重用NSOperation 对象
+
+
+
+group-wait 阻塞，notify 非阻塞
+
+
+
+死锁，在自己的串行队列任务中，同步派发任务给此串行队列
+
+
+
+解决任务不可重入代码引发的死锁，可使用队列特定数据（dispatch_get_specific）解决
+
+
+
+toll-free bridge
+
+- __bridge 不变更所有权
+- __bridge_retained  OC -> C 由 C 持有所有权，需要手动 free
+- __bridge_transfer C -> OC 由 OC 持有所有权
+
+
+
+NSCache 提供自动删减功能（size 满了），线程安全，不会拷贝键， NSDictionary 则相反
+
+
+
+load
+
+- 父类->子类->分类
+- 系统框架会在自定义类的 load 方法执行前就加载到内存
+- load 会加优先调用依赖库的 load，但在 load 中使用同个库的其他类是不安全的，调用顺序不确定
+- load 方法不会继承，没实现就不会调用，并且不调用 super 父类就会自动调用 load
+
+initialize
+
+- 父类->分类->子类（分类的 initialize 会覆盖子类的方法，和普通的方法调用一样）
+
+- 首次使用类时，仅调用一次
+- initialize 会继承
+
+initialize 线程安全？？？
