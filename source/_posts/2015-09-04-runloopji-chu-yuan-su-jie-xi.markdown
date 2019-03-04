@@ -7,7 +7,7 @@ categories:
 tags: [runloop]
 ---
 
-[深入理解RunLoop](http://blog.ibireme.com)这篇文章写的很好！
+[深入理解RunLoop](http://blog.ibireme.com)这篇文章写的很好，以下为自己在阅读此文时的试验摘录！
 
 ## 简介
 
@@ -22,6 +22,7 @@ RunLoop顾名思义，就是`运行循环`的意思。<br>
 
 - do-while循环，在这个循环内部不断地处理各种任务（Source\Timeer\Observer）
 <!--more-->
+
 注意点：
 
 - 一个线程对应一个RunLoop（采用字典存储，`线程号为key，RunLoop为value`）
