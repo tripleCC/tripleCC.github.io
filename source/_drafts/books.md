@@ -26,5 +26,10 @@ GCD 多线程
 
 组件化
 
+响应链
+
+- 往上查触发view
+- 往下派发触发事件（view-superview-vc-window-application）
+
 
 
