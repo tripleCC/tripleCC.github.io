@@ -4,7 +4,7 @@ title: "Block技巧与底层解析"
 date: 2015-07-19 20:17:10 +0800
 comments: true
 categories: objective-c
-tags: [objective-c,block]
+tags: [Interview,objective-c,block]
 ---
 
 最近看了一些block的资料，并动手做了一些实践，摘录并添加了一些结论。

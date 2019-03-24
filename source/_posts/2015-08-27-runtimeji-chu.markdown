@@ -4,7 +4,7 @@ title: "runtime基础"
 date: 2015-07-10 20:14:17 +0800
 comments: true
 categories: runtime
-tags: [objective-c,runtime]
+tags: [Interview,objective-c,runtime]
 ---
 Objective-C的runtime语言使它具备了动态语言的特性，也就是平时所说的“运行时”。在runtime的基础上，可以做很多平时难以想到事，或者化简原先 较为繁杂的解决方案。<br>
 相对于静态语言，比如C以下程序

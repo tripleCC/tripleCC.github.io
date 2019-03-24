@@ -4,7 +4,7 @@ title: "Runtime应用之关联对象和MethodSwizzling"
 date: 2015-07-14 14:53:13 +0800
 comments: true
 categories: runtime
-tags: [objective-c,runtime,method swizzling]
+tags: [Interview,objective-c,runtime,method swizzling]
 ---
 
 最近用到了sunnyxx的forkingdog系列([UIView-FDCollapsibleConstraints](https://github.com/forkingdog/UIView-FDCollapsibleConstraints))，纪录下关联对象和MethodSwizzling在实际场景中的应用。

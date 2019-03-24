@@ -1,7 +1,7 @@
 ---
 title: 基于 CocoaPods 的组件二进制化实践
 date: 2019-01-21 19:49:08
-tags: [CocoaPods,Ruby,二进制化]
+tags: [Interview,CocoaPods,Ruby,二进制化]
 categories: iOS
 author: 青木
 ---

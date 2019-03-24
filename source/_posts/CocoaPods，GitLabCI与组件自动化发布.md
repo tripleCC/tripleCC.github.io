@@ -1,7 +1,7 @@
 ---
 title: CocoaPods，GitLab CI 与组件自动化发布
 date: 2019-01-27 15:47:21
-tags: [CocoaPods,GitLab CI,组件自动化发布]
+tags: [Interview,CocoaPods,GitLab CI,组件自动化发布]
 categories: iOS
 author: 青木
 ---

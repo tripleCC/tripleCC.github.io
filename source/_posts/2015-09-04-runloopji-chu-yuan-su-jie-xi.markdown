@@ -4,7 +4,7 @@ title: "RunLoop基础元素解析"
 date: 2015-09-04 21:58:21 +0800
 comments: true
 categories: 
-tags: [runloop]
+tags: [Interview,runloop]
 ---
 
 [深入理解RunLoop](http://blog.ibireme.com)这篇文章写的很好，以下为自己在阅读此文时的试验摘录！

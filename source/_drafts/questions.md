@@ -90,7 +90,9 @@
 
 #### runtime 如何实现 weak 属性
 
-设置 weak 修饰的属性时，runtime 会生成对应的 item pair 放入 weak hash table 中，以实例变量的值（赋值对象地址）为 key，以实例变量地址为 value。当实例变量，即对象指针，指向的对象释放时，runtime 会在目标对象的 dealloc 处理过程中，以自身地址为 key 去 weak hash table 查找 value ，置空 value 指向的对象指针，即 `*value = nil`
+设置 `__weak` 修饰的变量时，runtime 会生成对应的 entity 放入 weak hash table 中，以赋值对象地址为 key，以 `__weak` 修饰的变量地址（weak修饰的实例变量）为 value，当赋值对象释放时，runtime 会在目标对象的 dealloc 处理过程中，以对象地址为 key 去 weak hash table 查找 value ，置空 value 指向的对象指针，即 `*value = nil`。
+
+实际上 value 可以视为一个 hash （利用对象指针的地址生成的 hash 值），如果有多个 __weak 修饰的指针变量指向同一个对象，里面保存着所有这些指针变量的地址。
 
 ```
 // 设置 weak 修饰的实例变量流程

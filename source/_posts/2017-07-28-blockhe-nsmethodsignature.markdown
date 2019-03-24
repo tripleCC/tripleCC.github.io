@@ -4,7 +4,7 @@ title: "用 Block 实现委托方法"
 date: 2017-07-28 19:05:22 +0800
 comments: true
 categories: objective-c
-tags: [objective-c,block,delegate]
+tags: [Interview,objective-c,block,delegate]
 ---
 
 Block 和 Delegate 是对象间传递消息的常用机制，这两个机制可以说是各有千秋。 Delegate 可以很方便把目标动作的执行过程划分为多个方法，以展现不同时间节点下特定的操作； Block 则擅长处理一个回调多个落点的情况，并且它可以通过捕捉上下文信息，来达到减少创建额外变量，集中消息处理逻辑的目的。
