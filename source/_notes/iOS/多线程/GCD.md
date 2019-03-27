@@ -50,7 +50,7 @@
 
 异步派发任务后，不阻塞当前任务的执行。
 
-## API
+## 易忘API
 
 ### dispatch_queue_create
 
@@ -120,4 +120,24 @@ dispatch_async(q, ^{ NSLog(@"2"); });
 对队列中已经执行的任务没有影响，只影响还未执行的任务
 
 ### dispatch_semaphore_t
+
+```objective-c
+dispatch_queue_t q = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+dispatch_semaphore_t s = dispatch_semaphore_create(1);
+for (int i = 0; i < 10; i++) {
+    dispatch_async(q, ^{
+        dispatch_semaphore_wait(s, DISPATCH_TIME_FOREVER);
+        NSLog(@"%d", i);
+        dispatch_semaphore_signal(s);
+    });
+}
+// 输出
+// 有序 0 - 9 
+```
+
+`dispatch_semaphore_create` 创建值为 1 的信号量
+
+`dispatch_semaphore_wait` 在信号量大于等于 1 时，将信号量值减 1 （获取资源）后返回，否则会一直等下去
+
+`dispatch_semaphore_signal`将信号量的值加 1 （释放资源）
 
