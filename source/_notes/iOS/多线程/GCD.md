@@ -94,9 +94,30 @@ dispatch_async(q, ^{
 })
 ```
 
-后者更加灵活，可以处理**任务中嵌套异步处理**的场景。
+后者更加灵活，可以处理**任务中嵌套异步处理**的场景，在设计批量请求时可加以应用。
 
 调用 `dispatch_group_wait` 会阻塞当前线程。
 
-#### 
+### dispatch_barrier_async
+
+> 队列中先于此函数添加任务的任务执行完成后，才执行后续任务
+
+```objective-c
+dispatch_queue_t q = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+dispatch_async(q, ^{ NSLog(@"1"); });
+dispatch_barrier_async(q, ^{ NSLog(@"barrier"); });
+dispatch_async(q, ^{ NSLog(@"2"); });
+// 输出
+// 1
+// barrier
+// 2
+```
+
+### dispatch_suspend / dispatch_resume
+
+> 恢复 / 挂起指定队列
+
+对队列中已经执行的任务没有影响，只影响还未执行的任务
+
+### dispatch_semaphore_t
 
