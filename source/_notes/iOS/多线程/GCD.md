@@ -113,6 +113,8 @@ dispatch_async(q, ^{ NSLog(@"2"); });
 // 2
 ```
 
+和 group 的区别：**会阻塞 queue 执行后续的任务**
+
 ### dispatch_suspend / dispatch_resume
 
 > 恢复 / 挂起指定队列

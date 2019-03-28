@@ -16,7 +16,7 @@ stack overflow:  [Xcode: What is a target and scheme in plain language?](https:/
 
 - **Scheme** - 定义当我们执行 `Build`、`Test`、`Profile` 等操作时的具体动作
 
-  - 通常来说，一个 target 至少有一个 scheme
+  - 通常来说，一个 target 至少对应一个 scheme，一个 scheme 可以定义多个 target 的编译操作，比如测试 target 、主 target
 
   - 通过 `Autocreate Schemes Now` 我们可以自动创建 schemes 
 
@@ -40,6 +40,8 @@ stack overflow:  [Xcode: What is a target and scheme in plain language?](https:/
 
 **Scheme**
 
-可以添加编译环境变量、设置是否 DEBUG 等
+可以配置构建的 target 、添加编译环境变量、设置是否 DEBUG 等
 
 ![Snip20190328_3](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190328_3.png)
+
+![Snip20190328_3](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190328_6.png)
