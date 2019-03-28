@@ -22,7 +22,7 @@ install     Build the target and install it into the target's installation direc
 clean       Remove build products and intermediate files from the build root (SYMROOT).
 ```
 
-构建二进制包时，通常会使用 `build` 、`clean` 两种 action。
+构建二进制包时，通常会使用 `build` 、`clean` 两种 action，表示构建指定的 target （或者 scheme 中设置的 target），并且清除中间文件。
 
 ### Man Page
 
