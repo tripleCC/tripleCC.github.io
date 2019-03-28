@@ -44,4 +44,4 @@ stack overflow:  [Xcode: What is a target and scheme in plain language?](https:/
 
 ![Snip20190328_3](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190328_3.png)
 
-![Snip20190328_3](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190328_6.png)
+![Snip20190328_6](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190328_6.png)

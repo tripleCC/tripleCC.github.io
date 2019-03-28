@@ -6,7 +6,23 @@
 
 [xcodebuild workspace and scheme](<https://stackoverflow.com/questions/16465696/xcodebuild-workspace-and-scheme>)
 
-对 target 指定
+对 target 指定具体的构建动作，可用动作如下：
+
+```
+build       Build the target in the build root (SYMROOT).  This is the default build action.
+
+archive     Archive a scheme from the build root (SYMROOT).  This requires specifying a scheme.
+
+test        Test a scheme from the build root (SYMROOT).  This requires specifying a scheme.
+
+installsrc  Copy the source of the project to the source root (SRCROOT).
+
+install     Build the target and install it into the target's installation directory in the distribution root (DSTROOT).
+
+clean       Remove build products and intermediate files from the build root (SYMROOT).
+```
+
+构建二进制包时，通常会使用 `build` 、`clean` 两种 action。
 
 ### Man Page
 
