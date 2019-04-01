@@ -563,23 +563,23 @@ static void __Person__test_block_func_0(struct __Person__test_block_impl_0 *__cs
 
 从以下代码可以看出，栈block的复制不仅仅复制了其内容，还添加了一些额外的东西
 
-   - 1、往flags中并入了`BLOCK_NEEDS_FREE`（这个标志表明block需要释放，在`release`以及`再次拷贝`时会用到）
+  - 1、往flags中并入了`BLOCK_NEEDS_FREE`，并且设置引用计数为1（这个标志表明block需要释放，在`release`以及`再次拷贝`时会用到）
   - 2、如果有辅助copy函数（`BLOCK_HAS_COPY_DISPOSE`），那么就调用（这个辅助copy函数是用来`拷贝block捕获的变量`的）
 
 ```objc
   ...
   struct Block_layout *result = malloc(aBlock->descriptor->size);
-        if (!result) return (void *)0;
-        memmove(result, aBlock, aBlock->descriptor->size); // bitcopy first
-        // reset refcount
-        result->flags &= ~(BLOCK_REFCOUNT_MASK);    // XXX not needed
-        result->flags |= BLOCK_NEEDS_FREE | 1;
-        result->isa = _NSConcreteMallocBlock;
-        if (result->flags & BLOCK_HAS_COPY_DISPOSE) {
-            //printf("calling block copy helper %p(%p, %p)...\n", aBlock->descriptor->copy, result, aBlock);
-            (*aBlock->descriptor->copy)(result, aBlock); // do fixup
-        }
-        return result;
+  if (!result) return (void *)0;
+  memmove(result, aBlock, aBlock->descriptor->size); // bitcopy first
+  // reset refcount
+  result->flags &= ~(BLOCK_REFCOUNT_MASK);    // XXX not needed
+  result->flags |= BLOCK_NEEDS_FREE | 1;
+  result->isa = _NSConcreteMallocBlock;
+  if (result->flags & BLOCK_HAS_COPY_DISPOSE) {
+      //printf("calling block copy helper %p(%p, %p)...\n", aBlock->descriptor->copy, result, aBlock);
+      (*aBlock->descriptor->copy)(result, aBlock); // do fixup
+  }
+  return result;
   ...
 ```
 
@@ -593,7 +593,7 @@ static void __Person__test_block_func_0(struct __Person__test_block_impl_0 *__cs
         // latches on high
         latching_incr_int(&aBlock->flags);
         return aBlock;
-    }
+  }
   ...
 ```
 
@@ -748,11 +748,11 @@ static void _Block_byref_assign_copy(void *dest, const void *arg, const int flag
     struct Block_byref *src = (struct Block_byref *)arg;
 ...
     else if ((src->forwarding->flags & BLOCK_REFCOUNT_MASK) == 0) {
-    	// 从main函数对__Block_byref_a_0的初始化，可以看到初始化时将flags赋值为0
-    	// 这里表示第一次拷贝，会进行复制操作，并修改原来flags的值
-		// static int _Byref_flag_initial_value = BLOCK_NEEDS_FREE | 2;
-		// 可以看出，复制后，会并入BLOCK_NEEDS_FREE，后面的2是block的初始引用计数
-		...
+        // 从main函数对__Block_byref_a_0的初始化，可以看到初始化时将flags赋值为0
+        // 这里表示第一次拷贝，会进行复制操作，并修改原来flags的值
+    		// static int _Byref_flag_initial_value = BLOCK_NEEDS_FREE | 2;
+    		// 可以看出，复制后，会并入BLOCK_NEEDS_FREE，后面的2是包装对象的初始引用计数（栈上持有+堆上持有）
+    		...
         copy->flags = src->flags | _Byref_flag_initial_value;
         ...
     }
