@@ -720,7 +720,7 @@ enum {
 
 // 设置不同属性对应的flags/_flags值
 	__block id                   128+3
-    __weak block id              128+3+16
+  __weak block id              128+3+16
 	__block (^Block)             128+7
 	__weak __block (^Block)      128+7+16
 ```
