@@ -93,8 +93,8 @@ ___Block_byref_object_copy_(dst, src) {
 // ARC
 // 堆中的包装对象接管 __block 修饰的指针变量指向的对象
 ___Block_byref_object_copy_(dst, src) {
-    objc_storeStrong(dst->var, src->var)
-    objc_storeStrong(src->var, nil)
+    objc_storeStrong(&dst->var, src->var)
+    objc_storeStrong(&src->var, nil)
 }
 ```
 
