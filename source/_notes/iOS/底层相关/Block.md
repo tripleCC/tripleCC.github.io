@@ -75,7 +75,7 @@ block();
 
 > block 通过包装对象的辅助函数管理对象指针指向的对象
 
-MRC 时代，block 在捕获  `__block` 修饰的对象指针时，不会 retain 其指向的对象（见 `_Block_object_assign` 函数第一个分支，由包装对象的辅助函数调用），**所以在 MRC 时代，`__block` 是可以直接用来解决循环引用的**。为什么不 retain 的原因在 [Why are __block variables not retained (In non-ARC environments)?](https://stackoverflow.com/questions/17384599/why-are-block-variables-not-retained-in-non-arc-environments) 有提及，简单来说就是因为 `__block` 修饰的对象指针在 block 内可被赋值，在 ARC 推出之前，针对对象指针重赋值时的内存管理问题，没有找到合适的方法解决。
+MRC 时代，block 在捕获  `__block` 修饰的对象指针时，不会 retain 其指向的对象（见 `_Block_object_assign` 函数第一个分支，由包装对象的辅助函数调用），**所以在 MRC 时代，`__block` 是可以直接用来解决循环引用的**。为什么不 retain 的原因在 [Why are __block variables not retained (In non-ARC environments)?](https://stackoverflow.com/questions/17384599/why-are-block-variables-not-retained-in-non-arc-environments) 有提及，简单来说就是因为 `__block` 修饰的对象指针在 block 内可被赋值，在 ARC 推出之前，针对对象指针重赋值时对象的内存管理问题，没有找到合适的方法解决。
 
 ARC 时代，block 在捕获 `__block` 修饰的指针对象时，就会 retain 其指向的对象了，不过我们还是可以**用 `__block` 间接解决循环引用——在 block 中将对象指针置 nil**，一般很少会这么用，因为 ARC 时代的 `__weak` 可以更好地解决这个问题。
 
