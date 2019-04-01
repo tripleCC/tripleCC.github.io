@@ -750,9 +750,9 @@ static void _Block_byref_assign_copy(void *dest, const void *arg, const int flag
     else if ((src->forwarding->flags & BLOCK_REFCOUNT_MASK) == 0) {
         // 从main函数对__Block_byref_a_0的初始化，可以看到初始化时将flags赋值为0
         // 这里表示第一次拷贝，会进行复制操作，并修改原来flags的值
-    		// static int _Byref_flag_initial_value = BLOCK_NEEDS_FREE | 2;
-    		// 可以看出，复制后，会并入BLOCK_NEEDS_FREE，后面的2是包装对象的初始引用计数（栈上持有+堆上持有）
-    		...
+        // static int _Byref_flag_initial_value = BLOCK_NEEDS_FREE | 2;
+        // 可以看出，复制后，会并入BLOCK_NEEDS_FREE，后面的2是包装对象的初始引用计数（栈上持有+堆上持有）
+        ...
         copy->flags = src->flags | _Byref_flag_initial_value;
         ...
     }
