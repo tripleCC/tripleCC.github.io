@@ -16,7 +16,7 @@ block 实例是一个**对象**，这个对象包含了**实现函数**以及一
 
  为什么不直接使用堆 block 呢？因为每次都在堆上直接为 block 开辟新的内存空间会影响程序性能。
 
-### 对象的捕获
+### 变量的捕获
 
 重写后的 block 结构中，会有一个字段对应着捕获的变量，反应到内存中，就是 **block 内存片段中有一块内存保存着捕获变量的值**。
 
@@ -30,11 +30,20 @@ block 实例是一个**对象**，这个对象包含了**实现函数**以及一
 
 为什么不让所有的变量都默认 `__block`？因为 `__block` 修饰的变量需要额外的开销。
 
-由于 `__block` 修饰的变量可以在 block 中被赋值 ，为了实现栈和堆中捕获变量访问的一致性，`__block` 修饰后的变量会被包装成一个对象结构。所有的访问都通过这个结构中的 `forwording` 字段，并且栈和堆中包装对象的 `forwording` 字段值相同，都指向堆中的包装对象。
-
-
+由于 `__block` 修饰的变量可以在 block 中被赋值 ，为了实现栈和堆中捕获变量访问的一致性，`__block` 修饰后的变量会被包装成一个对象结构。所有的访问都通过这个结构中的 `forwording` 字段，并且栈和堆中包装对象的 `forwording` 字段值相同，都指向堆中的包装对象，实际访问时通过 `structure -> forwording -> captured variable`。
 
 ![block___block_variable](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/block___block_variable.png)
+
+由此可以得到下面代码的输出结果：
+
+```
+__block int i = 0; // 实际访问的是 structure->forwording->i，我们可以视为 p_i = &i，后面操作都是针对 *p_i 
+int j = 0; // 直接挂在 block 结构的字段中，不会感知后续栈中的变更
+void (^block)(void) = ^{ printf("%d %d\n", i, j); };
+j = i = 1;
+block();
+// 1 0
+```
 
 
 
