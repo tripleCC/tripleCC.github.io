@@ -1,12 +1,56 @@
+基本原理： [Block 技巧与底层解析](<https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi/>)
+
+### 什么是 Block
+
+block 实例是一个**对象**，这个对象包含了**实现函数**以及一些**捕获变量**的信息，一般情况下，其 isa 指向常见的三个类：
+
+- _NSConcreteGlobalBlock （全局）
+- **_NSConcreteStackBlock**（栈）
+- _NSConcreteMallocBlock（堆）
+
+通常我们使用最多的是栈 block ，上方所说的全局、栈、堆表示对应的 **block 对象内存所在区域**。
+
+### Block 拷贝
+
+**因为栈中的变量会随着栈帧销毁**，为了增强栈 block 的可用性，我们通常会在栈 block 销毁前将其拷贝为堆 block。
+
+ 为什么不直接使用堆 block 呢？因为每次都在堆上直接为 block 开辟新的内存空间会影响程序性能。
+
+### 对象的捕获
+
+重写后的 block 结构中，会有一个字段对应着捕获的变量，反应到内存中，就是 **block 内存片段中有一块内存保存着捕获变量的值**。
+
+在 block 进行拷贝时，会有辅助函数负责拷贝捕获变量字段的值，如果捕获的变量为对象指针，辅助函数还会去 retain / release 指针指向的对象。
+
+### __block 修饰的变量
+
+> 包装对象：__block 修饰的变量被包装后的结构
+>
+>  block 拷贝到堆后，包装对象也会通过 block 辅助函数从栈拷贝到堆
+
+为什么不让所有的变量都默认 `__block`？因为 `__block` 修饰的变量需要额外的开销。
+
+由于 `__block` 修饰的变量可以在 block 中被赋值 ，为了实现栈和堆中捕获变量访问的一致性，`__block` 修饰后的变量会被包装成一个对象结构。所有的访问都通过这个结构中的 `forwording` 字段，并且栈和堆中包装对象的 `forwording` 字段值相同，都指向堆中的包装对象。
+
+
+
+![block___block_variable](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/block___block_variable.png)
+
+
+
+
+
 从设计者角度看，为什么 block 要这么做
 
-包括对象的捕获，__block 变量为什么会转换成一个对象结构体，为什么要在 block copy 时也一并 copy 掉，
+包括对象的捕获， ，为什么要在 block copy 时也一并 copy 掉，
 
 
 
 现在的问题是**__block 修饰对象指针变量时，如何处理指针变量指向的对象**
 
 从代码上看，copy helper 函数并不会 retain 这个对象
+
+<https://www.mikeash.com/pyblog/friday-qa-2009-08-14-practical-blocks.html>
 
 <https://stackoverflow.com/questions/17384599/why-are-block-variables-not-retained-in-non-arc-environments>
 
