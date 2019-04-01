@@ -23,6 +23,19 @@ block 拷贝和释放时会触发辅助函数，辅助函数主要作用是管�
 
 第二种辅助函数只有使用 `__block` 修饰对象指针时才会生成。
 
+### 外部变量捕获
+
+根据捕获时内部实现的异同，大体可以根据变量类型分为以下几种：
+
+- 非 __block 修饰
+  - 基础类型
+  - 对象指针类型
+- __block 修饰
+  - 基础类型
+  - 对象指针类型
+    - MRC 
+    - ARC
+
 ### 非 __block 修饰变量的捕获
 
 重写后的 block 结构中，会有一个字段对应着捕获的变量，反应到内存中，就是 **block 内存片段中有一块内存保存着捕获变量的值**。
@@ -80,3 +93,4 @@ ___Block_byref_object_copy_(dst, src) {
 ```
 
 [confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读。
+
