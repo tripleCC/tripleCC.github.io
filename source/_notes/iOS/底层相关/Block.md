@@ -14,14 +14,14 @@ block 实例是一个**对象**，这个对象包含了**实现函数**以及一
 
 **因为栈中的变量会随着栈帧销毁**，为了增强栈 block 的可用性，我们通常会在栈 block 销毁前将其拷贝为堆 block。 为什么不直接使用堆 block 呢？因为每次都在堆上直接为 block 开辟新的内存空间会影响程序性能。
 
-block 拷贝和释放时会触发辅助函数，辅助函数主要作用是管理结构中的捕获变量。辅助函数有两种：
+block **拷贝和释放时会触发辅助函数**，辅助函数主要作用是管理结构中的捕获变量。辅助函数有两种：
 
 - block 的辅助函数，主要负责管理结构中的捕获变量
   - 调用顺序：block 拷贝函数 -> block 辅助函数
 - 包装对象的辅助函数，主要负责管理包装对象中，捕获的对象指针变量指向对象的管理
   - 调用顺序：block 拷贝函数 -> block 辅助函数 -> 包装对象辅助函数
 
-第二种辅助函数只有使用 `__block` 修饰对象指针时才会生成。
+第二种辅助函数只有使用 **`__block` 修饰对象指针**时才会生成。
 
 ### 外部变量捕获
 
@@ -69,11 +69,11 @@ block();
 
 > block 通过包装对象的辅助函数管理对象指针指向的对象
 
-MRC 时代，block 在捕获  `__block` 修饰的对象指针时，不会 retain 其指向的对象（见 `_Block_object_assign` 函数第一个分支，由包装对象的辅助函数调用），原因在 [Why are __block variables not retained (In non-ARC environments)?](https://stackoverflow.com/questions/17384599/why-are-block-variables-not-retained-in-non-arc-environments) 有提及，简单来说就是因为 `__block` 修饰的对象指针在 block 内可被赋值，在 ARC 推出之前，针对对象指针重赋值时的内存管理问题，没有找到合适的方法解决。**所以在 MRC 时代，`__block` 是可以直接用来解决循环引用的**。
+MRC 时代，block 在捕获  `__block` 修饰的对象指针时，不会 retain 其指向的对象（见 `_Block_object_assign` 函数第一个分支，由包装对象的辅助函数调用），**所以在 MRC 时代，`__block` 是可以直接用来解决循环引用的**。为什么不 retain 的原因在 [Why are __block variables not retained (In non-ARC environments)?](https://stackoverflow.com/questions/17384599/why-are-block-variables-not-retained-in-non-arc-environments) 有提及，简单来说就是因为 `__block` 修饰的对象指针在 block 内可被赋值，在 ARC 推出之前，针对对象指针重赋值时的内存管理问题，没有找到合适的方法解决。
 
 ARC 时代，block 在捕获 `__block` 修饰的指针对象时，就会 retain 其指向的对象了，不过我们还是可以**用 `__block` 间接解决循环引用——在 block 中将对象指针置 nil**，一般很少会这么用，因为 ARC 时代的 `__weak` 可以更好地解决这个问题。
 
-上面所说的对象 retain ，都是发生在 block 的拷贝阶段，[ARC 中 block 的自动拷贝](<https://stackoverflow.com/questions/23334863/should-i-still-copy-block-copy-the-blocks-under-arc>) 中提到， ARC 环境中，block 的 copy 操作在被强引用等大部分情况下都会自动执行，所以不需要我们手动调用。 
+上面所说的对象 retain 操作，都是发生在 block 的拷贝阶段（辅助函数的实现中），[ARC 中 block 的自动拷贝](<https://stackoverflow.com/questions/23334863/should-i-still-copy-block-copy-the-blocks-under-arc>) 中提到， ARC 环境中，block 的 copy 操作在被强引用等大部分情况下都会自动执行，所以不需要我们手动调用。 
 
 MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 retain 操作，[confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读，它们的伪代码如下：
 
@@ -96,5 +96,5 @@ ___Block_byref_object_copy_(dst, src) {
 
 ![block___block_object_pointer](<https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/block___block_object_pointer.png>)
 
-这里我们通过控制包装对象的引用计数，来保证在捕获对象指针变量的 block 没有全部释放前提下，其指向的对象将不会被释放，所以我们只需要保证包装对象的引用计数正确即可。
+这里我们通过控制包装对象的引用计数，来保证在捕获对象指针变量的 block 没有全部释放前提下，其指向的对象将不会被释放，所以我们只需要保证包装对象的引用计数正确即可，后续拷贝也只是增加包装对象的引用计数，这点和非 `__block` 修饰的指针变量还是有区别的，后者是直接增加指针变量指向对象的引用计数。
 
