@@ -12,21 +12,28 @@ block 实例是一个**对象**，这个对象包含了**实现函数**以及一
 
 ### Block 拷贝
 
-**因为栈中的变量会随着栈帧销毁**，为了增强栈 block 的可用性，我们通常会在栈 block 销毁前将其拷贝为堆 block。
+**因为栈中的变量会随着栈帧销毁**，为了增强栈 block 的可用性，我们通常会在栈 block 销毁前将其拷贝为堆 block。 为什么不直接使用堆 block 呢？因为每次都在堆上直接为 block 开辟新的内存空间会影响程序性能。
 
- 为什么不直接使用堆 block 呢？因为每次都在堆上直接为 block 开辟新的内存空间会影响程序性能。
+block 拷贝和释放时会触发辅助函数，辅助函数主要作用是管理结构中的捕获变量。辅助函数有两种：
 
-### 变量的捕获
+- block 的辅助函数，主要负责管理结构中的捕获变量
+  - 调用顺序：block 拷贝函数 -> block 辅助函数
+- 包装对象的辅助函数，主要负责管理包装对象中，捕获的对象指针变量指向对象的管理
+  - 调用顺序：block 拷贝函数 -> block 辅助函数 -> 包装对象辅助函数
+
+第二种辅助函数只有使用 `__block` 修饰对象指针时才会生成。
+
+### 非 __block 修饰变量的捕获
 
 重写后的 block 结构中，会有一个字段对应着捕获的变量，反应到内存中，就是 **block 内存片段中有一块内存保存着捕获变量的值**。
 
-在 block 进行拷贝时，会有辅助函数负责拷贝捕获变量字段的值，如果捕获的变量为对象指针，辅助函数还会去 retain / release 指针指向的对象。
+在 block 进行拷贝时，会有辅助函数负责拷贝捕获变量字段的值，**如果捕获的变量为对象指针，辅助函数还会去 retain 指针指向的对象**。
 
-### __block 修饰的变量
+### __block 修饰的变量的捕获
 
 > 包装对象：__block 修饰的变量被包装后的结构
->
->  block 拷贝到堆后，包装对象也会通过 block 辅助函数从栈拷贝到堆
+
+重写后的 block 结构中会有一个字段指向此包装对象， block 拷贝到堆后，包装对象也会通过 block 辅助函数从栈拷贝到堆。
 
 为什么不让所有的变量都默认 `__block`？因为 `__block` 修饰的变量需要额外的开销。
 
@@ -36,7 +43,7 @@ block 实例是一个**对象**，这个对象包含了**实现函数**以及一
 
 由此可以得到下面代码的输出结果：
 
-```
+```objective-c
 __block int i = 0; // 实际访问的是 structure->forwording->i，我们可以视为 p_i = &i，后面操作都是针对 *p_i 
 int j = 0; // 直接挂在 block 结构的字段中，不会感知后续栈中的变更
 void (^block)(void) = ^{ printf("%d %d\n", i, j); };
@@ -45,100 +52,31 @@ block();
 // 1 0
 ```
 
+### ARC 对 __block 修饰对象指针的影响
 
+> block 通过包装对象的辅助函数管理对象指针指向的对象
 
+MRC 时代，block 在捕获  `__block` 修饰的对象指针时，不会 retain 其指向的对象（见 `_Block_object_assign` 函数第一个分支，由包装对象的辅助函数调用），原因在 [Why are __block variables not retained (In non-ARC environments)?](https://stackoverflow.com/questions/17384599/why-are-block-variables-not-retained-in-non-arc-environments) 有提及，简单来说就是因为 `__block` 修饰的对象指针在 block 内可被赋值，在 ARC 推出之前，针对对象指针重赋值时的内存管理问题，没有找到合适的方法解决。**所以在 MRC 时代，`__block` 是可以直接用来解决循环引用的**。
 
+ARC 时代，block 在捕获 `__block` 修饰的指针对象时，就会 retain 其指向的对象了，不过我们还是可以**用 `__block` 间接解决循环引用——在 block 中将对象指针置 nil**，一般很少会这么用，因为 ARC 时代的 `__weak` 可以更好地解决这个问题。
 
-从设计者角度看，为什么 block 要这么做
+上面所说的对象 retain ，都是发生在 block 的拷贝阶段，[ARC 中 block 的自动拷贝](<https://stackoverflow.com/questions/23334863/should-i-still-copy-block-copy-the-blocks-under-arc>) 中提到， ARC 环境中，block 的 copy 操作在被强引用等大部分情况下都会自动执行，所以不需要我们手动调用。 
 
-包括对象的捕获， ，为什么要在 block copy 时也一并 copy 掉，
+MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 retain 操作，它们的伪代码如下：
 
-
-
-现在的问题是**__block 修饰对象指针变量时，如何处理指针变量指向的对象**
-
-从代码上看，copy helper 函数并不会 retain 这个对象
-
-<https://www.mikeash.com/pyblog/friday-qa-2009-08-14-practical-blocks.html>
-
-<https://stackoverflow.com/questions/17384599/why-are-block-variables-not-retained-in-non-arc-environments>
-
-<https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime>
-
-<https://stackoverflow.com/questions/10429857/is-it-possible-to-see-the-code-generated-by-arc-at-compile-time/10434310#10434310>
-
-```
+```objective-c
+// MRC
+// BLOCK_BYREF_CALLER 标识会导致 __Block_object_assign 直接执行赋值操作后就返回
+___Block_byref_object_copy_(dst, src) {
+    __Block_object_assign(dst, src, BLOCK_BYREF_CALLER | BLOCK_FIELD_IS_OBJECT)
+}
 
 // ARC
-___Block_byref_object_copy_:            ## @__Block_byref_object_copy_
-Lfunc_begin1:
-	.loc	1 89 0                  ## /Users/songruiwang/GitHub/objc-runtime/debug-objc/main.m:89:0
-	.cfi_startproc
-## %bb.0:
-	pushq	%rbp
-	.cfi_def_cfa_offset 16
-	.cfi_offset %rbp, -16
-	movq	%rsp, %rbp
-	.cfi_def_cfa_register %rbp
-	subq	$32, %rsp
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-Ltmp10:
-	.loc	1 89 20 prologue_end    ## /Users/songruiwang/GitHub/objc-runtime/debug-objc/main.m:89:20
-	movq	-8(%rbp), %rsi
-	movq	%rsi, %rdi
-	addq	$40, %rdi
-	movq	-16(%rbp), %rax
-	movq	%rax, %rcx
-	addq	$40, %rcx
-	movq	40(%rax), %rax
-	movq	$0, 40(%rsi)
-	movq	%rax, %rsi
-	movq	%rcx, -24(%rbp)         ## 8-byte Spill
-	callq	_objc_storeStrong
-	xorl	%edx, %edx
-	movl	%edx, %esi
-	movq	-24(%rbp), %rdi         ## 8-byte Reload
-	callq	_objc_storeStrong
-	addq	$32, %rsp
-	popq	%rbp
-	retq
-Ltmp11:
-Lfunc_end1:
-	.cfi_endproc
-
-// MRC
-	.p2align	4, 0x90         ## -- Begin function __Block_byref_object_copy_
-___Block_byref_object_copy_:            ## @__Block_byref_object_copy_
-Lfunc_begin1:
-	.loc	1 89 0                  ## /Users/songruiwang/GitHub/objc-runtime/debug-objc/main.m:89:0
-	.cfi_startproc
-## %bb.0:
-	pushq	%rbp
-	.cfi_def_cfa_offset 16
-	.cfi_offset %rbp, -16
-	movq	%rsp, %rbp
-	.cfi_def_cfa_register %rbp
-	subq	$32, %rsp
-	movl	$131, %edx
-	movq	%rdi, -8(%rbp)
-	movq	%rsi, -16(%rbp)
-Ltmp10:
-	.loc	1 89 20 prologue_end    ## /Users/songruiwang/GitHub/objc-runtime/debug-objc/main.m:89:20
-	movq	-8(%rbp), %rsi
-	addq	$40, %rsi
-	movq	-16(%rbp), %rdi
-	movq	40(%rdi), %rdi
-	movq	%rdi, -24(%rbp)         ## 8-byte Spill
-	movq	%rsi, %rdi
-	movq	-24(%rbp), %rsi         ## 8-byte Reload
-	callq	__Block_object_assign
-	addq	$32, %rsp
-	popq	%rbp
-	retq
-Ltmp11:
-Lfunc_end1:
-	.cfi_endproc
-                                        ## -- End function
+// 堆中的包装对象接管 __block 修饰的指针变量指向的对象
+___Block_byref_object_copy_(dst, src) {
+	objc_storeStrong(dst->var, src->var)
+    objc_storeStrong(src->var, nil)
+}
 ```
 
+[confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读。
