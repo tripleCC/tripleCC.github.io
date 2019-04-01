@@ -75,7 +75,7 @@ ARC 时代，block 在捕获 `__block` 修饰的指针对象时，就会 retain 
 
 上面所说的对象 retain ，都是发生在 block 的拷贝阶段，[ARC 中 block 的自动拷贝](<https://stackoverflow.com/questions/23334863/should-i-still-copy-block-copy-the-blocks-under-arc>) 中提到， ARC 环境中，block 的 copy 操作在被强引用等大部分情况下都会自动执行，所以不需要我们手动调用。 
 
-MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 retain 操作，它们的伪代码如下：
+MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 retain 操作，[confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读，它们的伪代码如下：
 
 ```objective-c
 // MRC
@@ -92,5 +92,9 @@ ___Block_byref_object_copy_(dst, src) {
 }
 ```
 
-[confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读。
+其中 ARC 环境下，相关对象的引用图如下：
+
+![block___block_object_pointer](<https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/block___block_object_pointer.png>)
+
+这里我们通过控制包装对象的引用计数，来保证在捕获对象指针变量的 block 没有全部释放前提下，其指向的对象将不会被释放，所以我们只需要保证包装对象的引用计数正确即可。
 
