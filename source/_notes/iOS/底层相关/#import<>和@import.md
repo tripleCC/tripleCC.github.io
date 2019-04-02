@@ -23,5 +23,5 @@ void player() {
 
 即使我们没有在 podspec 中显式指明依赖 `s.dependency 'AVKit'` ，TDFCore 的源码 lint 也会成功，因为在编译 `TDFCore.m` 时，我们可以知道引入了 `#import <AVKit/AVKit.h>` ，并且会被自动映射为 `@import AVKit;` ，根据上文的介绍，AVKit 库会被自动添加，所以链接时不会报 AVPlayer 未定义。
 
-但是当我们将 TDFCore 打包成 .framework / .a 时，不指明 `s.dependency 'AVKit'` 就会报 AVPlayer 未定义错误，即使  `source_files` 中指定了 `TDFCore.h` ，此组件还是不会执行编译，也就不会用到 `TDFCore.h`，不知道 `#import <AVKit/AVKit.h>` ，最终导致 AVKit 库不会被自动添加，链接失败。
+但是当我们将 TDFCore 打包成 `.framework / .a` 时，不指明 `s.dependency 'AVKit'` 就会报 AVPlayer 未定义错误，即使  `source_files` 中指定了 `TDFCore.h` ，此组件还是不会执行编译，也就不会用到 `TDFCore.h`，不知道 `#import <AVKit/AVKit.h>` ，最终导致 AVKit 库不会被自动添加，链接失败。
 
