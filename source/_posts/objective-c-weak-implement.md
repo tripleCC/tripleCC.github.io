@@ -138,7 +138,7 @@ int main(int argc, const char * argv[]) {
 }
 ```
 
-### 初步分析
+## 初步分析
 
 在设置 w1/w0 变量时，runtime 触发了以下调用栈：
 
@@ -179,7 +179,7 @@ objc_storeStrong
 
 我们顺着这几个函数调用栈，抽取关键信息进行分析。
 
-### 创建关联信息
+## 创建关联信息
 
 ```objc
 id objc_initWeak(id *location, id newObj)
@@ -355,7 +355,7 @@ static void weak_entry_insert(weak_table_t *weak_table, weak_entry_t *new_entry)
 
 调用 `weak_entry_insert` 函数之后，一次弱引用记录的创建就算完成了，
 
-### 销毁关联信息
+## 销毁关联信息
 
 ```objc
 void objc_destroyWeak(id *location)
@@ -404,7 +404,7 @@ void weak_unregister_no_lock(weak_table_t *weak_table, id referent_id,
 ```
 这里将销毁的 `__weak` 变量地址从 entry 中删除。
 
-### 指针变量置 nil
+## 指针变量置 nil
 
 
 ```objc
@@ -454,7 +454,7 @@ void weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
 
 刨去前面 `dealloc` 相关的调用函数，`weak_clear_no_lock` 只是根据释放对象的地址，查找关联的 entry ，遍历 entry 中的地址，置 nil 地址上的指针变量。
 
-### weak_entry_t 的两种形式
+## weak_entry_t 的两种形式
 
 上面分析基本围绕着 `weak_table_t` 展开，实际上它只是第一层哈希表，其存储的 `weak_entry_t` value 内部也可以实现为一个哈希表，只不过 `weak_table_t` 使用对象地址生成 hash 值，而 `weak_entry_t` 使用 `__weak` 修饰的指针变量地址生成 hash 值。
 
