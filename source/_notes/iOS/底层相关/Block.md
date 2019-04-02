@@ -1,4 +1,4 @@
-基本原理： [Block 技巧与底层解析](<https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi/>) （文章中没有解读 ARC `__block` 修饰对象指针的捕获问题，这里健全这部分）
+基本原理： [Block 技巧与底层解析](<https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi/>) （文章中没有说明 ARC 对 `__block` 修饰对象指针捕获的影响，这里完善这部分内容）
 
 ### 什么是 Block
 
