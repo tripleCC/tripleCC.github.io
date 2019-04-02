@@ -84,6 +84,8 @@ ARC 时代，block 在捕获 `__block` 修饰的指针对象时，就会 retain 
 MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 retain 操作，[confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读，它们的伪代码如下：
 
 ```objective-c
+// clang rewrite 使用的是 MRC ，并且要看 ARC 处理之后的代码，需要利用 llvm 生成 IR / 汇编代码之后查看 
+//
 // MRC
 // BLOCK_BYREF_CALLER 标识会导致 __Block_object_assign 直接执行赋值操作后就返回
 ___Block_byref_object_copy_(dst, src) {
