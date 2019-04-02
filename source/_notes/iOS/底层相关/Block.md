@@ -1,4 +1,4 @@
-基本原理： [Block 技巧与底层解析](<https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi/>)
+基本原理： [Block 技巧与底层解析](<https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi/>) （文章中没有解读 ARC `__block` 修饰对象指针的捕获问题，这里健全这部分）
 
 ### 什么是 Block
 
@@ -87,7 +87,7 @@ MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 reta
 // MRC
 // BLOCK_BYREF_CALLER 标识会导致 __Block_object_assign 直接执行赋值操作后就返回
 ___Block_byref_object_copy_(dst, src) {
-    __Block_object_assign(dst, src, BLOCK_BYREF_CALLER | BLOCK_FIELD_IS_OBJECT)
+    __Block_object_assign(&dst->var, src-var, BLOCK_BYREF_CALLER | BLOCK_FIELD_IS_OBJECT)
 }
 
 // ARC
