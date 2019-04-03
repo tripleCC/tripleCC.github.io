@@ -1,10 +1,10 @@
 ### #import<>和@import
 
-[@import vs #import - iOS 7](https://stackoverflow.com/questions/18947516/import-vs-import-ios-7) 和 [Advances in Objective-C](<https://developer.apple.com/videos/play/wwdc2013/404/>) 中对 `@import`  有比较详细的说明。
+[@import vs #import - iOS 7](https://stackoverflow.com/questions/18947516/import-vs-import-ios-7) 、[Modules](<https://clang.llvm.org/docs/Modules.html#includes-as-imports>) 和 [Advances in Objective-C](<https://developer.apple.com/videos/play/wwdc2013/404/>)  中对 `@import`  有比较详细的说明。
 
 **`@import` 主要是使用 module 的方式引用库，并且可以自动添加引用的库，不需要手动添加。**
 
-这里结合 `pod lib lint` 过程中遇到的未定义类问题，说明下 `#import<>` 与 `@import` 的**自动转换**。
+这里结合 `pod lib lint` 过程中遇到的未定义类问题，说明下 `#import<>` 与 `@import` 的**预编译自动转换**。
 
 首先我们需要知道的是，预编译 `.m` 文件时，编译器会将 `.m` 文件中对 `.h` 的引用替换成头文件实际的内容，如果只有 `.h` 文件没有 `.m`，那么编译动作默认是不会发生的，`.h` 更多的是被 `.m` 引用而不是作为一个独立的编译单元（参考 [Do I need to compile the header files in a C program?](https://stackoverflow.com/questions/17416719/do-i-need-to-compile-the-header-files-in-a-c-program)）。
 
