@@ -91,7 +91,7 @@ typedef enum : NSUInteger {
 
 - (instancetype)then:(id (^)(id))resolved {
     if (self.state == Pending) {
-        //  如果是未处理状态，保存回调函数，等带状态变更后调用
+        //  如果是未处理状态，保存回调函数，等待状态变更后调用
         return [[Promise alloc] initWithBlock:^(void (^resolve)(id value)) {
             [self setResolvedBlock:^id(id value) {
                 id r = resolved(value);
@@ -134,8 +134,6 @@ typedef enum : NSUInteger {
 resolve 函数负责变更 Promise 状态，触发状态变更回调函数。
 
 then 函数负责添加状态变更回调函数。
-
-
 
 ### 资料
 
