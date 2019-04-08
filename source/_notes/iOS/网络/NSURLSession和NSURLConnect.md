@@ -1,5 +1,9 @@
 **NSURLSession 有一个 session 用来统一定制名下所有的请求，而 NSURLConnect 没有这个能力**
 
+![Snip20190328_4](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190408_2.png)
+
+### NSURLSession 和 NSURLConnection 区别
+
 #### NSURLSession 可以针对同个 session 创建的请求 task 提供统一的配置，比如请求头、cookie、认证信息等
 
 NSURLSession：
@@ -42,6 +46,12 @@ NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration del
 NSURLSessionDownloadTask *task = [session downloadTaskWithRequest:request];
 [task resume];
 ```
+
+在后台下载时，如果是系统杀死了 App，并且后台 session 中有正在进行的下载任务，那么下载任务会继续。
+
+如果是用户手动杀死 App ，那么所有的下载任务会被取消。
+
+详情： [backgroundSessionConfigurationWithIdentifier:](<https://developer.apple.com/documentation/foundation/nsurlsessionconfiguration/1407496-backgroundsessionconfigurationwi?language=objc>)
 
 #### NSURLSession 对请求的批量启动、挂起、取消更加友好
 
