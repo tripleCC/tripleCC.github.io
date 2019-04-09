@@ -8,6 +8,10 @@ ruby 中，单件类又可称元类。[In Ruby, are the terms “metaclass”, �
 
 
 
+当给对象创建单件方法或者调用 singleton_class 时，对象的单件类就会被创建。
+
+
+
 ### 资料
 
 [Demystifying Ruby Singleton Classes](<http://leohetsch.com/demystifying-ruby-singleton-classes/>)
