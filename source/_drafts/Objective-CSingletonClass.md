@@ -78,7 +78,7 @@ yourDog.bark # wangwang!
 
 除了使用上述的 `def` ，Ruby 还可以使用 `<<` 打开对象的单件类：
 
-```
+```ruby
 class << myDog
   def bark
     puts 'zizizi!'
@@ -87,15 +87,121 @@ end
 ```
 
 
-根据最新的示例代码，得到 Ruby 的对象模型图：
+根据最新的示例代码，可以得到 Ruby 的对象模型图：
 
-![object-model-ruby](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-ruby.png)
+![object-model-ruby](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-ruby-n.png)
 
-需要注意的是，yourDog 对象是没有 #yourDog 单件类的，
+需要注意的是，和 myDog 对象不一样，yourDog 对象还没有 #yourDog 单件类，其 `klass` (Objective-C 中的 isa) 还是直接指向 Dog 类 (测试方法在文末 《Ruby 调用 C 扩展一节》 给出)。
+
+如模型图所示，类对象天然拥有一个对应的单件类 (对比 Objective-C 创建类时，必须同时创建元类)，也就是说我们定义的类方法都是单件方法，直接存放在类对象的单件类中。采用下面几种方式定义类方法，其结果都是一致的：
+
+```ruby
+class Dog < Animal
+  def self.create 
+  end
+end
+
+####################
+
+class Dog < Animal
+  class << self
+    def create
+    end
+  end
+end
+
+####################
+
+def Dog.create
+end
+
+####################
+
+class << Dog
+  def create
+  end
+end
+```
+
+简单来说，Ruby 中的单件类是只属于一个对象的类，它负责描述此对象的行为。
 
 ## Objective-C 的 KVO
 
-![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c.png)
+![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-n.png)
+
+## 小结
+
+## Ruby 调用 C 扩展
+
+Ruby 可以通过扩展调用 C 函数，从而打印出内存中对象所属的类。
+
+创建 real_klass.c 文件 ：
+
+```c
+#include <ruby.h> 
+
+VALUE real_klass(VALUE self) {
+  return RBASIC(self)->klass;
+}
+
+void Init_real_klass() {
+  rb_define_method(rb_cObject,"real_klass",real_klass,0);
+}
+```
+
+创建 extconf.rb 文件 ：
+
+```ruby
+require 'mkmf'
+    
+extension_name = 'real_klass'
+dir_config(extension_name)
+create_makefile(extension_name)
+```
+
+生成扩展模块 ：
+
+```shell
+$ ruby extconf.rb && make
+$ ls
+Makefile           real_klass.bundle real_klass.o
+extconf.rb         real_klass.c      animal.rb
+```
+
+编辑 animal.rb 引入 real_class 模块 :
+
+```ruby
+require './real_klass.bundle'
+
+... 
+
+myDog = Dog.new
+class << myDog
+  def bark
+    puts 'zizizi!'
+  end
+end
+
+myDog.bark # zizizi!
+yourDog = Dog.new
+yourDog.bark # wangwang!
+
+# myDog 对象单例类已创建，klass 指向单例类
+p myDog.real_klass                 # #<Class:#<Dog:0x007fcae98f1d10>>
+p myDog.singleton_class            # #<Class:#<Dog:0x007fcae98f1d10>>
+# myDog 对象单例类的 klass 指向 Dog 类对象的单例类
+# (在 myDog.singleton_class 没有创建属于它的单例类的情况下)
+p Dog.singleton_class              # #<Class:Dog>
+p myDog.singleton_class.real_klass # #<Class:Dog>
+
+# yourDog 对象单例类还未创建，klass 指向 Dog 类对象
+p yourDog.real_klass      # Dog
+# yourDog 对象单例类已创建，klass 指向单例类
+p yourDog.singleton_class # #<Class:#<Dog:0x007fdb2f049518>>
+p yourDog.real_klass      # #<Class:#<Dog:0x007fdb2f049518>>
+```
+
+更健全的 Ruby 对象模型可以查看 [wiki 上的示意图](https://en.wikipedia.org/wiki/Metaclass#/media/File:Ruby-metaclass-sample.svg) 。
 
 ## 参考
 [objc kvo简单探索](https://blog.sunnyxx.com/2014/03/09/objc_kvo_secret/)
@@ -113,3 +219,5 @@ end
 [Demystifying Ruby Singleton Classes](<http://leohetsch.com/demystifying-ruby-singleton-classes/>)
 
 [Understanding Ruby Singleton Classes](<https://www.devalot.com/articles/2008/09/ruby-singleton>)
+
+[The Ruby Object Model - Structure and Semantics ](https://hokstad.com/ruby-object-model)
