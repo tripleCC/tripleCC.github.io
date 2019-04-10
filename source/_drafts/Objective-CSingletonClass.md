@@ -100,23 +100,17 @@ class Dog < Animal
   def self.create 
   end
 end
-
 ####################
-
 class Dog < Animal
   class << self
     def create
     end
   end
 end
-
 ####################
-
 def Dog.create
 end
-
 ####################
-
 class << Dog
   def create
   end
