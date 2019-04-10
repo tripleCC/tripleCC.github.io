@@ -17,3 +17,6 @@ ruby 中，单件类又可称元类。[In Ruby, are the terms “metaclass”, �
 [Demystifying Ruby Singleton Classes](<http://leohetsch.com/demystifying-ruby-singleton-classes/>)
 
 [Understanding Ruby Singleton Classes](<https://www.devalot.com/articles/2008/09/ruby-singleton>)
+
+[Classes and Objects](https://ruby-doc.com/docs/ProgrammingRuby/html/classes.html)
+
