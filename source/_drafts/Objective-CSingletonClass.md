@@ -14,6 +14,7 @@ Ruby ：
 
 ```ruby
 class Animal
+  attr_accessor :name
 end
 
 class Dog < Animal
@@ -30,6 +31,7 @@ Objective-C：
 
 ```objc
 @interface Animal : NSObject
+@property (copy, nonatomic) NSString *name;
 @end
 @implementation Animal
 @end
@@ -125,9 +127,39 @@ Objective-C 可以支持多个根类 (NSObject、NSProxy、或者使用 OBJC_ROO
 
 ![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-n.png)
 
-可以看到，对于终端对象 myDog 来说，其 `isa` 指向的是 Dog 类，这和上诉 Ruby 实现中 yourDog 对象的 `kclass` 指向一致。
+可以看到，对于终端对象 myDog 来说，其 `isa` 指向的是 Dog 类，这和上诉 Ruby 实现中 yourDog 对象的 `kclass` 指向一致。接下来，我们给 myDog 添加一个观察者 ：
 
-![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-kvo.png)
+```objc
+@interface Observer : NSObject
+@end
+@implementation Observer
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
+    Class cls = object_getClass(object);
+    Class superCls = class_getSuperclass(cls);
+    // cls: NSKVONotifying_Dog, super cls Dog
+    NSLog(@"cls: %@, super cls %@", cls, superCls); 
+}
+@end
+
+int main(int argc, const char * argv[]) {
+    @autoreleasepool {
+        Dog *myDog = [Dog new];
+
+        Observer *observer = [Observer new];
+        [myDog addObserver:observer forKeyPath:@"name" options:NSKeyValueObservingOptionNew context:nil];
+
+        myDog.name = @"Bob";
+    }
+}
+```
+
+在添加观察者之后，Objective-C 将 myDog 对象的 `isa` 指向了父类为 Dog 的 NSKVONotifying_Dog 类，变更之后的对象模型图如下 ：
+
+![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-kvo.png)
+
+可以看到，NSKVONotifying_Dog 类已经很像 Ruby 实现中 #myDog 单件类了，我们可以在这个类中给 myDog 对象添加实例方法，而不会对 Dog 类实例化的其他对象产生影响，这个类只负责描述 myDog 对象。
+
+
 
 ## Aspects 中 hook 对象方法
 
@@ -209,6 +241,9 @@ p yourDog.real_klass      # #<Class:#<Dog:0x007fdb2f049518>>
 
 
 ## 参考
+
+[Classes and metaclasses](http://www.sealiesoftware.com/blog/archive/2009/04/14/objc_explain_Classes_and_metaclasses.html)
+
 [objc kvo简单探索](https://blog.sunnyxx.com/2014/03/09/objc_kvo_secret/)
 
 [Smalltalk](https://en.wikipedia.org/wiki/Smalltalk)
