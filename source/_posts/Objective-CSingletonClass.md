@@ -1,7 +1,9 @@
 ---
-title: Ruby 中的 Singleton Class 与 Objective-C 中的 KVO
-tags:
+title: Ruby Singleton Class 与 Objective-C KVO
+date: 2019-04-11 20:24:45
+tags: [Ruby,Singleton Class, KVO]
 ---
+
 
 Ruby 是解释强类型动态语言，Objective-C 是编译弱类型(动态 & 静态)语言，两者看似没什么关联，但是实际上可以说是师出同门，它们很大程度上继承了 Smalltalk 的关键特性，所以很多设计理念是共通的，比如 Ruby 和 Objective-C 拥有相似的消息传递机制 (dynamic message dispatch)、对象模型 (object model —— object class metaclass)，并且都提供及其强大的运行时特性以及支撑运行时特性所需的接口等。 Ruby 和 Objective-C 的异同其实有挺多可以说的，但是本文不会过多地去探讨，这里只是窥探下 singleton class 和 KVO 两个技术点间的联系。
 <!--more-->
@@ -43,6 +45,10 @@ Objective-C：
 - (void)bark {
     NSLog(@"wangwang!"); 
 }
+
++ (void)clsBark {
+    NSLog(@"wangwang!");
+}
 @end
 
 int main(int argc, const char * argv[]) {
@@ -78,14 +84,19 @@ yourDog.bark # wangwang!
 
 在 Ruby 中，我们可以给特定对象定义专属的方法，可以知道的是，新定义的 `bark` 方法不在 Dog 类中，因为给 yourDog 发送 `bark` 消息后的输出并没有改变，这种针对单个对象定义的方法称为单件方法 (singleton method)。当我们定义单件方法或者调用 `singleton_class` 方法时，Ruby 会自动创建一个 "匿名类" 来保存单件方法（惰性求值），这个类就是单件类，我们可以通过 `singleton_class` 方法用来访问单件类。
 
-除了使用上述的 `def` ，Ruby 还可以使用 `<<` 语法打开对象的单件类：
+除了使用上述的 `def` ，Ruby 还可以使用 `<<` 语法打开对象的单件类，并且可以在单件类中使用 `super` 访问其父类：
 
 ```ruby
 class << myDog
   def bark
+    super
     puts 'zizizi!'
   end
 end
+
+myDog.bark 
+# wangwang!
+# zizizi!
 ```
 
 
@@ -153,15 +164,60 @@ int main(int argc, const char * argv[]) {
 }
 ```
 
-在添加观察者之后，Objective-C 将 myDog 对象的 `isa` 指向了父类为 Dog 的 NSKVONotifying_Dog 类，变更之后的对象模型图如下 ：
+KVO 对属性监听的实现，本质上是对监听属性 setter 方法的切片，Objective-C 中实现方法切片最直接的方式是 method swizzling ，不过由于 setter 实例方法保存在监听对象所属类中，如果直接替换，势必会影响这个类后续的实例化操作，于是 Objective-C 在这里采用了另一种方式————继承 + 多态。在添加观察者之后，Objective-C 会创建 Dog 类的子类 NSKVONotifying_Dog ，并将 myDog 对象的 `isa` 指向 NSKVONotifying_Dog 类，接着在 NSKVONotifying_Dog 类中重写监听属性的 setter 方法，变更之后的对象模型图如下 ：
 
 ![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-kvo.png)
 
-可以看到，NSKVONotifying_Dog 类已经很像 Ruby 实现中 #myDog 单件类了，我们可以在这个类中给 myDog 对象添加实例方法，而不会对 Dog 类实例化的其他对象产生影响，这个类只负责描述 myDog 对象。
+可以看到，NSKVONotifying_Dog 类的功能几乎和 Ruby 实现中 #myDog 单件类一致了，我们可以在这个类中给 myDog 对象添加实例方法，而不会对 Dog 类实例化的其他对象产生影响，这个类只负责描述 myDog 对象。
 
-
+一旦实现了属性的监听，剩下的就是处理监听者和监听属性的关系了，最直接的实现就是在监听对象中维护一个 Map ，根据 Map 的值去派发属性变更消息，这一块还是比较直观的。
 
 ## Aspects 中 hook 对象方法
+
+Aspects 是针对 Objective-C 的 AOP 库，我们可以使用 Aspects 做三件事情 ([这里的实例方法和类方法所属描述，建立在从逻辑上讲实例方法属于类实例化的对象，从物理实现上讲属于类的这一假设之上](http://math.hws.edu/javanotes/c5/s1.html))：
+
+- hook 单个终端对象的实例方法
+- hook 某个类所有实例化对象的实例方法
+- hook 某个类的类方法
+
+其中 hook 单个终端对象的实例方法，本质上也属于 hook 某个类所有实例化对象的实例方法，只不过这个类只会有 hook 对象这一个实例。三种 hook 的示例代码如下 ：
+
+```objc
+Dog *myDog = [Dog new];
+[myDog aspect_hookSelector:@selector(bark) withOptions:AspectPositionAfter usingBlock:^(id <AspectInfo> info){
+    NSLog(@"zizizi!");
+} error:nil];
+[myDog bark]; 
+// wangwang!
+// zizizi!
+####################
+[Dog aspect_hookSelector:@selector(bark) withOptions:AspectPositionAfter usingBlock:^(id <AspectInfo> info){
+    NSLog(@"zizizi!");
+} error:nil];
+Dog *myDog = [Dog new];
+[myDog bark];
+// wangwang!
+// zizizi!
+####################
+id meta = object_getClass([Dog class]);
+[meta aspect_hookSelector:@selector(clsBark) withOptions:AspectPositionAfter usingBlock:^(id <AspectInfo> info){
+    NSLog(@"zizizi!");
+} error:nil];
+[Dog clsBark];
+// wangwang!
+// zizizi!
+```
+
+第一种 hook 和 KVO 面临一样的问题，所以需要做子类化处理，而第二种和第三种 hook 因为影响范围都是全局的，所以可以直接操作类 / 元类的方法列表，在知道 hook 具体方法的前提下，我们也可以直接用 method swizzling 来替换 Aspects 的后两种 hook 方式。
+
+Aspects 创建了 [aspect_hookClass](https://github.com/steipete/Aspects/blob/c3125c5063748c6aa80f18cce54ecc128b51ba8f/Aspects.m#L350-L388) 函数来处理这几种 hook ，这个函数大概做了这么几件准备工作：
+
+- 如果传入对象所属类有 `_Aspects_` 专属前缀，直接返回这个类 (这个对象为终端对象)
+- 如果传入对象为类 / 元类，则直接执行替换消息转发入口函数操作，并返回这个类 / 元类 (类和元类执行 `object_getClass` 后返回的都是元类，后者为 NSObject 元类)
+- 如果传入对象所属类和 class 返回的类不一致，则直接执行替换消息转发入口函数操作，并返回对象所属类 (这里考虑了 KVO 已经创建了 “单件类”，并且重写了 class 方法，所以直接操作这个“单件类”)
+- 惰性创建 `_Aspects_` 前缀的子类 (“单件类”)，其父类为传入对象所属类，并且设置传入对象所属类为刚创建的子类 (这个对象为终端对象，此步骤和 KVO 实现一致)
+
+可以看到，hook 终端对象时，为了变更范围能局限在终端对象中，Aspects 也创建了属于 Objective-C 的“单件类”。
 
 
 ## Ruby 调用 C 扩展
@@ -234,10 +290,16 @@ p yourDog.singleton_class # #<Class:#<Dog:0x007fdb2f049518>>
 p yourDog.real_klass      # #<Class:#<Dog:0x007fdb2f049518>>
 ```
 
-更健全的 Ruby 对象模型可以查看 [wiki 上的示意图](https://en.wikipedia.org/wiki/Metaclass#/media/File:Ruby-metaclass-sample.svg) 。
+更完善的 Ruby 对象模型可以查看 [wiki 上的示意图](https://en.wikipedia.org/wiki/Metaclass#/media/File:Ruby-metaclass-sample.svg) 。
 
 
 ## 小结
+
+如果要在不影响一个类实例化其他对象前提下，给这个了创建的某个对象添加专属的实例方法，在 Ruby 中我们可以通过将实例方法添加到对象的单件类中解决这个需求，并且 Ruby 在语言层面上就可以提供终端对象的单件类，而 Objective-C 没有提供，在了解了 Ruby 单件类的实现之后，借助 Objective-C 强大的运行时能力，我们可以自己去实现这个“语言特性”，主要有两个关键步骤： 
+
+- 创建终端对象所属类的子类 
+- 设置终端对象的类为刚创建的子类
+
 
 
 ## 参考
