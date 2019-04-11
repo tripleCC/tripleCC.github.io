@@ -138,7 +138,7 @@ Objective-C 可以支持多个根类 (NSObject、NSProxy、或者使用 OBJC_ROO
 
 ![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-n.png)
 
-可以看到，对于终端对象 myDog 来说，其 `isa` 指向的是 Dog 类，这和上诉 Ruby 实现中 yourDog 对象的 `kclass` 指向一致。接下来，我们给 myDog 添加一个观察者 ：
+可以看到，对于终端对象 myDog 来说，其 `isa` 指向的是 Dog 类，这和上述 Ruby 实现中 yourDog 对象的 `kclass` 指向一致。接下来，我们给 myDog 添加一个观察者 ：
 
 ```objc
 @interface Observer : NSObject
