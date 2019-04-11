@@ -164,7 +164,7 @@ int main(int argc, const char * argv[]) {
 }
 ```
 
-KVO 对属性监听的实现，本质上是对监听属性 setter 方法的切片，Objective-C 中实现方法切片最直接的方式是 method swizzling ，不过由于 setter 实例方法保存在监听对象所属类中，如果直接替换，势必会影响这个类后续的实例化操作，于是 Objective-C 在这里采用了另一种方式————继承 + 多态。在添加观察者之后，Objective-C 会创建 Dog 类的子类 NSKVONotifying_Dog ，并将 myDog 对象的 `isa` 指向 NSKVONotifying_Dog 类，接着在 NSKVONotifying_Dog 类中重写监听属性的 setter 方法，变更之后的对象模型图如下 ：
+KVO 对属性监听的实现，本质上是对监听属性 setter 方法的切片，Objective-C 中实现方法切片最直接的方式是 method swizzling ，不过由于 setter 实例方法保存在监听对象所属类中，如果直接替换，势必会影响到这个类的其他实例化对象，于是 Objective-C 在这里采用了另一种方式————继承 + 多态。在添加观察者之后，Objective-C 会创建 Dog 类的子类 NSKVONotifying_Dog ，并将 myDog 对象的 `isa` 指向 NSKVONotifying_Dog 类，接着在 NSKVONotifying_Dog 类中重写监听属性的 setter 方法，变更之后的对象模型图如下 ：
 
 ![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-kvo.png)
 
