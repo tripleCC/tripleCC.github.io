@@ -1,5 +1,5 @@
 ---
-title: Ruby 中的 Singleton Class 与 Objective-C 的 KVO
+title: Ruby 中的 Singleton Class 与 Objective-C 中的 KVO
 tags:
 ---
 
@@ -74,9 +74,9 @@ yourDog = Dog.new
 yourDog.bark # wangwang!
 ```
 
-在 Ruby 中，我们可以给特定对象定义专属的方法，可以知道的是，新定义的 `bark` 方法不在 Dog 类中，因为给 yourDog 发送 `bark` 消息后的输出并没有改变，这种针对单个对象定义的方法称为单件方法 (singleton method)。当我们定义单件方法或者调用 `singleton_class` 方法时，Ruby 会自动创建一个 "匿名类" 来保存单件方法，这个类就是单件类，`singleton_class` 方法用来访问单件类。
+在 Ruby 中，我们可以给特定对象定义专属的方法，可以知道的是，新定义的 `bark` 方法不在 Dog 类中，因为给 yourDog 发送 `bark` 消息后的输出并没有改变，这种针对单个对象定义的方法称为单件方法 (singleton method)。当我们定义单件方法或者调用 `singleton_class` 方法时，Ruby 会自动创建一个 "匿名类" 来保存单件方法（惰性求值），这个类就是单件类，我们可以通过 `singleton_class` 方法用来访问单件类。
 
-除了使用上述的 `def` ，Ruby 还可以使用 `<<` 打开对象的单件类：
+除了使用上述的 `def` ，Ruby 还可以使用 `<<` 语法打开对象的单件类：
 
 ```ruby
 class << myDog
@@ -89,7 +89,7 @@ end
 
 根据最新的示例代码，可以得到 Ruby 的对象模型图：
 
-![object-model-ruby](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-ruby-n.png)
+![object-model-ruby](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-ruby-n1.png)
 
 需要注意的是，和 myDog 对象不一样，yourDog 对象还没有 #yourDog 单件类，其 `klass` (Objective-C 中的 isa) 还是直接指向 Dog 类 (测试方法在文末 《Ruby 调用 C 扩展一节》 给出)。
 
@@ -117,13 +117,20 @@ class << Dog
 end
 ```
 
-简单来说，Ruby 中的单件类是只属于一个对象的类，它负责描述此对象的行为。
+简单来说，**Ruby 中的单件类是只属于一个对象的类，它负责描述此对象的行为**。
 
 ## Objective-C 的 KVO
 
+Objective-C 可以支持多个根类 (NSObject、NSProxy、或者使用 OBJC_ROOT_CLASS 宏自行创建的根类)，这里使用了 NSObject 作为根类，针对初始设定的示例代码，可以得到以下对象模型图：
+
 ![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-n.png)
 
-## 小结
+可以看到，对于终端对象 myDog 来说，其 `isa` 指向的是 Dog 类，这和上诉 Ruby 实现中 yourDog 对象的 `kclass` 指向一致。
+
+![object-model-objective-c](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-kvo.png)
+
+## Aspects 中 hook 对象方法
+
 
 ## Ruby 调用 C 扩展
 
@@ -196,6 +203,10 @@ p yourDog.real_klass      # #<Class:#<Dog:0x007fdb2f049518>>
 ```
 
 更健全的 Ruby 对象模型可以查看 [wiki 上的示意图](https://en.wikipedia.org/wiki/Metaclass#/media/File:Ruby-metaclass-sample.svg) 。
+
+
+## 小结
+
 
 ## 参考
 [objc kvo简单探索](https://blog.sunnyxx.com/2014/03/09/objc_kvo_secret/)
