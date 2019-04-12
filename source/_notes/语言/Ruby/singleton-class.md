@@ -6,11 +6,9 @@ ruby 中，单件类又可称元类。[In Ruby, are the terms “metaclass”, �
 
 [关于 Class 的 superclass 是 Module 的疑惑](<https://stackoverflow.com/questions/10558504/can-someone-explain-the-class-superclass-class-superclass-paradox>)
 
-
+[和 Objective-C KVO 的实现对比](<https://triplecc.github.io/2019/04/11/Objective-CSingletonClass/>)
 
 当给对象创建单件方法或者调用 singleton_class 时，对象的单件类就会被创建。
-
-
 
 ### 资料
 
