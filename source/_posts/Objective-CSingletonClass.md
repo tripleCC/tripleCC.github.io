@@ -5,7 +5,7 @@ tags: [Ruby,Singleton Class, KVO]
 ---
 
 
-Ruby 是解释强类型动态语言，Objective-C 是编译弱类型(动态 & 静态)语言，两者看似没什么关联，但是实际上可以说是师出同门，它们很大程度上继承了 Smalltalk 的关键特性，所以很多设计理念是共通的，比如 Ruby 和 Objective-C 拥有相似的消息传递机制 (dynamic message dispatch)、对象模型 (object model —— object class metaclass)，并且都提供及其强大的运行时特性以及支撑运行时特性所需的接口等。 Ruby 和 Objective-C 的异同其实有挺多可以说的，但是本文不会过多地去探讨，这里只是窥探下 singleton class 和 KVO 两个技术点间的联系。
+Ruby 是解释强类型动态语言，Objective-C 是编译弱类型(动态 & 静态)语言，两者看似没什么关联，但是实际上可以说是师出同门，它们很大程度上继承了 Smalltalk 的关键特性，所以很多设计理念是共通的，比如 Ruby 和 Objective-C 拥有相似的消息传递机制 (dynamic message dispatch)、对象模型 (object model —— object class metaclass)，并且都提供极其强大的运行时特性以及支撑运行时特性所需的接口等。 Ruby 和 Objective-C 的异同其实有挺多可以说的，但是本文不会过多地去探讨，这里只是窥探下 singleton class 和 KVO 两个技术点间的联系。
 <!--more-->
 
 ## 初始设定
