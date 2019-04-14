@@ -71,7 +71,7 @@ block **拷贝和释放时会触发辅助函数**，辅助函数主要作用是�
 
 由此可以得到下面代码的输出结果：
 
-```objective-c
+```objc
 __block int i = 0; // 实际访问的是 structure->forwording->i，我们可以视为 p_i = &i，后面操作都是针对 *p_i 
 int j = 0; // 直接挂在 block 结构的字段中，不会感知后续栈中的变更
 void (^block)(void) = ^{ printf("%d %d\n", i, j); };
@@ -92,7 +92,7 @@ ARC 时代，block 在捕获 `__block` 修饰的指针对象时，就会 retain 
 
 MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 retain 操作，[confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读，它们的伪代码如下：
 
-```objective-c
+```objc
 // clang rewrite 使用的是 MRC ，并且要看 ARC 处理之后的代码，需要利用 llvm 生成 IR / 汇编代码之后查看 
 //
 // MRC
