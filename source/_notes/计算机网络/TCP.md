@@ -8,7 +8,7 @@
 
 - TCP 是全双工的，需要有两次请求断开-确认的步骤来确认客户端->服务端、服务端->客户端的连接断开，FIN 和 ACK 分开是考虑到服务端可能还需要给客户端发送数据，三次握手把其中一次的 SYN 和 ACK 合并了。
 
-ISN: 初始序列号，握手同步的就是 ISN
+ISN: 初始序列号，握手同步的就是互相通知对象自己的 ISN，ACK 将 SYN 中的 ISN + 1 后发送。
 
 
 
@@ -34,3 +34,4 @@ ISN: 初始序列号，握手同步的就是 ISN
 
 [TCP连接的建立和关闭详解](<https://anonymalias.github.io/2017/04/07/tcp-create-close-note/>)
 
+[TCP 的那些事儿](<https://coolshell.cn/articles/11564.html>)

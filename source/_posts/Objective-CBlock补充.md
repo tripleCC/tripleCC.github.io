@@ -5,7 +5,7 @@ tags: [Interview,objective-c,block]
 ---
 
 
-[Block 技巧与底层解析](https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi) 一文没有说明 ARC 对 `__block`修饰对象指针捕获的影响，此文作为这部分的补充。
+[Block 技巧与底层解析](https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi) 一文没有说明 ARC 对捕获 `__block`修饰的对象指针的影响，此文作为这部分的补充。
 
 <!---more-->
 
