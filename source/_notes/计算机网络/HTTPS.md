@@ -22,9 +22,7 @@
 
 hash 算法： 单向机密，明文->密文，反过来不行
 
-
-
-
+![Snip20190328_5](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190416_9.png)
 
 ### SSL 运行过程
 
@@ -42,7 +40,9 @@ hash 算法： 单向机密，明文->密文，反过来不行
 
 **签名**：使用私钥对公开内容 hash 值的加密值
 
-[数字证书的原理是什么？](<https://www.zhihu.com/question/24294477>)
+[数字证书的原理是什么？](<https://www.zhihu.com/question/24294477>) (***私钥加密，公钥解密***)
+
+![](<http://blog.cnbang.net/wp-content/uploads/2017/03/sign0.png>)
 
 **公钥加密计算量大，如何减少耗用时间？**
 
@@ -64,7 +64,7 @@ hash 算法： 单向机密，明文->密文，反过来不行
 
 
 
-
+![Snip20190328_5](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190416_8.png)
 
 ### 资料
 
