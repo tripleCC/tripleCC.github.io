@@ -4,11 +4,13 @@ date: 2019-03-26 19:31:12
 tags: [Interview,Objective-C]
 ---
 
+ABI 安全
 
-
-## Objective-C 的成员变量
+## 成员变量
 
 Objective-C 只允许变更构造中的类的 ivar 列表，一旦类注册之后，ivar 列表就固定了。
+
+## 布局调整
 
 ## 结构体的内存布局
 
@@ -23,6 +25,30 @@ NSLog(@"%d", offsetof(struct Animal, age));
 ```
 
 C++ 结构体在没有虚函数表的情况下，布局和 C 的结构体一致。
+
+```
+@interface A : NSObject {
+    int _i;
+}
+@end
+
+struct NSObject {
+    Class isa;
+};
+
+// 对于通过地址偏移访问方式
+// 下面两个结构是没区别的
+// 可以把继承的成员变量铺平了看
+struct A {
+    struct NSObject NSObject_IVARS;
+    int _i;
+};
+
+struct A {
+    Class isa;
+    int _i;
+};
+```
 
 ## Non-fragile instance variables
 
@@ -82,3 +108,5 @@ BuildClassObject
 [Objc Explain Non-pointer isa](http://www.sealiesoftware.com/blog/archive/2013/09/24/objc_explain_Non-pointer_isa.html)
 
 [Non-fragile ivars](http://www.sealiesoftware.com/blog/archive/2009/01/27/objc_explain_Non-fragile_ivars.html)
+
+[Objective-C Internals](http://algorithm.com.au/downloads/talks/objective-c-internals/objective-c-internals.pdf)
