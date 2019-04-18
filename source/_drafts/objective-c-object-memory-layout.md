@@ -4,7 +4,10 @@ date: 2019-03-26 19:31:12
 tags: [Interview,Objective-C]
 ---
 
-ABI 安全
+对象内存的布局也属于 ABI 的一部分
+
+对象和类
+
 
 ## 成员变量
 

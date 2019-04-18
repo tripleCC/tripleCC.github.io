@@ -79,7 +79,7 @@ MRC 时代，block 在捕获  `__block` 修饰的对象指针时，不会 retain
 
 ARC 时代，block 在捕获 `__block` 修饰的指针对象时，就会 retain 其指向的对象了，不过我们还是可以**用 `__block` 间接解决循环引用——在 block 中将对象指针置 nil**，一般很少会这么用，因为 ARC 时代的 `__weak` 可以更好地解决这个问题。
 
-上面所说的对象 retain 操作，都是发生在 block 的拷贝阶段（辅助函数的实现中），[ARC 中 block 的自动拷贝](<https://stackoverflow.com/questions/23334863/should-i-still-copy-block-copy-the-blocks-under-arc>) 中提到， ARC 环境中，block 的 copy 操作在被强引用等大部分情况下都会自动执行，所以不需要我们手动调用。 
+上面所说的**对象 retain 操作，都是发生在 block 的拷贝阶段**（辅助函数的实现中），[ARC 中 block 的自动拷贝](<https://stackoverflow.com/questions/23334863/should-i-still-copy-block-copy-the-blocks-under-arc>) 中提到， ARC 环境中，block 的 copy 操作在被强引用等大部分情况下都会自动执行，所以不需要我们手动调用。 
 
 MRC 和 ARC 生成包装对象的辅助函数决定了是否对对象进行 retain 操作，[confusion on __block NSObject *obj and block runtime](https://stackoverflow.com/questions/36993379/confusion-on-block-nsobject-obj-and-block-runtime) 回答对此辅助函数的生成做了较详细的解读，它们的伪代码如下：
 
