@@ -315,7 +315,9 @@ void *reallocf(void *p, size_t s) {
 
 这里简单地以接口方法选择器对应的字符串为 Key，以 Block 对应的 Invocation 封装类为 Value 储存调用信息。
 
+
 ```objc
+
 - (instancetype)initWithProtocol:(Protocol *)protocol {
     _protocol = protocol;
     _selectorInvocationMap = [NSMutableDictionary dictionary];
@@ -330,12 +332,12 @@ void *reallocf(void *p, size_t s) {
 
 ``` 
 
-
 ### 消息转发
 
 向动态委托类发送委托消息后，会触发消息转发机制。在消息转发的最后一步，可以构造委托方法对应的 NSInvocation 对象，这个对像可供**Invocation 调用**一节中描述的 Block Invocation 使用。
 
 ```objc
+
 - (void)forwardInvocation:(NSInvocation *)invocation {
     TBVBlockInvocation *blockInvocation = self.selectorInvocationMap[NSStringFromSelector(invocation.selector)];
     [blockInvocation invokeWithMethodInvocation:invocation];
@@ -357,6 +359,7 @@ void *reallocf(void *p, size_t s) {
 
 
 ```objc
+
 @class Computer;
 @protocol ComputerDelegate <NSObject>
 @required
