@@ -68,6 +68,8 @@ hash 算法： 单向机密，明文->密文，反过来不行
 
 ![Snip20190328_5](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190416_8.png)
 
+根证书：公钥证书
+
 ### 资料
 
 [根证书](<https://zh.wikipedia.org/wiki/%E6%A0%B9%E8%AF%81%E4%B9%A6>)

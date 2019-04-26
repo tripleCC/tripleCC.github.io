@@ -114,3 +114,4 @@ ___Block_byref_object_copy_(dst, src) {
 ![block___block_object_pointer](<https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/block___block_object_pointer.png>)
 
 这里我们通过控制包装对象的引用计数，来保证在捕获对象指针变量的 block 没有全部释放前提下，其指向的对象将不会被释放，所以我们只需要保证包装对象的引用计数正确即可，后续拷贝也只是增加包装对象的引用计数，这点和非 `__block` 修饰的指针变量还是有区别的，后者是直接增加指针变量指向对象的引用计数。
+
