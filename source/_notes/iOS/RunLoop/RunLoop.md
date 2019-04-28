@@ -67,3 +67,7 @@ static Boolean __CFRunLoopDoSource0(CFRunLoopSourceRef rls) {
 如果 __CFRunLoopSourceIsSignaled 被设置了，runloop 循环则会执行 source0 上面的回调。所以如果其他线程的事务处理完成，需要目标线程执行回调，只需要将 signaled 设置为 true 即可让目标线程的 runloop 执行 source0 上的回调。（这里多线程访问 singaled，所以会在读写操作上加锁）
 
 如果 runloop 正在休眠，使用 CFRunLoopWakeUp 手动唤醒 。
+
+### 资料
+
+[深入理解RunLoop](<https://blog.ibireme.com/2015/05/18/runloop/>)
