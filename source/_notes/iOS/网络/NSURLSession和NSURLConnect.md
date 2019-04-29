@@ -17,8 +17,6 @@ Delegate methods are called on the same thread that called this method. For the 
 
 [深入理解RunLoop](<https://blog.ibireme.com/2015/05/18/runloop/>) 中关于网络请求一节有对 NSURLConnection 原理探讨。
 
-
-
 虽然 5.0 版本之后 NSURLConnection 也提供了`setDelegateQueue：` 接口设置回调执行的 Queue，但是还是需要创建 NSURLConnection 对象的线程存活 。
 
 ```

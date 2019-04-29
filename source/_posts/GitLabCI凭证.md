@@ -64,7 +64,7 @@ static void lookup_credential(const struct string_list *fns, struct credential *
 			return; /* Found credential */
 }
 ```
-也就是说， Git 会返回第一个与 `http://git.2dfire-inc.com` 匹配的凭证。在上文环境中，返回的是 `gitlab-ci-token:LyZVytacohmGRYVKooAo`。由于这个账户密码**只是 GitLab 为了让 Runner 能在执行任务时，对构建仓库有 Git 操作权限，在完成任务后即无效**，导致 jenkins slave 使用此账户密码 clone 组件后，出现 Authentication failed 错误。
+也就是说， Git 在对比 protocol & host & path & username 后，会返回第一个与 `http://git.2dfire-inc.com` 匹配的凭证。在上文环境中，返回的是 `gitlab-ci-token:LyZVytacohmGRYVKooAo`。由于这个账户密码**只是 GitLab 为了让 Runner 能在执行任务时，对构建仓库有 Git 操作权限，在完成任务后即无效**，导致 jenkins slave 使用此账户密码 clone 组件后，出现 Authentication failed 错误。
 
 因为 Runner 每次执行任务都会在 `.git-credentials` 首行生成 `gitlab-ci-token` 凭证，所以即使手动把 `gitlab-ci-token` 凭证移动到最后一行，也是没用的。
 
