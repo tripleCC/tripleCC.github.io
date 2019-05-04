@@ -25,9 +25,11 @@ AutoreleasePool 并没有单独的结构，而是以**若干个 AutoreleasePoolP
 - 对象调用 autorelease
   - 向 AutoreleasePoolPage push autorelease 的对象地址
 
-
+需要注意，AutoreleasePoolPage 的 next 指针指向最新 add 进来的 autorelease 对象的下一个位置。
 
 ### 资料
 
 [Objective-C Autorelease Pool 的实现原理](<http://blog.leichunfeng.com/blog/2015/05/31/objective-c-autorelease-pool-implementation-principle/>)
+
+[黑幕背后的Autorelease](<http://blog.sunnyxx.com/2014/10/15/behind-autorelease/>)
 
