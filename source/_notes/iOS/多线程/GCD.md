@@ -72,6 +72,10 @@
 
 如果把多个具有并行运行任务能力的队列 target 设置成一个串行队列，那么这个队列中的任务就会串行执行。
 
+[GCD Target Queues](<https://www.humancode.us/2014/08/14/target-queues.html>)
+
+[What is the default target queue for a serial queue?](https://forums.swift.org/t/what-is-the-default-target-queue-for-a-serial-queue/18094)
+
 ### dispatch_group_t
 
 ```objective-c
@@ -147,3 +151,10 @@ for (int i = 0; i < 10; i++) {
 
 `dispatch_semaphore_signal`将信号量的值加 1 （释放资源）
 
+
+
+### 资料
+
+
+
+[GCD Internals](<http://newosxbook.com/articles/GCD.html>)
