@@ -76,3 +76,11 @@
 - 查看触摸视图和其父视图是否有 UIGestureRecognizer（UIGestureRecognizer 会影响关联视图及其子视图，比它们先一步拿到触摸事件），有 UIGestureRecognizer 则开始观察手势，匹配后由 UIGestureRecognizer 直接处理触摸事件，并取消 touches 系列回调；**无 UIGestureRecognizer 或者匹配到手势前**，将触摸事件发送给触摸视图响应链
   - 这里有个特例，**UIControl 不会被父视图关联的 UIGestureRecognizer "覆盖"**，所以 UIControl **父视图的** UIGestureRecognizer 不会影响到 UIControl 默认监听事件的处理，UIControl 会比父视图的 UIGestureRecognizer 先一步拿到触摸事件并进行处理，但直接往 UIControl 上加对应的 UIGestureRecognizer 还是会产生影响
 - 响应链顺着《触摸 View -> 父 View  -> 控制器 (如果有) -> Window -> Application -> Application 代理》 路径（UIResponder 的 nextResponder 方法）查找触摸事件处理对象 （实现 touches 系列方法），并让此对象处理触摸事件。
+
+### main()之前的过程有哪些
+
+- 动态链接器完成运行环境初始化，配合 ImageLoader 将二进制文件加载到内存中
+- 动态链接器调用 libSystem image 的初始化函数（`__attribute__((constructor))`），在初始化函数中调用 _objc_init
+- _objc_init 绑定回调，在 image 加载到内存后，动态链接器通知 runtime 处理
+- runtime 在 map_images 回调中读取类、分类、协议等信息，在 load_images 回调中遍历所有存在 +load 方法的类和分类，并调用它们的 +load 方法
+- 初始化完成，动态链接器调用真正的 main 函数
