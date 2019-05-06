@@ -36,10 +36,17 @@
 - 解压 json 配置包
   - 我们内部有个通过 json 配置页面的框架，这些 json 预置在 zip 包里，app launch 的时候会去解压缩，这里的解压缩操作是 async 到全局队列里面去做的
 
-###  Category 的实现原理，以及 Category 为什么只能加方法/属性，不能加实例变量
+###  Category 的实现原理，以及 Category 为什么只能加方法/属性，不能添加实例变量
 
 - category 是什么？
   - category 实际上是方法、属性、协议的集合体，保存在 category_t 结构体中
 - class 怎么合并 category？
-  - 合并分两个时间点。category 和 class 一样，编译之后会以全局变量的形式保存在 DATA 段中，在 objc init 阶段，runtime 会在处理 image 的回调函数 read_image 中，去 DATA 段读取所有的 category ，
+  - 合并分两个时间点。category 和 class 一样，编译之后会以全局变量的形式保存在 DATA 段中，在 objc init 阶段，runtime 会在处理 image 的回调函数 read_image 中，去 DATA 段读取所有的 category ，如果对应的 class 已经 realized ，会直接将 category 的 方法、属性、协议插入到 class 结构中对应字段起始位置；如果 class 还没 realized ，那么等 class 被 realized 时，再去合并。
+  - 这里可以看出一个点，由于 category 的方法在 class 原生的方法前，查找方法时，会优先获取 category 的方法
+  - realized 在对类进行初始化时设置，initialized 在首次向类发送消息执行 +initialize 方法时设置
+- 不能添加实例变量？
+  - 直接原因：category 结构中没有保存实例变量的字段
+  - 为什么不加：类实例变量的内存布局在编译期就已经定型了，由于 category 在运行时才被合并进原生类 ，这时候添加实例变量会破坏类原有的布局（对象内存布局和实际的类结构体关联，而 category 没体现在这个结构体中）。（注意和 Non-fragile ivars 做区分，父类的变更会体现在其结构体中，所以可以直接知道布局对不上，方便做处理）
+  - 可以通过关联对象取代，关联对象主要实现原理是创建一个全局 map ，宿主对象地址和关联 map 以键值对的方式存储在这个 map 中，关联 map 保存这个宿主对象名下所有关联对象和对应的 key 。
+- 注意和 Extension （匿名分类）的区别，Extension 其实是类的一部分，在编译期间和原生 class 共同组成实际的类结构体，category 是运行期拼进去的。
 
