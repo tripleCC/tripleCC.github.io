@@ -66,3 +66,13 @@
 - **因为栈中的变量会随着栈帧销毁**，为了增强栈 block 的可用性，我们通常会在栈 block 销毁前将其拷贝为堆 block
 - 使用 block 用注意循环引用，特别是不写 self 直接访问成员变量时，会有隐式循环引用
 
+### 细致地讲一下事件传递流程
+
+- 发生触摸事件
+- 捕捉触摸事件线程 RunLoop 处理 source1，并设置主线程 RunLoop 对应的 source0 可处理
+- 主线程 RunLoop 处理 source0
+- 从 window 开始递归 subviews 查找触摸视图
+- 将触摸事件由《 Application -> Window -> 触摸视图》路径派发给触摸视图
+- 查看触摸视图和其父视图是否有 UIGestureRecognizer（UIGestureRecognizer 会影响关联视图及其子视图，比它们先一步拿到触摸事件），有 UIGestureRecognizer 则开始观察手势，匹配后由 UIGestureRecognizer 直接处理触摸事件，并取消 touches 系列回调；**无 UIGestureRecognizer 或者匹配到手势前**，将触摸事件发送给触摸视图响应链
+  - 这里有个特例，**UIControl 不会被父视图关联的 UIGestureRecognizer "覆盖"**，所以 UIControl **父视图的** UIGestureRecognizer 不会影响到 UIControl 默认监听事件的处理，UIControl 会比父视图的 UIGestureRecognizer 先一步拿到触摸事件并进行处理，但直接往 UIControl 上加对应的 UIGestureRecognizer 还是会产生影响
+- 响应链顺着《触摸 View -> 父 View  -> 控制器 (如果有) -> Window -> Application -> Application 代理》 路径（UIResponder 的 nextResponder 方法）查找触摸事件处理对象 （实现 touches 系列方法），并让此对象处理触摸事件。
