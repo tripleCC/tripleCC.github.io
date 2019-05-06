@@ -1,6 +1,6 @@
 ### 你在项目中用过 runtime 吗？举个例子
 
-##### 项目中用的
+**项目中用的**
 
 - AppDelegate 初始化方法拆分
 
@@ -17,7 +17,7 @@
   - 弱引用实际对象，在 forward target 阶段，把部分不使用的代理消息转发给这个对象
   - 比如我们的表单组件用了 tableView 的部分代理方法，就可以用 Delegate Proxy 把不使用的 tableViewDelegate 和 scrollViewDelegate 的代理方法转发出去，不用写胶水代码 
 
-##### 系统/三方中用的
+**系统/三方中用的**
 
 - NSUndoManager 命令模式设计的撤销栈管理类
 
@@ -65,3 +65,4 @@
       - ARC
 - **因为栈中的变量会随着栈帧销毁**，为了增强栈 block 的可用性，我们通常会在栈 block 销毁前将其拷贝为堆 block
 - 使用 block 用注意循环引用，特别是不写 self 直接访问成员变量时，会有隐式循环引用
+
