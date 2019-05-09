@@ -198,23 +198,53 @@
 
     
 
-    
-
-    
-
-    
-
 ### 列表卡顿的原因可能有哪些？你平时是怎么优化的？
+
+- 没有重用 cell 
+  - 重用 cell
+- cell 回调中频繁执行高度，字符串长度计算
+  - 缓存计算的结果，复用时直接使用
+- 使用了圆角或者遮罩等会触发离屏渲染的属性
+  - 在后台线程预先绘制好后显示
+
+优化手段：
+
+- 性能敏感的页面不使用 xib 和 autolayout ，可以使用 frame
+- 只处理滑动目标节点附近的几个 cell，略过滑动过程的 cell 
+- 文本异步渲染 YYText，YYAsyncLayer
+- 对于不需要响应触摸事件的组件，可以使用图层预合成方法，将多个 layer 合并渲染成一张图片
 
 ### 项目有没有做过组件化？或者你是否调研过？
 
+看下 [这个](<https://blog.cnbang.net/tech/3080/>) 总结下，结合自己项目
+
 ### 讲一下 OC 的消息机制
+
+
 
 ### ARC 都帮我们做了什么？
 
+- 帮我们在编译生成中间代码时，根据程序上下文自动插入内存管理函数
+
 ### 实现 isEqual 和 hash 方法时要注意什么？
 
+- isEqual 和 hash 需要同时重写
+- 保证 isEqual 和 hash 的一致性
+  - 比如 isEqual 取决于某两个属性的比较结果，hash 就不能直接调用 [super hash]，可以使用这两个属性 hash 的位或运算结果作为 hash 值
+
 ### property 的常用修饰词有哪些？weak 和 assign 的区别？weak 的实现原理是什么？
+
+- 有哪些关键字
+  - 原子性: atomic（默认）、nonatomic （无法保证绝对的线程安全，比如一个线程读，一个线程写）
+  - 读写权限：readwrite（默认）、readonly
+  - 内存管理语义：assign（默认）、strong（默认）、weak、unsafe_unretained、copy
+  - 方法名：getter=、setter=
+- weak 和 assign 的区别
+  - weak 和 assign 在修饰对象时，都不会增加设置对象的引用计数，但是在销毁时，weak 会置 nil 对象指针，assign 不会。并且 assign 可以修饰非 OC 对象，weak 必须用于 OC 对象
+  - ARC 下，修饰对象时，assign 和 unsafe_unretained 作用其实是相同的，但是 unsafe_unretained 和 weak **表意更加清晰**，都表示一种非拥有关系
+- weak 实现原理
+  - 设置 weak 修饰的变量或属性时，runtime 会以赋值对象地址的 hash 值为 key ，以包装 weak 修饰的指针变量地址的 entry 为 value，放入全局 weak hash table 中，当赋值对象释放时，runtime 会在目标对象的 dealloc 处理过程中，以对象地址 hash 值为 key 去 weak hash table 中查找 entry，然后置空 entry 指向的所有对象指针。
+    - entry 结构使用数组来保存那些 weak 修饰的，指向目标对象的指针变量地址，有趣的是，在只有不超过4个 weak 修饰的指针变量指向同一个对象时，对象对应的 entry 中的数组是个普通的内置数组，超过4个之后，这个数组就会扩充成一个 hash table （空间和时间的权衡）
 
 ### 线程安全的处理手段有哪些？把你想到的都说一下。
 
