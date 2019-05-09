@@ -149,13 +149,20 @@
 ### 讲讲 RunLoop，项目中有用到吗？
 
 - 什么是 RunLoop
+
   - 一般来说一个线程一次只能执行一个任务，执行完就退出，为了能让线程尽可能多地处理事务且不退出，就需要引入 event loop （事件循环）机制。RunLoop 就是 iOS 提供事件循环机制，在 iOS 中 RunLoop 实际是一个对象，这个对象管理了需要处理的事件和消息，并且提供了一个入口函数执行事件循环逻辑，线程执行这个函数后，就会进入"接受消息-> 等待->处理"的循环中，直到这个循环结束，函数返回。
+
 - 和线程的关系
+
   - 线程和 RunLoop 是一一对应的关系，其关系以线程标识为 key，以 RunLoop 对象为 value 保存在一个全局字典中。并且线程中的 RunLoop 是懒加载的，其创建发生在第一次获取时。
+
 - 常见的几种 mode
+
   - RunLoop 的 **mode 是用来管理 source/timer/observer** 的，每次运行时只能指定一个 mode ，切换时需要退出再重新指定 mode 运行，当事件发生时，RunLoop 会让当前 mode 下对应的 source/timer/observer 来处理事件调用回调，如果**当前 mode 没有 source/timer ，则 RunLoop 直接退出**。
   - kCFRunLoopDefaultMode 和 TrackingRunLoopMode 是公开的两个 mode ，还有一个 Common 标记字符串 kCFRunLoopCommonModes  ，外界指定 kCFRunLoopCommonModes 添加的 source/timer/observer 会被同步到 Common 标记的 mode 中，刚才说的的两个 mode 都是 Common 属性，所以指定 kCFRunLoopCommonModes 添加的 NSTimer 可以在列表滚动时也生效。
+
 - 处理事件顺序
+
   - 通知 observer 即将进入 loop
   - |------------------loop ---------------------|
   - 通知 observer 将要处理 timer
@@ -163,16 +170,39 @@
   - 处理 source0
   - 如果有 source1，跳到处理唤醒消息步骤
   - 通知 observer 线程即将休眠
-  - 休眠等待唤醒
-  - 处理唤醒消息
+  - 休眠等待唤醒  (基于port的source事件、timer 时间到、runloop 超时时间到、手动唤醒)
+  - 处理唤醒消息  (处理 timer 、dispatch 到 main queue 、source1事件)
   - |------------------loop ---------------------|
   - 通知 observer 即将退出
+
 - 项目中用到的
-  - 
+
+  - 运行 NSTimer / CADisplayLink 
+  - 旧版本 AFNetworking 中的常驻线程 ，由于 NSURLConnection 需要使用 RunLoop 执行注册的 source0，所以需要线程有运行起来的 RunLoop 去处理事件，新版本使用 NSURLSession 不需要。
+
 - 开发 App 中隐式用到的
-  - 
 
+  - AutoreleasePool
 
+    - 主线程在 App 启动后，在主线程 RunLoop 中注册了两个 Observer，一个**监听准备进入 RunLoop**，在回调中创建自动释放池；一个**监听即将进入休眠和即将退出RunLoop**，在即将进入休眠时，**释放旧池创建新池**，在即将退出RunLoop 时，释放旧池
+
+  - performSelector
+
+    - 创建 timer 到对应的线程
+
+  - GCD dispatch 到 main queue
+
+  - 事件响应
+
+    - 苹果会在主线程会注册 source0 ，在捕获触摸事件线程注册 source1，在 source1 回调中触发这个 source0 的回调，然后派发给 UIApplication
+
+    
+
+    
+
+    
+
+    
 
 ### 列表卡顿的原因可能有哪些？你平时是怎么优化的？
 
