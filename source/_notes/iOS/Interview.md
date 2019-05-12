@@ -211,7 +211,8 @@
 
 - 性能敏感的页面不使用 xib 和 autolayout ，可以使用 frame
 - 只处理滑动目标节点附近的几个 cell，略过滑动过程的 cell 
-- 文本异步渲染 YYText，YYAsyncLayer
+- 文本异步渲染 YYAsyncLayer
+  - 需要显示内容时，向 UIView delegate 请求异步绘制任务，异步任务完成后以图片的形式设置回 content
 - 对于不需要响应触摸事件的组件，可以使用图层预合成方法，将多个 layer 合并渲染成一张图片
 
 ### 项目有没有做过组件化？或者你是否调研过？
@@ -240,7 +241,27 @@
 
 ### 讲一下 OC 的消息机制
 
-
+- OC 消息机制阶段
+  - 消息发送
+  - 消息转发
+- 消息发送
+  - 消息发送指的是 runtime 通过 selector 快速查找 imp 的过程，所有的消息发送动作，都会转化成 objc_msgSend 函数，查找 imp 顺序：
+    - 类的调用方法 cache 列表
+    - 类的方法列表
+    - 类的父类方便列表
+- 消息转发
+  - 消息转发是 runtime 在查找 imp 失败后提供的挽救机制，分为三步
+    - lazy method resolution 
+      - 这一步调用了-resolveMethod: 系列方法，供开发者动态添加 sel 的实现，返回 NO 会进入第二步。这一步可以很方便地和 @dynamic 属性结合，比如 CoreData，它实际的实现是访问数据库
+    - fast forwarding path
+      - 这一步调用了 -forwardingTargetForSelector: 方法，供开发者提供其他可以响应的对象，如果返回 nil/self 之外的对象，那么会重启一次消息发送动作给返回的对象，否则进入第三步。
+    - normal forwarding path
+      - 这一步调用了 -forwadingInvocation: 、-methodSignatureForSelector: 方法，这一步将消息的所有信息保存在一个 NSInvocation 中，供开发者使用。这个 NSInvocation 对象包含参数、发送目标及 sel 等信息，尤其是参数信息，所以这一步也是可操作性最强的一步。如果 -methodSignatureForSelector: 没有返回有效的方法签名，消息转发失败，抛出异常
+  - 消息转发的应用
+    - 消息转发越靠后灵活性越大，性能损耗也越大
+    - 第一步：CoreData
+    - 第二步：weak proxy、delegate proxy
+    - 第三部：NSUndoManager 保存调用上下文、aspect hook 所有方法、AppDelegate 初始化方法拆分
 
 ### ARC 都帮我们做了什么？
 
