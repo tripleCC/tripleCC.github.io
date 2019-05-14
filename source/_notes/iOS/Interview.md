@@ -326,17 +326,78 @@
 
 ### 说一下 OperationQueue 和 GCD 的区别，以及各自的优势
 
+- 语言构成
+  - GCD 由 C 语言提供 API，OperationQueue 在 GCD 的基础上包装的 OC 对象
+  - GCD 更加轻量，效率更好，OperationQueue 作为一个对象更易用，代码复用度更高
+- 未执行任务取消
+  - GCD 取消任务需要比 OperationQueue 写更多代码 (使用 GCD 接口创建的 block 可以使用 GCD 接口取消，或者用外部变量)，OperationQueue 直接执行 cancel 即可
+- 任务依赖关系
+  - GCD 没有提供设置任务依赖关系接口，OperationQueue 能够很方便地设置任务依赖关系
+- 任务进度监听
+  - OperationQueue 的 NSOperation 对象支持 KVO，可以很方便地监听任务状态 (ready, executing, finished, cancelled)
+- 优先级设置
+  - OperationQueue 能够很方便地设置任务优先级，GCD 需要使用其 API 创建的任务 block 才能比较方便地设置任务优先级
+- 代码复用
+  - 使用 OperationQueue 能继承 NSOperation 添加成员变量与方法，提高代码复用度，比 GCD 简单地将 block 任务添加至队列封装性更好，能添加更多自定义功能
+
 ### Swift 中 struct 和 class 的区别
 
-### Swift 是如何实现多态的？
+- struct 值类型，class 引用类型
+  - 值类型存放在栈中，变量本身拥有数据，引用类型存放在堆中，变量为指向实际数据的指针
+- struct 由于是值类型，无法继承，class 可以
+- struct 由于是值类型，用 let 创建时不可变，class 可以
+- struct 由于是值类型，内部方法改变属性时需要加 mutating ，class 不用
+- struct 提供默认初始化所有属性的初始化方法，class 没有
 
 ### Swift 和 OC，各自的优缺点有哪些？
 
+- 优点
+  - swift 为类型安全语言，更加安全，可以在编译时检查出更多问题
+  - swfit 代码更少，语法简洁，省区大量冗余代码
+  - swfit 速度更快，性能更高
+- 缺点
+  - 版本不稳定，5.0 之后稳定
+  - 在有稳定 abi 前，使用 swift 会增大包大小 (需要嵌入编译的swift库)
+  - OC 部分运行时在 swift 中无效
+
 ### 如果让你实现 NSNotificationCenter，讲一下思路
 
-看下[这里](<https://www.mikeash.com/pyblog/friday-qa-2011-07-08-lets-build-nsnotificationcenter.html>)总结
+- 简述
+  - 以 block 接口为例，NSNotificationCenter 单例维护一个 map，这个 map 的 key 为notification name 和匹配 object 创建的自定义对象，value 是元素为 block 的 set 集合。发送通知时，根据 name 和 object 去 map 中查找 block 集合并传入 notification 执行，实际为了匹配添加时 name 和 object 为 nil 的情况，发送通知时会先后以 name object、 name nil、nil object、nil nil 的形式去 map 查找。
+
+- 结构
+  - 一个全局 map
+- key
+  - 通知 name  和 object 组成的类实例
+  - 这个 object 表示只有发送对象和 object 对应上时，才出发回调
+  - 注意 name 为 nil 时表示接收所有通知， object 为 nil 时表示接收 name 的所有通知，key class 的 isEqual 要考虑这一点，hash 方法返回两个成员变量的 hash 位异或值
+- value
+  - block set 集合 （如果是 observer + selector ，可以包装成 NSObserver ，事实上，block 包装成 NSObserver 有利于代码统一）
+- -postNotification: 要注意覆盖全 case ，调用四次 -postNotification:name:object
+  - name object
+  - name nil
+  - nil object
+  - nil nil
 
 ### 如果让你实现 GCD 的线程池，讲一下思路
+
+- 简述
+  - 首先分三个部分：线程池需要的状态变量，线程池入口，线程运行函数
+  - 线程池一般都需要已创建线程数，正在执行线程数，最大线程数这几个状态变量来决定是否创建新线程，然后需要**条件变量实现生产消费模型**，让线程能在没有任务的时候休眠，有任务的时候唤醒执行，由于条件变量需要和互斥锁一起工作，所以还要有互斥锁
+  - 线程池主要职责为提交任务并执行，所以简单地设置一个添加任务的入口，在添加任务时，**判断当前任务数量和空闲线程数大小以及已创建线程和最大线程数大小，如果需要的话 detach 一个新的线程，增加已创建线程数，接着给条件变量发送 signal** ，这一块操作都由互斥锁保证安全
+  - 线程运行函数主要是一个**死循环**，在循环体里面**判断任务是否为空，如果为空，就 wait 条件变量，也就是进入休眠状态，等待唤醒，如果不为空就取出一个任务，并执行**，同时变更线程池的正在执行任务线程数这些状态变量，这部分操作也由互斥锁保证安全
+
+- 线程池职责
+  - 提交任务，执行任务
+- 线程数相关
+  - 已创建线程数量	
+  - 正在执行任务线程数量
+  - 最大线程数量
+- 锁相关
+  - 条件变量 + 互斥锁
+- 线程创建方式
+  - detach
+  - 死循环
 
 ### 为什么是三次握手？为什么是四次挥手？三次挥手不行吗？
 
@@ -346,7 +407,35 @@
 
 ### iOS 系统框架里使用了哪些设计模式？至少说6个。
 
+- 命令
+  - NSInvocation
+- 中介者
+  - MVC
+- 抽象工厂模式
+  - NSArray、NSDictionary、NSString、NSNumber
+- 观察者
+  - KVO
+- 委托
+  - delegate
+- 单例
+  - file manager, notification center
+- 责任链
+  - 响应链
+- 享元
+  - cell 复用
+
 ### 你自己用过哪些设计模式？
+
+- 策略
+  - 图片浏览器
+- 代理
+  - 选择器代理
+  - 代理和装饰的区别：代理强调让别人帮你去做一些本身与你业务没有太多关系的职责，对代理对象施加控制；装饰强调增强自身，被装饰后，能在被增强的类上使用增强后的功能
+- 委托
+  - 自定义 delegate
+- 中介者
+  - 组件化解耦
+- 单例
 
 ### 哪一个项目技术点最能体现自己的技术实力？具体讲一下。
 
