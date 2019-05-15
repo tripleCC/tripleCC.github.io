@@ -24,6 +24,10 @@ hash 算法： 单向机密，明文->密文，反过来不行
 
 ![Snip20190328_5](https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/Snip20190416_9.png)
 
+上面协商对称密钥的过程有误，看下面的文章：
+
+[HTTPS 协议：点外卖的过程原来这么复杂！](<https://www.infoq.cn/article/bZTED-LPHd1JVQqFk2ql>)
+
 ### SSL 运行过程
 
 1. 客户端向服务端索要并验证公钥
