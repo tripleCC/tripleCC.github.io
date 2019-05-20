@@ -86,9 +86,12 @@
 ### main()之前的过程有哪些
 
 - 动态链接器完成运行环境初始化，配合 ImageLoader 将二进制文件加载到内存中
-- 动态链接器调用 libSystem image 的初始化函数（`__attribute__((constructor))`），在初始化函数中调用 _objc_init
+- 执行 rebase /binding
+- 动态链接器调用 libSystem image 的初始化函数（`__attribute__((constructor))`）libSystem_initializer，在初始化函数中调用 _objc_init
+  - 只有 libSystem 的 constructor 会在 +load 前执行，其他的 image +load 方法先于 constructor 执行
 - _objc_init 绑定回调，在 image 加载到内存后，动态链接器通知 runtime 处理
 - runtime 在 map_images 回调中读取类、分类、协议等信息，在 load_images 回调中遍历所有存在 +load 方法的类和分类，并调用它们的 +load 方法
+- 执行非 libSystem 的  constructor
 - 初始化完成，动态链接器调用真正的 main 函数
 
 ### Category 中有 load 方法吗？load 方法是什么时候调用的？load 方法能继承吗？
@@ -276,6 +279,7 @@
 ### 实现 isEqual 和 hash 方法时要注意什么？
 
 - isEqual 和 hash 需要同时重写
+- isEqual 一般先判断对象地址是否一致，再判断是否是同种类，最后判断对象内容是否一致
 - 保证 isEqual 和 hash 的一致性
   - 比如 isEqual 取决于某两个属性的比较结果，hash 就不能直接调用 [super hash]，可以使用这两个属性 hash 的位或运算结果作为 hash 值
 
