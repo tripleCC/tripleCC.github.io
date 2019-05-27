@@ -1,7 +1,9 @@
 ---
 title: 计算 +load 方法的耗时
-tags:
+date: 2019-05-27 19:25:07
+tags:[Interview,objective-c,dyld,runtime]
 ---
+
 
 在 pre-main 时期，objc 会向 dyld [注册一个 init 回调](https://github.com/tripleCC/Laboratory/blob/5c084263d79973805649b89d166b50751045e937/AppleSources/objc4-750/runtime/objc-os.mm#L875-L889)，当 dyld 将要执行载入 image 的 initializers 流程时 (依赖的所有 image 已走完 initializers 流程时)，init 回调被触发，在这个回调中，objc 会按照[父类-子类-分类](https://github.com/tripleCC/Laboratory/blob/5c084263d79973805649b89d166b50751045e937/AppleSources/objc4-750/runtime/objc-runtime-new.mm#L2866-L2887)顺序调用 +load 方法。因为 +load 方法执行地足够早，并且只执行一次，所以我们通常会在这个方法中进行 method swizzling 或者自注册操作。也正是因为 +load 方法调用时间点的特殊性，导致此方法的耗时监测较为困难，而如何使监测代码先于 +load 方法执行成为解决此问题的关键点。
 
@@ -190,7 +192,7 @@ static void printLoadInfoWappers(void) {
 
 所以如果是我们自己添加的库文件，需要将库文件添加进上面的两个列表中，否则要么 dyld 加载库镜像时出现 Library not loaded 错误，要么直接不链接这个库文件。而系统库则不需要设置 Embedded 栏 ，只需要设置 Linked 栏，因为实际设备中会预置这些库。
 
-<img src="/images/Snip20190524_1.png" width="500">
+<img src="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190524_1.png" width="500">
 
 以上图为例，Linked 栏中库的排列顺序，最终会体现在链接阶段命令的入参顺序上：
 
@@ -203,11 +205,11 @@ Ld ...
 
 当参与链接的是动态库时，在生成主 App 可执行文件的 Load Commands 中，这些动态库对应的 LC_LOAD_DYLIB 排列顺序将和入参顺序一致。
 
-<img src="/images/Snip20190524_2.png" width="200">
+<img src="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190524_2.png" width="200">
 
 当这些动态库间不存在依赖关系时，其初始化函数的调用顺序将和 LC_LOAD_DYLIB 的排列顺序一致，否则会优先调用依赖库的初始化函数。
 
-<img src="/images/Snip20190527_9.png" width="500">
+<img src="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190527_9.png" width="500">
 
 因为监测耗时库不依赖其他自定义动态库，所以我们直接将监测耗时库拖入工程，并调整其至 Linked 栏首位即可。
 
