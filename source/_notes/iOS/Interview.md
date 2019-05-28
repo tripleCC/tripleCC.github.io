@@ -101,7 +101,7 @@
 - 什么时候调用？
   - 在 load_images 回调时调用，也就是动态链接器执行对应的 image  的初始化函数时
 - 能继承吗？
-  - 不能，+load 方法有 runtime 自行调用，我们不能调 super
+  - 能，和其他类方法一样，可以通过子类的元类的父类找到这个方法，向子类发送 load 消息可以响应，但是不能调 super
 - 调用先后顺序：
   - 1 按照继承层级，从父类到子类调用 +load
   - 2 category 按照编译顺序调用 +load
@@ -270,7 +270,7 @@
     - 消息转发越靠后灵活性越大，性能损耗也越大
     - 第一步：CoreData
     - 第二步：weak proxy、delegate proxy
-    - 第三部：NSUndoManager 保存调用上下文、aspect hook 所有方法、AppDelegate 初始化方法拆分
+    - 第三步：NSUndoManager 保存调用上下文、aspect hook 所有方法、AppDelegate 初始化方法拆分
 
 ### ARC 都帮我们做了什么？
 

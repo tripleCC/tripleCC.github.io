@@ -441,6 +441,8 @@ objc_msgSend(receiver, selector, ...)
 
 ### self和super的联系
 
+> 2019.5.28 勘误，下面都是错的，self 从本类查找方法，super 从父类查找方法，最终因为 class 只有根类 NSObject 实现，所以都调用的 object_getClass(self)，最后的值也一样
+
 根据上文对`objc_msgSend`的了解，可以解决以下代码输出一致问题
 
 ```objc
