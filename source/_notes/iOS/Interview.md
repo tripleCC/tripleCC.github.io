@@ -89,7 +89,7 @@
 - 执行 rebase /binding
 - 动态链接器调用 libSystem image 的初始化函数（`__attribute__((constructor))`）libSystem_initializer，在初始化函数中调用 _objc_init
   - 只有 libSystem 的 constructor 会在 +load 前执行，其他的 image +load 方法先于 constructor 执行
-- _objc_init 绑定回调，在 image 加载到内存后，动态链接器通知 runtime 处理
+- _objc_init 绑定 read_image 和 load_image 回调，由动态链接器通知 runtime 处理
 - runtime 在 map_images 回调中读取类、分类、协议等信息，在 load_images 回调中遍历所有存在 +load 方法的类和分类，并调用它们的 +load 方法
 - 执行非 libSystem 的  constructor
 - 初始化完成，动态链接器调用真正的 main 函数
@@ -257,7 +257,7 @@
   - 消息发送指的是 runtime 通过 selector 快速查找 imp 的过程，所有的消息发送动作，都会转化成 objc_msgSend 函数，查找 imp 顺序：
     - 类的调用方法 cache 列表
     - 类的方法列表
-    - 类的父类方便列表
+    - 类的父类方法列表
 - 消息转发
   - 消息转发是 runtime 在查找 imp 失败后提供的挽救机制，分为三步
     - lazy method resolution 
