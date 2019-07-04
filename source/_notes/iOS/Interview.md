@@ -5,7 +5,7 @@
 - AppDelegate 初始化方法拆分
 
   - 替换 setDelegate 方法，并且在消息转发的 forward invocation 阶段向注册的模块转发代理消息
-  - 通过上述方法实现组件接入即可用，即使使用改组件的壳工程没有实现对应的代理方法，组件也可以接收到代理消息
+  - 通过上述方法实现组件接入即可用，即使使用该组件的壳工程没有实现对应的代理方法，组件也可以接收到代理消息
 
 - Week Proxy
 
@@ -482,3 +482,26 @@
 ### 遍历一个树，要求不能用递归
 
 ### 找出两个字符串的最大公共子字符串
+
+
+
+### 看过的源码
+
+##### ReactNative 通信原理
+
+[React Native通信机制详解](<https://blog.cnbang.net/tech/2698/>)
+
+1. OC 生成一份模块配置表 remoteModules(相反的 JS 提供的给 OC 使用的模块为 localModules) ，配置表包含所有模块及其方法信息 (最新的 RN d57cdac62b 已经找不到这两个了，可能使用其他方式替代了)
+
+2. OC 和 JS 端各有一个 bridge，bridge 保存同一份上述模块配置表
+
+3. JS 调用 OC 方法时，将模块和方法通过 JS 端 bridge 转换成模块 ID 和方法 ID传给 OC
+
+4. OC 通过 OC 端 bridge 找到对应模块和方法并执行
+
+
+
+JS函数调用转ModuleID/MethodID -> callback转CallbackID -> OC根据ID拿到方法 -> 处理参数 -> 调用OC方法 -> 回调CallbackID -> JS通过CallbackID拿到callback执行
+
+
+
