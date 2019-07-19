@@ -115,3 +115,59 @@ ___Block_byref_object_copy_(dst, src) {
 
 这里我们通过控制包装对象的引用计数，来保证在捕获对象指针变量的 block 没有全部释放前提下，其指向的对象将不会被释放，所以我们只需要保证包装对象的引用计数正确即可，后续拷贝也只是增加包装对象的引用计数，这点和非 `__block` 修饰的指针变量还是有区别的，后者是直接增加指针变量指向对象的引用计数。
 
+## 补充
+
+###  2019-7-19 关于隐式 ivar 的访问造成循环引用
+
+有如下代码，如果不使用 `_o` ，而通过属性 `self.o` 访问，就不会造成循环引用，因为此时的 `self` 指向的已经是 `self_weak_` 了，但是直接访问成员变量依然会造成循环引用。
+
+```objc
+__weak __typeof__(self) self_weak_ = self;
+_blk = ^{
+    __strong __typeof__(self) self = self_weak_;
+    _o;
+//        self.o;
+};
+```
+
+一般来说 `_o = self->_o=self + 成员变量偏移量`，而实际重写之后的代码也是这样的 :
+
+```objc
+struct __BM__test_block_impl_0 {
+  struct __block_impl impl;
+  struct __BM__test_block_desc_0* Desc;
+  BM *const __weak self_weak_;
+  __BM__test_block_impl_0(void *fp, struct __BM__test_block_desc_0 *desc, BM *const __weak _self_weak_, int flags=0) : self_weak_(_self_weak_) {
+    impl.isa = &_NSConcreteStackBlock;
+    impl.Flags = flags;
+    impl.FuncPtr = fp;
+    Desc = desc;
+  }
+};
+static void __BM__test_block_func_0(struct __BM__test_block_impl_0 *__cself) {
+  BM *const __weak self_weak_ = __cself->self_weak_; // bound by copy
+
+  __attribute__((objc_ownership(strong))) __typeof__(self) self = self_weak_;
+  (*(NSObject *__strong *)((char *)self + OBJC_IVAR_$_BM$_o));
+
+}
+```
+
+重写之后的代码，表明实际捕获的变量是`__weak` 修饰的变量 `self_weak_` ，那么怎么会有循环引用呢？从汇编注释看，实际捕获了包括 self 的两个变量，至于为什么，只能说重写是基于 MRC 的，实际 ARC 环境下，编译器做了某些优化，导致直接访问成员变量时，依然捕获了 self ：
+
+```
+Lfunc_begin1:
+	.loc	1 324 0                 ## /Users/songruiwang/GitHub/objc-runtime/debug-objc/main.m:324:0
+	.cfi_startproc
+## %bb.0:
+	##DEBUG_VALUE: __10-[BM test]_block_invoke:.block_descriptor <- $rdi
+	##DEBUG_VALUE: __10-[BM test]_block_invoke:.block_descriptor <- $rdi
+	##DEBUG_VALUE: __10-[BM test]_block_invoke:self_weak_ <- [DW_OP_deref, DW_OP_plus_uconst 40] [$rdi+0]
+	##DEBUG_VALUE: __10-[BM test]_block_invoke:self_weak_ <- [DW_OP_deref, DW_OP_plus_uconst 40] [$rdi+0]
+	##DEBUG_VALUE: __10-[BM test]_block_invoke:self <- [DW_OP_deref, DW_OP_plus_uconst 32] [$rdi+0]
+	##DEBUG_VALUE: __10-[BM test]_block_invoke:self <- [DW_OP_deref, DW_OP_plus_uconst 32] [$rdi+0]
+	.loc	1 325 38 prologue_end   ## /Users/songruiwang/GitHub/objc-runtime/debug-objc/main.m:325:38
+	addq	$40, %rdi
+	jmp	_objc_loadWeak          ## TAILCALL
+```
+
