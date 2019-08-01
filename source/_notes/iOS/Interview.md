@@ -171,6 +171,11 @@
   - RunLoop 的 **mode 是用来管理 source/timer/observer** 的，每次运行时只能指定一个 mode ，切换时需要退出再重新指定 mode 运行，当事件发生时，RunLoop 会让当前 mode 下对应的 source/timer/observer 来处理事件调用回调，如果**当前 mode 没有 source/timer ，则 RunLoop 直接退出**。
   - kCFRunLoopDefaultMode 和 TrackingRunLoopMode 是公开的两个 mode ，还有一个 Common 标记字符串 kCFRunLoopCommonModes  ，外界指定 kCFRunLoopCommonModes 添加的 source/timer/observer 会被同步到 Common 标记的 mode 中，刚才说的的两个 mode 都是 Common 属性，所以指定 kCFRunLoopCommonModes 添加的 NSTimer 可以在列表滚动时也生效。
 
+- source 0 和 source 1
+
+  - source0: 只包含一个回调，不能主动唤醒 runloop 。使用时需要先 signal 将其标记为待处理，然后手动调用 wakeup 函数唤醒 runloop ，让其处理事件
+  - source1: 包含mach_port 和一个回调，用于通过内核和其他线程相互发送消息，能主动唤醒 runloop 处理事件
+
 - 处理事件顺序
 
   - 通知 observer 即将进入 loop
