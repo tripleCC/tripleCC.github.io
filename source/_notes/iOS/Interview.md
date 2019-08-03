@@ -77,8 +77,8 @@
 
 - 发生触摸事件
 - 触发硬件中断，调用中断函数，驱动程序将事件传送给系统内核
-- 系统内核将事件派发给目标 App 进程
-- 目标 App 进程中，捕捉触摸事件线程 RunLoop 处理 source1，并设置主线程 RunLoop 对应的 source0 可处理
+- 系统内核通过 mach port将事件派发给目标 App 进程
+- 目标 App 进程中，负责捕捉触摸事件线程 RunLoop 处理 source1，并设置主线程 RunLoop 对应的 source0 可处理，唤醒主线程 RunLoop
 - 主线程 RunLoop 处理 source0
 - 从 window 开始递归 subviews 查找触摸视图
 - 将触摸事件由《 Application -> Window -> 触摸视图》路径派发给触摸视图
@@ -216,6 +216,50 @@
     
 
 ### 列表卡顿的原因可能有哪些？你平时是怎么优化的？
+
+https://blog.ibireme.com/2015/11/12/smooth_user_interfaces_for_ios/
+
+单缓存->效率->读写分离->双缓存->撕裂->垂直同步
+
+卡顿原因：在一个垂直同步时间段内，CPU 和 GPU 没有完成内容的计算和渲染，将结果提交到帧缓冲区，导致显示器只能显示前一个画面
+
+
+
+排版、绘制、UI对象
+
+
+
+CPU：UI对象、排版
+
+GPU：变换、合成、渲染
+
+
+
+CPU
+
+- 对象的创建与调整
+  - cell 重用，尽量少去调整 frame/bounds/transform
+- 布局
+  - cell 缓存高度/字符串长度计算结果，复用时直接使用
+  - 性能敏感的，可以使用手动布局
+  - 使用 CoreText 进行文本异步绘制
+- 图片
+  - 后台线程解码，图片数据在设置到 contents 中即将展示时，在主线程解码，可以在后台先绘制成 Bitmap 直接创建图片 （注意 PNG/JPEG 的 UIImage 其实还没解码，即使都是 UIImage ，绘制成 Bitmap 后创建的 UIImage 是已经解码过的）
+- 图像
+  - 异步绘制，drawRect 的内容放到后台线程绘制，再将生成的图片设置到 contents 中
+
+GPU
+
+CPU 处理后的所有内容（Bitmap，包括图片、文本、栅格化内容）都需要提交到显存，绑定为 GPU 的纹理
+
+- 纹理渲染、视图混合
+  - 减少短时间内大量图片显示、减少视图层级和数量，不透明视图标明 opaque 属性避免无用 Alpha 通道合成 -> 多个视图预先渲染为一张图片
+
+- 离屏渲染
+  - 减少使用 CALayer border、圆角、阴影、遮罩（mask），CASharpLayer 的矢量图形显示
+  - 圆角图形预先在后台线程绘制为图片
+
+===========================================
 
 - 没有重用 cell 
   - 重用 cell
