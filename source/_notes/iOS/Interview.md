@@ -226,7 +226,7 @@
 
 https://blog.ibireme.com/2015/11/12/smooth_user_interfaces_for_ios/
 
-单缓存->效率->读写分离->双缓存->撕裂->垂直同步
+历史：单缓存->效率->读写分离->双缓存->撕裂->垂直同步
 
 卡顿原因：在一个垂直同步时间段内，CPU 和 GPU 没有完成内容的计算和渲染，将结果提交到帧缓冲区，导致显示器只能显示前一个画面
 
@@ -610,3 +610,28 @@ JS函数调用转ModuleID/MethodID -> callback转CallbackID -> OC根据ID拿到�
   - 构建 if 语句，利用 global / static 变量标志判断是否已执行，使用原子交换操作保证判断时，访问变量的安全性，如果变量标志未执行，则执行回调，已执行则直接返回
 - 针对多线程
   - 非第一个调用线程需要等待第一个线程调用结束，也就是说变量标志还未来得及设置，这种情况下，函数内部 else 分支针对后调用的线程构造了一个信号量链表，让线程调用 dispatch_once 时等待对应的信号量，当第一个线程在 if 分支执行完任务后，会遍历信号量链表，并 signal 信号量，后续线程得以继续执行
+
+### Crash 定位 
+
+https://wetest.qq.com/lab/view/393.html?from=content_gad
+
+https://mp.weixin.qq.com/s/srG0xXvWGEfGt9nHN4YOjQ
+
+- 确定 crash 类型
+  - SIGSEG，段错误，比如访问无效内存
+  - SIGABRT，调用了 abort 函数，比如 NS 和 C++ 错误
+  - SIGTRAP，调用了 `__buildin_trap`，比如 CF 集合类型越界，参数校验
+- 确定发生系统、设备版本
+- 分析 crash 堆栈信息
+  - 如果是 objc_msgSend unrecognized selector，找不出具体 selector ，再执行以下步骤
+- 分析线程寄存器信息
+  - x0 第一个参数（oc 中为对象信息）
+  - x1 第二个参数（oc 中为 selector 信息）
+  - lr 当前函数的上一层调用地址
+  - pc 当前程序执行地址
+
+- 利用上面步骤获取的地址，查找对应的符号
+  - lldb 调试 + dsym ，然后使用 image lookup -a 获取地址的符号信息（注意相对地址转成绝对地址）
+  - atos  + dsym 直接将地址转换为符号信息
+
+- 辅以用户操作路径
