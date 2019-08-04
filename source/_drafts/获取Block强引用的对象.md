@@ -1,5 +1,5 @@
 ---
-title: 获取 Block 强引用的对象
+title: 聊聊 Block 如何布局捕获实体
 tags:
 ---
 

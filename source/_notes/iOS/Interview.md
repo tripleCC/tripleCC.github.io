@@ -217,6 +217,13 @@
 
 ### 列表卡顿的原因可能有哪些？你平时是怎么优化的？
 
+- 为什么卡顿
+- CPU GPU 职责
+- 针对 CPU GPU 每个性能点的优化
+- 异步渲染
+
+
+
 https://blog.ibireme.com/2015/11/12/smooth_user_interfaces_for_ios/
 
 单缓存->效率->读写分离->双缓存->撕裂->垂直同步
@@ -240,7 +247,7 @@ CPU
 - 对象的创建与调整
   - cell 重用，尽量少去调整 frame/bounds/transform
 - 布局
-  - cell 缓存高度/字符串长度计算结果，复用时直接使用
+  - 后台计算 cell 缓存高度/字符串长度计算结果，复用时直接使用
   - 性能敏感的，可以使用手动布局
   - 使用 CoreText 进行文本异步绘制
 - 图片
@@ -256,8 +263,14 @@ CPU 处理后的所有内容（Bitmap，包括图片、文本、栅格化内容�
   - 减少短时间内大量图片显示、减少视图层级和数量，不透明视图标明 opaque 属性避免无用 Alpha 通道合成 -> 多个视图预先渲染为一张图片
 
 - 离屏渲染
-  - 减少使用 CALayer border、圆角、阴影、遮罩（mask），CASharpLayer 的矢量图形显示
+  - 减少使用 CALayer border、圆角、阴影、遮罩（mask）（border、corner、shadow、mask ），CASharpLayer 的矢量图形显示
   - 圆角图形预先在后台线程绘制为图片
+
+
+
+异步绘制
+
+CALayer 要显示内容时，向 delegate 请求异步绘制任务，异步任务完成后以Bitmap图片的形式设置回 content，并且让未完成的绘制任务能够及时取消
 
 ===========================================
 
