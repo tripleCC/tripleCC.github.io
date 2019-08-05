@@ -77,9 +77,9 @@
 
 - 发生触摸事件
 - 触发硬件中断，调用中断函数，驱动程序将事件传送给系统内核
-- 系统内核通过 mach port将事件派发给目标 App 进程
-- 目标 App 进程中，负责捕捉触摸事件线程 RunLoop 处理 source1，并设置主线程 RunLoop 对应的 source0 可处理，唤醒主线程 RunLoop
-- 主线程 RunLoop 处理 source0
+- 系统内核通过 mach port 将事件派发给目标 App 进程
+- 目标 App 进程中，负责捕捉触摸事件线程的 RunLoop 被唤醒，开始处理 source1，并在 source1 回调中设置主线程 RunLoop 对应的 source0 可处理，调用 wakeup 函数唤醒主线程 RunLoop
+- 主线程 RunLoop 处理 source0 ，执行事件分发回调
 - 从 window 开始递归 subviews 查找触摸视图
 - 将触摸事件由《 Application -> Window -> 触摸视图》路径派发给触摸视图
 - 查看触摸视图和其父视图是否有 UIGestureRecognizer（UIGestureRecognizer 会影响关联视图及其子视图，比它们先一步拿到触摸事件），有 UIGestureRecognizer 则开始观察手势，匹配后由 UIGestureRecognizer 直接处理触摸事件，并取消 touches 系列回调；**无 UIGestureRecognizer 或者匹配到手势前**，将触摸事件发送给触摸视图响应链
@@ -102,7 +102,7 @@
 - category 中有 load 方法吗？
   - 有
 - 什么时候调用？
-  - 在 load_images 回调时调用，也就是动态链接器执行对应的 image  的初始化函数时
+  - 动态链接器执行对应的 image  的初始化函数前，dyld 会通知 objc 即将初始化 image ，objc 会调用先前注册的 init 回调，也就是 load_images 函数，在这个函数里面从 image 的 DATA 端获取定义了 +load 方法的类和分类（no-lazy），然后按照父类-类-分类顺序调用 +load 方法
 - 能继承吗？
   - 能，和其他类方法一样，可以通过子类的元类的父类找到这个方法，向子类发送 load 消息可以响应，但是不能调 super
 - 调用先后顺序：
