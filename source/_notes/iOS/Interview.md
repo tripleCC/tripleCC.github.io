@@ -408,12 +408,14 @@ CALayer 要显示内容时，向 delegate 请求异步绘制任务，异步任�
   - GCD 更加轻量，效率更好，OperationQueue 作为一个对象更易用，代码复用度更高
 - 未执行任务取消
   - GCD 取消任务需要比 OperationQueue 写更多代码 (使用 GCD 接口创建的 block 可以使用 GCD 接口取消，或者用外部变量)，OperationQueue 直接执行 cancel 即可
+- 优先级设置
+  - OperationQueue 能够很方便地设置任务优先级，GCD 需要使用其 API 创建的任务 block 才能比较方便地设置任务优先级
+- 任务并发数量设置
+  - OperationQueue 直接设置 maxConcurrentOperationCount 即可， GCD 不支持
 - 任务依赖关系
   - GCD 没有提供设置任务依赖关系接口，OperationQueue 能够很方便地设置任务依赖关系
 - 任务进度监听
   - OperationQueue 的 NSOperation 对象支持 KVO，可以很方便地监听任务状态 (ready, executing, finished, cancelled)
-- 优先级设置
-  - OperationQueue 能够很方便地设置任务优先级，GCD 需要使用其 API 创建的任务 block 才能比较方便地设置任务优先级
 - 代码复用
   - 使用 OperationQueue 能继承 NSOperation 添加成员变量与方法，提高代码复用度，比 GCD 简单地将 block 任务添加至队列封装性更好，能添加更多自定义功能
 
