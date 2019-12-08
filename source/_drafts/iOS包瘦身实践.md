@@ -20,6 +20,8 @@ tags:
 
 - 二进制文件加密
 
+- ipa 自行压缩的内容（文本）
+
 ## 资源
 
 ### 压缩
@@ -44,6 +46,8 @@ tags:
 - 脚本扫描
 	- 白名单
 	- 自动化提交 mr
+
+### 重复资源
 
 ## MachO
 
@@ -86,3 +90,5 @@ tags:
 ## 参考
 
 [Reducing the size of my App](https://developer.apple.com/library/archive/qa/qa1795/_index.html)
+
+[Code Size Performance Guidelines](https://developer.apple.com/library/archive/documentation/Performance/Conceptual/CodeFootprint/Articles/CompilerOptions.html)
