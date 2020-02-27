@@ -50,8 +50,6 @@
 
 
 
-[JSPatch 实现原理详解](https://github.com/bang590/JSPatch/wiki/JSPatch-%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E8%AF%A6%E8%A7%A3)
-
 [OCS ——史上最疯狂的 iOS 动态化方案](https://www.jianshu.com/p/0f99d106d93a)
 
 [iOS/flutter动态化杂谈](https://segmentfault.com/a/1190000021331416)
@@ -70,7 +68,33 @@ iOS 禁止了开发者应用中堆的执行权限，所以在堆中的机器码�
 
 iOS 不支持 JavaScriptCore 的 JIT模式，只有指定的 App 或服务才允许使用 JIT 模式，比如 MobileSafari.app, Web.app 等，WKWebView （在独立进程中运行）允许使用 JIT ，所以会比 UIWebView 以及直接使用 JSContext 快。
 
+## JavaScriptCore + forwardInvocation
+
+### JSPatch
+
+[JSPatch 实现原理详解](https://github.com/bang590/JSPatch/wiki/JSPatch-%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E8%AF%A6%E8%A7%A3)
+
+[JSPatch bridge Objective-C and Javascript using the Objective-C runtime. You can call any Objective-C class and method in JavaScript by just including a small engine. JSPatch is generally used to hotfix iOS App.](https://github.com/bang590/JSPatch)
+
+## libffi + 自定义 interpreter
+
+###  Mango 
+
+[MangoFix：iOS热修复另辟蹊径](https://www.jianshu.com/p/7ae91a2daead)
+
+[iOS热修复MangoFix原理分析](https://www.jianshu.com/p/a6511c687eda)
+
+[MangoFix is a DSL which syntax is very similar to Objective-C，MangoFix is also an iOS App hotfix SDK. You can use MangoFix method replace any Objective-C method.](https://github.com/YPLiang19/Mango)
+
+### DynamicOC
+
+[和Mango类似的iOS 动态化热修复方案-DynamicOC](https://juejin.im/post/5d410a4fe51d4561a705ba7e)
+
+## forwardInvocation + lua vm
+
 ### wax
+
+> forwardInvocation + lua vm
 
 调用 env
 
@@ -135,7 +159,17 @@ end
 	-> 4 self:ORIGviewDidLoad() 会把索引信息 viewDidLoad 传给注册的 __index 函数，在函数中返回 cclosure 来让 lua 层执行调用，通过在 cclosure 实体里面设置 lua 调用的返回结果
 ```
 
+### MMPatch
 
+> 陌陌 lua 热修复
+
+[MMPatch基础用法](https://mln.immomo.com/zh-cn/docs/MMPatch基础用法.html)
+
+###CeleDev
+
+>  lua 热修复 + 更新
+
+[CeleDev Lua 开发 iOS 应用框架](https://www.celedev.com/en/documentation/doc/celedev-object-framework/) 
 
 ### Lua
 
@@ -186,12 +220,6 @@ lua 有块级作用域，js 只有函数级作用域，所以 lua 的闭包接�
 [去掉 full userdata 的 GC 元方法](https://blog.codingnow.com/2013/08/full_userdata_gc.html)
 
 [Lua 与 C 交互之UserData（4）](https://www.cnblogs.com/zsb517/p/6420885.html)
-
-
-
-[MMPatch基础用法](https://mln.immomo.com/zh-cn/docs/MMPatch基础用法.html)
-
-[CeleDev Lua 开发 iOS 应用框架](https://www.celedev.com/en/documentation/doc/celedev-object-framework/)
 
 ### LuaJIT
 
@@ -247,3 +275,8 @@ lua 有块级作用域，js 只有函数级作用域，所以 lua 的闭包接�
 
 [IL是什么，它又不是什么？那么汇编呢？](http://blog.zhaojie.me/2009/06/my-view-of-il-1-il-and-asm.html)
 
+
+
+### 其他
+
+[objc_msgSend() Tour Part 1: The Road Map](http://www.friday.com/bbum/2009/12/18/objc_msgsend-part-1-the-road-map/)
