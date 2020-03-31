@@ -45,6 +45,12 @@
 
 
 
+32 位 bool 和 char 的 encoding 一样问题
+
+- JS 在 32 位下，JavaScriptCore 转换 objc(NO) 是 0 ，objc(YES) 是 1 ，因为有隐式转换 (0 -> false，1 -> true)，所以常规判断不会出错 (不用 === false/true即可)
+- Lua 中，0 也作为 true，所以判断会出问题，只能将 0 统一转成 false （不过会有 boolean 无法和 number 进行运算问题）
+
+
 
 [关于iOS热修复（HotPatch）技术的使用总结](https://www.bbsmax.com/A/rV57129zPD/)
 
@@ -221,6 +227,10 @@ lua 有块级作用域，js 只有函数级作用域，所以 lua 的闭包接�
 
 [Lua 与 C 交互之UserData（4）](https://www.cnblogs.com/zsb517/p/6420885.html)
 
+
+
+[Threads Tutorial](http://lua-users.org/cgi-bin/wiki.pl?action=search&string=ThreadsTutorial&body=1)
+
 ### LuaJIT
 
 [用好Lua+Unity，让性能飞起来—LuaJIT性能坑详解](https://blog.uwa4d.com/archives/usparkle_luajit.html)
@@ -245,6 +255,14 @@ lua 有块级作用域，js 只有函数级作用域，所以 lua 的闭包接�
 
 
 
+### Lua 原生多线程
+
+虚拟机中的指令的运行栈，通过每个线程挂一个独立的运行栈，可以实现多线程执行，其他东西应该可以通过加锁共享，这样可以规避不同虚拟机之间不好同步数据的问题。
+
+原生多线程运行 lua ，可以通过 lua_newstate 给每个线程创建一个 lua_State 实现，但是多个lua_State 之间的数据同步就比较难，相当于把整个虚拟机都独立了。如果只是运行栈独立，就不用关心数据同步的问题。lua_newthread 会和传入的 lua_State 共享数据/虚拟机状态，有独立的执行栈，但是是 lua 中的多线程/协程，并不能并行执行
+
+
+
 ### libffi
 
 [libffi 文档](https://github.com/libffi/libffi)
@@ -255,6 +273,8 @@ lua 有块级作用域，js 只有函数级作用域，所以 lua 的闭包接�
 
 [如何动态调用 C 函数](http://blog.cnbang.net/tech/3219/)
 
+[libffi 调用](https://github.com/libffi/libffi/tree/master/testsuite)
+
 ### 字节码虚拟机相关
 
 [Java为什么解释执行时不直接解释源码？](https://www.zhihu.com/question/34345694/answer/59407625)
@@ -263,7 +283,7 @@ lua 有块级作用域，js 只有函数级作用域，所以 lua 的闭包接�
 
 [虚拟机随谈（一）：解释器，树遍历解释器，基于栈与基于寄存器，大杂烩](http://iteye.com/blog/rednaxelafx-492667)
 
-
+[AST解释器和字节码解释器](https://www.jianshu.com/p/f6046c227afa)  
 
 ### Unity 相关(主要看在 iOS 平台上热更的思路)
 
