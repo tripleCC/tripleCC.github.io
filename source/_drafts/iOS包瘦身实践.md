@@ -93,6 +93,12 @@ tags:
 - 获取信息
 
 
+## 其他
+
+关于 `-Oz` ，[On Optimization Flags](http://events17.linuxfoundation.org/sites/events/files/slides/GCC%252FClang%20Optimizations%20for%20Embedded%20Linux.pdf) 显示这个参数会禁止 loop vectorization ，而 [Auto-Vectorization in LLVM](https://llvm.org/docs/Vectorizers.html) 显示，开启 vectorization 的性能明显比未开启高 3 倍以上。关于什么是 [Automatic vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization) 。
+
+关于 `--gc-sections`，xcode 不支持这个链接选项，替代选项为 `-dead_strip`。
+
 ## 参考
 
 [Reducing the size of my App](https://developer.apple.com/library/archive/qa/qa1795/_index.html)
