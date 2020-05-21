@@ -60,6 +60,7 @@ tags:
 - all
 
 ### 限制导出符号
+- exported symbols file
 
 - dead code
 
@@ -82,11 +83,18 @@ tags:
 ### MR 准入
 
 - base commit 包 对比分支 commit 包
+- 增量分析
+- 定期全量分析
+
+- 包大小业务线追责，根据 mr 合入作者确定业务线，定期做统计，预先规定增长量
 
 ### ipa 包分析
 
 - 压缩比
 - car 解压分析
+	- assetsutil
+	- sudo xcrun --sdk iphoneos assetutil --idiom phone --subtype 570 --scale 3 --display-gamut srgb --graphicsclass MTL2,2 --graphicsclassfallbacks MTL1,2:GLES2,0 --memory 1 --hostedidioms car,watch xxx/Assets.car -o xxx/thinning_assets.car
+	- fastlane thinning , xcodebuild -exportArchive 输出特定设备 ipa （os 版本 + 设备类型 -> 实际 ipa 大小，确定了设备类型，还是会生成多个 os 版本的 ipa ，可以取最小的）
 
 ### LinkMap
 
