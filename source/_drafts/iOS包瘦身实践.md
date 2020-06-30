@@ -78,6 +78,12 @@ tags:
 
 ### 无用方法
 
+### `__text` section 重命名
+
+`__TEXT __text` section 移动到 `__RODATA __text` ，减少 iOS 12 及以下系统下载大小，保持加密前大小
+
+重命名大小限制 128M，需拆若干个小的 framework
+
 ## 监控
 
 ### MR 准入
