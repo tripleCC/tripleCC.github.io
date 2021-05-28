@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="runtime,Swift,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Swift开源之后，虽然大部分代码对于作为应用程序猿的我来说，花费大量时间去阅读，性价比有点不高，但是阅读下Foundation，学习学习Swift的编码范式还是不错的。 NSEnumerator.swift1.遵循多个约束其中范型NSGeneratorEnumerator定义如下： 12345678910internal class NSGeneratorEnumerator&amp;lt;Base :">
+<meta name="keywords" content="runtime,Swift">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Swift源码阅读Runtime">
+<meta property="og:url" content="https://triplecc.github.io/2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="Swift开源之后，虽然大部分代码对于作为应用程序猿的我来说，花费大量时间去阅读，性价比有点不高，但是阅读下Foundation，学习学习Swift的编码范式还是不错的。 NSEnumerator.swift1.遵循多个约束其中范型NSGeneratorEnumerator定义如下： 12345678910internal class NSGeneratorEnumerator&amp;lt;Base :">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Swift源码阅读Runtime">
+<meta name="twitter:description" content="Swift开源之后，虽然大部分代码对于作为应用程序猿的我来说，花费大量时间去阅读，性价比有点不高，但是阅读下Foundation，学习学习Swift的编码范式还是不错的。 NSEnumerator.swift1.遵循多个约束其中范型NSGeneratorEnumerator定义如下： 12345678910internal class NSGeneratorEnumerator&amp;lt;Base :">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/">
+
+
+
+
+
+  <title>Swift源码阅读Runtime | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Swift源码阅读Runtime</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2015-12-07T13:46:23+00:00">
+                2015-12-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/swift/" itemprop="url" rel="index">
+                    <span itemprop="name">swift</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Swift开源之后，虽然大部分代码对于作为应用程序猿的我来说，花费大量时间去阅读，性价比有点不高，但是阅读下Foundation，学习学习Swift的编码范式还是不错的。</p>
+<h2 id="NSEnumerator-swift"><a href="#NSEnumerator-swift" class="headerlink" title="NSEnumerator.swift"></a>NSEnumerator.swift</h2><h3 id="1-遵循多个约束"><a href="#1-遵循多个约束" class="headerlink" title="1.遵循多个约束"></a>1.遵循多个约束<br></h3><p>其中范型NSGeneratorEnumerator定义如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">internal</span> <span class="class"><span class="keyword">class</span> <span class="title">NSGeneratorEnumerator</span>&lt;<span class="title">Base</span> : <span class="title">GeneratorType</span> <span class="title">where</span> <span class="title">Base</span>.<span class="title">Element</span> : <span class="title">AnyObject</span>&gt; : <span class="title">NSEnumerator</span> </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> generator : <span class="type">Base</span></span><br><span class="line">    <span class="keyword">init</span>(<span class="number">_</span> generator: <span class="type">Base</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.generator = generator</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">func</span> <span class="title">nextObject</span><span class="params">()</span></span> -&gt; <span class="type">AnyObject</span>? &#123;</span><br><span class="line">        <span class="keyword">return</span> generator.next()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面有一点，就是范型类型的约束：遵守协议GeneratorType，并且是AnyObject类型。这个上次写的时候忘了，刚好这次记下这种写法。</p>
+<a id="more"></a>
+<h2 id="NSObjCRuntime-swift"><a href="#NSObjCRuntime-swift" class="headerlink" title="NSObjCRuntime.swift"></a>NSObjCRuntime.swift</h2><h3 id="1-实现OC中NS-OPTIONS效果的swift形式的Option"><a href="#1-实现OC中NS-OPTIONS效果的swift形式的Option" class="headerlink" title="1.实现OC中NS_OPTIONS效果的swift形式的Option"></a>1.实现OC中NS_OPTIONS效果的swift形式的Option<br></h3><figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">struct</span> <span class="title">NSSortOptions</span> : <span class="title">OptionSetType</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">let</span> rawValue : <span class="type">UInt</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">init</span>(rawValue: <span class="type">UInt</span>) &#123; <span class="keyword">self</span>.rawValue = rawValue &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">let</span> <span class="type">Concurrent</span> = <span class="type">NSSortOptions</span>(rawValue: <span class="type">UInt</span>(<span class="number">1</span> &lt;&lt; <span class="number">0</span>))</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">let</span> <span class="type">Stable</span> = <span class="type">NSSortOptions</span>(rawValue: <span class="type">UInt</span>(<span class="number">1</span> &lt;&lt; <span class="number">4</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>以上是swift中很典型的Options，包括常见的UIViewAnimationOptions等。Concurrent和Stable是以静态属性存在的，所以可以直接使用<code>NSSortOptions.属性名</code>访问，在知道类型后，也可以简写<code>.属性名</code>。</p>
+<p>遵守OptionSetType表示NSSortOptions可以进行集合及位运算，也就是<code>[.Concurrent, .Stable]</code>等。所以为了实现以前OC中的NS_OPTIONS的<code>位与</code>效果，可以实现一个遵循OptionSetType协议的结构体:</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">struct</span> <span class="title">AnyOption</span>: <span class="title">OptionSetType</span> </span>&#123;</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">let</span> rawValue: <span class="type">UInt</span></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">init</span>(rawValue: <span class="type">UInt</span>)  &#123; <span class="keyword">self</span>.rawValue = rawVale &#125;  <span class="comment">// 这个struct会自动构造，可以省略</span></span><br><span class="line">	</span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">let</span> <span class="type">TypeOne</span> = <span class="type">AnyOption</span>(rawValue: <span class="type">UInt</span>(<span class="number">1</span> &lt;&lt; <span class="number">0</span>))</span><br><span class="line">	...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>值得注意的一点是，在OC中使用<code>kNilOptions</code>来表示NoneOption，swift中则是实用<code>[]</code>。<br><br>所以可以进行<code>位与</code>操作的选项最好创建成遵守OptionSetType的struct，而不是enum。</p>
+<h3 id="2-范型协议"><a href="#2-范型协议" class="headerlink" title="2.范型协议"></a>2.范型协议</h3><figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">internal</span> <span class="class"><span class="keyword">protocol</span> <span class="title">_CFBridgable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">typealias</span> <span class="type">CFType</span></span><br><span class="line">    <span class="keyword">var</span> _cfObject: <span class="type">CFType</span> &#123; <span class="keyword">get</span> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在swift中，协议的范型是通过<code>typealias</code>关键字来实现的，而类、数组、方法和函数则是通过类型参数来实现：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">geneticFunction</span>&lt;T&gt;<span class="params">(p: [T])</span></span> -&gt; <span class="type">Bool</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>遵守范型协议后可以这样来实现相应的属性：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyClass</span>: <span class="title">Type</span> </span>&#123;</span><br><span class="line">    <span class="keyword">typealias</span> <span class="type">MyType</span> = <span class="type">String</span> <span class="comment">// 这句也可以省略</span></span><br><span class="line">    <span class="keyword">var</span> _type: <span class="type">String</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">""</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以使用<code>Self</code>表示遵守范型协议的类型：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">protocol</span> <span class="title">EquatableSelf</span> </span>&#123;</span><br><span class="line">	<span class="function"><span class="keyword">func</span> <span class="title">equals</span><span class="params">(other: <span class="keyword">Self</span>)</span></span> -&gt; <span class="type">Bool</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ImplicitStruct</span>: <span class="title">EquatableSelf</span> </span>&#123;</span><br><span class="line">	<span class="keyword">var</span> val: <span class="type">Int64</span></span><br><span class="line">	<span class="function"><span class="keyword">func</span> <span class="title">equals</span><span class="params">(other: ImplicitStruct)</span></span> -&gt; <span class="type">Bool</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">self</span>.val == other.val</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在不使用<code>Self</code>关键字的情况下，可以使用以下方式实现同样的类型：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">protocol</span> <span class="title">EquatableTypealias</span> </span>&#123;</span><br><span class="line">	<span class="keyword">typealias</span> <span class="type">EquatableType</span></span><br><span class="line">	<span class="function"><span class="keyword">func</span> <span class="title">equals</span><span class="params">(other : EquatableType)</span></span> -&gt; <span class="type">Bool</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ExplicitStruct</span> : <span class="title">EquatableTypealias</span> </span>&#123;</span><br><span class="line">	<span class="keyword">typealias</span> <span class="type">EquatableType</span> = <span class="type">ExplicitStruct</span></span><br><span class="line">	<span class="keyword">var</span> val : <span class="type">Int64</span></span><br><span class="line">	<span class="function"><span class="keyword">func</span> <span class="title">equals</span><span class="params">(other: ExplicitStruct)</span></span> -&gt; <span class="type">Bool</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">self</span>.val == other.val;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里有一篇不错的文章，对范型协议进行了介绍<a href="http://milen.me/writings/swift-generic-protocols/" target="_blank" rel="noopener">Swift Generic Protocols
+</a></p>
+<h2 id="NSObject-swift"><a href="#NSObject-swift" class="headerlink" title="NSObject.swift"></a>NSObject.swift</h2><h3 id="1-运算符重载"><a href="#1-运算符重载" class="headerlink" title="1.运算符重载"></a>1.运算符重载</h3><figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">func</span> ==<span class="params">(lhs: NSObject, rhs: NSObject)</span></span> -&gt; <span class="type">Bool</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> lhs.isEqual(rhs)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重载了两个NSObject对象的<code>==</code>运算符，实际上是使用swift中的<code>===</code>判断对象是否相等：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">isEqual</span><span class="params">(object: AnyObject?)</span></span> -&gt; <span class="type">Bool</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> object === <span class="keyword">self</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>需要注意的是上面对于NSObject重载的等价运算符是<code>全局函数</code>。</p>
+<p>在实现运算符重载时，需要注意对<code>前后缀运算符</code>重载，需要添加<code>prefix</code>和<code>postfix</code>关键字：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">prefix</span> <span class="function"><span class="keyword">func</span> - <span class="params">(vector: Vector2D)</span></span> -&gt; <span class="type">Vector2D</span> &#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="type">Vector2D</span>(x: -vector.x, y: -vector.y)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对<code>改变左表达式</code>的复合运算符，需要在对应的参数中添加<code>inout</code>关键字:</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> += <span class="params">(<span class="keyword">inout</span> <span class="keyword">left</span>: Vector2D, <span class="keyword">right</span>: Vector2D)</span></span> &#123;</span><br><span class="line">	<span class="keyword">left</span> = <span class="keyword">left</span> + <span class="keyword">right</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="NSSwiftRuntime-swift"><a href="#NSSwiftRuntime-swift" class="headerlink" title="NSSwiftRuntime.swift"></a>NSSwiftRuntime.swift</h3><p>这个文件主要实现了Swift对于NS基础类型映射（基本也只能摸个大概，大部分还是不懂= =）。</p>
+<p>其中有一个<code>__CFInitializeSwift</code>函数，本分函数体如下:</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">internal</span> <span class="function"><span class="keyword">func</span> <span class="title">__CFInitializeSwift</span><span class="params">()</span></span> &#123;</span><br><span class="line">    _CFRuntimeBridgeTypeToClass(<span class="type">CFStringGetTypeID</span>(), <span class="built_in">unsafeBitCast</span>(_NSCFString.<span class="keyword">self</span>, <span class="type">UnsafePointer</span>&lt;<span class="type">Void</span>&gt;.<span class="keyword">self</span>))</span><br><span class="line">    _CFRuntimeBridgeTypeToClass(<span class="type">CFArrayGetTypeID</span>(), <span class="built_in">unsafeBitCast</span>(_NSCFArray.<span class="keyword">self</span>, <span class="type">UnsafePointer</span>&lt;<span class="type">Void</span>&gt;.<span class="keyword">self</span>))</span><br><span class="line">    _CFRuntimeBridgeTypeToClass(<span class="type">CFDictionaryGetTypeID</span>(), <span class="built_in">unsafeBitCast</span>(_NSCFDictionary.<span class="keyword">self</span>, <span class="type">UnsafePointer</span>&lt;<span class="type">Void</span>&gt;.<span class="keyword">self</span>))</span><br><span class="line">    ....</span><br><span class="line">    __CFSwiftBridge.<span class="type">NSObject</span>.isEqual = _CFSwiftIsEqual</span><br><span class="line">    __CFSwiftBridge.<span class="type">NSObject</span>.hash = _CFSwiftGetHash</span><br><span class="line">    __CFSwiftBridge.<span class="type">NSObject</span>._cfTypeID = _CFSwiftGetTypeID</span><br><span class="line">    ....</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中<code>_CFRuntimeBridgeTypeToClass</code>主要作用是使用对应ID为索引，将对应的类地址，存入一个全局的数组中。类似Objective-C中实例对象中的isa指向的东西，这样就可以根据这个索引对应的内容，来创建实例对象了。</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">void _CFRuntimeBridgeTypeToClass(<span class="type">CFTypeID</span> cf_typeID, const void *cls_ref) &#123;</span><br><span class="line">    __CFLock(&amp;__CFBigRuntimeFunnel);</span><br><span class="line">    __CFRuntimeObjCClassTable[cf_typeID] = (uintptr_t)cls_ref;</span><br><span class="line">    __CFUnlock(&amp;__CFBigRuntimeFunnel);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>而<code>_CFSwiftBridge</code>是一个全局变量，其类型定义如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">_CFSwiftBridge</span> </span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">_NSObjectBridge</span> <span class="title">NSObject</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSArrayBridge</span> <span class="title">NSArray</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSMutableArrayBridge</span> <span class="title">NSMutableArray</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSDictionaryBridge</span> <span class="title">NSDictionary</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSMutableDictionaryBridge</span> <span class="title">NSMutableDictionary</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSSetBridge</span> <span class="title">NSSet</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSMutableSetBridge</span> <span class="title">NSMutableSet</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSStringBridge</span> <span class="title">NSString</span>;</span></span><br><span class="line"><span class="class">    <span class="title">struct</span> <span class="title">_NSMutableStringBridge</span> <span class="title">NSMutableString</span>;</span></span><br><span class="line"><span class="class">&#125;;</span></span><br></pre></td></tr></table></figure>
+<p>可以看到其成员对应的NS基础类型。取NSObject，类型定义如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">_NSObjectBridge</span> </span>&#123;</span><br><span class="line">    <span class="type">CFTypeID</span> (*_cfTypeID)(<span class="type">CFTypeRef</span> object);</span><br><span class="line">    <span class="type">CFHashCode</span> (*hash)(<span class="type">CFTypeRef</span> object);</span><br><span class="line">    bool (*isEqual)(<span class="type">CFTypeRef</span> object, <span class="type">CFTypeRef</span> other);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可以看到其成员都是函数指针，在<code>__CFInitializeSwift</code>中对它们进行了初始化。比如<code>_CFSwiftIsEqual</code>，就是用Swift定义的判断两个对象是否相等的函数，其定义如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">internal</span> <span class="function"><span class="keyword">func</span> <span class="title">_CFSwiftIsEqual</span><span class="params">(cf1: AnyObject, cf2: AnyObject)</span></span> -&gt; <span class="type">Bool</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> (cf1 <span class="keyword">as</span>! <span class="type">NSObject</span>).isEqual(cf2)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最后<code>__CFInitializeSwift</code>在CFRuntime.c文件中的__CFInitialize函数即CoreFoundation初始化函数中进行调用：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">....</span><br><span class="line">extern void __CFInitializeSwift();</span><br><span class="line">__CFInitializeSwift();</span><br><span class="line">....</span><br></pre></td></tr></table></figure>
+<p>好了…但是基本还是云里雾里…</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/runtime/" rel="tag"># runtime</a>
+          
+            <a href="/tags/Swift/" rel="tag"># Swift</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/" rel="next" title="iOS知识碎片三">
+                <i class="fa fa-chevron-left"></i> iOS知识碎片三
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/12/20/2015-12-20-xcodekuai-jie-jian/" rel="prev" title="Xcode快捷键">
+                Xcode快捷键 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#NSEnumerator-swift"><span class="nav-number">1.</span> <span class="nav-text">NSEnumerator.swift</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-遵循多个约束"><span class="nav-number">1.1.</span> <span class="nav-text">1.遵循多个约束</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NSObjCRuntime-swift"><span class="nav-number">2.</span> <span class="nav-text">NSObjCRuntime.swift</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-实现OC中NS-OPTIONS效果的swift形式的Option"><span class="nav-number">2.1.</span> <span class="nav-text">1.实现OC中NS_OPTIONS效果的swift形式的Option</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-范型协议"><span class="nav-number">2.2.</span> <span class="nav-text">2.范型协议</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#NSObject-swift"><span class="nav-number">3.</span> <span class="nav-text">NSObject.swift</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-运算符重载"><span class="nav-number">3.1.</span> <span class="nav-text">1.运算符重载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NSSwiftRuntime-swift"><span class="nav-number">3.2.</span> <span class="nav-text">NSSwiftRuntime.swift</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/';
+          this.page.identifier = '2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/';
+          this.page.title = 'Swift源码阅读Runtime';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

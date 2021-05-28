@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="CocoaPods,Ruby,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="为了减少组件化后的工程集成时间，我们一般都会将三方库放到私有 GitLab 中，这也有利于开发者根据自家业务，对三方库进行定制包装。但是如果有些三方库更新较慢，以至于让新版本的 Xcode 产生很多警告，这就比较烦了，因为大部分情况下，更改三方库并不是一个明智的选择。 Podfile 提供了 inhibit_all_warnings! 以屏蔽所有 pod target 的警告，但其中也包括了非三方">
+<meta name="keywords" content="CocoaPods,Ruby">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CocoaPods忽略三方组件编译警告">
+<meta property="og:url" content="https://triplecc.github.io/2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="为了减少组件化后的工程集成时间，我们一般都会将三方库放到私有 GitLab 中，这也有利于开发者根据自家业务，对三方库进行定制包装。但是如果有些三方库更新较慢，以至于让新版本的 Xcode 产生很多警告，这就比较烦了，因为大部分情况下，更改三方库并不是一个明智的选择。 Podfile 提供了 inhibit_all_warnings! 以屏蔽所有 pod target 的警告，但其中也包括了非三方">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CocoaPods忽略三方组件编译警告">
+<meta name="twitter:description" content="为了减少组件化后的工程集成时间，我们一般都会将三方库放到私有 GitLab 中，这也有利于开发者根据自家业务，对三方库进行定制包装。但是如果有些三方库更新较慢，以至于让新版本的 Xcode 产生很多警告，这就比较烦了，因为大部分情况下，更改三方库并不是一个明智的选择。 Podfile 提供了 inhibit_all_warnings! 以屏蔽所有 pod target 的警告，但其中也包括了非三方">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/">
+
+
+
+
+
+  <title>CocoaPods忽略三方组件编译警告 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">CocoaPods忽略三方组件编译警告</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-20T13:58:25+00:00">
+                2018-06-20
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/cocoapods/" itemprop="url" rel="index">
+                    <span itemprop="name">cocoapods</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>为了减少组件化后的工程集成时间，我们一般都会将三方库放到私有 GitLab 中，这也有利于开发者根据自家业务，对三方库进行定制包装。但是如果有些三方库更新较慢，以至于让新版本的 Xcode 产生很多警告，这就比较烦了，因为大部分情况下，更改三方库并不是一个明智的选择。</p>
+<p>Podfile 提供了 <code>inhibit_all_warnings!</code> 以屏蔽所有 pod target 的警告，但其中也包括了非三方组件。同时，Podfile 提供了 <code>inhibit_warnings</code> 去针对单个 pod 的编译警告进行控制，比如：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod <span class="string">'SSZipArchive'</span>, <span class="symbol">:inhibit_warnings</span> =&gt; <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>以上代码只会屏蔽 SSZipArchive 组件的警告，这比较符合我们的诉求。不过 <code>inhibit_warnings</code> 只会禁止当前 pod 的警告，并不会一同处理依赖组件的警告，这就要求我们在 Podfile 中显式依赖所有三方组件，并且设置 <code>inhibit_warnings</code>。</p>
+<a id="more"></a>
+<p>暂时搁置下这种体力活，我们看下有没有更好的处理方式。遇到这种问题，首先想到的是可以在 <code>pre_install</code> / <code>post_install</code> 中统一设置。在 CocoaPods 源码中搜索 <code>inhibit_warnings</code>，定位到以下代码 ：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_files_to_build_phases</span><span class="params">(native_target, test_native_targets)</span></span></span><br><span class="line">	...</span><br><span class="line">	flags = compiler_flags_for_consumer(consumer, arc)</span><br><span class="line">  regular_file_refs = project_file_references_array(files, <span class="string">'source'</span>)</span><br><span class="line">  native_target.add_file_references(regular_file_refs, flags)</span><br><span class="line">	...</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">compiler_flags_for_consumer</span><span class="params">(consumer, arc)</span></span></span><br><span class="line">  ...</span><br><span class="line">  <span class="keyword">if</span> target.inhibit_warnings?</span><br><span class="line">    flags &lt;&lt; <span class="string">'-w -Xanalyzer -analyzer-disable-all-checks'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  flags * <span class="string">' '</span></span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，在添加文件至对应 target 时，<code>-w -Xanalyzer -analyzer-disable-all-checks</code> 同时被添加到了文件的 compiler flags （在Target -&gt; Build Phases -&gt; Compile Sources 中可见）。结合 Installer 的 install! 代码：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">install!</span></span></span><br><span class="line">  prepare</span><br><span class="line">  resolve_dependencies</span><br><span class="line">  download_dependencies</span><br><span class="line">  validate_targets</span><br><span class="line">  generate_pods_project</span><br><span class="line">  <span class="keyword">if</span> installation_options.integrate_targets?</span><br><span class="line">    integrate_user_project</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    UI.section <span class="string">'Skipping User Project Integration'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  perform_post_install_actions</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">download_dependencies</span></span></span><br><span class="line">  UI.section <span class="string">'Downloading dependencies'</span> <span class="keyword">do</span></span><br><span class="line">    install_pod_sources</span><br><span class="line">    run_podfile_pre_install_hooks</span><br><span class="line">    clean_pod_sources</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p><code>generate_pods_project</code> 方法执行了 PodTargetInstaller 的 install! 操作，将文件添加到了 pod target ，那么只能在其之前的 <code>pre_install</code> 设置相关属性了。从上面的代码还可以看出，执行 <code>pre_install</code> 前就已经 <code>resolve_dependencies</code> 了，也就是说我们可以拿到 Analyzer 分析的完整结果 AnalysisResult :</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># <span class="doctag">@return</span> [Hash&#123;TargetDefinition =&gt; Array&lt;Specification&gt;&#125;] the</span></span><br><span class="line"><span class="comment">#         specifications grouped by target.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="keyword">attr_accessor</span> <span class="symbol">:specs_by_target</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># <span class="doctag">@return</span> [Array&lt;Specification&gt;] the specifications of the resolved</span></span><br><span class="line"><span class="comment">#         version of Pods that should be installed.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="keyword">attr_accessor</span> <span class="symbol">:specifications</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># <span class="doctag">@return</span> [Array&lt;AggregateTarget&gt;] The aggregate targets created for each</span></span><br><span class="line"><span class="comment">#         &#123;TargetDefinition&#125; from the &#123;Podfile&#125;.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="keyword">attr_accessor</span> <span class="symbol">:targets</span></span><br></pre></td></tr></table></figure>
+<p>上面列出了此次需要涉及到的 AnalysisResult 属性。这里要注意的是 <code>targets</code> 属性是不包含 Pods Target 的，它只包含了 Podfile 里面声明的 target ，一般为组件本身，以及组件Tests。如果不确定要设置哪个 target ，可以手动设置 <code>inhibit_warnings</code> ，然后通过以下代码打印出 hash :</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">pod <span class="string">'SSZipArchive'</span>, <span class="symbol">:inhibit_warnings</span> =&gt; <span class="literal">true</span></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">pre_install <span class="keyword">do</span> <span class="params">|installer|</span></span><br><span class="line">	<span class="keyword">require</span> <span class="string">'pp'</span></span><br><span class="line">  installer.analysis_result.specs_by_target.each_key <span class="keyword">do</span> <span class="params">|target_definition|</span></span><br><span class="line">  	pp target_definition.to_hash</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>这里我们对所有涉及到的 target 都进行设置。接着看下 CocoaPods Core 代码中 Podfile 是如何设置 <code>inhibit_warnings</code> 的 : </p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pod</span><span class="params">(name = <span class="literal">nil</span>, *requirements)</span></span></span><br><span class="line">  ...</span><br><span class="line">  current_target_definition.store_pod(name, *requirements)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">store_pod</span><span class="params">(name, *requirements)</span></span></span><br><span class="line">	...</span><br><span class="line">  parse_inhibit_warnings(name, requirements)</span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">parse_inhibit_warnings</span><span class="params">(name, requirements)</span></span></span><br><span class="line">	...</span><br><span class="line">  set_inhibit_warnings_for_pod(pod_name, should_inhibit)</span><br><span class="line">	...</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Inhibits warnings for a specific pod during compilation.</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">set_inhibit_warnings_for_pod</span><span class="params">(pod_name, should_inhibit)</span></span></span><br><span class="line">  hash_key = <span class="keyword">case</span> should_inhibit</span><br><span class="line">             <span class="keyword">when</span> <span class="literal">true</span></span><br><span class="line">               <span class="string">'for_pods'</span></span><br><span class="line">             <span class="keyword">when</span> <span class="literal">false</span></span><br><span class="line">               <span class="string">'not_for_pods'</span></span><br><span class="line">             <span class="keyword">when</span> <span class="literal">nil</span></span><br><span class="line">               <span class="keyword">return</span></span><br><span class="line">             <span class="keyword">else</span></span><br><span class="line">               raise ArgumentError, <span class="string">"Got `<span class="subst">#&#123;should_inhibit.inspect&#125;</span>`, should be a boolean"</span></span><br><span class="line">             <span class="keyword">end</span></span><br><span class="line">  raw_inhibit_warnings_hash[hash_key] <span class="params">||</span>= []</span><br><span class="line">  raw_inhibit_warnings_hash[hash_key] &lt;&lt; pod_name</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>找到了设置 inhibit_warnings 的 public 方法 <code>set_inhibit_warnings_for_pod</code>。</p>
+<p>由于我们的三方库集中放在 cocoapods-repos 的 group 下，最终的 <code>pre_install</code> 长这样 :</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">pre_install <span class="keyword">do</span> <span class="params">|installer|</span></span><br><span class="line">  installer.analysis_result.specs_by_target.each_key <span class="keyword">do</span> <span class="params">|target_definition|</span></span><br><span class="line">    installer.analysis_result.specifications.each <span class="keyword">do</span> <span class="params">|spec|</span></span><br><span class="line">      source = spec.attributes_hash[<span class="string">'source'</span>]</span><br><span class="line">      source &amp;&amp;= source[<span class="string">'git'</span>]</span><br><span class="line">      <span class="keyword">next</span> <span class="keyword">unless</span> source &amp;&amp; source.<span class="keyword">include</span>?(<span class="string">'cocoapods-repos'</span>)</span><br><span class="line"></span><br><span class="line">      targets = (Array(target_definition) + target_definition.children)</span><br><span class="line">      targets.each <span class="keyword">do</span> <span class="params">|target|</span></span><br><span class="line">        target.set_inhibit_warnings_for_pod(spec.root.name, <span class="literal">true</span>)</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CocoaPods/" rel="tag"># CocoaPods</a>
+          
+            <a href="/tags/Ruby/" rel="tag"># Ruby</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/04/07/2018-04-07-rang-cocoapodszu-jian-zhi-chi-carthageda-bao/" rel="next" title="让CocoaPods组件支持Carthage打包">
+                <i class="fa fa-chevron-left"></i> 让CocoaPods组件支持Carthage打包
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/" rel="prev" title="火掌柜 iOS 团队 GitLab CI 集成实践">
+                火掌柜 iOS 团队 GitLab CI 集成实践 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/';
+          this.page.identifier = '2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/';
+          this.page.title = 'CocoaPods忽略三方组件编译警告';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

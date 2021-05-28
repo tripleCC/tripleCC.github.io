@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Interview,block,循环引用,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Objective-C 使用引用计数作为 iPhone 应用的内存管理方案，引用计数相比 GC 更适用于内存不太充裕的场景，只需要收集与对象关联的局部信息来决定是否回收对象，而 GC 为了明确可达性，需要全局的对象信息。引用计数固然有其优越性，但也正是因为缺乏对全局对象信息的把控，导致 Objective-C 无法自动销毁陷入循环引用的对象。虽然 Objective-C 通过引入弱引用技术，让开发">
+<meta name="keywords" content="Interview,block,循环引用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="聊聊循环引用的检测">
+<meta property="og:url" content="https://triplecc.github.io/2019/08/15/聊聊循环引用的检测/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="Objective-C 使用引用计数作为 iPhone 应用的内存管理方案，引用计数相比 GC 更适用于内存不太充裕的场景，只需要收集与对象关联的局部信息来决定是否回收对象，而 GC 为了明确可达性，需要全局的对象信息。引用计数固然有其优越性，但也正是因为缺乏对全局对象信息的把控，导致 Objective-C 无法自动销毁陷入循环引用的对象。虽然 Objective-C 通过引入弱引用技术，让开发">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.933Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="聊聊循环引用的检测">
+<meta name="twitter:description" content="Objective-C 使用引用计数作为 iPhone 应用的内存管理方案，引用计数相比 GC 更适用于内存不太充裕的场景，只需要收集与对象关联的局部信息来决定是否回收对象，而 GC 为了明确可达性，需要全局的对象信息。引用计数固然有其优越性，但也正是因为缺乏对全局对象信息的把控，导致 Objective-C 无法自动销毁陷入循环引用的对象。虽然 Objective-C 通过引入弱引用技术，让开发">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2019/08/15/聊聊循环引用的检测/">
+
+
+
+
+
+  <title>聊聊循环引用的检测 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2019/08/15/聊聊循环引用的检测/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">聊聊循环引用的检测</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-08-15T19:49:36+00:00">
+                2019-08-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/08/15/聊聊循环引用的检测/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/08/15/聊聊循环引用的检测/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Objective-C 使用引用计数作为 iPhone 应用的内存管理方案，引用计数相比 GC 更适用于内存不太充裕的场景，只需要收集与对象关联的局部信息来决定是否回收对象，而 GC 为了明确可达性，需要全局的对象信息。引用计数固然有其优越性，但也正是因为缺乏对全局对象信息的把控，导致 Objective-C 无法自动销毁陷入循环引用的对象。虽然 Objective-C 通过引入弱引用技术，让开发者可以尽可能地规避这个问题，但在引用层级过深，引用路径不那么直观的情况下，即使是经验丰富的工程师，也无法百分百保证产出的代码不存在循环引用。</p>
+<a id="more"></a>
+<p>这时候就需要有一种检测方案，可以实时检测对象之间是否发生了循环引用，来辅助开发者及时地修正代码中存在的内存泄漏问题。要想检测出循环引用，最直观的方式是递归地获取对象强引用的其他对象，并判断检测对象是否被其路径上的对象强引用了，也就是在有向图中去找环。明确检测方式之后，接下来需要解决的是如何获取强引用链，也就是获取对象的强引用，尤其是最容易造成循环引用的 block。</p>
+<h2 id="Block-捕获实体引用"><a href="#Block-捕获实体引用" class="headerlink" title="Block 捕获实体引用"></a>Block 捕获实体引用</h2><blockquote>
+<p>往期关于 Block 的文章 <a href="https://triplecc.github.io/2019/04/14/Objective-CBlock%E8%A1%A5%E5%85%85/">对 Block 的一点补充</a>、<a href="https://triplecc.github.io/2017/07/28/2017-07-28-blockhe-nsmethodsignature/">用 Block 实现委托方法</a>、<a href="https://triplecc.github.io/2015/07/19/2015-08-27-blockji-qiao-yu-di-ceng-jie-xi/">Block技巧与底层解析</a></p>
+</blockquote>
+<h3 id="捕获区域布局初探"><a href="#捕获区域布局初探" class="headerlink" title="捕获区域布局初探"></a>捕获区域布局初探</h3><p>首先根据 block 的<a href="https://github.com/tripleCC/Laboratory/blob/d5d98d343a918d3883a2d5274da212cd44f50414/AppleSources/libclosure-73/Block_private.h#L216-L242" target="_blank" rel="noopener">定义结构</a>，可以简单地将其视为：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> sr_block_layout &#123;</span><br><span class="line">    <span class="keyword">void</span> *isa;</span><br><span class="line">    <span class="keyword">int</span> flags;</span><br><span class="line">    <span class="keyword">int</span> reserved;</span><br><span class="line">    <span class="keyword">void</span> (*invoke)(<span class="keyword">void</span> *, ...);</span><br><span class="line">    <span class="keyword">struct</span> sr_block_descriptor *descriptor;</span><br><span class="line">    <span class="comment">/* Imported variables. */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 标志位不一样，这个结构的实际布局也会有差别，这里简单地放在一起好阅读</span></span><br><span class="line"><span class="keyword">struct</span> sr_block_descriptor &#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> reserved; <span class="comment">// Block_descriptor_1</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> size; <span class="comment">// Block_descriptor_1</span></span><br><span class="line">    <span class="keyword">void</span> (*)(<span class="keyword">void</span> *dst, <span class="keyword">void</span> *src);  <span class="comment">// Block_descriptor_2 BLOCK_HAS_COPY_DISPOSE</span></span><br><span class="line">    <span class="keyword">void</span> (*dispose)(<span class="keyword">void</span> *); <span class="comment">// Block_descriptor_2</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *signature; <span class="comment">// Block_descriptor_3 BLOCK_HAS_SIGNATURE</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *layout; <span class="comment">// Block_descriptor_3 contents depend on BLOCK_HAS_EXTENDED_LAYOUT</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可以看到 block 捕获的变量都会存储在 sr_block_layout 结构体 descriptor 字段之后的内存空间中，下面我们通过 <code>clang -rewrite-objc</code> 重写如下代码语句 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">2</span>;</span><br><span class="line">^&#123;</span><br><span class="line">    i;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>可以得到 : </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> __<span class="title">block_impl</span> &#123;</span></span><br><span class="line">  <span class="keyword">void</span> *isa;</span><br><span class="line">  <span class="keyword">int</span> Flags;</span><br><span class="line">  <span class="keyword">int</span> Reserved;</span><br><span class="line">  <span class="keyword">void</span> *FuncPtr;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> __<span class="title">main_block_impl_0</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> __<span class="title">block_impl</span> <span class="title">impl</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> __<span class="title">main_block_desc_0</span>* <span class="title">Desc</span>;</span></span><br><span class="line">  <span class="keyword">int</span> i;</span><br><span class="line">  ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p><code>__main_block_impl_0</code> 结构中新增了捕获的 i 字段，即 sr_block_layout 结构体的 imported variables 部分，这种操作可以看作在 sr_block_layout 尾部定义了一个 0 长数组，可以根据实际捕获变量的大小，给捕获区域申请对应的内存空间，只不过这一操作由编译器完成 :</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sr_block_layout</span> &#123;</span></span><br><span class="line">    <span class="keyword">void</span> *isa;</span><br><span class="line">    <span class="keyword">int</span> flags;</span><br><span class="line">    <span class="keyword">int</span> reserved;</span><br><span class="line">    <span class="keyword">void</span> (*invoke)(<span class="keyword">void</span> *, ...);</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sr_block_descriptor</span> *<span class="title">descriptor</span>;</span></span><br><span class="line">    <span class="keyword">char</span> captured[<span class="number">0</span>];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>既然已经知道了捕获变量 i 的存放地址，那么我们就可以通过 <code>*(int *)layout-&gt;captured</code> 在运行时获取 i 的值。得到了捕获区域的起始地址之后，我们再来看捕获区域的布局问题，考虑以下代码块 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> i = <span class="number">2</span>;</span><br><span class="line"><span class="built_in">NSObject</span> *o = [<span class="built_in">NSObject</span> new];</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">    i;</span><br><span class="line">    o;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>捕获区域的布局分两部分看：顺序和大小，我们先使用老方法重写代码块 : </p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> __main_block_impl_0 &#123;</span><br><span class="line">  <span class="keyword">struct</span> __block_impl impl;           <span class="comment">// 24</span></span><br><span class="line">  <span class="keyword">struct</span> __main_block_desc_0* Desc;   <span class="comment">// 8 指针占用内存大小和寻址长度相关，在 64 位机环境下，编译器分配空间大小为 8 字节</span></span><br><span class="line">  <span class="keyword">int</span> i;                              <span class="comment">// 8</span></span><br><span class="line">  <span class="built_in">NSObject</span> *o;                        <span class="comment">// 8</span></span><br><span class="line">  ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>按照目前 clang 针对 64 位机的默认对齐方式（<strong>下文的字节对齐计算都基于此前提条件</strong>），可以计算出这个结构体占用的内存空间大小为 <code>24 + 8 + 8 + 8 = 48</code>字节，并且按照上方代码块先 i 后 o 的捕获排序方式，如果我要访问捕获的 o 对象指针变量，只需要在捕获区域起始地址上偏移 8 字节即可，我们可以借助 lldb 的 memory read (x) 命令查看这部分内存空间 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">(lldb) po *(<span class="built_in">NSObject</span> **)(layout-&gt;captured + <span class="number">8</span>)</span><br><span class="line"><span class="number">0x0000000000000002</span></span><br><span class="line">(lldb) po *(<span class="built_in">NSObject</span> **)layout-&gt;captured</span><br><span class="line">&lt;<span class="built_in">NSObject</span>: <span class="number">0x10073f290</span>&gt;</span><br><span class="line">(lldb) p *(<span class="keyword">int</span> *)(layout-&gt;captured + <span class="number">8</span>)</span><br><span class="line">(<span class="keyword">int</span>) $<span class="number">6</span> = <span class="number">2</span></span><br><span class="line">(lldb) p (<span class="keyword">int</span> *)(layout-&gt;captured + <span class="number">8</span>)</span><br><span class="line">(<span class="keyword">int</span> *) $<span class="number">9</span> = <span class="number">0x0000000100740d18</span></span><br><span class="line">(lldb) p layout-&gt;descriptor-&gt;size</span><br><span class="line">(<span class="keyword">unsigned</span> <span class="keyword">long</span>) $<span class="number">11</span> = <span class="number">44</span></span><br><span class="line">(lldb) x/<span class="number">44</span>bx layout</span><br><span class="line"><span class="number">0x100740cf0</span>: <span class="number">0x70</span> <span class="number">0x21</span> <span class="number">0x7b</span> <span class="number">0xa6</span> <span class="number">0xff</span> <span class="number">0x7f</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100740cf8</span>: <span class="number">0x02</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0xc3</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100740d00</span>: <span class="number">0x40</span> <span class="number">0x1d</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100740d08</span>: <span class="number">0xb0</span> <span class="number">0x20</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100740d10</span>: <span class="number">0x90</span> <span class="number">0xf2</span> <span class="number">0x73</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100740d18</span>: <span class="number">0x02</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br></pre></td></tr></table></figure>
+<p>和使用 <code>clang -rewrite-objc</code> 重写时的猜想不一样，我们可以从以上终端日志中看出以下两点 :</p>
+<ul>
+<li>捕获变量 i、o 在捕获区域的排序方式为 o、i，o 变量地址与捕获起始地址一致，i 变量地址为捕获起始地址加上 8 字节</li>
+<li>捕获整形变量 i 在内存中实际占用空间大小为 4 字节</li>
+</ul>
+<p>那么 block 到底是怎么对捕获变量进行排序，并且为其分配内存空间的呢？这就需要看 clang 是如何处理 block 捕获的外部变量了。</p>
+<h3 id="捕获区域布局分析"><a href="#捕获区域布局分析" class="headerlink" title="捕获区域布局分析"></a>捕获区域布局分析</h3><p>首先解决捕获变量排序的问题，根据 <a href="https://github.com/llvm-mirror/clang/blob/e870496ea61feb01aa0eb4dc599be0ddf2d03878/lib/CodeGen/CGBlocks.cpp#L366-L384" target="_blank" rel="noopener">clang 针对这部分的排序代码</a>，我们可以知道，在对齐字节数 (alignment) 不相等时，捕获的实体按照 alignment 降序排序 (C 结构体比较特殊，即使整体占用空间比指针变量大，也排在对象指针后面)，否则按照以下类型进行排序 :</p>
+<ol>
+<li><code>__strong</code> 修饰对象指针变量</li>
+<li><code>__block</code> 修饰对象指针变量</li>
+<li><code>__weak</code> 修饰对象指针变量</li>
+<li>其他变量</li>
+</ol>
+<p>再结合 <a href="https://github.com/llvm-mirror/clang/blob/e870496ea61feb01aa0eb4dc599be0ddf2d03878/lib/CodeGen/CGBlocks.cpp#L519-L775" target="_blank" rel="noopener">clang 对捕获变量对齐子节数计算方式</a> ，我们可以知道，block 捕获区域变量的对齐结果趋向于被 <code>__attribute__ ((__packed__))</code> 修饰了的结构体，举个例子 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> foo &#123;</span><br><span class="line">    <span class="keyword">void</span> *p;    <span class="comment">// 8</span></span><br><span class="line">    <span class="keyword">int</span> i;      <span class="comment">// 4</span></span><br><span class="line">    <span class="keyword">char</span> c;     <span class="comment">// 4 实际用到的内存大小为 1</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>创建 foo 结构体需要分配的空间大小为 <code>8 + 4 + 4 = 16</code>，关于结构体的内存对齐方式，这里额外说几句，编译器会按照成员列表的顺序一个接一个地给每个成员分配内存，只有当存储成员需要满足正确的边界对齐要求时，成员之间才可能出现用于填充的额外内存空间，以提升计算机的访问速度（对齐标准一般和寻址长度一致），在声明结构体时，让那些对齐边界要求最严格的成员最先出现，对边界要求最弱的成员最后出现，可以最大限度地减少因边界对齐而带来的空间损失。再看以下代码块 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> foo &#123;</span><br><span class="line">    <span class="keyword">void</span> *p;    <span class="comment">// 8</span></span><br><span class="line">    <span class="keyword">int</span> i;      <span class="comment">// 4</span></span><br><span class="line">    <span class="keyword">char</span> c;     <span class="comment">// 1</span></span><br><span class="line">&#125; __attribute__ ((__packed__));</span><br></pre></td></tr></table></figure>
+<p><code>__attribute__ ((__packed__))</code> 编译属性告诉编译器，按照字段的实际占用子节数进行对齐，所以创建 foo 结构体需要分配的空间大小为 <code>8 + 4 + 1 = 13</code>。</p>
+<p>结合以上两点，我们可以尝试分析以下 block 捕获区域的变量布局情况 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSObject</span> *o1 = [<span class="built_in">NSObject</span> new];</span><br><span class="line">__<span class="keyword">weak</span> <span class="built_in">NSObject</span> *o2 = o1;</span><br><span class="line">__block <span class="built_in">NSObject</span> *o3 = o1;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> j = <span class="number">4</span>;</span><br><span class="line"><span class="keyword">int</span> i = <span class="number">3</span>;</span><br><span class="line"><span class="keyword">char</span> c = <span class="string">'a'</span>;</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">    i;</span><br><span class="line">    c;</span><br><span class="line">    o1;</span><br><span class="line">    o2;</span><br><span class="line">    o3;</span><br><span class="line">    j;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>首先按照 aligment 排序，可以得到排序顺序为 <code>[o1 o2 o3] j i c</code>，再根据 <code>__strong</code>、<code>__block</code>、<code>__weak</code> 修饰符对 <code>o1 o2 o3</code> 进行排序，可得到最终结果 <code>o1[8] o3[8] o2[8] j[8] i[4] c[1]</code>。同样的，我们使用 lldb 的 x 命令验证分析结果是否正确 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(lldb) x/<span class="number">69</span>bx layout</span><br><span class="line"><span class="number">0x10200d940</span>: <span class="number">0x70</span> <span class="number">0x21</span> <span class="number">0x7b</span> <span class="number">0xa6</span> <span class="number">0xff</span> <span class="number">0x7f</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x10200d948</span>: <span class="number">0x02</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0xc3</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x10200d950</span>: <span class="number">0xf0</span> <span class="number">0x1b</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x10200d958</span>: <span class="number">0xf8</span> <span class="number">0x20</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x10200d960</span>: <span class="number">0xa0</span> <span class="number">0xf6</span> <span class="number">0x00</span> <span class="number">0x02</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span>  <span class="comment">// o1</span></span><br><span class="line"><span class="number">0x10200d968</span>: <span class="number">0x90</span> <span class="number">0xd9</span> <span class="number">0x00</span> <span class="number">0x02</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span>  <span class="comment">// o3</span></span><br><span class="line"><span class="number">0x10200d970</span>: <span class="number">0xa0</span> <span class="number">0xf6</span> <span class="number">0x00</span> <span class="number">0x02</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span>  <span class="comment">// o2</span></span><br><span class="line"><span class="number">0x10200d978</span>: <span class="number">0x04</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span>  <span class="comment">// j</span></span><br><span class="line"><span class="number">0x10200d980</span>: <span class="number">0x03</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x61</span>                 <span class="comment">// i c</span></span><br><span class="line">(lldb) p o1</span><br><span class="line">(<span class="built_in">NSObject</span> *) $<span class="number">1</span> = <span class="number">0x000000010200f6a0</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，小端模式下，捕获的 o1 和 o2 指针变量值为 0x10200f6a0 ,对应内存地址为 0x10200d960 和 0x10200d970，而 o3 因为被 <code>__block</code>  修饰，编译器为 o3 捕获变量包装了一层 byref 结构，所以其值为 byref 结构的地址 0x102000d990 ，而不是 0x10200f6a0 ，捕获的 j 变量地址为 0x10200d978，i 变量地址为 0x10200d980，c 字符变量紧随其后。</p>
+<h3 id="Descriptor-的-Layout-信息"><a href="#Descriptor-的-Layout-信息" class="headerlink" title="Descriptor 的 Layout 信息"></a>Descriptor 的 Layout 信息</h3><p>经过上述的一系列分析，捕获区域变量的布局方式已经大致摸清了，接下来回过头看下 sr_block_descriptor 结构的 layout 字段是用来干嘛的。从字面上理解，这个字段很可能保存了 block 某一部分的内存布局信息，比如捕获区域的布局信息，我们依旧使用上文的最后一个例子，看看 layout 的值 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(lldb) p layout-&gt;descriptor-&gt;layout</span><br><span class="line">(<span class="keyword">const</span> <span class="keyword">char</span> *) $<span class="number">2</span> = <span class="number">0x0000000000000111</span> <span class="string">""</span></span><br></pre></td></tr></table></figure>
+<p>可以看到 layout 值为空字符串，并没有展示出任何直观的布局信息，看来要想知道 layout 是怎么运作的，还需要阅读这一部分的 <a href="https://github.com/tripleCC/Laboratory/blob/d5d98d343a918d3883a2d5274da212cd44f50414/AppleSources/libclosure-73/Block_private.h#L283-L314" target="_blank" rel="noopener">block 代码</a> 和 <a href="https://github.com/llvm-mirror/clang/blob/e5d2fdc902b0fb4e0a8f5a7d549728e1f2a648ad/lib/CodeGen/CGObjCMac.cpp#L2614-L2865" target="_blank" rel="noopener">clang 代码</a>，我们一步步地分析这两段代码里面隐藏的信息，这里贴出其中的部分代码和注释 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// block</span></span><br><span class="line"><span class="comment">// Extended layout encoding.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// Values for Block_descriptor_3-&gt;layout with BLOCK_HAS_EXTENDED_LAYOUT</span></span><br><span class="line"><span class="comment">// and for Block_byref_3-&gt;layout with BLOCK_BYREF_LAYOUT_EXTENDED</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// If the layout field is less than 0x1000, then it is a compact encoding </span></span><br><span class="line"><span class="comment">// of the form 0xXYZ: X strong pointers, then Y byref pointers, </span></span><br><span class="line"><span class="comment">// then Z weak pointers.</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// If the layout field is 0x1000 or greater, it points to a </span></span><br><span class="line"><span class="comment">// string of layout bytes. Each byte is of the form 0xPN.</span></span><br><span class="line"><span class="comment">// Operator P is from the list below. Value N is a parameter for the operator.</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">enum</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    BLOCK_LAYOUT_NON_OBJECT_BYTES = <span class="number">1</span>,    <span class="comment">// N bytes non-objects</span></span><br><span class="line">    BLOCK_LAYOUT_NON_OBJECT_WORDS = <span class="number">2</span>,    <span class="comment">// N words non-objects</span></span><br><span class="line">    BLOCK_LAYOUT_STRONG           = <span class="number">3</span>,    <span class="comment">// N words strong pointers</span></span><br><span class="line">    BLOCK_LAYOUT_BYREF            = <span class="number">4</span>,    <span class="comment">// N words byref pointers</span></span><br><span class="line">    BLOCK_LAYOUT_WEAK             = <span class="number">5</span>,    <span class="comment">// N words weak pointers</span></span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// clang </span></span><br><span class="line"><span class="comment">/// InlineLayoutInstruction - This routine produce an inline instruction for the</span></span><br><span class="line"><span class="comment">/// block variable layout if it can. If not, it returns 0. Rules are as follow:</span></span><br><span class="line"><span class="comment">/// If ((uintptr_t) layout) &lt; (1 &lt;&lt; 12), the layout is inline. In the 64bit world,</span></span><br><span class="line"><span class="comment">/// an inline layout of value 0x0000000000000xyz is interpreted as follows:</span></span><br><span class="line"><span class="comment">/// x captured object pointers of BLOCK_LAYOUT_STRONG. Followed by</span></span><br><span class="line"><span class="comment">/// y captured object of BLOCK_LAYOUT_BYREF. Followed by</span></span><br><span class="line"><span class="comment">/// z captured object of BLOCK_LAYOUT_WEAK. If any of the above is missing, zero</span></span><br><span class="line"><span class="comment">/// replaces it. For example, 0x00000x00 means x BLOCK_LAYOUT_STRONG and no</span></span><br><span class="line"><span class="comment">/// BLOCK_LAYOUT_BYREF and no BLOCK_LAYOUT_WEAK objects are captured.</span></span><br></pre></td></tr></table></figure>
+<p>首先要解释的是 inline 这个词，Objective-C 中有一种叫做 Tagged Pointer 的技术，它让指针保存实际值，而不是保存实际值的地址，这里的 inline 也是相同的效果，即让 layout 指针保存实际的编码信息。在 inline 状态下，使用十六进制中的一位表示捕获变量的数量，所以每种类型的变量最多只能有 15 个，此时的 layout 的值以 0xXYZ 形式呈现，其中 X、Y、Z 分别表示捕获 <code>__strong</code>、<code>__block</code>、<code>__weak</code> 修饰指针变量的个数，如果其中某个类型的数量超过 15 或者捕获变量的修饰类型不为这三种任何一个时，比如捕获的变量由 <code>__unsafe_unretained</code> 修饰，则采用另一种编码方式，这种方式下，layout 会指向一个字符串，这个字符串的每个字节以 0xPN 的形式呈现，并以 0x00 结束，P 表示变量类型，N 表示变量个数，需要注意的是，N 为 0 表示 P 类型有一个，而不是 0 个，也就是说实际的变量个数比 N 大 1。需要注意的是，捕获 int 等基础类型，不影响 layout 的呈现方式，layout 编码中也不会有关于基础类型的信息，除非需要基础类型的编码来辅助定位对象指针类型的位置，比如捕获含有对象指针字段的结构体。举几个例子 : </p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">long</span> j = <span class="number">4</span>;</span><br><span class="line"><span class="keyword">int</span> i = <span class="number">3</span>;</span><br><span class="line"><span class="keyword">char</span> c = <span class="string">'a'</span>;</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">    i;</span><br><span class="line">    c;</span><br><span class="line">    j;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>以上代码块没有捕获任何对象指针，所以实际的 descriptor 不包含 copy 和 dispose 字段，去除这两个字段后，再输出实际的布局信息，结果为空（0x00 表示结束），说明捕获一般基础类型变量不会计入实际的 layout 编码 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(lldb) p/x (<span class="keyword">long</span>)layout-&gt;descriptor-&gt;layout</span><br><span class="line">(<span class="keyword">long</span>) $<span class="number">0</span> = <span class="number">0x0000000100001f67</span></span><br><span class="line">(lldb) x/<span class="number">8</span>bx layout-&gt;descriptor-&gt;layout</span><br><span class="line"><span class="number">0x100001f67</span>: <span class="number">0x00</span> <span class="number">0x76</span> <span class="number">0x31</span> <span class="number">0x36</span> <span class="number">0x40</span> <span class="number">0x30</span> <span class="number">0x3a</span> <span class="number">0x38</span></span><br></pre></td></tr></table></figure>
+<p>接着尝试第一种 layout 方式 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSObject</span> *o1 = [<span class="built_in">NSObject</span> new];</span><br><span class="line">__block <span class="built_in">NSObject</span> *o3 = o1;</span><br><span class="line">__<span class="keyword">weak</span> <span class="built_in">NSObject</span> *o2 = o1;</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">    o1;</span><br><span class="line">    o2;</span><br><span class="line">    o3;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>以上代码块对应的 layout 值为 0x111 ，表示三种类型变量每种一个 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(lldb) p/x (<span class="keyword">long</span>)layout-&gt;descriptor-&gt;layout</span><br><span class="line">(<span class="keyword">long</span>) $<span class="number">0</span> = <span class="number">0x0000000000000111</span></span><br></pre></td></tr></table></figure>
+<p>再尝试第二种 layout 编码方式 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSObject</span> *o1 = [<span class="built_in">NSObject</span> new];</span><br><span class="line">__block <span class="built_in">NSObject</span> *o3 = o1;</span><br><span class="line">__<span class="keyword">weak</span> <span class="built_in">NSObject</span> *o2 = o1;</span><br><span class="line"><span class="built_in">NSObject</span> *o4 = o1;</span><br><span class="line">... <span class="comment">// 5 - 18</span></span><br><span class="line"><span class="built_in">NSObject</span> *o19 = o1;</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">    o1;</span><br><span class="line">    o2;</span><br><span class="line">    o3;</span><br><span class="line">    o4;</span><br><span class="line">    ... <span class="comment">// 5 - 18</span></span><br><span class="line">    o19;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>以上代码块对应的 layout 值是一个地址 0x0000000100002f44 ，这个地址为编码字符串的起始地址，转换成十六进制后为 <code>0x3f 0x30 0x40 0x50 0x00</code>，其中 P 为 3 表示 <code>__strong</code> 修饰的变量，数量为 <code>15(f) + 1 + 0 + 1 = 17</code> 个，P 为 4 表示 <code>__block</code> 修饰的变量，数量为 <code>0 + 1 = 1</code> 个， P 为 5 表示 <code>__weak</code> 修饰的变量，数量为 <code>0 + 1 = 1</code> 个 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(lldb) p/x (<span class="keyword">long</span>)layout-&gt;descriptor-&gt;layout</span><br><span class="line">(<span class="keyword">long</span>) $<span class="number">0</span> = <span class="number">0x0000000100002f44</span></span><br><span class="line">(lldb) x/<span class="number">8</span>bx layout-&gt;descriptor-&gt;layout</span><br><span class="line"><span class="number">0x100002f44</span>: <span class="number">0x3f</span> <span class="number">0x30</span> <span class="number">0x40</span> <span class="number">0x50</span> <span class="number">0x00</span> <span class="number">0x76</span> <span class="number">0x31</span> <span class="number">0x36</span></span><br></pre></td></tr></table></figure>
+<h3 id="结构体对捕获布局的影响"><a href="#结构体对捕获布局的影响" class="headerlink" title="结构体对捕获布局的影响"></a>结构体对捕获布局的影响</h3><p>由于结构体字段的布局顺序在声明时就已经确定了，无法像 block 构造捕获区域一样，按照变量类型、修饰符进行调整，所以如果结构体中有类型为对象指针的字段，就需要一些额外信息来计算这些对象指针字段的偏移量，需要注意的是，被捕获结构体的内存对齐信息和未捕获时一致，以寻址长度作为对齐基准，捕获操作并不会变更对齐信息。同样地，我们先尝试捕获只有基本类型字段的结构体 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> S &#123;</span><br><span class="line">    <span class="keyword">char</span> c;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">long</span> j;</span><br><span class="line">&#125; foo;</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">  foo;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>然后调整 descriptor 结构，输出 layout :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(lldb) x/<span class="number">8</span>bx layout-&gt;descriptor-&gt;layout</span><br><span class="line"><span class="number">0x100001f67</span>: <span class="number">0x00</span> <span class="number">0x76</span> <span class="number">0x31</span> <span class="number">0x36</span> <span class="number">0x40</span> <span class="number">0x30</span> <span class="number">0x3a</span> <span class="number">0x38</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，只有含有基本类型的结构体，同样不会影响 block 的 layout 编码信息。接下来我们给结构体新增 <code>__strong</code> 和 <code>__weak</code> 修饰的对象指针字段 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> S &#123;</span><br><span class="line">    <span class="keyword">char</span> c;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    __<span class="keyword">strong</span> <span class="built_in">NSObject</span> *o1;</span><br><span class="line">    <span class="keyword">long</span> j;</span><br><span class="line">    __<span class="keyword">weak</span> <span class="built_in">NSObject</span> *o2;</span><br><span class="line">&#125; foo;</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">  foo;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>同样分析输出 layout :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(lldb) x/<span class="number">8</span>bx layout-&gt;descriptor-&gt;layout</span><br><span class="line"><span class="number">0x100002f47</span>: <span class="number">0x20</span> <span class="number">0x30</span> <span class="number">0x20</span> <span class="number">0x50</span> <span class="number">0x00</span> <span class="number">0x76</span> <span class="number">0x31</span> <span class="number">0x36</span></span><br></pre></td></tr></table></figure>
+<p>layout 编码为<code>0x20 0x30 0x20 0x50 0x00</code>，其中 P 为 2 表示 word 字类型（非对象），由于字大小一般和指针一致，所以这里表示占用了 8 * (N + 1) 个字节，第一个 0x20 表示非对象指针类型占用了 8 个字节，也就是 char 类型和 int 类型字段对齐之后所占用的空间，接着 0x30 表示有一个 <code>__strong</code> 修饰的对象指针字段，第二个 0x20 表示非对象指针 long 类型占用了 8 个字节，最后的 0x50 表示有一个 <code>__weak</code> 修饰的对象指针字段。由于编码中包含了每个字段的排序和大小，我们就可以通过解析 layout 编码后的偏移量，拿到想要的对象指针值。 P 还有个 byte 类型，值为 1 ，和 word 类型有相似的功能，只是表示的空间大小不同。</p>
+<h3 id="Byref-结构的布局"><a href="#Byref-结构的布局" class="headerlink" title="Byref 结构的布局"></a>Byref 结构的布局</h3><p>由 <code>__block</code> 修饰的捕获变量，会先转换成 byref 结构，再由这个结构去持有实际的捕获变量，block 只负责管理 byref 结构。 </p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 标志位不一样，这个结构的实际布局也会有差别，这里简单地放在一起好阅读</span></span><br><span class="line"><span class="keyword">struct</span> sr_block_byref &#123;</span><br><span class="line">    <span class="keyword">void</span> *isa;</span><br><span class="line">    <span class="keyword">struct</span> sr_block_byref *forwarding;</span><br><span class="line">    <span class="keyword">volatile</span> int32_t flags; <span class="comment">// contains ref count</span></span><br><span class="line">    uint32_t size;</span><br><span class="line">    <span class="comment">// requires BLOCK_BYREF_HAS_COPY_DISPOSE</span></span><br><span class="line">    <span class="keyword">void</span> (*byref_keep)(<span class="keyword">struct</span> sr_block_byref *dst, <span class="keyword">struct</span> sr_block_byref *src);</span><br><span class="line">    <span class="keyword">void</span> (*byref_destroy)(<span class="keyword">struct</span> sr_block_byref *);</span><br><span class="line">    <span class="comment">// requires BLOCK_BYREF_LAYOUT_EXTENDED</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *layout;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>以上代码块就是 byref 对应的结构体。第一眼看上去，我比较困惑为什么还要有 layout 字段，虽然上文的 block 源码注释说明了 byref 和 block 结构一样，都具备两种不同的布局编码方式，但是 byref 不是只针对一个变量么，难道和 block 捕获区域一样也可以携带多个捕获变量？带着这个困惑，我们先看下以下表达式 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">__block  <span class="built_in">NSObject</span> *o1 = [<span class="built_in">NSObject</span> new];</span><br></pre></td></tr></table></figure>
+<p>使用 clang 重写之后 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> __Block_byref_o1_0 &#123;</span><br><span class="line">    <span class="keyword">void</span> *__isa;</span><br><span class="line">    __Block_byref_o1_0 *__forwarding;</span><br><span class="line">    <span class="keyword">int</span> __flags;</span><br><span class="line">    <span class="keyword">int</span> __size;</span><br><span class="line">    <span class="keyword">void</span> (*__Block_byref_id_object_copy)(<span class="keyword">void</span>*, <span class="keyword">void</span>*);</span><br><span class="line">    <span class="keyword">void</span> (*__Block_byre<span class="comment">/* @autoreleasepool */</span>o&#123; __AtAutoreleasePool __autoreleasepool; e)(<span class="keyword">void</span>*);</span><br><span class="line">    <span class="built_in">NSObject</span> *o1;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>和 block 捕获变量一样，byref 携带的变量也是保存在结构体尾部的内存空间里，当前上下文中，可以直接通过 sr_block_byref 的 layout 字段获取 o1 对象指针值。可以看到，在包装如对象指针这类常规变量时，layout 字段并没有起到实质性的作用，那什么条件下的 layout 才表示布局编码信息呢？如果使用 layout 字段表示编码信息，那么携带的变量又是何处安放的呢？我们一个个解答。</p>
+<p>针对第一个问题，先看以下代码块 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">__block <span class="keyword">struct</span> S &#123;</span><br><span class="line">    <span class="built_in">NSObject</span> *o1;</span><br><span class="line">&#125; foo;</span><br><span class="line">foo.o1 = [<span class="built_in">NSObject</span> new];</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">  foo;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>使用 clang 重写之后 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> __Block_byref_foo_0 &#123;</span><br><span class="line">  <span class="keyword">void</span> *__isa;</span><br><span class="line">  __Block_byref_foo_0 *__forwarding;</span><br><span class="line">  <span class="keyword">int</span> __flags;</span><br><span class="line">  <span class="keyword">int</span> __size;</span><br><span class="line">  <span class="keyword">void</span> (*__Block_byref_id_object_copy)(<span class="keyword">void</span>*, <span class="keyword">void</span>*);</span><br><span class="line">  <span class="keyword">void</span> (*__Block_byref_id_object_dispose)(<span class="keyword">void</span>*);</span><br><span class="line">  <span class="keyword">struct</span> S foo;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>和常规类型一样，foo 结构体保存在结构体尾部，也就是原本 layout 所在的字段，重写的代码中依然看不到 layout 的踪影，接着我们试着输出 foo :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">(lldb) po foo.o1</span><br><span class="line">&lt;<span class="built_in">NSObject</span>: <span class="number">0x10061f130</span>&gt;</span><br><span class="line">(lldb) p (<span class="keyword">struct</span> S)a_byref-&gt;layout</span><br><span class="line">error: Multiple internal symbols found <span class="keyword">for</span> <span class="string">'S'</span></span><br><span class="line">(lldb) p/x (<span class="keyword">long</span>)a_byref-&gt;layout</span><br><span class="line">(<span class="keyword">long</span>) $<span class="number">3</span> = <span class="number">0x0000000000000100</span></span><br><span class="line">(lldb) x/<span class="number">56</span>bx a_byref</span><br><span class="line"><span class="number">0x100627c20</span>: <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100627c28</span>: <span class="number">0x20</span> <span class="number">0x7c</span> <span class="number">0x62</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100627c30</span>: <span class="number">0x04</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x13</span> <span class="number">0x38</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100627c38</span>: <span class="number">0x90</span> <span class="number">0x1b</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100627c40</span>: <span class="number">0x00</span> <span class="number">0x1c</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100627c48</span>: <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100627c50</span>: <span class="number">0x30</span> <span class="number">0xf1</span> <span class="number">0x61</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br></pre></td></tr></table></figure>
+<p>看来事情并没有看上去的那么简单，首先重写代码中 foo 字段所在内存保存的并不是结构体，而是 0x0000000000000100，这个 100 是不是看着有点眼熟，没错，这就是 byref 的 layout 信息，根据 0xXYZ 编码规则，这个值表示有 1 个 <code>__strong</code> 修饰的对象指针。接着针对第二个问题，携带的对象指针变量存在哪，我们把视线往下移动 8 个字节，这不就是 foo.o1 对象指针的值么。总结下，在存在 layout 的情况下，byref 使用 8 个字节保存 layout 编码信息，并紧跟着在 layout 字段后存储捕获的变量。</p>
+<p>以上是 byref 的第一种 layout 编码方式，我们再尝试第二种 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">__block <span class="keyword">struct</span> S &#123;</span><br><span class="line">    <span class="keyword">char</span> c;</span><br><span class="line">    <span class="built_in">NSObject</span> *o1;</span><br><span class="line">    __<span class="keyword">weak</span> <span class="built_in">NSObject</span> *o3;</span><br><span class="line">&#125; foo;</span><br><span class="line">foo.o1 = [<span class="built_in">NSObject</span> new];</span><br><span class="line"><span class="keyword">void</span> (^blk)(<span class="keyword">void</span>) = ^&#123;</span><br><span class="line">  foo;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>使用 clang 重写代码之后 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> __Block_byref_foo_0 &#123;</span><br><span class="line">  <span class="keyword">void</span> *__isa;</span><br><span class="line">__Block_byref_foo_0 *__forwarding;</span><br><span class="line"> <span class="keyword">int</span> __flags;</span><br><span class="line"> <span class="keyword">int</span> __size;</span><br><span class="line"> <span class="keyword">void</span> (*__Block_byref_id_object_copy)(<span class="keyword">void</span>*, <span class="keyword">void</span>*<span class="comment">/* @autoreleasepool */</span>c&#123; __AtAutoreleasePool __autoreleasepool; _<span class="keyword">byref</span></span><br><span class="line"><span class="keyword">struct</span> __main_block_impl_0 &#123;</span><br><span class="line">  <span class="keyword">struct</span> __block_impl impl;</span><br><span class="line">  <span class="keyword">struct</span> __main_block_desc_0* Desc;</span><br><span class="line">  __main_block_impl_0(<span class="keyword">void</span> *fp, <span class="keyword">struct</span> __main_block_desc_0 *desc, <span class="keyword">int</span> flags=<span class="number">0</span>) &#123;</span><br><span class="line">    impl.isa = &amp;_NSConcreteStackBlock;</span><br><span class="line">    impl.Flags = flags;</span><br><span class="line">    impl.FuncPtr = fp;</span><br><span class="line">    Desc = desc;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>emmmm …，上面代码并不是粘贴错误，貌似 Rewriter 并不能很好地处理这种情况，看来又需要我们直接去看对应内存地址中的值了 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">(lldb) x/<span class="number">72</span>bx a_byref</span><br><span class="line"><span class="number">0x100755140</span>: <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755148</span>: <span class="number">0x40</span> <span class="number">0x51</span> <span class="number">0x75</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755150</span>: <span class="number">0x04</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x13</span> <span class="number">0x48</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755158</span>: <span class="number">0x10</span> <span class="number">0x1b</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755160</span>: <span class="number">0xa0</span> <span class="number">0x1b</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755168</span>: <span class="number">0x8d</span> <span class="number">0x3e</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755170</span>: <span class="number">0x00</span> <span class="number">0x5f</span> <span class="number">0x6b</span> <span class="number">0x65</span> <span class="number">0x79</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755178</span>: <span class="number">0xd0</span> <span class="number">0x6e</span> <span class="number">0x75</span> <span class="number">0x00</span> <span class="number">0x01</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line"><span class="number">0x100755180</span>: <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span> <span class="number">0x00</span></span><br><span class="line">(lldb) x/<span class="number">8</span>bx a_byref-&gt;layout</span><br><span class="line"><span class="number">0x100003e8d</span>: <span class="number">0x20</span> <span class="number">0x30</span> <span class="number">0x50</span> <span class="number">0x00</span> <span class="number">0x53</span> <span class="number">0x52</span> <span class="number">0x4c</span> <span class="number">0x61</span></span><br></pre></td></tr></table></figure>
+<p>地址 0x100755168 中保存了 layout 编码字符串的地址 0x0000000100003e8d ，将此字符串转换成十六进制后为 <code>0x20 0x30 0x50 0x00</code> ，这些值的含义在结构体对捕获布局的影响一节中已经描述过，这里就不重复说明了。 </p>
+<h3 id="强引用对象的获取"><a href="#强引用对象的获取" class="headerlink" title="强引用对象的获取"></a>强引用对象的获取</h3><p>目前我们已经知道了 block / byref 如何布局捕获区域内存，以及如何获取关键的布局信息，接下来我们就可以尝试获取 block 强引用的对象了，这里我把强引用的对象分成两部分 :</p>
+<ul>
+<li>被 block 强引用</li>
+<li>被 byref 结构强引用</li>
+</ul>
+<p>只要获取这两部分强引用的对象，任务就算完成了，由于上文已经将整个原理脉络理清了，所以编写出可用的代码并不困难。这两部分都涉及到布局编码，我们先根据 layout 的编码方式，解析出捕获变量的类型和数量 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">SRCapturedLayoutInfo *info = [SRCapturedLayoutInfo new];</span><br><span class="line">    </span><br><span class="line"><span class="keyword">if</span> ((uintptr_t)layout &lt; (<span class="number">1</span> &lt;&lt; <span class="number">12</span>)) &#123;</span><br><span class="line">    uintptr_t inlineLayout = (uintptr_t)layout;</span><br><span class="line">    [info addItemWithType:SR_BLOCK_LAYOUT_STRONG count:(inlineLayout &amp; <span class="number">0xf00</span>) &gt;&gt; <span class="number">8</span>];</span><br><span class="line">    [info addItemWithType:SR_BLOCK_LAYOUT_BYREF count:(inlineLayout &amp; <span class="number">0xf0</span>) &gt;&gt; <span class="number">4</span>];</span><br><span class="line">    [info addItemWithType:SR_BLOCK_LAYOUT_WEAK count:inlineLayout &amp; <span class="number">0xf</span>];</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    while (layout &amp;&amp; *layout != '\x00') &#123;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> type = (*layout &amp; <span class="number">0xf0</span>) &gt;&gt; <span class="number">4</span>;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">int</span> count = (*layout &amp; <span class="number">0xf</span>) + <span class="number">1</span>;</span><br><span class="line">        </span><br><span class="line">        [info addItemWithType:type count:count];</span><br><span class="line">        layout++;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后遍历 block 的布局编码信息，根据变量类型和数量，计算出对象指针地址偏移，然后获取对应的对象指针值 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="built_in">NSHashTable</span> *)strongReferencesForBlockLayout:(<span class="keyword">void</span> *)iLayout &#123;</span><br><span class="line">    <span class="keyword">if</span> (!iLayout) <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">struct</span> sr_block_layout *aLayout = (<span class="keyword">struct</span> sr_block_layout *)iLayout;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *extenedLayout = sr_block_extended_layout(aLayout);</span><br><span class="line">    _blockLayoutInfo = [SRCapturedLayoutInfo infoForLayoutEncode:extenedLayout];</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">NSHashTable</span> *references = [<span class="built_in">NSHashTable</span> weakObjectsHashTable];</span><br><span class="line">    uintptr_t *begin = (uintptr_t *)aLayout-&gt;captured;</span><br><span class="line">    <span class="keyword">for</span> (SRLayoutItem *item <span class="keyword">in</span> _blockLayoutInfo.layoutItems) &#123;</span><br><span class="line">        <span class="keyword">switch</span> (item.type) &#123;</span><br><span class="line">            <span class="keyword">case</span> SR_BLOCK_LAYOUT_STRONG: &#123;</span><br><span class="line">                <span class="built_in">NSHashTable</span> *objects = [item objectsForBeginAddress:begin];</span><br><span class="line">                SRAddObjectsFromHashTable(references, objects);</span><br><span class="line">                begin += item.count;</span><br><span class="line">            &#125; <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> SR_BLOCK_LAYOUT_BYREF: &#123;</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; item.count; i++, begin++) &#123;</span><br><span class="line">                    <span class="keyword">struct</span> sr_block_byref *aByref = *(<span class="keyword">struct</span> sr_block_byref **)begin;</span><br><span class="line">                    <span class="built_in">NSHashTable</span> *objects = [<span class="keyword">self</span> strongReferenceForBlockByref:aByref];</span><br><span class="line">                    SRAddObjectsFromHashTable(references, objects);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> SR_BLOCK_LAYOUT_NON_OBJECT_BYTES: &#123;</span><br><span class="line">                begin = (uintptr_t *)((uintptr_t)begin + item.count);</span><br><span class="line">            &#125; <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>: &#123;</span><br><span class="line">                begin += item.count;</span><br><span class="line">            &#125; <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> references;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>block 布局区域中的 byref 结构需要进行额外的处理，如果 byref 直接携带 <code>__strong</code> 修饰的变量，则不需要关心 layout 编码，直接从结构尾部获取指针变量值即可，否则需要和处理 block 布局区域一样，先得到布局信息，然后遍历这些布局信息，计算偏移量，获取强引用对象地址 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">- (<span class="built_in">NSHashTable</span> *)strongReferenceForBlockByref:(<span class="keyword">void</span> *)iByref &#123;</span><br><span class="line">    <span class="keyword">if</span> (!iByref) <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">struct</span> sr_block_byref *aByref = (<span class="keyword">struct</span> sr_block_byref *)iByref;</span><br><span class="line">    <span class="built_in">NSHashTable</span> *references = [<span class="built_in">NSHashTable</span> weakObjectsHashTable];</span><br><span class="line">    int32_t flag = aByref-&gt;flags &amp; SR_BLOCK_BYREF_LAYOUT_MASK;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">switch</span> (flag) &#123;</span><br><span class="line">        <span class="keyword">case</span> SR_BLOCK_BYREF_LAYOUT_STRONG: &#123;</span><br><span class="line">            <span class="keyword">void</span> **begin = sr_block_byref_captured(aByref);</span><br><span class="line">            <span class="keyword">id</span> object = (__bridge <span class="keyword">id</span> _Nonnull)(*(<span class="keyword">void</span> **)begin);</span><br><span class="line">            <span class="keyword">if</span> (object) [references addObject:object];</span><br><span class="line">        &#125; <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> SR_BLOCK_BYREF_LAYOUT_EXTENDED: &#123;</span><br><span class="line">            <span class="keyword">const</span> <span class="keyword">char</span> *layout = sr_block_byref_extended_layout(aByref);</span><br><span class="line">            SRCapturedLayoutInfo *info = [SRCapturedLayoutInfo infoForLayoutEncode:layout];</span><br><span class="line">            [_blockByrefLayoutInfos addObject:info];</span><br><span class="line">            </span><br><span class="line">            uintptr_t *begin = (uintptr_t *)sr_block_byref_captured(aByref) + <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">for</span> (SRLayoutItem *item <span class="keyword">in</span> info.layoutItems) &#123;</span><br><span class="line">                <span class="keyword">switch</span> (item.type) &#123;</span><br><span class="line">                    <span class="keyword">case</span> SR_BLOCK_LAYOUT_NON_OBJECT_BYTES: &#123;</span><br><span class="line">                        begin = (uintptr_t *)((uintptr_t)begin + item.count);</span><br><span class="line">                    &#125; <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> SR_BLOCK_LAYOUT_STRONG: &#123;</span><br><span class="line">                        <span class="built_in">NSHashTable</span> *objects = [item objectsForBeginAddress:begin];</span><br><span class="line">                        SRAddObjectsFromHashTable(references, objects);</span><br><span class="line">                        begin += item.count;</span><br><span class="line">                    &#125; <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">default</span>: &#123;</span><br><span class="line">                        begin += item.count;</span><br><span class="line">                    &#125; <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>: <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> references;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>完整代码我放到了 <a href="https://github.com/tripleCC/Laboratory/tree/master/BlockStrongReferenceObject" target="_blank" rel="noopener">BlockStrongReferenceObject</a>，代码并没有进行过很严格的测试，可能存在一些未处理的边界条件，需要尝试 / 讨论的同学可自取。</p>
+<h3 id="另一种强引用对象获取方式"><a href="#另一种强引用对象获取方式" class="headerlink" title="另一种强引用对象获取方式"></a>另一种强引用对象获取方式</h3><p>上文通过将 block 的布局编码信息转化为对应字段的偏移量来获取强引用对象，这一节介绍另外一种比较取巧的方式，也是目前检测循环引用工具获取 block 强引用对象的常用方式，比如 facebook 的 <a href="https://github.com/facebook/FBRetainCycleDetector" target="_blank" rel="noopener">FBRetainCycleDetector</a> 。根据<a href="https://github.com/facebook/FBRetainCycleDetector/blob/ecd369ed1e03eb22178199091fecdba6c9964189/FBRetainCycleDetector/Layout/Blocks/FBBlockStrongLayout.m#L29-L102" target="_blank" rel="noopener">这块功能对应的源码</a>，此方式大致原理如下 :</p>
+<ul>
+<li>获取 block 的 dispose 函数 （如果捕获了强引用对象，需要利用这个函数解引用）</li>
+<li><p>构造一个 fake 对象，此对象由若干个扩展的 byref 结构 (对象) 组成，其个数由 block size 决定，即把 block 划分为若干个 8 字节内存区域，就像以下代码块一样 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> S &#123;</span><br><span class="line">    <span class="built_in">NSObject</span> *o1;</span><br><span class="line">    <span class="built_in">NSObject</span> *o2;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">struct</span> S s = &#123;</span><br><span class="line">    .o2 = [<span class="built_in">NSObject</span> new]</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">void</span> **fake = (<span class="keyword">void</span> **)&amp;s;</span><br><span class="line"><span class="comment">// fake[1] 和 s.o2 是一样的</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>扩展的 byref 结构会重写 release 方法，只在此方法中设置强引用标识位，不执行原释放逻辑</p>
+</li>
+<li>将 fake 对象作为参数，调用 dispose 函数，dispose 函数会去 release 每个 block 强引用的对象，在这里这些强引用对象被替换成了我们的 byref 结构，所以我们可以通过它的强引用标识位判断 block 的哪块区域保存了强引用对象地址</li>
+<li>遍历 fake 对象，保存所有强引用标志位被设置的 byref 结构对应索引，后面通过这个索引可以去 block 中找强引用指针地址</li>
+<li>释放所有的 byref 结构</li>
+<li>根据上面得到的索引，获取捕获变量偏移量，偏移量为索引值 * 8 字节 (指针大小) ，再根据偏移量去 block 内存块中拿强引用对象地址</li>
+</ul>
+<p>关于这种方案，我们需要明确下面几个点。</p>
+<p>首先这种方案也需要在明确 block 内存布局的情况下才能够实施，因为 block ，或者说 block 结构体，实际执行内存对齐时，并没有按照寻址大小也就是 8 字节对齐，假设 block 捕获区域的对齐方式变成了这样 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> __main_block_impl_0 &#123;</span><br><span class="line">  <span class="keyword">struct</span> __block_impl impl;           <span class="comment">// 24</span></span><br><span class="line">  <span class="keyword">struct</span> __main_block_desc_0* Desc;   <span class="comment">// 8 指针占用内存大小和寻址长度相关，在 64 位机环境下，编译器分配空间大小为 8 字节</span></span><br><span class="line">  <span class="keyword">int</span> i;                              <span class="comment">// 4    FakedByref 8</span></span><br><span class="line">  <span class="built_in">NSObject</span> *o1;                       <span class="comment">// 8    FakedByref 8 [这里上个 FakedByref 后 4 个子节和当前 FakedByref 前 4 字节覆盖 o1 对象指针的 8 字节，导致 miss ]</span></span><br><span class="line">  <span class="keyword">char</span> c;                             <span class="comment">// 1</span></span><br><span class="line">  <span class="built_in">NSObject</span> *o2;                       <span class="comment">// 8</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么使用 fake 的方案就会失效，因为这种方案的前提是 block 内存对齐基准基于寻址长度，即指针大小。不过 block 对捕获的变量按照类型和尺寸进行了排序，<code>__strong</code> 修饰的对象指针都在前面，本来我们只需要这种类型的变量，并不关心其他类型，所以即使后面的对齐方式不满足 fake 条件也没关系，另外捕获结构体的对齐基准是基于寻址长度的，即使结构体有其他类型，也满足 fake 条件 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> __main_block_impl_0 &#123;</span><br><span class="line">  <span class="keyword">struct</span> __block_impl impl;           <span class="comment">// 24</span></span><br><span class="line">  <span class="keyword">struct</span> __main_block_desc_0* Desc;   <span class="comment">// 8 指针占用内存大小和寻址长度相关，在 64 位机环境下，编译器分配空间大小为 8 字节</span></span><br><span class="line">  <span class="built_in">NSObject</span> *o1;                       <span class="comment">// 8    FakedByref 8</span></span><br><span class="line">  <span class="built_in">NSObject</span> *o2;                       <span class="comment">// 8    FakedByref 8</span></span><br><span class="line">  <span class="keyword">int</span> i;                              <span class="comment">// 4    FakedByref 8</span></span><br><span class="line">  <span class="keyword">char</span> c;                             <span class="comment">// 1        </span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，通过以上代码块的排序，让 o1 和 o2 都被 FakedByref 结构覆盖到了，而 i, c 变量本身就不会在 dispose 函数中访问，所以怎么设置都不会影响到策略的生效。</p>
+<p>第二点是为什么要用扩展的 byref 结构，而不是随便整个重写了 release 的类过来，这是因为当 block 捕获了 <code>__block</code> 修饰的指针变量时，会将这个指针变量包装成 byref 结构，而 dispose 函数会对这个 byref 结构执行 <code>_Block_object_dispose</code> 操作，这个函数有两个形参，一个是对象指针，一个是 flag ，当 flag 指明对象指针为 byref 类型，而实际传入的实参不是，就会出现问题，所以这里必须用扩展的 byref 结构。</p>
+<p>第三点是这种方式无法处理 <code>__block</code> 修饰对象指针的情况。</p>
+<p>不过这种方式贵在简洁，无需考虑内部每种变量类型具体的布局方式，就可以满足大部分需要获取 block 强引用对象的场景。</p>
+<h2 id="对象成员变量强引用"><a href="#对象成员变量强引用" class="headerlink" title="对象成员变量强引用"></a>对象成员变量强引用</h2><p>对象强引用成员变量的获取相对来说直接些，因为每个对象对应的类中都有其成员变量的布局信息，并且 runtime 有现成的接口，只需要分析出编码格式，然后按顺序和成员变量匹配即可。获取编码信息的接口有两个， <code>class_getIvarLayout</code> 函数返回描述 strong ivar 数量和索引信的编码信息，相对的 <code>class_getWeakIvarLayout</code> 函数返回描述 weak ivar 的编码信息，这里基于前者进行分析。</p>
+<p><code>class_getIvarLayout</code> 返回值是一个 uint8 指针，指向一个字符串，uint8 在 16 进制下占用 2 位，所以编码以 2 位为一组，组内首位描述非 strong ivar 个数，次位为 strong ivar 个数，最后一组如果 strong ivar 个数为 0，则忽略，且 layout 以 0x00 结尾。下面举几个例子 :</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 0x0100</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">A</span> : <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    __<span class="keyword">strong</span> <span class="built_in">NSObject</span> *s1;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>起始非 strong ivar 个数为 0，并且接着一个 strong ivar ，得出编码为 0x01 。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 0x0100</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">A</span> : <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    __<span class="keyword">strong</span> <span class="built_in">NSObject</span> *s1;</span><br><span class="line">    __<span class="keyword">weak</span> <span class="built_in">NSObject</span> *w1;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>起始非 strong ivar 个数为 0，并且接着一个 strong ivar ，得出编码为 0x01，接着有个 weak ivar，但是后面没有 strong ivar 了，所以忽略。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 0x011100</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">A</span> : <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    __<span class="keyword">strong</span> <span class="built_in">NSObject</span> *s1;</span><br><span class="line">    __<span class="keyword">weak</span> <span class="built_in">NSObject</span> *w1;</span><br><span class="line">    __<span class="keyword">strong</span> <span class="built_in">NSObject</span> *s2;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>起始非 strong ivar 个数为 0，并且接着一个 strong ivar ，得出编码为 0x01，接着有个 weak ivar，并且后面紧接着一个 strong ivar ，得出编码 0x11 ，合并得到 0x0111 。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 0x211100</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">A</span> : <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i1;</span><br><span class="line">    <span class="keyword">void</span> *p1;</span><br><span class="line">    __<span class="keyword">strong</span> <span class="built_in">NSObject</span> *s1;</span><br><span class="line">    __<span class="keyword">weak</span> <span class="built_in">NSObject</span> *w1;</span><br><span class="line">    __<span class="keyword">strong</span> <span class="built_in">NSObject</span> *s2;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>起始非 strong ivar 个数为 2，并且紧接着一个 strong ivar，得出编码 0x21，接着有个 weak ivar，后面紧接着一个 strong ivar ，得出编码 0x11 ，合并得到 0x2111 。</p>
+<p>了解了成员变量的编码格式，剩下的就是如何解码并依次和成员变量进行匹配了，<a href="https://github.com/facebook/FBRetainCycleDetector/blob/ecd369ed1e03eb22178199091fecdba6c9964189/FBRetainCycleDetector/Layout/Classes/FBClassStrongLayout.mm#L97-L183" target="_blank" rel="noopener">FBRetainCycleDetector 已经实现了这部分功能</a> ，主要原理如下 :</p>
+<ul>
+<li>获取所有的成员变量以及 ivar 编码</li>
+<li>解析 ivar 编码，跳过非 strong ivar ，获得 strong ivar 所在索引值 (把对象分成若干个 8 字节内存片段)</li>
+<li>利用 <code>ivar_getOffset</code> 函数获取 ivar 的偏移量，除以指针大小就是自身的索引值 (对象布局对齐基准为寻址长度，这里为 8 字节)</li>
+<li>匹配 2、3 步获得的索引值，得到 strong ivar</li>
+</ul>
+<p>当然 FBRetainCycleDetector 还实现了对结构体的处理，这块就不细究了。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>以上是我认为检测循环引用两个比较关键的点，特别是获取 block 捕获的强引用对象环节，block ABI 中并没有详细说明捕获区域布局信息，需要自己结合 block 源码以及 clang 生成 block 的 CodeGen 逻辑去推测实际的布局信息，所以得出的结论不一定正确，也欢迎感兴趣的同学和我交流。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://github.com/mikeash/Circle/blob/master/Circle/CircleIVarLayout.m" target="_blank" rel="noopener">Circle - a cycle collector for Objective-C ARC</a></p>
+<p><a href="https://github.com/facebook/FBRetainCycleDetector" target="_blank" rel="noopener">FBRetainCycleDetector</a></p>
+<p><a href="https://code.fb.com/ios/automatic-memory-leak-detection-on-ios/" target="_blank" rel="noopener">Automatic memory leak detection on iOS</a></p>
+<p><a href="https://blog.sunnyxx.com/2015/09/13/class-ivar-layout/" target="_blank" rel="noopener">Objective-C Class Ivar Layout 探索</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Interview/" rel="tag"># Interview</a>
+          
+            <a href="/tags/block/" rel="tag"># block</a>
+          
+            <a href="/tags/循环引用/" rel="tag"># 循环引用</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/07/15/搭建自己的内存泄漏检测工具/" rel="next" title="打造自己的内存泄漏检测工具">
+                <i class="fa fa-chevron-left"></i> 打造自己的内存泄漏检测工具
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Block-捕获实体引用"><span class="nav-number">1.</span> <span class="nav-text">Block 捕获实体引用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#捕获区域布局初探"><span class="nav-number">1.1.</span> <span class="nav-text">捕获区域布局初探</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#捕获区域布局分析"><span class="nav-number">1.2.</span> <span class="nav-text">捕获区域布局分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Descriptor-的-Layout-信息"><span class="nav-number">1.3.</span> <span class="nav-text">Descriptor 的 Layout 信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#结构体对捕获布局的影响"><span class="nav-number">1.4.</span> <span class="nav-text">结构体对捕获布局的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Byref-结构的布局"><span class="nav-number">1.5.</span> <span class="nav-text">Byref 结构的布局</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#强引用对象的获取"><span class="nav-number">1.6.</span> <span class="nav-text">强引用对象的获取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#另一种强引用对象获取方式"><span class="nav-number">1.7.</span> <span class="nav-text">另一种强引用对象获取方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#对象成员变量强引用"><span class="nav-number">2.</span> <span class="nav-text">对象成员变量强引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">4.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2019/08/15/聊聊循环引用的检测/';
+          this.page.identifier = '2019/08/15/聊聊循环引用的检测/';
+          this.page.title = '聊聊循环引用的检测';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

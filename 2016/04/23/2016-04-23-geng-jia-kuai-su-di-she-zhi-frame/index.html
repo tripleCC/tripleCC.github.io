@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="objective-c,frame,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。 令人蛋疼的frame布局老代码对界面的坐标尺寸设置都是通过下面的方式： 1234567891011121314...UIView * mainView = [[UIView alloc] initWithFrame:CGRectMake(0, self.height,">
+<meta name="keywords" content="objective-c,frame">
+<meta property="og:type" content="article">
+<meta property="og:title" content="更加快速地设置Frame">
+<meta property="og:url" content="https://triplecc.github.io/2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。 令人蛋疼的frame布局老代码对界面的坐标尺寸设置都是通过下面的方式： 1234567891011121314...UIView * mainView = [[UIView alloc] initWithFrame:CGRectMake(0, self.height,">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="更加快速地设置Frame">
+<meta name="twitter:description" content="由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。 令人蛋疼的frame布局老代码对界面的坐标尺寸设置都是通过下面的方式： 1234567891011121314...UIView * mainView = [[UIView alloc] initWithFrame:CGRectMake(0, self.height,">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/">
+
+
+
+
+
+  <title>更加快速地设置Frame | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">更加快速地设置Frame</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-04-23T05:14:55+00:00">
+                2016-04-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/objective-c/" itemprop="url" rel="index">
+                    <span itemprop="name">objective-c</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>由于现在手头上的项目是基于frame开发的，没有xib或者storyboard，没有使用自动布局，所以排布界面时总是显得很繁琐。<br></p>
+<h4 id="令人蛋疼的frame布局"><a href="#令人蛋疼的frame布局" class="headerlink" title="令人蛋疼的frame布局"></a>令人蛋疼的frame布局</h4><p>老代码对界面的坐标尺寸设置都是通过下面的方式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">UIView * mainView = [[UIView alloc] initWithFrame:CGRectMake(0, self.height, self.width, MAIN_HEIGHT)];</span><br><span class="line">[mainView setBackgroundColor:[UIColor whiteColor]];</span><br><span class="line">[self addSubview:mainView];</span><br><span class="line">self.mainView = mainView;</span><br><span class="line"></span><br><span class="line">UIView * opertionMenu = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.width, 45)];</span><br><span class="line">[opertionMenu setBackgroundColor:[UIColor whiteColor]];</span><br><span class="line">[mainView addSubview:opertionMenu];</span><br><span class="line"></span><br><span class="line">UIView * line = [[UIView alloc] initWithFrame:CGRectMake(0, 44, self.width, 1)];</span><br><span class="line">[line setBackgroundColor:[UIColor colorWithHex:0xe9e9e9]];</span><br><span class="line">[opertionMenu addSubview:line];</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>这些坐标设置工作都是在初始化，也就是init系列方法中完成的。这样做的弊端很明显，复用性很差，如果还是按照这种方式的话，每扩展一种界面类型，就要新增一个init方法。久而久之，冗余代码会越来越多，新增特性想重用这块控件的话，需要做比较多的无用功。<br></p>
+<a id="more"></a>
+<p>由于上面代码很多针对坐标尺寸的设置都是在init系列方法中完成的，所以很少有单独修改frame中的某个成员的操作，不过旧代码还是提供了快速设置某个成员的方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">@interface UIView (Size)</span><br><span class="line">...</span><br><span class="line">- (CGFloat)width;</span><br><span class="line">- (CGFloat)height;</span><br><span class="line">- (CGFloat)minX;</span><br><span class="line">- (CGFloat)midX;</span><br><span class="line">- (CGFloat)maxX;</span><br><span class="line">- (CGFloat)minY;</span><br><span class="line">- (CGFloat)midY;</span><br><span class="line">- (CGFloat)maxY;</span><br><span class="line">...</span><br><span class="line">@end</span><br></pre></td></tr></table></figure>
+<p>很明显地看出，这种分类命名是有问题的（这也是直接导致我后续没有引入masonry的诱因之一，旧代码中过多的使用了以上分类，和简易的masonry用法即没有mas前缀的方法产生的冲突过多）。<br></p>
+<p>于是我新增了一些快速设置的坐标的分类方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">@interface UIView (Size)</span><br><span class="line">...</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_y;</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_x;</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_width;</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_height;</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_centerX;</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_centerY;</span><br><span class="line">@property (assign, nonatomic) CGPoint bq_origin;</span><br><span class="line">@property (assign, nonatomic) CGSize bq_size;</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_maxX;</span><br><span class="line">@property (assign, nonatomic) CGFloat bq_maxY;</span><br><span class="line">@property (assign, nonatomic, readonly) CGPoint bq_subCenter;</span><br><span class="line">@property (assign, nonatomic, readonly) CGFloat bq_subCenterX;</span><br><span class="line">@property (assign, nonatomic, readonly) CGFloat bq_subCenterY;</span><br><span class="line">- (instancetype)bq_sizeToFit;</span><br><span class="line">...</span><br><span class="line">@end</span><br></pre></td></tr></table></figure>
+<p>于是代码中就多了另外一种设置frame的书写格式：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">- (void)adjustSubviewFrame &#123;</span><br><span class="line">    ...</span><br><span class="line">    if (!_timeLabel.hidden) &#123;</span><br><span class="line">        [_timeLabel sizeToFit];</span><br><span class="line">        CGFloat timeLabelLRMargin = 5;</span><br><span class="line">        CGFloat timeLabelTopMaigin = BQMessageCommonMargin;</span><br><span class="line">        _timeLabel.bq_size = CGSizeMake(_timeLabel.bq_width + 2 * timeLabelLRMargin, BQMessageTimeHeight);</span><br><span class="line">        _timeLabel.center = CGPointMake(self.contentView.bq_centerX, timeLabelTopMaigin + _timeLabel.bq_height * 0.5);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        _timeLabel.frame = CGRectZero;</span><br><span class="line">    &#125;</span><br><span class="line">    CGFloat headImageEdgeMargin = BQMessageCommonMargin;</span><br><span class="line">    CGFloat headImageViewX = _isSelf ? self.contentView.bq_width - _headIconImageView.bq_width - headImageEdgeMargin : headImageEdgeMargin;</span><br><span class="line">    CGFloat headImageViewY = CGRectGetMaxY(_timeLabel.frame) + headImageEdgeMargin;</span><br><span class="line">    _headIconImageView.bq_origin = CGPointMake(headImageViewX, headImageViewY);</span><br><span class="line">    if (!_identityButton.hidden) &#123;</span><br><span class="line">        CGFloat identifyButtonTopMargin = BQMessageHeaderBottomMargin;</span><br><span class="line">        CGFloat identifyButtonY = CGRectGetMaxY(_headIconImageView.frame) + identifyButtonTopMargin;</span><br><span class="line">        _identityButton.bq_y = identifyButtonY;</span><br><span class="line">        _identityButton.bq_centerX = _headIconImageView.bq_centerX;</span><br><span class="line">    &#125;</span><br><span class="line">    CGFloat nameLabelToHeadImageTopMargin = 0;</span><br><span class="line">    if (!_nameLabel.hidden) &#123;</span><br><span class="line">        [_nameLabel sizeToFit];</span><br><span class="line">        CGFloat nameLabelX = CGRectGetMaxX(_headIconImageView.frame) + headImageEdgeMargin;</span><br><span class="line">        CGFloat nameLabelY = _headIconImageView.bq_y + nameLabelToHeadImageTopMargin;</span><br><span class="line">        _nameLabel.bq_origin = CGPointMake(nameLabelX, nameLabelY);</span><br><span class="line">    &#125;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>把设置可变坐标的代码独立出来放进一个方法中增强的控件的复用性，但是也无形中增加了布局代码代码量，而且估计第二个人来看这个计算过程也会很头大。<br></p>
+<p>能不能采用链式的方式简化对界面进行frame布局的代码？于是我借鉴了masonry的实现方式，弄了一套快速设置frame的代码。最终使用的效果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">UIView *v1 = [UIView new];</span><br><span class="line">v1.tpc_quickAttribute</span><br><span class="line">.referToView(self.view)</span><br><span class="line">.addToView(self.view)</span><br><span class="line">.alignOrigin(CGPointMake(10, 20))</span><br><span class="line">.alignSize(CGSizeMake(-200, -400))</span><br><span class="line">.backgroundColor([UIColor redColor]);</span><br><span class="line"></span><br><span class="line">UIView *v2 = [UIView new];</span><br><span class="line">v2.tpc_quickAttribute</span><br><span class="line">.referToView(v1)</span><br><span class="line">.addToView(v1)</span><br><span class="line">.size(CGSizeMake(20, 20))</span><br><span class="line">.alignCenter(pzero)</span><br><span class="line">.backgroundColor([UIColor orangeColor]);</span><br><span class="line"></span><br><span class="line">UIView *v3 = [UIView new];</span><br><span class="line">v3.tpc_quickAttribute</span><br><span class="line">.addToView(self.view)</span><br><span class="line">.referToView(v1)</span><br><span class="line">.alignSize(CGSizeMake(20, 20))</span><br><span class="line">.referToView(self.view)</span><br><span class="line">.alignRightToRight(20)</span><br><span class="line">.alignBottomToBottom(20)</span><br><span class="line">.backgroundColor([[UIColor grayColor] colorWithAlphaComponent:0.4]);</span><br></pre></td></tr></table></figure>
+<p>顿时感觉整个世界又变清新了。。。<br></p>
+<h4 id="实现的思路"><a href="#实现的思路" class="headerlink" title="实现的思路"></a>实现的思路<br></h4><p>首先，给UIView绑定一个布局实例：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;UIView+TPCQuickAttribute.m&gt;</span><br><span class="line"></span><br><span class="line">- (TPCQuickAttribute *)tpc_quickAttribute &#123;</span><br><span class="line">    TPCQuickAttribute *quickAttribute = objc_getAssociatedObject(self, _cmd);</span><br><span class="line">    if (!quickAttribute) &#123;</span><br><span class="line">        quickAttribute = [[TPCQuickAttribute alloc] initWithView:self];</span><br><span class="line">        objc_setAssociatedObject(self, _cmd, quickAttribute, OBJC_ASSOCIATION_RETAIN_NONATOMIC);</span><br><span class="line">    &#125;</span><br><span class="line">    return quickAttribute;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个TPCQuickAttribute就是进行快速设置frame的关键：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&lt;TPCQuickAttribute.h&gt;</span><br><span class="line"></span><br><span class="line">#if TPC_OPEN_LOG == 1</span><br><span class="line">#ifdef DEBUG</span><br><span class="line">#define TPCLayoutLog(s, ... ) NSLog( @&quot;&lt;%s:(%d)&gt; %@&quot;, __FUNCTION__, __LINE__, [NSString stringWithFormat:(s), ##__VA_ARGS__] ) </span><br><span class="line">#else</span><br><span class="line">#define TPCLayoutLog(s, ... )</span><br><span class="line">#endif</span><br><span class="line">#else</span><br><span class="line">#define TPCLayoutLog(s, ... )</span><br><span class="line">#endif</span><br><span class="line">@interface TPCQuickAttribute : NSObject &lt;TPCQuickProtcol&gt;</span><br><span class="line">- (instancetype)initWithView:(UIView *)view;</span><br><span class="line">@property (weak, nonatomic, readonly) UIView *view;</span><br><span class="line">@property (weak, nonatomic) UIView *referView;</span><br><span class="line">@property (assign, nonatomic, readonly) BOOL referViewIsSuperview;</span><br><span class="line"></span><br><span class="line">- (TPCQuickAttribute *(^)(UIView * view))referToView;</span><br><span class="line">- (TPCQuickAttribute *(^)(UIView *))addToView;</span><br><span class="line">- (void)end;</span><br><span class="line">@end</span><br></pre></td></tr></table></figure>
+<p>这个类包含了要进行布局的view对象，还有进行参考的referView。<br><br>一旦设置好了这两者，就可以进行下一步操作了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;TPCQuickAttribute+Frame.m&gt;</span><br><span class="line">...</span><br><span class="line">- (TPCQuickAttribute *(^)(CGFloat))alignLeftToLeft &#123;</span><br><span class="line">    return ^TPCQuickAttribute *(CGFloat offset) &#123;</span><br><span class="line">        return self.x(self.referViewX + offset);</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (TPCQuickAttribute *(^)(CGFloat))alignLeftToRight &#123;</span><br><span class="line">    return ^TPCQuickAttribute *(CGFloat offset) &#123;</span><br><span class="line">        return self.alignLeftToLeft(self.referView.frame.size.width + offset);</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>上面代码参考referView，对view的x坐标进行设置。对于这种链式的实现原理，就是利用了返回的block是一个无名函数，可以通过( )执行，这样对上面的方法进行调用，产生以下效果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xxx.alignLeftToLeft(0)</span><br></pre></td></tr></table></figure>
+<p>了解了block的使用方式就没什么复杂的了。<br><br>既然可以快速设置frame，那么常用属性呢？再增加一个分类：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&lt;TPCQuickAttribute+Appearance.m&gt;</span><br><span class="line">...</span><br><span class="line">- (TPCQuickAttribute *(^)(UIColor *))backgroundColor &#123;</span><br><span class="line">    return ^TPCQuickAttribute *(UIColor *backgroundColor) &#123;</span><br><span class="line">        self.view.backgroundColor = backgroundColor;</span><br><span class="line">        return self;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (TPCQuickAttribute *(^)(UIViewContentMode))contentMode &#123;</span><br><span class="line">    return ^TPCQuickAttribute *(UIViewContentMode contentMode) &#123;</span><br><span class="line">        self.view.contentMode = contentMode;</span><br><span class="line">        return self;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>同理，综合上面的代码，就可以链式地写出设置frame的代码了。<br></p>
+<h4 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h4><p>当然，现在有了自动布局，一般界面已经不需要使用frame进行布局了，代码的自动布局可以使用masonry，我私下也喜欢用storyboard+xib的方式写一些小demo。<br><br>所以以上代码纯属玩票＝＝。<br><br><a href="https://github.com/tripleCC/TPCQuickAttribute" target="_blank" rel="noopener">代码链接</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/objective-c/" rel="tag"># objective-c</a>
+          
+            <a href="/tags/frame/" rel="tag"># frame</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/" rel="next" title="SDWebImage设置大尺寸图片崩溃问题">
+                <i class="fa fa-chevron-left"></i> SDWebImage设置大尺寸图片崩溃问题
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/05/12/2016-05-12-mqttshi-yong-xiao-ji/" rel="prev" title="MQTT使用小记">
+                MQTT使用小记 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#令人蛋疼的frame布局"><span class="nav-number">1.</span> <span class="nav-text">令人蛋疼的frame布局</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实现的思路"><span class="nav-number">2.</span> <span class="nav-text">实现的思路</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#小结"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/';
+          this.page.identifier = '2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/';
+          this.page.title = '更加快速地设置Frame';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

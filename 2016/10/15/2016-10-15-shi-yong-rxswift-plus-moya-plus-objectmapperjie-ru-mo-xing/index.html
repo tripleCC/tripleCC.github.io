@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Swift,RxSwift,Moya,ObjectMapper,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="一般情况下，从业务方从API中请求JSON数据时，一般都会经过以下三步： 12--------1------------2----------原始数据 -&amp;gt; JSON/字典  -&amp;gt; Model 当然，大部分情况下，原始数据就是JSON，所以第一步基本上只是对接受数据的一个类型转换。一般在网络层中，由组件方提供1步骤，而业务方往往在网络组件的回调中提供步骤2。简单的转换逻辑明了了，接下来">
+<meta name="keywords" content="Swift,RxSwift,Moya,ObjectMapper">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用RxSwift+Moya+ObjectMapper接入模型">
+<meta property="og:url" content="https://triplecc.github.io/2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="一般情况下，从业务方从API中请求JSON数据时，一般都会经过以下三步： 12--------1------------2----------原始数据 -&amp;gt; JSON/字典  -&amp;gt; Model 当然，大部分情况下，原始数据就是JSON，所以第一步基本上只是对接受数据的一个类型转换。一般在网络层中，由组件方提供1步骤，而业务方往往在网络组件的回调中提供步骤2。简单的转换逻辑明了了，接下来">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用RxSwift+Moya+ObjectMapper接入模型">
+<meta name="twitter:description" content="一般情况下，从业务方从API中请求JSON数据时，一般都会经过以下三步： 12--------1------------2----------原始数据 -&amp;gt; JSON/字典  -&amp;gt; Model 当然，大部分情况下，原始数据就是JSON，所以第一步基本上只是对接受数据的一个类型转换。一般在网络层中，由组件方提供1步骤，而业务方往往在网络组件的回调中提供步骤2。简单的转换逻辑明了了，接下来">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/">
+
+
+
+
+
+  <title>使用RxSwift+Moya+ObjectMapper接入模型 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">使用RxSwift+Moya+ObjectMapper接入模型</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-10-15T03:40:37+00:00">
+                2016-10-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/swift/" itemprop="url" rel="index">
+                    <span itemprop="name">swift</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>一般情况下，从业务方从API中请求JSON数据时，一般都会经过以下三步：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">--------1------------2----------</span><br><span class="line">原始数据 -&gt; JSON/字典  -&gt; Model</span><br></pre></td></tr></table></figure>
+<p>当然，大部分情况下，原始数据就是JSON，所以第一步基本上只是对接受数据的一个类型转换。一般在网络层中，由组件方提供1步骤，而业务方往往在网络组件的回调中提供步骤2。简单的转换逻辑明了了，接下来就可以试下用Moya实现步骤1，ObjectMapper实现步骤2。</p>
+<p>在结合RxSwift+Moya+ObjectMapper三者之后，常规JSON数据的获取与解析变得更加精简。以近期编写的一个V2ex API为例，获取个人信息接口如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">fetchMemberInfo</span><span class="params">(<span class="number">_</span> username: String? = V2exAppContext.shared.currentUsername,</span></span></span><br><span class="line"><span class="function"><span class="params">                     <span class="number">_</span> id: Int? = <span class="literal">nil</span>)</span></span> -&gt; <span class="type">Observable</span>&lt;<span class="type">V2exMember</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="type">V2exProvider</span></span><br><span class="line">        .request(.<span class="type">ShowMembers</span>(username: username, id: id))</span><br><span class="line">        .mapObject()</span><br><span class="line">        .shareReplay(<span class="number">1</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>嗯，没错，最终的调用就是这么简单明了！<br><br><a id="more"></a></p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>那么，上述函数的内部是如何实现的呢？<br></p>
+<p>首先说下Moya。Moya是针对网络的一层封装，并且Moya在较为后期的版本中，还提供了RxSwift以及ReactiveCocoa的接口。针对RxSwift，Moya提供了以下两个好用的扩展：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">open</span> <span class="function"><span class="keyword">func</span> <span class="title">request</span><span class="params">(<span class="number">_</span> token: Target)</span></span> -&gt; <span class="type">Observable</span>&lt;<span class="type">Response</span>&gt;</span><br><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">mapJSON</span><span class="params">(failsOnEmptyData: Bool = <span class="literal">true</span>)</span></span> -&gt; <span class="type">Observable</span>&lt;<span class="type">Any</span>&gt;</span><br></pre></td></tr></table></figure>
+<p>前者用来请求原始数据，后者则将原始数据转化成json。当然，Moya还提供了其他Rx扩展，比如<code>filterStatus</code>系列方法，这里就不展开了。</p>
+<p>有了上面两个方法，业务方请求数据时，就可以这样调用：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="type">V2exProvider</span> = <span class="type">RxMoyaProvider</span>&lt;<span class="type">V2ex</span>&gt;()</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> json = <span class="type">V2exProvider</span></span><br><span class="line">    .request(.<span class="type">ShowMembers</span>(username: username, id: <span class="literal">nil</span>))</span><br><span class="line">    .mapJSON()</span><br></pre></td></tr></table></figure>
+<p>上面<code>json</code>即为解析完成的JSON数据流。<br><br>得到JSON数据流之后，就可以执行步骤2了，这里选用的是ObjectMapper。ObjectMapper是一个Swift编写的模型<->JSON转换库，应用代码非常简单，只要模型遵守Mappable协议，并且实现对应的方法就可以了：</-></p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">init</span>?(<span class="built_in">map</span>: <span class="type">Map</span>)</span><br><span class="line"><span class="keyword">mutating</span> <span class="function"><span class="keyword">func</span> <span class="title">mapping</span><span class="params">(<span class="built_in">map</span>: Map)</span></span></span><br></pre></td></tr></table></figure>
+<p>然后在模型中设置对应属性的值，这里以V2ex的Member为例：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">V2exMember</span>: <span class="title">Mappable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> status: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> id: <span class="type">Int</span>?</span><br><span class="line">    <span class="keyword">var</span> url: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> username: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> website: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> twitter: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> psn: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> github: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> btc: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> location: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> tagline: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> bio: <span class="type">String</span>?</span><br><span class="line">    <span class="keyword">var</span> created: <span class="type">Int</span>?</span><br><span class="line">    <span class="keyword">var</span> avatar: <span class="type">V2exAvatar</span>?</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">init</span>?(<span class="built_in">map</span>: <span class="type">Map</span>) &#123;</span><br><span class="line">        </span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">mutating</span> <span class="function"><span class="keyword">func</span> <span class="title">mapping</span><span class="params">(<span class="built_in">map</span>: Map)</span></span> &#123;</span><br><span class="line">        status      &lt;- <span class="built_in">map</span>[<span class="string">"status"</span>]</span><br><span class="line">        id          &lt;- <span class="built_in">map</span>[<span class="string">"id"</span>]</span><br><span class="line">        url         &lt;- <span class="built_in">map</span>[<span class="string">"url"</span>]</span><br><span class="line">        username    &lt;- <span class="built_in">map</span>[<span class="string">"username"</span>]</span><br><span class="line">        website     &lt;- <span class="built_in">map</span>[<span class="string">"username"</span>]</span><br><span class="line">        twitter     &lt;- <span class="built_in">map</span>[<span class="string">"twitter"</span>]</span><br><span class="line">        psn         &lt;- <span class="built_in">map</span>[<span class="string">"psn"</span>]</span><br><span class="line">        github      &lt;- <span class="built_in">map</span>[<span class="string">"github"</span>]</span><br><span class="line">        btc         &lt;- <span class="built_in">map</span>[<span class="string">"btc"</span>]</span><br><span class="line">        location    &lt;- <span class="built_in">map</span>[<span class="string">"location"</span>]</span><br><span class="line">        tagline     &lt;- <span class="built_in">map</span>[<span class="string">"tagline"</span>]</span><br><span class="line">        bio         &lt;- <span class="built_in">map</span>[<span class="string">"bio"</span>]</span><br><span class="line">        created     &lt;- <span class="built_in">map</span>[<span class="string">"created"</span>]</span><br><span class="line">        avatar = <span class="type">V2exAvatar</span>(<span class="type">JSON</span>: <span class="built_in">map</span>.<span class="type">JSON</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，对于struct类型的模型，这种转换方式还是很优雅的。生成模型的话，也只需要很简单的代码就可以完成：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Mapper</span>&lt;<span class="type">V2exMember</span>&gt;().<span class="built_in">map</span>(<span class="type">JSONObject</span>: $<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>到这里为止，步骤2也完成了，接下就可以将步骤1、2连接起来：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">extension</span> <span class="title">ObservableType</span> <span class="title">where</span> <span class="title">E</span> == <span class="title">Response</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">mapObject</span>&lt;T: Mappable&gt;<span class="params">()</span></span> -&gt; <span class="type">RxSwift</span>.<span class="type">Observable</span>&lt;<span class="type">T</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">return</span> mapJSON()</span><br><span class="line">            .observeOn(<span class="type">ConcurrentDispatchQueueScheduler</span>(globalConcurrentQueueQOS: .background))</span><br><span class="line">            .flatMap &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="type">Mapper</span>&lt;<span class="type">T</span>&gt;().<span class="built_in">map</span>(<span class="type">JSONObject</span>: $<span class="number">0</span>)</span><br><span class="line">                    .flatMap&#123; <span class="type">Observable</span>.just($<span class="number">0</span>) &#125; ??</span><br><span class="line">                    <span class="type">Observable</span>.error(<span class="type">NSError</span>(domain: <span class="string">"V2ex"</span>,</span><br><span class="line">                                             code: -<span class="number">1</span>,</span><br><span class="line">                                             userInfo: [<span class="string">"Error"</span> : <span class="string">"failed to map object"</span>]))</span><br><span class="line">            &#125;</span><br><span class="line">            .observeOn(<span class="type">MainScheduler</span>.instance)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">mapObjectArray</span>&lt;T: Mappable&gt;<span class="params">()</span></span> -&gt; <span class="type">RxSwift</span>.<span class="type">Observable</span>&lt;[<span class="type">T</span>]&gt; &#123;</span><br><span class="line">        <span class="keyword">return</span> mapJSON()</span><br><span class="line">            .observeOn(<span class="type">ConcurrentDispatchQueueScheduler</span>(globalConcurrentQueueQOS: .background))</span><br><span class="line">            .flatMap &#123; array -&gt; <span class="type">Observable</span>&lt;[<span class="type">T</span>]&gt; <span class="keyword">in</span></span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">let</span> array = array <span class="keyword">as</span>? [<span class="type">Any</span>] &#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="type">Observable</span>.just(array.flatMap &#123; <span class="type">Mapper</span>&lt;<span class="type">T</span>&gt;().<span class="built_in">map</span>(<span class="type">JSONObject</span>: $<span class="number">0</span>) &#125;)</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> <span class="type">Observable</span>.error(<span class="type">NSError</span>(domain: <span class="string">"V2ex"</span>,</span><br><span class="line">                                                code: -<span class="number">1</span>,</span><br><span class="line">                                                userInfo: [<span class="string">"Error"</span> : <span class="string">"failed to map object array"</span>]))</span><br><span class="line">            &#125;</span><br><span class="line">            .observeOn(<span class="type">MainScheduler</span>.instance)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>mapObject</code>将原始数据转换成单个模型，而<code>mapObjectArray</code>将原始数据转换成模型数组。使用Rx.flatMap是为了方便抛出错误，终止正常数据流的流动。<br></p>
+<p>总的来说，这三者结合后写出来的代码给人一种畅快淋漓的感觉。不过在很多项目中，从后台获取的JSON也许不会那么规范，或者说层次分明，这样一来，需要处理的情况就复杂多了，对于上面的Rx扩展能否保持这个精简的体量还待观察。</p>
+<p>文中提到的代码可以在这里<a href="https://github.com/tobevoid/V2exLogin" target="_blank" rel="noopener">这里</a>找到。</p>
+<hr>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://github.com/Hearst-DD/ObjectMapper" target="_blank" rel="noopener">ObjectMapper</a><br><br><a href="https://github.com/Moya/Moya" target="_blank" rel="noopener">Moya</a><br><br><a href="http://blog.callmewhy.com/2015/11/01/moya-rxswift-argo-lets-go/" target="_blank" rel="noopener">通过 Moya+RxSwift+Argo 完成网络请求</a><br></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Swift/" rel="tag"># Swift</a>
+          
+            <a href="/tags/RxSwift/" rel="tag"># RxSwift</a>
+          
+            <a href="/tags/Moya/" rel="tag"># Moya</a>
+          
+            <a href="/tags/ObjectMapper/" rel="tag"># ObjectMapper</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/" rel="next" title="ReactiveX中Using操作的应用">
+                <i class="fa fa-chevron-left"></i> ReactiveX中Using操作的应用
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/10/22/2016-10-25-yi-ci-duan-zan-de-mackai-fa-zhi-lu/" rel="prev" title="一次短暂的mac开发之旅">
+                一次短暂的mac开发之旅 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#实现"><span class="nav-number">1.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">2.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/';
+          this.page.identifier = '2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/';
+          this.page.title = '使用RxSwift+Moya+ObjectMapper接入模型';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

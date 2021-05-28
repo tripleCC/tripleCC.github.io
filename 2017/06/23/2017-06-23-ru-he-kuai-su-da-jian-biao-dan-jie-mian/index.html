@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="IGListKit,DataDriven,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="IGListKit, SectionController, 数据驱动, 构建表单, RETableViewManager, 固化样式, 复用单元, 分离业务代码">
+<meta name="keywords" content="IGListKit,DataDriven">
+<meta property="og:type" content="article">
+<meta property="og:title" content="闲谈 IGListKit">
+<meta property="og:url" content="https://triplecc.github.io/2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="IGListKit, SectionController, 数据驱动, 构建表单, RETableViewManager, 固化样式, 复用单元, 分离业务代码">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="闲谈 IGListKit">
+<meta name="twitter:description" content="IGListKit, SectionController, 数据驱动, 构建表单, RETableViewManager, 固化样式, 复用单元, 分离业务代码">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/">
+
+
+
+
+
+  <title>闲谈 IGListKit | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">闲谈 IGListKit</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-23T08:13:46+00:00">
+                2017-06-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ios/" itemprop="url" rel="index">
+                    <span itemprop="name">ios</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+              <div class="post-description">
+                  IGListKit, SectionController, 数据驱动, 构建表单, RETableViewManager, 固化样式, 复用单元, 分离业务代码
+              </div>
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>IGListKit 是 Instagram 在 16 年出品的一款针对 UICollectionView 的<strong><em>数据驱动</em></strong>框架，旨在帮助开发者更加快速、灵活地构建列表页面。 </p>
+<p>现存的绝大部分 Objective-C 框架，在集成进 Swift 项目中后，编写的代码依然会透出一股浓浓的 Objective-C 味，总感觉不纯正。而 IGListKit 虽然使用 Objective-C/C++ 开发，但是很好地照顾到了日渐增多的 Swift 开发者，不仅提供了大量 Swift 编写的 Demo （绝大部份），而且在 3.0.0 版本之后去除了 <code>IG</code> 前缀，更好地兼容了现版本 Swift 简洁的代码风格。所以，不管是 Swift 项目，还是 Objective-C 项目，引入 IGListKit 都是个不错的选择， 一来方便<strong><em>分离</em></strong>业务代码以降低复杂度，再者可以更好地编写<strong><em>粒度更大</em></strong>的复用单元目的，更多好处，只能在使用中体验了。</p>
+<a id="more"></a>
+<h2 id="初识-IGListKit"><a href="#初识-IGListKit" class="headerlink" title="初识 IGListKit"></a>初识 IGListKit</h2><p>去年初次使用 IGListKit 时，除了数据驱动，它对传统 UICollectionView 所做的封装方式，以及流畅的编写体验同样让我感到惊艳和意外。</p>
+<p>下面是 IGListKit 的层级结构图: </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">                                    |---- Cell</span><br><span class="line">        |---- SectionController ----|</span><br><span class="line">        |                           |---- Cell      </span><br><span class="line">        |</span><br><span class="line">        |                           |---- Cell</span><br><span class="line">Adpter  |---- SectionController ----|</span><br><span class="line">        |                           |---- Cell</span><br><span class="line">        |</span><br><span class="line">        |                           |---- Cell</span><br><span class="line">        |---- SectionController ----|</span><br><span class="line">                                    |---- Cell</span><br></pre></td></tr></table></figure>
+<p>刚入手 IGListKit ，可能会感觉这种分层似曾相识 —————— UITableView 的 dataSource：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">                                  |---- Cell</span><br><span class="line">                |---- Section ----|</span><br><span class="line">                |                 |---- Cell        </span><br><span class="line">                |</span><br><span class="line">                |                 |---- Cell</span><br><span class="line">dataSource      |---- Section ----|</span><br><span class="line">                |                 |---- Cell</span><br><span class="line">                |</span><br><span class="line">                |                 |---- Cell</span><br><span class="line">                |---- Section ----|</span><br><span class="line">                                  |---- Cell</span><br></pre></td></tr></table></figure>
+<p>但是上面的分层只是概念上的，并没有直接在 UITableViewSource ，也就是在代码的层面体现出来，编写业务代码时，Cell 和 Section 的 View 只是分散在两个不同代理方法中。如果要进行分层，需要手动对 UITableView 进行一层封装。 </p>
+<p>IGListKit 恰好替开发者封装了这层接口，在编写代码时， Cell 是挂在 SectionController 类中的。当存在多个不同类型的 SectionController 时，每个 SectionController 类管理属于自己的 Cell，这样做有利于开发者进行业务代码的分离，更进一步讲，有利于大粒度单元的复用。</p>
+<p>IGListKit 十分强调<strong><em>页面粒度的细化</em></strong>，所以 SectionController <strong><em>只能</em></strong>挂载一个 unique Object ，然后根据这个 Object 去生成一个或多个 Cell 。一般情况下，一个（种） Object 只会填充一个（种） Cell ，一个（种） Cell 的业务由一个 SectionContoller 进行管理。 SectionController 还对应了一个 supplementaryViewSource ，用以提供 Section 的头尾视图。</p>
+<p>不过也正是因为这种严格的机制，加上 <code>objectsForListAdapter:</code> 返回的必须是承载 unique 的 Object 的数组，通常也就是扁平的一维数组，导致 IGListKit 无法像 UITableView 的 dataSource 一样，通过嵌套的数据对象数组来描述 Section 。这也就造成了 IGListKit 在构建某些 Section 边界比较模糊的界面时，需要开发者做出比原生控件更多的配置和包装才能实现。比如以下情况：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> Message &#123;</span><br><span class="line">    let timestamp: String</span><br><span class="line">    let text: String</span><br><span class="line">    </span><br><span class="line">    init(timestamp: String, text: String) &#123;</span><br><span class="line">        <span class="keyword">self</span>.timestamp = timestamp</span><br><span class="line">        <span class="keyword">self</span>.text = text</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果要求列表以相同的 timestamp 为基准来划分 Section ，并在 Section 头部加上时间的 supplementaryView ，用 IGListKit 实现就会有点麻烦。对于多个不同 SectionController 的组合，虽然 IGListKit 专门提供了StackedSectionController ，不过同样的，StackedSectionController 对应的还是一个 Object，换句话说，其下多个 SectionController 绑定了同个 Object 。 </p>
+<p>不过瑕不掩瑜，IGListKit 还是提供了很多好用的特性，不管是 WorkRange，还是数据驱动的更新机制，都是值得一试的理由。</p>
+<h2 id="使用-IGListKit-构建表单"><a href="#使用-IGListKit-构建表单" class="headerlink" title="使用 IGListKit 构建表单"></a>使用 IGListKit 构建表单</h2><p>前面说的是可复用性强的列表页面，那么元素可复用性较差的表单界面 IGListKit 能够规避使用原生控件 dataSource 时 <code>if else</code> 判断过多的情况么？</p>
+<p>目前的答案是不能，SectionController 只是打散了 Section 层面的业务逻辑，当一个 SectionController 中有许多种不同类型的 Cell 时，其表现出来的业务复杂度和使用原生控件的 dataSource 并没有显著差别。不过我们可以参照 RETableViewManager 给 IGListKit 再做一层简易的包装。</p>
+<p><a href="https://github.com/romaonthego/RETableViewManager" target="_blank" rel="noopener">RETableViewManager</a> 也是一个数据驱动的库，只不过针对的是 UITableView ，但是此数据驱动和 IGListKit 的数据驱动还是有比较明显的区别的。</p>
+<p>在我看来，RETableViewManager 的强调的是<strong><em>展示固化样式</em></strong>，通过绑定各式各样的 Item 和 Cell ，来达到数据驱动的目的，开发者只要操纵 Item 即可构建界面。而 IGListKit 的强调的则是 <strong><em>操作Object 的唯一性</em></strong>，利用这个唯一性对特定 UICollectionView 进行增删改，凡是可以获取到 Object 的地方，就可以摒弃以前通过 NSIndexPaths 操作 UICollectionView 的方式，不过开发者还是需要和 Cell 打交道。</p>
+<h2 id="包装-IGListKit"><a href="#包装-IGListKit" class="headerlink" title="包装 IGListKit"></a>包装 IGListKit</h2><p>以下代码，可以在 <a href="https://github.com/tobevoid/TBVListAdapterManager" target="_blank" rel="noopener">TBVListAdapterManager</a> 中查看。</p>
+<p>在包装 IGListKit 之前，先来看下 RETableViewManager 的层级结构：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">                                      |---- Item ~~~~ Cell</span><br><span class="line">                    |---- Section ----|</span><br><span class="line">                    |                 |---- Item ~~~~ Cell      </span><br><span class="line">                    |</span><br><span class="line">                    |                 |---- Item ~~~~ Cell</span><br><span class="line">TableViewManager    |---- Section ----|</span><br><span class="line">                    |                 |---- Item ~~~~ Cell</span><br><span class="line">                    |</span><br><span class="line">                    |                 |---- Item ~~~~ Cell</span><br><span class="line">                    |---- Section ----|</span><br><span class="line">                                      |---- Item ~~~~ Cell</span><br></pre></td></tr></table></figure>
+<p>上方的 Item 和 Cell 是互相绑定关系，在获取到数据对象 Object 后，可以通过设置 Item 去渲染 Cell。也就是说， Item 和 Object 是一对一，甚至是多对一的关系，这个和 IGListKit 刚好切合，因为它的 Cell 和 Object 就是一对一或者多对一的关系。结合上图， RETableViewManager 的 Section 可以对应多个 Object ，而 IGListKit 的 SectionController 只能对应一个 Object ，这就造成了无法将 SectionControler 直接封装成 Section 的窘境。</p>
+<p>事实上，我更愿意把 SectionControler 描述成一组 Cell 的集合，而非传统意义上的 Section 。既然 SectionControler 和 Object 是一对一关系，那么 SectionController 本身是否也可以遵守 <code>IGListDiffable</code> 而成为一个 unique Object呢 ？从这个角度出发，可以初步看下封装后的层级结构：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">                                                          |---- Item ~~~~ Cell</span><br><span class="line">                                      |---- ItemBunch ----|         </span><br><span class="line">                                      |                   |---- Item ~~~~ Cell</span><br><span class="line">                                      |</span><br><span class="line">                    |---- Section ----|                   </span><br><span class="line">                    |                 |         </span><br><span class="line">                    |                 |                   |---- Item ~~~~ Cell</span><br><span class="line">                    |                 |---- ItemBunch ----| </span><br><span class="line">                    |                                     |---- Item ~~~~ Cell        </span><br><span class="line">                    |</span><br><span class="line">                    |                                     </span><br><span class="line">AdapterManager      |</span><br><span class="line">                    |</span><br><span class="line">                    |</span><br><span class="line">                    |</span><br><span class="line">                    |                                     |---- Item ~~~~ Cell</span><br><span class="line">                    |                 |---- ItemBunch ----|         </span><br><span class="line">                    |                 |                   |---- Item ~~~~ Cell</span><br><span class="line">                    |                 |                  </span><br><span class="line">                    |---- Section ----|                   </span><br><span class="line">                                      |         </span><br><span class="line">                                      |                   |---- Item ~~~~ Cell</span><br><span class="line">                                      |---- ItemBunch ----| </span><br><span class="line">                                                          |---- Item ~~~~ Cell</span><br></pre></td></tr></table></figure>
+<p>接下来看下具体的接口定义， ItemBunch 接口如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NS_ASSUME_NONNULL_BEGIN</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListSection</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListItemBunch</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListItem</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NS_SWIFT_NAME</span>(ListItemBunchViewSource)</span><br><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">TBVListItemBunchViewSource</span> &lt;<span class="title">NSObject</span>&gt;</span></span><br><span class="line"><span class="keyword">@required</span></span><br><span class="line">- (<span class="built_in">NSArray</span> &lt;<span class="built_in">NSString</span> *&gt; *)supportedElementKindsForBunch:(TBVListItemBunch *)bunch;</span><br><span class="line">- (__kindof <span class="built_in">UICollectionReusableView</span> *)bunch:(TBVListItemBunch *)bunch viewForSupplementaryElementOfKind:(<span class="built_in">NSString</span> *)elementKind atIndex:(<span class="built_in">NSInteger</span>)index;</span><br><span class="line">- (<span class="built_in">CGSize</span>)bunch:(TBVListItemBunch *)bunch sizeForSupplementaryViewOfKind:(<span class="built_in">NSString</span> *)elementKind atIndex:(<span class="built_in">NSInteger</span>)index;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NS_SWIFT_NAME</span>(ListItemBunch)</span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVListItemBunch</span> : <span class="title">IGListSectionController</span> &lt;<span class="title">IGListDiffable</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">@package</span></span><br><span class="line">    __<span class="keyword">weak</span> TBVListSection *_associatedSection;</span><br><span class="line">    __<span class="keyword">weak</span> <span class="keyword">id</span> &lt;TBVListItemBunchViewSource&gt; _bunchViewSource;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">weak</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) TBVListSection *associatedSection;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">strong</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) <span class="built_in">NSArray</span> *items;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">assign</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) <span class="built_in">NSInteger</span> index;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">instancetype</span>)initWithItem:(<span class="keyword">nullable</span> TBVListItem *)item;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)addItem:(<span class="keyword">nonnull</span> TBVListItem *)item;</span><br><span class="line">- (<span class="keyword">void</span>)removeItem:(<span class="keyword">nonnull</span> TBVListItem *)item;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)reload;</span><br><span class="line">- (<span class="keyword">void</span>)reloadAnimated:(<span class="built_in">BOOL</span>)animated;</span><br><span class="line">- (<span class="keyword">void</span>)reloadAnimated:(<span class="built_in">BOOL</span>)animated completion:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">BOOL</span> finished))completion;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"><span class="built_in">NS_ASSUME_NONNULL_END</span></span><br></pre></td></tr></table></figure>
+<p>Item 的接口如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NS_ASSUME_NONNULL_BEGIN</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListItemBunch</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListItem</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NS_SWIFT_NAME</span>(ListItemSelectBlock)</span><br><span class="line"><span class="keyword">typedef</span> <span class="keyword">void</span> (^TBVListItemSelectBlock)(TBVListItem * _Nonnull item);</span><br><span class="line"></span><br><span class="line"><span class="built_in">NS_SWIFT_NAME</span>(ListItem)</span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVListItem</span> : <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    <span class="keyword">@package</span></span><br><span class="line">    __<span class="keyword">weak</span> TBVListItemBunch *_associatedBunch;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">weak</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) TBVListItemBunch *associatedBunch;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">assign</span>, <span class="keyword">nonatomic</span>) <span class="built_in">CGSize</span> cellSize;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">assign</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) <span class="built_in">NSInteger</span> index;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">copy</span>, <span class="keyword">nonatomic</span>) TBVListItemSelectBlock selectBlock;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)reload;</span><br><span class="line">- (<span class="keyword">void</span>)reloadAnimated:(<span class="built_in">BOOL</span>)animated;</span><br><span class="line">- (<span class="keyword">void</span>)reloadAnimated:(<span class="built_in">BOOL</span>)animated completion:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">BOOL</span> finished))completion;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"><span class="built_in">NS_ASSUME_NONNULL_END</span></span><br></pre></td></tr></table></figure>
+<p>Section 的接口如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NS_ASSUME_NONNULL_BEGIN</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListAdapterManager</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListItemBunch</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">@class</span> <span class="title">TBVListSection</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">NS_SWIFT_NAME</span>(ListSection)</span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVListSection</span> : <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    <span class="keyword">@package</span></span><br><span class="line">    __<span class="keyword">weak</span> TBVListAdapterManager *_associatedManager;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">weak</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) TBVListAdapterManager *associatedManager;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">strong</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) <span class="built_in">NSArray</span> &lt;TBVListItemBunch *&gt; *itemBunches;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">assign</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) <span class="built_in">NSInteger</span> index;</span><br><span class="line"></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) TBVListSectionConfiguration *headerConfiguration;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nullable</span>, <span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) TBVListSectionConfiguration *footerConfiguration;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)addItemBunch:(<span class="keyword">nonnull</span> TBVListItemBunch *)bunch;</span><br><span class="line">- (<span class="keyword">void</span>)removeItemBunch:(<span class="keyword">nonnull</span> TBVListItemBunch *)bunch;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)reload;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"><span class="built_in">NS_ASSUME_NONNULL_END</span></span><br></pre></td></tr></table></figure>
+<p>至此，对于 IGListKitExamples 的 ObjcDemoViewController ，我可以重新用这套包装，去实现上文所说的 Section 边界比较模糊的的场景：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">TBVListAdapterManager *manager = [[TBVListAdapterManager alloc] initWithAdapter:<span class="keyword">self</span>.adapter];</span><br><span class="line">[manager registerItems:@[TBVS(InteractiveItem), TBVS(PhotoItem), TBVS(UserInfoItem), TBVS(CommandItem)]];</span><br><span class="line"><span class="keyword">for</span> (<span class="built_in">NSInteger</span> i = <span class="number">2</span>; i &gt; <span class="number">0</span>; i--) &#123;</span><br><span class="line">    &#123;</span><br><span class="line">        TBVListSection *section = [TBVListSection new];</span><br><span class="line">        section.headerConfiguration = [[TBVListSectionConfiguration alloc]</span><br><span class="line">                                       initWithSupplementarySize:<span class="built_in">CGSizeMake</span>(<span class="number">100</span>, <span class="number">20</span>)</span><br><span class="line">                                       reusableClass:[TBVCollectionReusableView <span class="keyword">class</span>]</span><br><span class="line">                                       configureBlock:^(TBVListSection *section, TBVCollectionReusableView *reusableView) &#123;</span><br><span class="line">                                           reusableView.textLabel.text = <span class="string">@"2017-01-22 12:23:44"</span>;</span><br><span class="line">                                       &#125;];</span><br><span class="line">        [manager addSection:section];</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">for</span> (Post *p <span class="keyword">in</span> <span class="keyword">self</span>.data) &#123;</span><br><span class="line">            TBVListItemBunch *bunch = [TBVListItemBunch new];</span><br><span class="line">            [section addItemBunch:bunch];</span><br><span class="line">            </span><br><span class="line">            &#123;</span><br><span class="line">                UserInfoItem *item = [UserInfoItem new];</span><br><span class="line">                item.selectBlock = ^(TBVListItem * _Nonnull item) &#123;</span><br><span class="line">                    item.cellSize = <span class="built_in">CGSizeMake</span>(item.cellSize.width, arc4random_uniform(<span class="number">100</span>));</span><br><span class="line">                    [item reload];</span><br><span class="line">                &#125;;</span><br><span class="line">                [bunch addItem:item];</span><br><span class="line">            &#125;</span><br><span class="line">            &#123;</span><br><span class="line">                PhotoItem *item = [PhotoItem new];</span><br><span class="line">                item.selectBlock = ^(TBVListItem * _Nonnull item) &#123;</span><br><span class="line">                    item.cellSize = <span class="built_in">CGSizeMake</span>(item.cellSize.width, arc4random_uniform(<span class="number">100</span>));</span><br><span class="line">                    </span><br><span class="line">                    [item.associatedBunch reload];</span><br><span class="line">                &#125;;</span><br><span class="line">                [bunch addItem:item];</span><br><span class="line">            &#125;</span><br><span class="line">            &#123;</span><br><span class="line">                InteractiveItem *item = [InteractiveItem new];</span><br><span class="line">                item.selectBlock = ^(TBVListItem * _Nonnull item) &#123;</span><br><span class="line">                    item.cellSize = <span class="built_in">CGSizeMake</span>(item.cellSize.width, arc4random_uniform(<span class="number">100</span>));</span><br><span class="line">                    [item.associatedBunch.associatedSection reload];</span><br><span class="line">                &#125;;</span><br><span class="line">                [bunch addItem:item];</span><br><span class="line">            &#125;</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">for</span> (<span class="built_in">NSString</span> *c <span class="keyword">in</span> p.comments) &#123;</span><br><span class="line">                TBVCommandItem *item = [TBVCommandItem new];</span><br><span class="line">                item.commant = c;</span><br><span class="line">                [bunch addItem:item];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">self</span>.manager = manager;</span><br><span class="line">[<span class="keyword">self</span>.manager reload];</span><br></pre></td></tr></table></figure>
+<p>对于上述固化样式类的数据驱动模型，我认为实现<strong><em>“自治”</em></strong>是核心。这就要求通过 Item 可以访问 ItemBunch， 通过 ItemBunch 可以访问 Section，Section、AdapterManger 同理 （链表式的访问）。  这样做的好处是，可以通过 Item 、ItemBunch 和 Section 直接刷新自身，而不需要去手动获取 tableView / collectionView 再结合 NSIndexPaths 去刷新对应条目，让<strong><em>所有的变动通过操作数据完成</em></strong>；而且针对复杂业务，我还是可以很方便地回到 IGListKit 利用 SectionController 处理业务的那种方式，将业务分散到 Section 子类中。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>IGListKit 强调的<strong><em>页面粒度的细化</em></strong>恰恰是我所推崇的，一旦样式积木多了之后，构造页面的方式就具备了无限的可能性。对于部分展示逻辑偏多、交互偏少的 App 来说，利用固化样式来精简业务代码是个不错的选择。虽然“固化”一词看起来和“灵活”相反，但事实上并非如此，一定程度上的固化恰恰能让界面的编写更加灵活。</p>
+<p>如果将固化的样式想像成大粒度的 HTML 标签，那么就可以把 App 当作一个移动端的浏览器，而让后台下发固化样式以堆砌界面。</p>
+<p>另外，在构造样式 / Item 的时候，<strong><em>面向接口编程</em></strong>能给后期扩展带来不小的灵活性。换句话说，多用 Protocol ,少用继承。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://instagram.github.io/IGListKit/" target="_blank" rel="noopener">IGListKit</a><br><br><a href="https://www.raywenderlich.com/147162/iglistkit-tutorial-better-uicollectionviews" target="_blank" rel="noopener">IGListKit Tutorial: Better UICollectionViews</a><br><br><a href="https://imtx.me/archives/2091.html" target="_blank" rel="noopener">从 Instagram 开源 IGListKit 聊聊 iOS 开发趋势</a><br><br><a href="http://www.infoq.com/cn/presentations/three-little-stories-behind-the-shise-app" target="_blank" rel="noopener">精益创业实践——食色App背后的三个小故事</a><br></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/IGListKit/" rel="tag"># IGListKit</a>
+          
+            <a href="/tags/DataDriven/" rel="tag"># DataDriven</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/06/08/2017-06-08-cocoapodshe-localization/" rel="next" title="CocoaPods和Localization">
+                <i class="fa fa-chevron-left"></i> CocoaPods和Localization
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/" rel="prev" title="Objective-C 消息转发应用场景摘录">
+                Objective-C 消息转发应用场景摘录 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#初识-IGListKit"><span class="nav-number">1.</span> <span class="nav-text">初识 IGListKit</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用-IGListKit-构建表单"><span class="nav-number">2.</span> <span class="nav-text">使用 IGListKit 构建表单</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#包装-IGListKit"><span class="nav-number">3.</span> <span class="nav-text">包装 IGListKit</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">4.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/';
+          this.page.identifier = '2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/';
+          this.page.title = '闲谈 IGListKit';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="PHP,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="这一个星期主要需要理解的代码主要是实现这样的一个功能：  这是一个分类网站的雏形，主要针对的是面向对象的应用和思想。">
+<meta name="keywords" content="PHP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PHP后台编程初探">
+<meta property="og:url" content="https://triplecc.github.io/2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="这一个星期主要需要理解的代码主要是实现这样的一个功能：  这是一个分类网站的雏形，主要针对的是面向对象的应用和思想。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/2015-09-27%2010_07_51.gif">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PHP后台编程初探">
+<meta name="twitter:description" content="这一个星期主要需要理解的代码主要是实现这样的一个功能：  这是一个分类网站的雏形，主要针对的是面向对象的应用和思想。">
+<meta name="twitter:image" content="https://triplecc.github.io/images/2015-09-27%2010_07_51.gif">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/">
+
+
+
+
+
+  <title>PHP后台编程初探 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">PHP后台编程初探</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2015-09-26T12:40:04+00:00">
+                2015-09-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/php/" itemprop="url" rel="index">
+                    <span itemprop="name">php</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>这一个星期主要需要理解的代码主要是实现这样的一个功能：<br></p>
+<p><img src="/images/2015-09-27 10_07_51.gif" alt=""></p>
+<p>这是一个分类网站的雏形，主要针对的是面向对象的应用和思想。<br><a id="more"></a></p>
+<h2 id="业务"><a href="#业务" class="headerlink" title="业务"></a>业务</h2><p>分类业务主要包括以下几点：</p>
+<ul>
+<li>核心信息是<code>广告</code></li>
+<li>将广告按照类目、地区、用户进行了分类</li>
+<li>广告具有所属类目、所属地区、所属用户以及对应评论特性</li>
+<li>也可以从类目、地区、用户中获取对应的所有广告信息</li>
+</ul>
+<h2 id="核心代码层级构建"><a href="#核心代码层级构建" class="headerlink" title="核心代码层级构建"></a>核心代码层级构建</h2><ul>
+<li>创建一个单例，管理数据库的连接（DataConnection）</li>
+<li>根据表结构，创建一个共同的父类（Data），一个父类对象对应每个表中的特定行（table、key），这个父类提供主键查询（load），字段查询（find）功能。另外一点技巧是根据PHP动态创建属性的特性，创建一个数组属性，供外界传入各自拥有的字段映射（关联数组）</li>
+<li>数据库中的部分表中存在父子节点关系，所以创建一个管理父子节点的子类（Tree），提供常用的树操作：查询子节点（children）、查询父节点（parent）、查询父族（getTree）</li>
+<li>各个不同的表创建一个子类，并根据不同的字段，在构造时传入不同的<code>初始值</code>和<code>需要动态创建的属性及对应的查询字段</code></li>
+</ul>
+<h2 id="核心代码剖析"><a href="#核心代码剖析" class="headerlink" title="核心代码剖析"></a>核心代码剖析</h2><h3 id="PHP部分基础语法"><a href="#PHP部分基础语法" class="headerlink" title="PHP部分基础语法"></a>PHP部分基础语法</h3><p>变量：<br><br>PHP是类型松散语言，会根据右边的数值决定左边的类型.</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$color 	$符号表示变量</span><br></pre></td></tr></table></figure>
+<p>数组：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建数组</span></span><br><span class="line">$a = <span class="keyword">array</span>(<span class="string">"a"</span>, <span class="string">"b"</span>, <span class="string">"c"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 关联数组</span></span><br><span class="line">$a = <span class="keyword">array</span>(<span class="string">"a"</span>=&gt;<span class="string">"1"</span>, <span class="string">"b"</span>=&gt;<span class="string">"b"</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 添加数组</span></span><br><span class="line">$o = <span class="keyword">new</span> Object();</span><br><span class="line">$a[] = $o;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 关联数组的遍历(as)</span></span><br><span class="line"><span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;columns <span class="keyword">as</span> $key =&gt; $value) &#123;</span><br><span class="line">	<span class="keyword">echo</span> <span class="string">"键:"</span> . $key . <span class="string">"  "</span>;</span><br><span class="line">	<span class="keyword">echo</span> <span class="string">"值:"</span> . $value . <span class="string">"  "</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 普通数组的另一种遍历方式</span></span><br><span class="line">$a = <span class="keyword">array</span>(<span class="string">"1"</span>, <span class="string">"2"</span>);</span><br><span class="line"><span class="keyword">for</span> ($i = <span class="number">0</span>; $i &lt; <span class="number">10</span>; $i++) &#123;</span><br><span class="line">	<span class="keyword">echo</span> $a[$i];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>字符串的基本运算：<br></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.   	串接</span><br><span class="line">.=  	串接赋值</span><br></pre></td></tr></table></figure>
+<p>clone对象复制（新对象）：<br><br>对对象内的基本数值类型进行传值复制，对对象内对象型的成员变量，如果不重写__clone函数，显示clone这个对象成员变量，那么这个成员变量就是进行引用复制，不是生成一个新的对象</p>
+<p>继承使用extends。<br></p>
+<p>this、self、parent为分别指向当前对象、当前类、父类的指针。<br></p>
+<h3 id="数据连接单例"><a href="#数据连接单例" class="headerlink" title="数据连接单例"></a>数据连接单例</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">DataConnection</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> $dataConnection;</span><br><span class="line">        <span class="keyword">public</span> $connection;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 连接数据库</span></span><br><span class="line">            <span class="keyword">$this</span>-&gt;connection = mysql_connect(<span class="string">'localhost'</span>, <span class="string">'root'</span>, <span class="string">''</span>) <span class="keyword">or</span> <span class="keyword">die</span>(mysql_error());</span><br><span class="line">            <span class="comment">// 选取chaoge数据库</span></span><br><span class="line">            mysql_select_db(<span class="string">"chaoge"</span>, <span class="keyword">$this</span>-&gt;connection) <span class="keyword">or</span> <span class="keyword">die</span>(mysql_error());;</span><br><span class="line">            <span class="comment">// 向数据库执行SET NAMES UTF8命令(执行数据库命令，设置字符集编码格式)</span></span><br><span class="line">            mysql_query(<span class="string">"SET NAMES UTF8"</span>, <span class="keyword">$this</span>-&gt;connection) <span class="keyword">or</span> <span class="keyword">die</span>(mysql_error());;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 为空创建</span></span><br><span class="line">            <span class="keyword">if</span> (is_null(<span class="keyword">self</span>::$dataConnection)) &#123;</span><br><span class="line">                <span class="keyword">self</span>::$dataConnection = <span class="keyword">new</span> DataConnection();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">self</span>::$dataConnection;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="共同父类Data"><a href="#共同父类Data" class="headerlink" title="共同父类Data"></a>共同父类Data</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Data</span> </span>&#123;</span><br><span class="line">       <span class="keyword">private</span> $sql;</span><br><span class="line">       <span class="keyword">private</span> $rs;</span><br><span class="line">	</span><br><span class="line">       <span class="keyword">public</span> $table;</span><br><span class="line">       <span class="keyword">public</span> $key;</span><br><span class="line">       <span class="keyword">public</span> $columns;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">init</span><span class="params">($option)</span> </span>&#123;</span><br><span class="line">           <span class="keyword">$this</span>-&gt;table = $option[<span class="string">'table'</span>];</span><br><span class="line">           <span class="keyword">$this</span>-&gt;key = $option[<span class="string">'key'</span>];</span><br><span class="line">           <span class="keyword">$this</span>-&gt;columns = $option[<span class="string">'columns'</span>];</span><br><span class="line">       &#125;   </span><br><span class="line"></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">fetch</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="comment">// 取得结果集中的一行作为关联数组</span></span><br><span class="line">           <span class="keyword">return</span> mysql_fetch_assoc(<span class="keyword">$this</span>-&gt;rs);</span><br><span class="line">       &#125;   </span><br><span class="line"></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">query</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $connection = DataConnection::getInstance()-&gt;connection;</span><br><span class="line">           <span class="comment">// 执行查询语句</span></span><br><span class="line">           <span class="keyword">$this</span>-&gt;rs = mysql_query(<span class="keyword">$this</span>-&gt;sql, $connection);</span><br><span class="line"></span><br><span class="line">           <span class="comment">// 返回查找到的行数</span></span><br><span class="line">           <span class="comment">// mysql_num_rows返回实际结果集中获取的行数</span></span><br><span class="line">           <span class="keyword">return</span> mysql_affected_rows();</span><br><span class="line">       &#125;   </span><br><span class="line"></span><br><span class="line">       <span class="comment">// 查找主键所在行的数据</span></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">load</span><span class="params">($v=null)</span> </span>&#123;</span><br><span class="line">           <span class="comment">// 获取主键字段对应的属性名</span></span><br><span class="line">           $key = <span class="keyword">$this</span>-&gt;key;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">if</span> (!$v) &#123;</span><br><span class="line">               <span class="comment">// 获取主键值</span></span><br><span class="line">               $v = <span class="keyword">$this</span>-&gt;$key;</span><br><span class="line">           &#125;   </span><br><span class="line"></span><br><span class="line">           <span class="comment">// 创建数据库查询语句</span></span><br><span class="line">           <span class="keyword">$this</span>-&gt;sql = <span class="string">"SELECT * FROM &#123;$this-&gt;table&#125; WHERE &#123;$this-&gt;columns[$key]&#125; = &#123;$v&#125;"</span>;</span><br><span class="line">            <span class="comment">// 进行数据库查询                                                                                                                                                        </span></span><br><span class="line">           <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;query()) &#123;</span><br><span class="line">               <span class="comment">// 获取主键所在行关联数组</span></span><br><span class="line">               $ar = <span class="keyword">$this</span>-&gt;fetch();</span><br><span class="line"></span><br><span class="line">               <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;columns <span class="keyword">as</span> $key =&gt; $value) &#123;</span><br><span class="line">                   <span class="comment">// 设置动态添加属性的值为对应数据库字段读取的值</span></span><br><span class="line">                   <span class="keyword">$this</span>-&gt;$key = $ar[$value];</span><br><span class="line">               &#125;</span><br><span class="line">               <span class="keyword">return</span> <span class="keyword">$this</span>;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// 可以根据columns中的字段来进行查找</span></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">find</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="comment">// 拼接where，WHERE 1=1是减少是否需要添加WHERE的麻烦</span></span><br><span class="line">           $where = <span class="string">" WHERE 1 = 1 "</span>;</span><br><span class="line">           $limit = <span class="string">" LIMIT 0, 10 "</span>;</span><br><span class="line">           <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;columns <span class="keyword">as</span> $key =&gt; $value) &#123;</span><br><span class="line">               <span class="keyword">if</span> (<span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;$key)) &#123;</span><br><span class="line">                   <span class="comment">// 如果对应的动态属性有值，就添加对应的查询条件</span></span><br><span class="line">                   <span class="comment">// $value是数据库字段，$this-&gt;$key是模型属性的值</span></span><br><span class="line">                   $where .= <span class="string">"AND &#123;$value&#125;=&#123;$this-&gt;$key&#125;"</span>;</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           <span class="comment">// 拼接查询语句</span></span><br><span class="line">           <span class="keyword">$this</span>-&gt;sql = <span class="string">"SELECT * FROM &#123;$this-&gt;table&#125; &#123;$where&#125; &#123;$limit&#125;"</span>;</span><br><span class="line"></span><br><span class="line">           $ar = <span class="keyword">array</span>();</span><br><span class="line">           <span class="comment">// 进行数据库查询</span></span><br><span class="line">           <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;query()) &#123;</span><br><span class="line">               <span class="comment">// 获取查询的一行数据</span></span><br><span class="line">               <span class="keyword">while</span> ($a = <span class="keyword">$this</span>-&gt;fetch()) &#123;</span><br><span class="line">                   <span class="comment">// 这里进行clone，表示只是想要查询，并不想要改变$this的相关属性值</span></span><br><span class="line">                   <span class="comment">// 实现面向对象编程的方式，使用clone</span></span><br><span class="line">                   $o = <span class="keyword">clone</span> <span class="keyword">$this</span>;</span><br><span class="line">                   <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;columns <span class="keyword">as</span> $key =&gt; $value) &#123;</span><br><span class="line">                       <span class="comment">// 设置动态添加属性的值为对应数据库字段读取的值</span></span><br><span class="line">                       $o-&gt;$key = $a[$value];</span><br><span class="line">                   &#125;</span><br><span class="line">                   <span class="comment">// 将设置号查询数据的对象添加到数组中</span></span><br><span class="line">                   $ar[] = $o;</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line">	<span class="comment">// 重写__get方法，获取属性时就先判断属性有没有,没有的话输出null</span></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__get</span><span class="params">($property_name)</span> </span>&#123;</span><br><span class="line">           <span class="comment">// $this有$property_name属性的情况下返回属性值</span></span><br><span class="line">           <span class="keyword">return</span> property_exists(<span class="keyword">$this</span>, $property_name) ? <span class="keyword">$this</span>-&gt;$property_name : <span class="keyword">null</span>;</span><br><span class="line">       &#125;</span><br></pre></td></tr></table></figure>
+<p>因为一个Data对象对应着数据库中的一行数据，所以需要有以下对应的属性：<br></p>
+<ol>
+<li>table    -&gt;对应的表<br></li>
+<li>key        -&gt;对应行主键<br></li>
+<li>columns    -&gt;对应每个表中各自的私有字段<br></li>
+</ol>
+<p>并且其中涉及到了PHP动态<code>创建属性</code>的特性。<br></p>
+<p>动态创建的属性默认是public的，要想动态创建私有的属性，可以这么做：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">foo</span> </span>&#123;</span><br><span class="line">	  </span><br><span class="line">	<span class="keyword">private</span> $a;</span><br><span class="line">	<span class="keyword">private</span> $_properties = <span class="keyword">array</span>();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__set</span><span class="params">($var, $val = null)</span> </span>&#123;</span><br><span class="line">		  </span><br><span class="line">		<span class="keyword">$this</span>-&gt;_properties[$var] = $val;</span><br><span class="line">	&#125;  </span><br><span class="line">	<span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__get</span><span class="params">($var)</span> </span>&#123;</span><br><span class="line">		  </span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">$this</span>-&gt;_properties[$var];</span><br><span class="line">	&#125;  </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$a = <span class="keyword">new</span> foo();</span><br><span class="line">$a-&gt;__set(<span class="string">'a'</span>,<span class="string">'111'</span>);</span><br><span class="line"><span class="keyword">echo</span> $a-&gt;__get(<span class="string">'a'</span>);</span><br></pre></td></tr></table></figure>
+<p>使用一个private的数组，每次创建时可以往这个数组里面添加元素。<br></p>
+<p>__set当给不可访问或不存在属性赋值时被使用。<br></p>
+<p>__get当读取不可访问或不存在的属性时被调用。<br></p>
+<p>可以在以上函数中设置错误抛出，当访问不存在属性时就抛出错误。<br></p>
+<p>isset是在参数为null或者属性不存在时返回false，否则返回true。<br></p>
+<p>其中有两个数据库的函数，我纠结了挺久，是关于执行SELECT返回的数据行数。</p>
+<ul>
+<li>mysql_affected_rows()<ul>
+<li>Retrieves the number of rows from a result set. This command is only valid for statements like SELECT or SHOW that return an actual result set. </li>
+</ul>
+</li>
+<li>mysql_num_rows()<ul>
+<li>Get the number of affected rows by the last INSERT, UPDATE, REPLACE or DELETE query associated with link_identifier.</li>
+</ul>
+</li>
+</ul>
+<p>但是实际使用的时候，两者返回的值是一样的，个人感觉和手册上面说的有点不一样。最后在stackoverflow问了下，得出以下结论：</p>
+<ul>
+<li>mysql_affected_rows()返回查询到的数据行数</li>
+<li>mysql_num_rows()返回实际返回的数据行数（结果集中）</li>
+</ul>
+<p>详细的讨论在这里：<a href="http://bytes.com/topic/php/answers/749156-difference-between-mysql_affected_rows-mysql_num_rows" target="_blank" rel="noopener">mysql_affected_rows()和mysql_num_rows()</a></p>
+<h2 id="管理树操作子类Tree"><a href="#管理树操作子类Tree" class="headerlink" title="管理树操作子类Tree"></a>管理树操作子类Tree</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Tree</span> <span class="keyword">extends</span> <span class="title">Data</span> </span>&#123;</span><br><span class="line">        <span class="keyword">public</span> $pkey;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">init</span><span class="params">($option)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;pkey = $option[<span class="string">'pkey'</span>];</span><br><span class="line">            <span class="keyword">parent</span>::init($option);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">children</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 获取主键字段对应的属性名</span></span><br><span class="line">            $key = <span class="keyword">$this</span>-&gt;key;</span><br><span class="line">            <span class="comment">// 获取父页节点主键对应的属性名</span></span><br><span class="line">            $pkey = <span class="keyword">$this</span>-&gt;pkey;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 这里name属性还没有被创建，试一下__get</span></span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;br&gt;"</span>;</span><br><span class="line">            var_dump(<span class="keyword">$this</span>-&gt;name);</span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;br&gt;"</span>;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;table;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 获取对象类名</span></span><br><span class="line">            $class = get_class(<span class="keyword">$this</span>);</span><br><span class="line">            $o = <span class="keyword">new</span> $class;</span><br><span class="line">            $o-&gt;$pkey = <span class="keyword">$this</span>-&gt;$key;</span><br><span class="line">            <span class="keyword">return</span> $o-&gt;find();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">parent</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 获取主键字段对应的属性名</span></span><br><span class="line">            $key = <span class="keyword">$this</span>-&gt;key;</span><br><span class="line">            <span class="comment">// 获取父节点主键对应的属性名</span></span><br><span class="line">            $pkey = <span class="keyword">$this</span>-&gt;pkey;</span><br><span class="line"></span><br><span class="line">            $class = get_class(<span class="keyword">$this</span>);</span><br><span class="line">            $o = <span class="keyword">new</span> $class;</span><br><span class="line">            $o-&gt;$key = <span class="keyword">$this</span>-&gt;$pkey;</span><br><span class="line">            <span class="keyword">return</span> $o-&gt;load();</span><br><span class="line">        &#125;</span><br><span class="line">		<span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">getTree</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="comment">// 获取父页面主键对应的属性名</span></span><br><span class="line">            $pkey = <span class="keyword">$this</span>-&gt;pkey;</span><br><span class="line"></span><br><span class="line">            $ar = <span class="keyword">array</span>();</span><br><span class="line">            <span class="comment">// clone是产生一个和原来一样的新的对象，没有clone的话是一个对象引用</span></span><br><span class="line">            <span class="comment">// 这里主要是规避$this不能被赋值问题</span></span><br><span class="line">            <span class="comment">// 因为$o中的属性并不会被改变，所以这里也可以不使用clone</span></span><br><span class="line">			<span class="comment">// $o = clone $this;</span></span><br><span class="line">            $o = <span class="keyword">$this</span>;</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                <span class="comment">// 将从本身开始，到最后层级的父节点添加到数组中</span></span><br><span class="line">                $ar[] = $o;</span><br><span class="line">                <span class="comment">// 获取父节点</span></span><br><span class="line">                $o = $o-&gt;parent();</span><br><span class="line">                <span class="comment">// 如果没有父节点对应的主键值，那么表示没有父节点，退出循环</span></span><br><span class="line">            &#125;<span class="keyword">while</span> (<span class="keyword">isset</span>($o-&gt;$pkey) &amp;&amp; $o-&gt;$pkey &gt; <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 将父节点排在最前面</span></span><br><span class="line">            <span class="keyword">return</span> array_reverse($ar);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>php实现面向对象的编程方式可以使用两种方式：</p>
+<ol>
+<li><code>clone</code>方式，这样不管实际类是哪种，都可以拷贝一个全新的对象出来。这种方式在这个上下文下需要对clone的类的部分属性进行清空。</li>
+<li>使用另一种方式，即以上方式：通过<code>get_class</code>获取类名，然后重新创建一个。</li>
+</ol>
+<h2 id="详细子类"><a href="#详细子类" class="headerlink" title="详细子类"></a>详细子类</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br></pre></td><td class="code"><pre><span class="line">  <span class="class"><span class="keyword">class</span> <span class="title">Category</span> <span class="keyword">extends</span> <span class="title">Tree</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $option = <span class="keyword">array</span>(</span><br><span class="line">               <span class="comment">// 表格</span></span><br><span class="line">               <span class="string">'table'</span> =&gt; <span class="string">'babel_node'</span>,</span><br><span class="line">               <span class="comment">// 主键</span></span><br><span class="line">               <span class="string">'key'</span> =&gt; <span class="string">'id'</span>,</span><br><span class="line">               <span class="comment">// 父节点主键</span></span><br><span class="line">               <span class="string">'pkey'</span> =&gt; <span class="string">'pid'</span>,</span><br><span class="line">               <span class="comment">// 表格对应的私有字段</span></span><br><span class="line">               <span class="string">'columns'</span> =&gt; <span class="keyword">array</span>(</span><br><span class="line">                   <span class="string">'id'</span> =&gt; <span class="string">'node_id'</span>,</span><br><span class="line">                   <span class="string">'pid'</span> =&gt; <span class="string">'nod_pid'</span>,</span><br><span class="line">                   <span class="string">'name'</span> =&gt; <span class="string">'nod_title'</span></span><br><span class="line">               )</span><br><span class="line">           );</span><br><span class="line">           <span class="keyword">parent</span>::init($option);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">ads</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $a = <span class="keyword">new</span> Ad();</span><br><span class="line">           <span class="comment">// 设置分类id</span></span><br><span class="line">           $a-&gt;categoryId = <span class="keyword">$this</span>-&gt;id;</span><br><span class="line">           <span class="comment">// 因为分类id被设置了，所以查找的时候就只有分类id这一个过滤条件</span></span><br><span class="line">           <span class="keyword">return</span> $a-&gt;find();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="class"><span class="keyword">class</span> <span class="title">Area</span> <span class="keyword">extends</span> <span class="title">Tree</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $option = <span class="keyword">array</span>(</span><br><span class="line">               <span class="string">'table'</span> =&gt; <span class="string">'babel_area'</span>,</span><br><span class="line">               <span class="string">'key'</span> =&gt; <span class="string">'id'</span>,</span><br><span class="line">               <span class="string">'pkey'</span> =&gt; <span class="string">'pid'</span>,</span><br><span class="line">               <span class="string">'columns'</span> =&gt; <span class="keyword">array</span>(</span><br><span class="line">                   <span class="string">'id'</span> =&gt; <span class="string">'area_id'</span>,</span><br><span class="line">                   <span class="string">'pid'</span> =&gt; <span class="string">'area_pid'</span>,</span><br><span class="line">                   <span class="string">'name'</span> =&gt; <span class="string">'area_title'</span></span><br><span class="line">               )</span><br><span class="line">           );</span><br><span class="line">           <span class="keyword">parent</span>::init($option);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">ads</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $a = <span class="keyword">new</span> Ad();</span><br><span class="line">           <span class="comment">// 设置地区id</span></span><br><span class="line">           $a-&gt;areaId = <span class="keyword">$this</span>-&gt;id;</span><br><span class="line">           <span class="comment">// 因为地区id被设置了，所以查找的时候就只有地区id这一个过滤条件</span></span><br><span class="line">           <span class="keyword">return</span> $a-&gt;find();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="class"><span class="keyword">class</span> <span class="title">User</span> <span class="keyword">extends</span> <span class="title">Data</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $option = <span class="keyword">array</span>(</span><br><span class="line">               <span class="string">'table'</span> =&gt; <span class="string">'babel_User'</span>,</span><br><span class="line">               <span class="string">'key'</span> =&gt; <span class="string">'id'</span>,</span><br><span class="line">               <span class="string">'columns'</span> =&gt; <span class="keyword">array</span>(</span><br><span class="line">                   <span class="string">'id'</span> =&gt; <span class="string">'usr_id'</span>,</span><br><span class="line">                   <span class="string">'email'</span> =&gt; <span class="string">'usr_email'</span>,</span><br><span class="line">                   <span class="string">'name'</span> =&gt; <span class="string">'usr_nick'</span></span><br><span class="line">               )</span><br><span class="line">           );</span><br><span class="line">           <span class="keyword">parent</span>::init($option);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">ads</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $a = <span class="keyword">new</span> Ad();</span><br><span class="line">           <span class="comment">// 设置用户id</span></span><br><span class="line">           $a-&gt;userId = <span class="keyword">$this</span>-&gt;id;</span><br><span class="line">           <span class="comment">// 因为用户id被设置了，所以查找的时候就只有用户id这一个过滤条件</span></span><br><span class="line">           <span class="keyword">return</span> $a-&gt;find();</span><br><span class="line">       &#125;</span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Comment</span> <span class="keyword">extends</span> <span class="title">Data</span> </span>&#123;</span><br><span class="line">       <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $option = <span class="keyword">array</span>(</span><br><span class="line">               <span class="string">'table'</span> =&gt; <span class="string">'babel_reply'</span>,</span><br><span class="line">               <span class="string">'key'</span> =&gt; <span class="string">'id'</span>,</span><br><span class="line">               <span class="string">'columns'</span> =&gt; <span class="keyword">array</span>(</span><br><span class="line">                   <span class="string">'id'</span> =&gt; <span class="string">'rpl_id'</span>,</span><br><span class="line">                   <span class="string">'adId'</span> =&gt; <span class="string">'rpl_tpc_id'</span>,</span><br><span class="line">                   <span class="string">'userId'</span> =&gt; <span class="string">'rpl_post_usr_id'</span>,</span><br><span class="line">                   <span class="string">'userName'</span> =&gt; <span class="string">'rpl_post_nick'</span>,</span><br><span class="line">                   <span class="string">'content'</span> =&gt; <span class="string">'rpl_content'</span></span><br><span class="line">               )</span><br><span class="line">           );</span><br><span class="line">           <span class="keyword">parent</span>::init($option);</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="class"><span class="keyword">class</span> <span class="title">Ad</span> <span class="keyword">extends</span> <span class="title">Data</span> </span>&#123;</span><br><span class="line">       <span class="comment">// 广告里面包含了对应所属的分类，用户，地区信息</span></span><br><span class="line">       <span class="keyword">public</span> $category;</span><br><span class="line">       <span class="keyword">public</span> $user;</span><br><span class="line">       <span class="keyword">public</span> $area;</span><br><span class="line"></span><br><span class="line">       <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $option = <span class="keyword">array</span>(</span><br><span class="line">               <span class="string">'table'</span> =&gt; <span class="string">'babel_topic'</span>,</span><br><span class="line">               <span class="string">'key'</span> =&gt; <span class="string">'id'</span>,</span><br><span class="line">               <span class="string">'columns'</span> =&gt; <span class="keyword">array</span>(</span><br><span class="line">                   <span class="string">'id'</span> =&gt; <span class="string">'tpc_id'</span>,</span><br><span class="line">                   <span class="string">'categoryId'</span> =&gt; <span class="string">'tpc_pid'</span>,</span><br><span class="line">                   <span class="string">'userId'</span> =&gt; <span class="string">'tpc_uid'</span>,</span><br><span class="line">                   <span class="string">'areaId'</span> =&gt; <span class="string">'tpc_area'</span>,</span><br><span class="line">                   <span class="string">'name'</span> =&gt; <span class="string">'tpc_title'</span>,</span><br><span class="line">                   <span class="string">'content'</span> =&gt; <span class="string">'tpc_content'</span></span><br><span class="line">               )</span><br><span class="line">           );</span><br><span class="line">           <span class="keyword">parent</span>::init($option);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">load</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="keyword">parent</span>::load();</span><br><span class="line"></span><br><span class="line">           <span class="comment">// 设置分类、用户、地区属性对应的主键值</span></span><br><span class="line">           <span class="keyword">$this</span>-&gt;category = <span class="keyword">new</span> Category();</span><br><span class="line">           <span class="keyword">$this</span>-&gt;category-&gt;id = <span class="keyword">$this</span>-&gt;categoryId;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">$this</span>-&gt;user = <span class="keyword">new</span> User();</span><br><span class="line">           <span class="keyword">$this</span>-&gt;user-&gt;id = <span class="keyword">$this</span>-&gt;userId;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">$this</span>-&gt;area = <span class="keyword">new</span> Area();</span><br><span class="line">           <span class="keyword">$this</span>-&gt;area-&gt;id = <span class="keyword">$this</span>-&gt;areaId;</span><br><span class="line"></span><br><span class="line">           <span class="keyword">return</span> <span class="keyword">$this</span>; </span><br><span class="line">       <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">commments</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           $c = <span class="keyword">new</span> Comment();</span><br><span class="line">           <span class="comment">// 设置评论id</span></span><br><span class="line">           $c-&gt;adId = <span class="keyword">$this</span>-&gt;id;</span><br><span class="line">           <span class="comment">// 因为评论id被设置了，所以查找的时候就只有评论id这一个过滤条件</span></span><br><span class="line">           <span class="keyword">return</span> $c-&gt;find();</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>这几个子类将自身的属性和数据库中的字段进行了映射，这样外部操作就可以脱离数据库了，只需要和模型交互即可。</p>
+<h2 id="主页界面构建"><a href="#主页界面构建" class="headerlink" title="主页界面构建"></a>主页界面构建</h2><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">	<span class="comment">// 包含kijiji.php文件                                                                                                                                                                                </span></span><br><span class="line">    <span class="keyword">require_once</span>(<span class="string">"kijiji.php"</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 在URL中捕获id参数的值</span></span><br><span class="line">    $id = $_GET[<span class="string">'id'</span>]; </span><br><span class="line">    $c = <span class="keyword">new</span> Category();</span><br><span class="line">    $c-&gt;id = $id;</span><br><span class="line">    $c-&gt;load();</span><br><span class="line"></span><br><span class="line">    $d = <span class="keyword">new</span> Data();</span><br><span class="line">    $d-&gt;id = $id;</span><br><span class="line"><span class="comment">//    $d-&gt;load();</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//   $d-&gt;song = 1;</span></span><br><span class="line"><span class="comment">//    var_dump(get_object_vars($d));</span></span><br><span class="line"><span class="comment">//    var_dump(get_object_vars($c));</span></span><br><span class="line"><span class="comment">//    var_dump(get_class_methods("Category"));</span></span><br><span class="line"><span class="comment">//    var_dump(get_class_vars("Category"));</span></span><br><span class="line">    <span class="keyword">foreach</span> ($c-&gt;children() <span class="keyword">as</span> $o) &#123;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">"&lt;hr&gt;&lt;a href=list.php?id=&#123;$o-&gt;id&#125;&gt;&#123;$o-&gt;name&#125;&lt;/a&gt;"</span>;</span><br><span class="line">        <span class="keyword">foreach</span> ($o-&gt;children() <span class="keyword">as</span> $oo) &#123;</span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"&lt;li&gt;&lt;a href=list.php?id=&#123;$oo-&gt;id&#125;&gt;&#123;$oo-&gt;name&#125;&lt;/a&gt;"</span>;</span><br><span class="line">        &#125;   </span><br><span class="line">    &#125;   </span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
+<h2 id="添加"><a href="#添加" class="headerlink" title="添加"></a>添加</h2><p>添加功能是后面新增的，主要需要有两点：<br></p>
+<ol>
+<li>界面上需要一个输入框和一个确认键，确认后提交评论<br></li>
+<li>提交的评论存入数据库</li>
+</ol>
+<p>这个功能主要分成两部分：界面，数据库<br></p>
+<ol>
+<li>界面使用PHP的表单来进行数据传输<br></li>
+<li>数据库插入在Data类中添加一个无参，返回值为false/数据主键的方法</li>
+</ol>
+<p>具体代码如下：<br><br>界面代码：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">	<span class="comment">// 从POST中获取评论数据</span></span><br><span class="line">	<span class="keyword">if</span>(<span class="keyword">isset</span>($_POST[<span class="string">'comment'</span>]))&#123;</span><br><span class="line">        $comment = <span class="keyword">new</span> Comment();</span><br><span class="line">        $comment-&gt;content = $_POST[<span class="string">'comment'</span>];</span><br><span class="line">        $comment-&gt;userName = <span class="string">"songruiwang"</span>;</span><br><span class="line">        $comment-&gt;userId = <span class="number">2222</span>;</span><br><span class="line">        $comment-&gt;adId = $id;</span><br><span class="line">        <span class="keyword">echo</span> <span class="string">"主键:"</span> . $comment-&gt;insert();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 通过表单实现界面刷新，并且以POST的方式传递数据</span></span><br><span class="line"><span class="keyword">echo</span> <span class="string">'&lt;form method="post"&gt;&lt;input type="text" name="comment"&gt;</span></span><br><span class="line"><span class="string">&lt;input type="submit"  value="提交"&gt;&lt;/form&gt;'</span>;</span><br></pre></td></tr></table></figure>
+<p>数据库插入代码：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 插入数据</span></span><br><span class="line">      <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">insert</span><span class="params">()</span> </span>&#123;</span><br><span class="line">          $keys = <span class="string">""</span>;</span><br><span class="line">          $values = <span class="string">""</span>;</span><br><span class="line"></span><br><span class="line">          <span class="keyword">foreach</span> (<span class="keyword">$this</span>-&gt;columns <span class="keyword">as</span> $key =&gt; $value) &#123;</span><br><span class="line">              <span class="comment">// 不插入设置主键</span></span><br><span class="line">              <span class="keyword">if</span> ($key != <span class="keyword">$this</span>-&gt;key &amp;&amp; <span class="keyword">isset</span>(<span class="keyword">$this</span>-&gt;$key)) &#123;</span><br><span class="line">                  $keys .= <span class="string">"&#123;$value&#125;,"</span>;</span><br><span class="line">                  $values .= <span class="string">"'&#123;$this-&gt;$key&#125;',"</span>;</span><br><span class="line">              &#125;</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 去掉最后面的逗号</span></span><br><span class="line">          $keys = substr($keys, <span class="number">0</span>, strlen($keys) - <span class="number">1</span>);</span><br><span class="line">          $values = substr($values, <span class="number">0</span>, strlen($values) - <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 构造数据库sql语句</span></span><br><span class="line">          $databaseName = <span class="string">"chaoge"</span>;</span><br><span class="line">          <span class="keyword">$this</span>-&gt;sql = <span class="string">"INSERT INTO &#123;$databaseName&#125; . &#123;$this-&gt;table&#125; (&#123;$keys&#125;) VALUES (&#123;$values&#125;)"</span>;</span><br><span class="line"></span><br><span class="line">          <span class="comment">// 执行数据库插入语句</span></span><br><span class="line">          <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;query()) &#123;</span><br><span class="line">              <span class="comment">// 返回上一步插入后产生的主键</span></span><br><span class="line">              <span class="keyword">return</span> mysql_insert_id();</span><br><span class="line">          &#125;</span><br><span class="line"></span><br><span class="line">          <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">      &#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/PHP/" rel="tag"># PHP</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/" rel="next" title="翻译篇：实现Twitter个人详情动态效果">
+                <i class="fa fa-chevron-left"></i> 翻译篇：实现Twitter个人详情动态效果
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/09/30/2015-09-30-ioszhi-shi-sui-pian-er/" rel="prev" title="iOS知识碎片二">
+                iOS知识碎片二 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#业务"><span class="nav-number">1.</span> <span class="nav-text">业务</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心代码层级构建"><span class="nav-number">2.</span> <span class="nav-text">核心代码层级构建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心代码剖析"><span class="nav-number">3.</span> <span class="nav-text">核心代码剖析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#PHP部分基础语法"><span class="nav-number">3.1.</span> <span class="nav-text">PHP部分基础语法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#数据连接单例"><span class="nav-number">3.2.</span> <span class="nav-text">数据连接单例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共同父类Data"><span class="nav-number">3.3.</span> <span class="nav-text">共同父类Data</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#管理树操作子类Tree"><span class="nav-number">4.</span> <span class="nav-text">管理树操作子类Tree</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#详细子类"><span class="nav-number">5.</span> <span class="nav-text">详细子类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主页界面构建"><span class="nav-number">6.</span> <span class="nav-text">主页界面构建</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#添加"><span class="nav-number">7.</span> <span class="nav-text">添加</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/';
+          this.page.identifier = '2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/';
+          this.page.title = 'PHP后台编程初探';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

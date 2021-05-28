@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Interview,objective-c,Message Forwarding,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="说起 Objective-C runtime 在实际项目中的应用，可能很多人第一时间联想到的是黑魔法 method swizzling 、 associated objects 、 KVC / KVO 以及各种灵活的 runtime api 。这几种技术在开发过程中或多或少都会涉及到 ，也的确为开发者立下了汗马功劳，尤其在解决一些棘手问题时，屡试不爽。不过同样是 runtime 重要组成部分的消息">
+<meta name="keywords" content="Interview,objective-c,Message Forwarding">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Objective-C 消息转发应用场景摘录">
+<meta property="og:url" content="https://triplecc.github.io/2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="说起 Objective-C runtime 在实际项目中的应用，可能很多人第一时间联想到的是黑魔法 method swizzling 、 associated objects 、 KVC / KVO 以及各种灵活的 runtime api 。这几种技术在开发过程中或多或少都会涉及到 ，也的确为开发者立下了汗马功劳，尤其在解决一些棘手问题时，屡试不爽。不过同样是 runtime 重要组成部分的消息">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Objective-C 消息转发应用场景摘录">
+<meta name="twitter:description" content="说起 Objective-C runtime 在实际项目中的应用，可能很多人第一时间联想到的是黑魔法 method swizzling 、 associated objects 、 KVC / KVO 以及各种灵活的 runtime api 。这几种技术在开发过程中或多或少都会涉及到 ，也的确为开发者立下了汗马功劳，尤其在解决一些棘手问题时，屡试不爽。不过同样是 runtime 重要组成部分的消息">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/">
+
+
+
+
+
+  <title>Objective-C 消息转发应用场景摘录 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Objective-C 消息转发应用场景摘录</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-07-09T06:20:30+00:00">
+                2017-07-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/objective-c/" itemprop="url" rel="index">
+                    <span itemprop="name">objective-c</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>说起 Objective-C runtime 在实际项目中的应用，可能很多人第一时间联想到的是黑魔法 method swizzling 、 associated objects 、 KVC / KVO 以及各种灵活的 runtime api 。这几种技术在开发过程中或多或少都会涉及到 ，也的确为开发者立下了汗马功劳，尤其在解决一些棘手问题时，屡试不爽。不过同样是 runtime 重要组成部分的<strong>消息转发</strong>却较少听人提及，这篇文章就来扒一扒它在不同应用场景中的精彩表现。</p>
+<a id="more"></a>
+<!-- ## 目录
+
+1、简说消息转发 <br>
+2、简化代理方法的调用 <br>
+3、部分代理方法转发<br>
+4、多播代理<br>
+5、代理强引用转弱引用<br>
+6、NSUndoManager 中的应用<br>
+7、依靠协议的依赖注入<br>
+8、小结<br>
+9、参考<br> -->
+<h2 id="简说消息转发"><a href="#简说消息转发" class="headerlink" title="简说消息转发"></a>简说消息转发</h2><p>在开始之前，先简单温习下消息转发是怎么一回事。</p>
+<p>举一个不恰当的例子：<br><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">id</span> o = [<span class="built_in">NSObject</span> new];</span><br><span class="line">[o lastObject];</span><br></pre></td></tr></table></figure></p>
+<p>执行上面代码，程序会崩溃并抛出以下异常：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[<span class="built_in">NSObject</span> lastObject]: unrecognized selector sent to instance <span class="number">0x100200160</span></span><br></pre></td></tr></table></figure>
+<p>错误显而易见，实例对象 <code>o</code> 无法响应 <code>lastObject</code> 方法。 那么问题来了， Objetive-C 作为一门动态语言，更有强大的 runtime 大佬在背后撑腰，它会让程序没有任何预警地直接狗带么？当然不会，Object-C 的 runtime 不但提供了挽救机制，而且还是三部曲：</p>
+<p>1、Lazy method resolution <br><br>2、Fast forwarding path <br><br>3、Normal forwarding path <br></p>
+<p>上述程序崩溃的根本原因在于没有找到方法的实现，也就是通常所说的 IMP 不存在。结合以下源码，可以知道消息转发三部曲是由 _objc_msgForward 函数发起的。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">IMP <span class="title">class_getMethodImplementation</span><span class="params">(Class cls, SEL sel)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    IMP imp;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!cls  ||  !sel) <span class="keyword">return</span> nil;</span><br><span class="line"></span><br><span class="line">    imp = lookUpImpOrNil(cls, sel, nil, </span><br><span class="line">                         YES<span class="comment">/*initialize*/</span>, YES<span class="comment">/*cache*/</span>, YES<span class="comment">/*resolver*/</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Translate forwarding function to C-callable external version</span></span><br><span class="line">    <span class="keyword">if</span> (!imp) &#123;</span><br><span class="line">        <span class="keyword">return</span> _objc_msgForward;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> imp;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h3 id="Lazy-method-resolution"><a href="#Lazy-method-resolution" class="headerlink" title="Lazy method resolution"></a>Lazy method resolution</h3><p>在这一步， <code>_objc_msgForward</code> 直接或间接调用了以下方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// 针对类方法</span></span><br><span class="line">+ (<span class="built_in">BOOL</span>)resolveClassMethod:(SEL)sel;</span><br><span class="line"><span class="comment">/// 针对对象方法</span></span><br><span class="line">+ (<span class="built_in">BOOL</span>)resolveInstanceMethod:(SEL)sel;</span><br></pre></td></tr></table></figure>
+<p>由于形参中传入了无法找到对应 IMP 的 SEL ，我们就可以在这个方法中动态添加 SEL 的实现，并返回 YES 重新启动一次消息发送动作。如果方法返回 NO ，那么就进行消息转发的下个流程 Fast forwarding path 。</p>
+<p>这种方式能够方便地实现 <code>@dynamic</code> 属性， CoreData 中模型定义中就广泛使用到了 <code>@dynamic</code> 属性。</p>
+<h3 id="Fast-forwarding-path"><a href="#Fast-forwarding-path" class="headerlink" title="Fast forwarding path"></a>Fast forwarding path</h3><p>在这一步， <code>_objc_msgForward</code> 直接或间接调用了以下方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">id</span>)forwardingTargetForSelector:(SEL)aSelector;</span><br></pre></td></tr></table></figure>
+<p>这个方法还是只附带了无法找到对应 IMP 的 SEL，我们可以根据这个 SEL ，判断是否有其它对象可以响应它，然后选择将消息转发给这个对象。如果返回除 nil / self 之外的对象，那么会重启一次消息发送动作给返回的对象，否则进入下个流程 Normal forwarding path。</p>
+<h3 id="Normal-forwarding-path"><a href="#Normal-forwarding-path" class="headerlink" title="Normal forwarding path"></a>Normal forwarding path</h3><p>在这一步， <code>_objc_msgForward</code> 直接或间接调用了以下方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="built_in">NSMethodSignature</span> *)methodSignatureForSelector:(SEL)aSelector;</span><br><span class="line">- (<span class="keyword">void</span>)forwardInvocation:(<span class="built_in">NSInvocation</span> *)anInvocation;</span><br></pre></td></tr></table></figure>
+<p>这个消息转发的最后一步，首先会调用的是 <code>-methodSignatureForSelector:</code> 方法，这个方法返回一个方法签名，用以构造 NSInvocation 并作为实参传入 <code>-forwardInvocation:</code> 方法中。如果 <code>-methodSignatureForSelector:</code> 返回 nil ，将会抛出 unrecognized selector 异常。</p>
+<p>由于在 <code>-forwardInvocation:</code> 方法中可以获取到 NSInvocation ，而 NSInvocation 包含了参数、发送目标以及 SEL 等信息，尤其是参数信息，所以这一步也是可操作性最强的一步。我们可以选择直接执行传入的 NSInvocation 对象，也可以通过 <code>-invokeWithTarget:</code> 指定新的发送目标。</p>
+<p>一般来说，既然走到这一步，这个对象都是没有 SEL 对应的 IMP 的，所以通常来说都必须要重写 <code>-methodSignatureForSelector:</code> 方法以返回有效的方法签名，否则就会抛出异常。不过有种例外，当对象实现了相应的方法，但还是走到了 Normal forwarding path 这一步时，就可以不重写 <code>-methodSignatureForSelector:</code> 方法。</p>
+<p>理解这种操作需要知晓 method swizzling 技术中的一个知识点，<strong><em>替换 IMP 是不会影响到 SEL 和 参数信息的</em></strong>。所以当把某个方法的实现替换成 <code>_objc_msgForward</code> / <code>_objc_msgForward_stret</code> 以启动消息转发时，即使不重写 <code>-methodSignatureForSelector:</code> ，这个方法依旧能返回有效的方法签名信息。举个例子：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">NSArray</span> *arr = [<span class="built_in">NSArray</span> new];</span><br><span class="line"></span><br><span class="line">Method old = class_getInstanceMethod([arr <span class="keyword">class</span>], <span class="keyword">@selector</span>(objectAtIndex:));</span><br><span class="line">printf(<span class="string">"old type: %s, imp: %p\n"</span>, method_getTypeEncoding(old), method_getImplementation(old));</span><br><span class="line"></span><br><span class="line">class_replaceMethod([arr <span class="keyword">class</span>], <span class="keyword">@selector</span>(objectAtIndex:), _objc_msgForward, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">Method new = class_getInstanceMethod([arr <span class="keyword">class</span>], <span class="keyword">@selector</span>(objectAtIndex:));</span><br><span class="line">printf(<span class="string">"new type: %s, imp: %p\n"</span>, method_getTypeEncoding(new), method_getImplementation(new));</span><br></pre></td></tr></table></figure>
+<p>上面程序输出如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">old type: @<span class="number">24</span>@<span class="number">0</span>:<span class="number">8</span>Q16, imp: <span class="number">0x7fffb5fc31e0</span></span><br><span class="line">new type: @<span class="number">24</span>@<span class="number">0</span>:<span class="number">8</span>Q16, imp: <span class="number">0x7fffcada5cc0</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，更改的只有方法实现 IMP 。并且从源码层面看，method swizzling 在方法已存在的情况下，只是设置了对应的 Method 的 IMP，当方法不存在时，才会设置额外的一些属性：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">IMP </span><br><span class="line">class_replaceMethod(Class cls, SEL name, IMP imp, <span class="keyword">const</span> <span class="keyword">char</span> *types)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (!cls) <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line"></span><br><span class="line">    rwlock_write(&amp;runtimeLock);</span><br><span class="line">    IMP old = addMethod(cls, name, imp, types ?: <span class="string">""</span>, <span class="literal">YES</span>);</span><br><span class="line">    rwlock_unlock_write(&amp;runtimeLock);</span><br><span class="line">    <span class="keyword">return</span> old;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">static</span> IMP </span><br><span class="line">addMethod(Class cls, SEL name, IMP imp, <span class="keyword">const</span> <span class="keyword">char</span> *types, <span class="built_in">BOOL</span> replace)</span><br><span class="line">&#123;</span><br><span class="line">    IMP result = <span class="literal">nil</span>;</span><br><span class="line"></span><br><span class="line">    rwlock_assert_writing(&amp;runtimeLock);</span><br><span class="line"></span><br><span class="line">    assert(types);</span><br><span class="line">    assert(cls-&gt;isRealized());</span><br><span class="line"></span><br><span class="line">    method_t *m;</span><br><span class="line">    <span class="comment">// 方法是否存在</span></span><br><span class="line">    <span class="keyword">if</span> ((m = getMethodNoSuper_nolock(cls, name))) &#123;</span><br><span class="line">        <span class="comment">// already exists</span></span><br><span class="line">        <span class="keyword">if</span> (!replace) &#123;</span><br><span class="line">            <span class="comment">// 不替换返回已存在方法实现IMP</span></span><br><span class="line">            result = _method_getImplementation(m);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 直接替换类cls的m函数指针为imp</span></span><br><span class="line">            result = _method_setImplementation(cls, m, imp);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// fixme optimize</span></span><br><span class="line">        <span class="comment">// 申请方法列表内存</span></span><br><span class="line">        method_list_t *newlist;</span><br><span class="line">        newlist = (method_list_t *)_calloc_internal(<span class="keyword">sizeof</span>(*newlist), <span class="number">1</span>);</span><br><span class="line">        newlist-&gt;entsize_NEVER_USE = (uint32_t)<span class="keyword">sizeof</span>(method_t) | fixed_up_method_list;</span><br><span class="line">        newlist-&gt;count = <span class="number">1</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 赋值名字，类型，方法实现（函数指针）</span></span><br><span class="line">        newlist-&gt;first.name = name;</span><br><span class="line">        newlist-&gt;first.types = strdup(types);</span><br><span class="line">        <span class="keyword">if</span> (!ignoreSelector(name)) &#123;</span><br><span class="line">            newlist-&gt;first.imp = imp;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            newlist-&gt;first.imp = (IMP)&amp;_objc_ignored_method;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 向类添加方法列表</span></span><br><span class="line">        attachMethodLists(cls, &amp;newlist, <span class="number">1</span>, <span class="literal">NO</span>, <span class="literal">NO</span>, <span class="literal">YES</span>);</span><br><span class="line"></span><br><span class="line">        result = <span class="literal">nil</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>消息转发流程大体如此，如果想了解具体的转发原理、<code>_objc_msgForward</code> 内部是如何实现的，可以阅读<a href="http://yulingtianxia.com/" target="_blank" rel="noopener">玉令天下</a>写的 <a href="http://yulingtianxia.com/blog/2016/06/15/Objective-C-Message-Sending-and-Forwarding/" target="_blank" rel="noopener">Objective-C 消息发送与转发机制原理</a>，文章会以反汇编地角度剖析消息转发的实现，能捋清不少疑惑。<br></p>
+<p>聊完消息转发的基本流程，再来说说它的一些应用场景。</p>
+<h2 id="Week-Proxy"><a href="#Week-Proxy" class="headerlink" title="Week Proxy"></a>Week Proxy</h2><p>NSTimer、CADisplayLink 是实际项目中常用的计时器类，它们都使用 target - action 机制设置目标对象以及回调方法。相信很多人都遇到过 NSTimer 或者 CADisplayLink 对象造成的循环引用问题。实际上，这两个对象是强引用 target 的，如果使用者管理不当，轻则造成 target 对象的延迟释放，重则导致与 target 对象的循环引用。</p>
+<p>假如有个 UIViewController 引用了一个 repeat 的 NSTimer 对象 （先不论强弱引用） ，正确的管理方式是在控制器退出回调中手动 invalidate 并释放对 NSTimer 对象的引用 ：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">- (void)popViewController &#123;</span><br><span class="line">    [_timer invalidate];</span><br><span class="line">    _timer = nil; // 强引用需要，弱引用不需要</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>不过正所谓“人有失手，马有失蹄”，这种分散的管理方式，总会让使用者在某些场景下忘记了停止 <code>_timer</code> ，特别是使用者希望在 UIViewController 对象的 <code>dealloc</code> 方法中停止定时器时，很容易掉进这个坑里。有没有更加优雅的管理机制呢？下面就来看看 FLAnimatedImage 是如何管理 CADisplayLink 对象的。</p>
+<p>FLAnimatedImage 创建了以下弱引用代理：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">@interface FLWeakProxy : NSProxy</span><br><span class="line">+ (instancetype)weakProxyForObject:(id)targetObject;</span><br><span class="line">@end</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">@interface FLWeakProxy ()</span><br><span class="line">@property (nonatomic, weak) id target;</span><br><span class="line">@end</span><br><span class="line"></span><br><span class="line">@implementation FLWeakProxy</span><br><span class="line"></span><br><span class="line">#pragma mark Life Cycle</span><br><span class="line"></span><br><span class="line">// This is the designated creation method of an `FLWeakProxy` and</span><br><span class="line">// as a subclass of `NSProxy` it doesn&apos;t respond to or need `-init`.</span><br><span class="line">+ (instancetype)weakProxyForObject:(id)targetObject</span><br><span class="line">&#123;</span><br><span class="line">    FLWeakProxy *weakProxy = [FLWeakProxy alloc];</span><br><span class="line">    weakProxy.target = targetObject;</span><br><span class="line">    return weakProxy;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">#pragma mark Forwarding Messages</span><br><span class="line"></span><br><span class="line">- (id)forwardingTargetForSelector:(SEL)selector</span><br><span class="line">&#123;</span><br><span class="line">    // Keep it lightweight: access the ivar directly</span><br><span class="line">    return _target;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">#pragma mark - NSWeakProxy Method Overrides</span><br><span class="line">#pragma mark Handling Unimplemented Methods</span><br><span class="line"></span><br><span class="line">- (void)forwardInvocation:(NSInvocation *)invocation</span><br><span class="line">&#123;</span><br><span class="line">    // Fallback for when target is nil. Don&apos;t do anything, just return 0/NULL/nil.</span><br><span class="line">    // The method signature we&apos;ve received to get here is just a dummy to keep `doesNotRecognizeSelector:` from firing.</span><br><span class="line">    // We can&apos;t really handle struct return types here because we don&apos;t know the length.</span><br><span class="line">    void *nullPointer = NULL;</span><br><span class="line">    [invocation setReturnValue:&amp;nullPointer];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (NSMethodSignature *)methodSignatureForSelector:(SEL)selector</span><br><span class="line">&#123;</span><br><span class="line">    // We only get here if `forwardingTargetForSelector:` returns nil.</span><br><span class="line">    // In that case, our weak target has been reclaimed. Return a dummy method signature to keep `doesNotRecognizeSelector:` from firing.</span><br><span class="line">    // We&apos;ll emulate the Obj-c messaging nil behavior by setting the return value to nil in `forwardInvocation:`, but we&apos;ll assume that the return value is `sizeof(void *)`.</span><br><span class="line">    // Other libraries handle this situation by making use of a global method signature cache, but that seems heavier than necessary and has issues as well.</span><br><span class="line">    // See https://www.mikeash.com/pyblog/friday-qa-2010-02-26-futures.html and https://github.com/steipete/PSTDelegateProxy/issues/1 for examples of using a method signature cache.</span><br><span class="line">    return [NSObject instanceMethodSignatureForSelector:@selector(init)];</span><br><span class="line">&#125;</span><br><span class="line">@end</span><br></pre></td></tr></table></figure></p>
+<p>通过上面代码，可以看出 FLWeakProxy 是弱引用 target 的，而且它在消息转发的第二步，将所有的消息都转发给了 target 对象。以下是调用方使用此弱引用代理的代码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">@interface FLAnimatedImageView ()</span><br><span class="line">@property (nonatomic, strong) CADisplayLink *displayLink;</span><br><span class="line">@end</span><br><span class="line"></span><br><span class="line">@implementation FLAnimatedImageView</span><br><span class="line">...</span><br><span class="line">- (void)startAnimating</span><br><span class="line">&#123;</span><br><span class="line">    ...</span><br><span class="line">    FLWeakProxy *weakProxy = [FLWeakProxy weakProxyForObject:self];</span><br><span class="line">    self.displayLink = [CADisplayLink displayLinkWithTarget:weakProxy selector:@selector(displayDidRefresh:)];</span><br><span class="line">    [self.displayLink addToRunLoop:[NSRunLoop mainRunLoop] forMode:self.runLoopMode];</span><br><span class="line">    ...    </span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line">@end</span><br></pre></td></tr></table></figure>
+<p>其对象间的引用关系可以用下图表示：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">---&gt; 强引用  ~~~&gt; 弱引用</span><br><span class="line"></span><br><span class="line">FLAnimatedImageView(object) ---&gt; displayLink ---&gt; weakProxy ~~~&gt; FLAnimatedImageView(object)</span><br></pre></td></tr></table></figure>
+<p>这样一来， <code>displayLink</code> 间接弱引用了 FLAnimatedImageView 对象，使得 FLAnimatedImageView 对象得以正常释放。而且由于 <code>weakProxy</code> 将消息全部转发给了 FLAnimatedImageView 对象，<code>-displayDidRefresh:</code> 也得以正确地回调。</p>
+<p>事实上，以上问题也可以通过 block 回调的方式解决，具体实现就是让创建的定时器对象持有 NSTimer 类对象，并且在类回调方法中，执行经 userInfo 传过来的 block 回调。</p>
+<p>此外，苹果私有库 MIME.framework 中就有这种机制的应用 —- MFWeakProxy ；YYKit 的 YYAnimatedImageView 也使用了相同的机制管理 CADisplayLink，其对应类为 YYWeakProxy 。</p>
+<h2 id="Delegate-Proxy"><a href="#Delegate-Proxy" class="headerlink" title="Delegate Proxy"></a>Delegate Proxy</h2><p>Delegate Proxy 主要实现部分代理方法的转发，顾名思义，就是封装者使用了被封装对象代理的一部分方法，然后将剩余的方法通过新的代理转发给调用者。这种机制在二次封装第三方框架或者原生控件时，能减少不少胶水代码。</p>
+<p>接下来，我会以 IGListKit 中的 IGListAdapterProxy 为例，描述如何利用这种机制来简化代码。在开始之前先了解下与 IGListAdapterProxy 直接相关的 IGListAdapter 。 IGListAdapter 是 UICollectionView 的数据源和代理实现者，以下是它与本主题相关联的两个属性：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">IGListAdapter</span> : <span class="title">NSObject</span></span></span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> The object that receives `UICollectionViewDelegate` events.</span></span><br><span class="line"><span class="comment"></span></span><br><span class="line"><span class="comment"> @note This object *will not* receive `UIScrollViewDelegate` events. Instead use scrollViewDelegate.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">nullable</span>, <span class="keyword">weak</span>) <span class="keyword">id</span> &lt;<span class="built_in">UICollectionViewDelegate</span>&gt; collectionViewDelegate;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> The object that receives `UIScrollViewDelegate` events.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">nullable</span>, <span class="keyword">weak</span>) <span class="keyword">id</span> &lt;<span class="built_in">UIScrollViewDelegate</span>&gt; scrollViewDelegate;</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>使用者可以成为 IGListAdapter 的代理，获得和 UICollectionView 原生代理一致的编写体验。实际上， IGListAdapter 只是使用并实现了部分代理方法，那么它又是如何编写有关这两个属性的代码，让使用者实现的代理方法能正确地执行呢？可能有些人会这样写：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">#pragma mark - UICollectionViewDelegateFlowLayout</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">- (BOOL)collectionView:(UICollectionView *)collectionView canFocusItemAtIndexPath:(NSIndexPath *)indexPath &#123;</span><br><span class="line">    if ([self.collectionViewDelegate respondsToSelector:@selector(collectionView:canFocusItemAtIndexPath:)]) &#123;</span><br><span class="line">        return [self.collectionViewDelegate collectionView:collectionView canFocusItemAtIndexPath:indexPath];</span><br><span class="line">    &#125;</span><br><span class="line">    return YES;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (BOOL)collectionView:(UICollectionView *)collectionView shouldShowMenuForItemAtIndexPath:(NSIndexPath *)indexPath &#123;</span><br><span class="line">    if ([self.collectionViewDelegate respondsToSelector:@selector(collectionView:shouldShowMenuForItemAtIndexPath:)]) &#123;</span><br><span class="line">        [self.collectionViewDelegate collectionView:collectionView shouldShowMenuForItemAtIndexPath:indexPath];</span><br><span class="line">    &#125;</span><br><span class="line">    return YES;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>当代理方法较少的时候，这种写法是可以接受的。不过随着代理方法的增多，编写这种胶水代码就有些烦人了，侵入性的修改方式也不符合开放闭合原则。我们来看下 IGListKit 是如何利用 IGListAdapterProxy 解决这个问题的：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line">@interface IGListAdapterProxy : NSProxy</span><br><span class="line">- (instancetype)initWithCollectionViewTarget:(nullable id&lt;UICollectionViewDelegate&gt;)collectionViewTarget</span><br><span class="line">                            scrollViewTarget:(nullable id&lt;UIScrollViewDelegate&gt;)scrollViewTarget</span><br><span class="line">                                 interceptor:(IGListAdapter *)interceptor;</span><br><span class="line">- (instancetype)init NS_UNAVAILABLE;</span><br><span class="line">+ (instancetype)new NS_UNAVAILABLE;</span><br><span class="line"></span><br><span class="line">@end</span><br><span class="line"></span><br><span class="line">static BOOL isInterceptedSelector(SEL sel) &#123;</span><br><span class="line">    return (</span><br><span class="line">            // UICollectionViewDelegate</span><br><span class="line">            sel == @selector(collectionView:didSelectItemAtIndexPath:) ||</span><br><span class="line">            sel == @selector(collectionView:willDisplayCell:forItemAtIndexPath:) ||</span><br><span class="line">            sel == @selector(collectionView:didEndDisplayingCell:forItemAtIndexPath:) ||</span><br><span class="line">            // UICollectionViewDelegateFlowLayout</span><br><span class="line">            sel == @selector(collectionView:layout:sizeForItemAtIndexPath:) ||</span><br><span class="line">            sel == @selector(collectionView:layout:insetForSectionAtIndex:) ||</span><br><span class="line">            sel == @selector(collectionView:layout:minimumInteritemSpacingForSectionAtIndex:) ||</span><br><span class="line">            sel == @selector(collectionView:layout:minimumLineSpacingForSectionAtIndex:) ||</span><br><span class="line">            sel == @selector(collectionView:layout:referenceSizeForFooterInSection:) ||</span><br><span class="line">            sel == @selector(collectionView:layout:referenceSizeForHeaderInSection:) ||</span><br><span class="line">            // UIScrollViewDelegate</span><br><span class="line">            sel == @selector(scrollViewDidScroll:) ||</span><br><span class="line">            sel == @selector(scrollViewWillBeginDragging:) ||</span><br><span class="line">            sel == @selector(scrollViewDidEndDragging:willDecelerate:)</span><br><span class="line">            );</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@interface IGListAdapterProxy () &#123;</span><br><span class="line">    __weak id _collectionViewTarget;</span><br><span class="line">    __weak id _scrollViewTarget;</span><br><span class="line">    __weak IGListAdapter *_interceptor;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@end</span><br><span class="line"></span><br><span class="line">@implementation IGListAdapterProxy</span><br><span class="line"></span><br><span class="line">- (instancetype)initWithCollectionViewTarget:(nullable id&lt;UICollectionViewDelegate&gt;)collectionViewTarget</span><br><span class="line">                            scrollViewTarget:(nullable id&lt;UIScrollViewDelegate&gt;)scrollViewTarget</span><br><span class="line">                                 interceptor:(IGListAdapter *)interceptor &#123;</span><br><span class="line">    IGParameterAssert(interceptor != nil);</span><br><span class="line">    // -[NSProxy init] is undefined</span><br><span class="line">    if (self) &#123;</span><br><span class="line">        _collectionViewTarget = collectionViewTarget;</span><br><span class="line">        _scrollViewTarget = scrollViewTarget;</span><br><span class="line">        _interceptor = interceptor;</span><br><span class="line">    &#125;</span><br><span class="line">    return self;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (BOOL)respondsToSelector:(SEL)aSelector &#123;</span><br><span class="line">    return isInterceptedSelector(aSelector)</span><br><span class="line">    || [_collectionViewTarget respondsToSelector:aSelector]</span><br><span class="line">    || [_scrollViewTarget respondsToSelector:aSelector];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (id)forwardingTargetForSelector:(SEL)aSelector &#123;</span><br><span class="line">    if (isInterceptedSelector(aSelector)) &#123;</span><br><span class="line">        return _interceptor;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    return [_scrollViewTarget respondsToSelector:aSelector] ? _scrollViewTarget : _collectionViewTarget;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (void)forwardInvocation:(NSInvocation *)invocation &#123;</span><br><span class="line">    void *nullPointer = NULL;</span><br><span class="line">    [invocation setReturnValue:&amp;nullPointer];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (NSMethodSignature *)methodSignatureForSelector:(SEL)selector &#123;</span><br><span class="line">    return [NSObject instanceMethodSignatureForSelector:@selector(init)];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">@end</span><br></pre></td></tr></table></figure>
+<p>这个类总共有三个自定义属性，分别是用来支持外界代理方法回调的 <code>_collectionViewTarget</code> 、 <code>_scrollViewTarget</code>，以及用以支持 AOP 的拦截者 <code>_interceptor</code>（IGListAdapter 在调用外界实现的代理方法前，插入了自己的实现，所以可视为拦截者）。 <code>isInterceptedSelector</code> 函数表明拦截者使用到了哪些代理方法，而 <code>-respondsToSelector:</code> 和 <code>-forwardingTargetForSelector:</code> 则根据这个函数的返回值决定是否能响应方法，以及应该把消息转发给拦截者还是外部代理。 事实上，外部代理就是本小节开头所说的使用者可以访问的属性：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">@implementation IGListAdapter</span><br><span class="line">...</span><br><span class="line">self.delegateProxy = [[IGListAdapterProxy alloc] initWithCollectionViewTarget:_collectionViewDelegate</span><br><span class="line">                                                                 scrollViewTarget:_scrollViewDelegate</span><br><span class="line">                                                                      interceptor:self];</span><br><span class="line">...</span><br><span class="line">@end</span><br></pre></td></tr></table></figure>
+<p>通过这种转发机制，即使后续有新的代理方法，也不用手动添加胶水代码了。一些流行的开源库中也可以看到这种做法的身影，比如 AsyncDisplayKit 就有对应的 <code>_ASCollectionViewProxy</code> 来转发未实现的代理方法。</p>
+<h2 id="Multicast-Delegate"><a href="#Multicast-Delegate" class="headerlink" title="Multicast Delegate"></a>Multicast Delegate</h2><p>通知和代理是解耦对象间消息传递的两种重要方式，其中通知主要针对一对多的单向通信，而代理则主要提供一对一的双向通信。</p>
+<p>通常来说， IM 应用在底层模块接受到新消息后，都会进行一次广播处理，让各模块能根据新消息来更新状态。当接收模块不需要向发送模块反馈任何信息时，使用 NSNotificationCenter 就可以实现上述需求。但是一旦发送模块需要根据接收模块返回的信息做一些额外处理，也就是实现一对多的双向通信， NSNotificationCenter 就不满足要求了。</p>
+<p>最直接的解决方案是，针对这个业务场景自定义一个消息转发中心，让遵守特定协议的外围模块主动注册成为消息接收者。不过既然涉及到了特定协议，就注定了这个消息转发中心缺少通用性。这时候就可以参考下业界现成的方案了，让我们来看看 XMPPFramework 是如何解决这个问题的。</p>
+<p>从文档中可以看出，作者希望 XMPPFramework 具备以下几个特性 ：</p>
+<p>1、 将事件广播给多个监听者<br><br>2、 易于扩展<br><br>3、 选择的机制要支持返回值<br><br>4、 选择的机制要易于编写线程安全代码<br></p>
+<p>但是代理或者通知机制都不能很好地满足上述需求，所以 GCDMulticastDelegate 类应运而生。 使用这个类时，广播类需要初始化 GCDMulticastDelegate 对象：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">GCDMulticastDelegate &lt;MyPluginDelegate&gt; *multicastDelegate;</span><br><span class="line">multicastDelegate = (GCDMulticastDelegate &lt;MyPluginDelegate&gt; *)[[GCDMulticastDelegate alloc] init];</span><br></pre></td></tr></table></figure>
+<p>并且添加增删代理的方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">- (void)addDelegate:(id)delegate delegateQueue:(dispatch_queue_t)delegateQueue</span><br><span class="line">&#123;</span><br><span class="line">    [multicastDelegate addDelegate:delegate delegateQueue:delegateQueue];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (void)removeDelegate:(id)delegate delegateQueue:(dispatch_queue_t)delegateQueue</span><br><span class="line">&#123;</span><br><span class="line">    [multicastDelegate removeDelegate:delegate delegateQueue:delegateQueue];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当广播对象需要向所有注册的代理发送消息时，可以用以下方式调用：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[multicastDelegate worker:self didFinishSubTask:subtask inDuration:elapsed];</span><br></pre></td></tr></table></figure>
+<p>只要注册的代理实现了这个方法，就可以接收到发送的信息。</p>
+<p>接下来看下 GCDMulticastDelegate 的实现原理 。首先， GCDMulticastDelegate 会在外界添加代理时，创建 GCDMulticastDelegateNode 对象封装传入的代理以及回调执行队列，然后保存在 <code>delegateNodes</code> 数组中。当外界向 GCDMulticastDelegate 对象发送无法响应的消息时，它会针对此消息启动转发机制，并在 <code>Normal forwarding path</code> 这一步转发给所有能响应此消息的注册代理。以下是消息转发相关的源码：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br></pre></td><td class="code"><pre><span class="line">- (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector</span><br><span class="line">&#123;</span><br><span class="line">    for (GCDMulticastDelegateNode *node in delegateNodes)</span><br><span class="line">    &#123;</span><br><span class="line">        id nodeDelegate = node.delegate;</span><br><span class="line">        #if __has_feature(objc_arc_weak) &amp;&amp; !TARGET_OS_IPHONE</span><br><span class="line">        if (nodeDelegate == [NSNull null])</span><br><span class="line">            nodeDelegate = node.unsafeDelegate;</span><br><span class="line">        #endif</span><br><span class="line">        </span><br><span class="line">        NSMethodSignature *result = [nodeDelegate methodSignatureForSelector:aSelector];</span><br><span class="line">        </span><br><span class="line">        if (result != nil)</span><br><span class="line">        &#123;</span><br><span class="line">            return result;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    // This causes a crash...</span><br><span class="line">    // return [super methodSignatureForSelector:aSelector];</span><br><span class="line">    </span><br><span class="line">    // This also causes a crash...</span><br><span class="line">    // return nil;</span><br><span class="line">    </span><br><span class="line">    return [[self class] instanceMethodSignatureForSelector:@selector(doNothing)];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (void)forwardInvocation:(NSInvocation *)origInvocation</span><br><span class="line">&#123;</span><br><span class="line">    SEL selector = [origInvocation selector];</span><br><span class="line">    BOOL foundNilDelegate = NO;</span><br><span class="line">    </span><br><span class="line">    for (GCDMulticastDelegateNode *node in delegateNodes)</span><br><span class="line">    &#123;</span><br><span class="line">        id nodeDelegate = node.delegate;</span><br><span class="line">        #if __has_feature(objc_arc_weak) &amp;&amp; !TARGET_OS_IPHONE</span><br><span class="line">        if (nodeDelegate == [NSNull null])</span><br><span class="line">            nodeDelegate = node.unsafeDelegate;</span><br><span class="line">        #endif</span><br><span class="line">        </span><br><span class="line">        if ([nodeDelegate respondsToSelector:selector])</span><br><span class="line">        &#123;</span><br><span class="line">            // All delegates MUST be invoked ASYNCHRONOUSLY.</span><br><span class="line">            </span><br><span class="line">            NSInvocation *dupInvocation = [self duplicateInvocation:origInvocation];</span><br><span class="line">            </span><br><span class="line">            dispatch_async(node.delegateQueue, ^&#123; @autoreleasepool &#123;</span><br><span class="line">                </span><br><span class="line">                [dupInvocation invokeWithTarget:nodeDelegate];</span><br><span class="line">                </span><br><span class="line">            &#125;&#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        else if (nodeDelegate == nil)</span><br><span class="line">        &#123;</span><br><span class="line">            foundNilDelegate = YES;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    if (foundNilDelegate)</span><br><span class="line">    &#123;</span><br><span class="line">        // At lease one weak delegate reference disappeared.</span><br><span class="line">        // Remove nil delegate nodes from the list.</span><br><span class="line">        // </span><br><span class="line">        // This is expected to happen very infrequently.</span><br><span class="line">        // This is why we handle it separately (as it requires allocating an indexSet).</span><br><span class="line">        </span><br><span class="line">        NSMutableIndexSet *indexSet = [[NSMutableIndexSet alloc] init];</span><br><span class="line">        </span><br><span class="line">        NSUInteger i = 0;</span><br><span class="line">        for (GCDMulticastDelegateNode *node in delegateNodes)</span><br><span class="line">        &#123;</span><br><span class="line">            id nodeDelegate = node.delegate;</span><br><span class="line">            #if __has_feature(objc_arc_weak) &amp;&amp; !TARGET_OS_IPHONE</span><br><span class="line">            if (nodeDelegate == [NSNull null])</span><br><span class="line">                nodeDelegate = node.unsafeDelegate;</span><br><span class="line">            #endif</span><br><span class="line">            </span><br><span class="line">            if (nodeDelegate == nil)</span><br><span class="line">            &#123;</span><br><span class="line">                [indexSet addIndex:i];</span><br><span class="line">            &#125;</span><br><span class="line">            i++;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        [delegateNodes removeObjectsAtIndexes:indexSet];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (void)doesNotRecognizeSelector:(SEL)aSelector</span><br><span class="line">&#123;</span><br><span class="line">    // Prevent NSInvalidArgumentException</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (void)doNothing &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到， <code>-methodSignatureForSelector:</code> 方法遍历了 <code>delegateNodes</code> ，并返回首个有效的方法签名。当没有找到有效的方法签名时，会返回 <code>-doNothing</code> 方法的签名，以规避未知方法导致的崩溃。在得到方法签名并构造 NSInvocation 对象后， <code>-forwardInvocation:</code> 同样遍历了 <code>delegateNodes</code> ，并在特定的任务队列中执行代理回调。如果发现已被销毁的代理，则删除它对应的 GCDMulticastDelegateNode 对象。</p>
+<h2 id="Record-Message-Call"><a href="#Record-Message-Call" class="headerlink" title="Record Message Call"></a>Record Message Call</h2><p>NSUndoManager 是 Foundation 框架中，一个基于命令模式设计的撤消栈管理类。通过这个类可以很方便地实现撤消、重做功能，比如以下苹果官方 Demo ：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)setMyObjectWidth:(<span class="built_in">CGFloat</span>)newWidth height:(<span class="built_in">CGFloat</span>)newHeight&#123;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">float</span> currentWidth = [myObject size].width;</span><br><span class="line">    <span class="keyword">float</span> currentHeight = [myObject size].height;</span><br><span class="line">    <span class="keyword">if</span> ((newWidth != currentWidth) || (newHeight != currentHeight)) &#123;</span><br><span class="line">        [[undoManager prepareWithInvocationTarget:<span class="keyword">self</span>]</span><br><span class="line">                setMyObjectWidth:currentWidth height:currentHeight];</span><br><span class="line">        [undoManager setActionName:<span class="built_in">NSLocalizedString</span>(<span class="string">@"Size Change"</span>, <span class="string">@"size undo"</span>)];</span><br><span class="line">        [myObject setSize:<span class="built_in">NSMakeSize</span>(newWidth, newHeight)];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过调用代码块中 NSUndoManager 对象的 <code>undo</code> ， 可以“撤销”以上方法对 myObject 相关属性的设置。其中需要关注的是， NSUndoManager 是如何记录目标对象接收发生改变的信息：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[[undoManager prepareWithInvocationTarget:<span class="keyword">self</span>] setMyObjectWidth:currentWidth height:currentHeight]</span><br></pre></td></tr></table></figure>
+<p>NSUndoManager 是如何通过这种方式存储调用 <code>-setMyObjectWidth:height:</code> 这一动作呢？背后的关键在于 <code>-prepareWithInvocationTarget:</code><br>所返回的对象，也就是 NSUndoManagerProxy 。 NSUndoManagerProxy 是 NSProxy 的子类，而 NSProxy 除了重载消息转发机制外，基本上就没有其他用法了。结合苹果官方文档， NSUndoManagerProxy 重载了 <code>-forwardInvocation:</code> 来帮助 NSUndoManager 获取目标的方法调用信息。到目前为止，这个应用场景并不难理解，不过为了能切合 NSUndoManagerProxy 的实际实现，这里还是结合 Foundation 框架反汇编出的代码，简单地实现这个功能。</p>
+<p>首先，创建 TBVUndoProxy ， 重写它的消息转发机制：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVUndoProxy</span> : <span class="title">NSProxy</span></span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">weak</span>, <span class="keyword">nonatomic</span>) TBVUndoManager *manager;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">TBVUndoProxy</span></span></span><br><span class="line">- (<span class="keyword">void</span>)forwardInvocation:(<span class="built_in">NSInvocation</span> *)invocation &#123;</span><br><span class="line">    [_manager _forwardTargetInvocation:invocation];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="built_in">NSMethodSignature</span> *)methodSignatureForSelector:(SEL)sel &#123;</span><br><span class="line">    <span class="keyword">return</span> [_manager _methodSignatureForTargetSelector:sel];</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>结合 LLDB 中的调试信息， TBVUndoProxy 只是简单地把信息传送给了 TBVUndoManager 。再来看下将原生逻辑简化后的 TBVUndoManager 的实现：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVUndoManager</span> : <span class="title">NSObject</span> </span>&#123;</span><br><span class="line">    <span class="built_in">NSMutableArray</span> *_invocations;</span><br><span class="line">    TBVUndoProxy *_proxy;</span><br><span class="line">    __<span class="keyword">weak</span> <span class="keyword">id</span> _target;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">id</span>)prepareWithInvocationTarget:(<span class="keyword">id</span>)target;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)undo;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVUndoManager</span> (<span class="title">Private</span>)</span></span><br><span class="line">- (<span class="keyword">void</span>)_forwardTargetInvocation:(<span class="built_in">NSInvocation</span> *)invocation;</span><br><span class="line">- (<span class="built_in">NSMethodSignature</span> *)_methodSignatureForTargetSelector:(SEL)sel;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">TBVUndoManager</span></span></span><br><span class="line">- (<span class="keyword">instancetype</span>)init</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">self</span> = [<span class="keyword">super</span> init];</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">self</span>) &#123;</span><br><span class="line">        _invocations = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">self</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">id</span>)prepareWithInvocationTarget:(<span class="keyword">id</span>)target &#123;</span><br><span class="line">    _target = target;</span><br><span class="line">    _proxy = [TBVUndoProxy alloc];</span><br><span class="line">    _proxy.manager = <span class="keyword">self</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> _proxy;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)undo &#123;</span><br><span class="line">    [_invocations.lastObject invoke];</span><br><span class="line">    [_invocations removeObject:_invocations.lastObject];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)_forwardTargetInvocation:(<span class="built_in">NSInvocation</span> *)invocation &#123;</span><br><span class="line">    [invocation setTarget:_target];</span><br><span class="line">    [_invocations addObject:invocation];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="built_in">NSMethodSignature</span> *)_methodSignatureForTargetSelector:(SEL)sel &#123;</span><br><span class="line">   <span class="built_in">NSMethodSignature</span> *signature = [<span class="keyword">super</span> methodSignatureForSelector:sel];</span><br><span class="line">    <span class="keyword">if</span> (!signature &amp;&amp; _target) &#123;</span><br><span class="line">        signature = [_target methodSignatureForSelector:sel];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> signature;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>TBVUndoManager 通过 <code>-prepareWithInvocationTarget:</code> 方法将发送消息对象保存为 <code>_target</code> 成员变量，然后创建了代理类 TBVUndoProxy 并返回给方法调用者。当外部调用者用这个返回值作为消息发送对象时， TBVUndoProxy 并没有对应的方法实现，于是就触发了消息转发机制， TBVUndoManager 则利用保存的 <code>_target</code> 返回有效的方法签名，并且保存重组了  TBVUndoProxy 回传的 NSInvocation。最终，当外界调用 <code>undo</code> 时，执行的就是保有 <code>_target</code> 和 <code>-prepareWithInvocationTarget:</code>  信息的 NSInvocation 。（原生代码将 NSInvocation 包装成 <code>_NSUndoInvocation</code> 、 <code>_NSUndoObject</code> 压入 <code>_NSUndoStack</code> 栈中）</p>
+<h2 id="Intercept-Any-Message-Call"><a href="#Intercept-Any-Message-Call" class="headerlink" title="Intercept Any Message Call"></a>Intercept Any Message Call</h2><p>Aspects 是一个提供面向切片编程的库，它可以让开发者以无侵入的方式添加额外的功能。它提供了两个简单易用的入口，用于 hook 特定类或者特定对象的方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/// Adds a block of code before/instead/after the current `selector` for a specific class.</span><br><span class="line">+ (id&lt;AspectToken&gt;)aspect_hookSelector:(SEL)selector</span><br><span class="line">                           withOptions:(AspectOptions)options</span><br><span class="line">                            usingBlock:(id)block</span><br><span class="line">                                 error:(NSError **)error;</span><br><span class="line"></span><br><span class="line">/// Adds a block of code before/instead/after the current `selector` for a specific instance.</span><br><span class="line">- (id&lt;AspectToken&gt;)aspect_hookSelector:(SEL)selector</span><br><span class="line">                           withOptions:(AspectOptions)options</span><br><span class="line">                            usingBlock:(id)block</span><br><span class="line">                                 error:(NSError **)error;</span><br></pre></td></tr></table></figure>
+<p>开发者可以用以下方式 hook 所有 UIViewController 实例对象的 <code>-viewWillAppear:</code> 方法 :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[UIViewController aspect_hookSelector:@selector(viewWillAppear:) withOptions:AspectPositionAfter usingBlock:^(id&lt;AspectInfo&gt; aspectInfo, BOOL animated) &#123;</span><br><span class="line">    NSLog(@&quot;View Controller %@ will appear animated: %tu&quot;, aspectInfo.instance, animated);</span><br><span class="line">&#125; error:NULL];</span><br></pre></td></tr></table></figure>
+<p>因为不知道使用者会 hook 什么方法，所以就无法像传统的 swizzling method 一样，预先编写对应的 IMP 去替换传入的方法。这时就需要内部实现一个统一调用机制，这个机制需要满足以下两点：</p>
+<p>1、 为了能进行切片操作，需要让所有被 hook 方法的调用都通过一个统一的入口完成。<br><br>2、 为了给原始实现和切片操作提供参数/返回值信息，这个入口要能获取被 hook 方法完整的签名信息。<br></p>
+<p>综合上述两点以及 Normal forwarding path 的执行过程，可以比较轻松地联想到 <code>-forwardInvocation:</code> 方法非常适合作为这个入口。结合 Aspects 源码，来看下其实现中，和消息转发相关的两个步骤：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line">static void aspect_prepareClassAndHookSelector(NSObject *self, SEL selector, NSError **error) &#123;</span><br><span class="line">    NSCParameterAssert(selector);</span><br><span class="line">    Class klass = aspect_hookClass(self, error);</span><br><span class="line">    Method targetMethod = class_getInstanceMethod(klass, selector);</span><br><span class="line">    IMP targetMethodIMP = method_getImplementation(targetMethod);</span><br><span class="line">    if (!aspect_isMsgForwardIMP(targetMethodIMP)) &#123;</span><br><span class="line">        // Make a method alias for the existing method implementation, it not already copied.</span><br><span class="line">        const char *typeEncoding = method_getTypeEncoding(targetMethod);</span><br><span class="line">        SEL aliasSelector = aspect_aliasForSelector(selector);</span><br><span class="line">        if (![klass instancesRespondToSelector:aliasSelector]) &#123;</span><br><span class="line">            __unused BOOL addedAlias = class_addMethod(klass, aliasSelector, method_getImplementation(targetMethod), typeEncoding);</span><br><span class="line">            NSCAssert(addedAlias, @&quot;Original implementation for %@ is already copied to %@ on %@&quot;, NSStringFromSelector(selector), NSStringFromSelector(aliasSelector), klass);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        // We use forwardInvocation to hook in.</span><br><span class="line">        class_replaceMethod(klass, selector, aspect_getMsgForwardIMP(self, selector), typeEncoding);</span><br><span class="line">        AspectLog(@&quot;Aspects: Installed hook for -[%@ %@].&quot;, klass, NSStringFromSelector(selector));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">static Class aspect_hookClass(NSObject *self, NSError **error) &#123;</span><br><span class="line">    NSCParameterAssert(self);</span><br><span class="line">   ...</span><br><span class="line">        aspect_swizzleForwardInvocation(subclass);</span><br><span class="line">   ...</span><br><span class="line">&#125;</span><br><span class="line">static void aspect_swizzleForwardInvocation(Class klass) &#123;</span><br><span class="line">    NSCParameterAssert(klass);</span><br><span class="line">    // If there is no method, replace will act like class_addMethod.</span><br><span class="line">    IMP originalImplementation = class_replaceMethod(klass, @selector(forwardInvocation:), (IMP)__ASPECTS_ARE_BEING_CALLED__, &quot;v@:@&quot;);</span><br><span class="line">    if (originalImplementation) &#123;</span><br><span class="line">        class_addMethod(klass, NSSelectorFromString(AspectsForwardInvocationSelectorName), originalImplementation, &quot;v@:@&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    AspectLog(@&quot;Aspects: %@ is now aspect aware.&quot;, NSStringFromClass(klass));</span><br><span class="line">&#125;</span><br><span class="line">static void __ASPECTS_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL selector, NSInvocation *invocation) &#123;</span><br><span class="line">    NSCParameterAssert(self);</span><br><span class="line">    NSCParameterAssert(invocation);</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">    // Before hooks.</span><br><span class="line">    aspect_invoke(classContainer.beforeAspects, info);</span><br><span class="line">    aspect_invoke(objectContainer.beforeAspects, info);</span><br><span class="line"></span><br><span class="line">    // Instead hooks.</span><br><span class="line">    BOOL respondsToAlias = YES;</span><br><span class="line">    if (objectContainer.insteadAspects.count || classContainer.insteadAspects.count) &#123;</span><br><span class="line">        aspect_invoke(classContainer.insteadAspects, info);</span><br><span class="line">        aspect_invoke(objectContainer.insteadAspects, info);</span><br><span class="line">    &#125;else &#123;</span><br><span class="line">        Class klass = object_getClass(invocation.target);</span><br><span class="line">        do &#123;</span><br><span class="line">            if ((respondsToAlias = [klass instancesRespondToSelector:aliasSelector])) &#123;</span><br><span class="line">                [invocation invoke];</span><br><span class="line">                break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;while (!respondsToAlias &amp;&amp; (klass = class_getSuperclass(klass)));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // After hooks.</span><br><span class="line">    aspect_invoke(classContainer.afterAspects, info);</span><br><span class="line">    aspect_invoke(objectContainer.afterAspects, info);</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里在忽略掉 Aspects 创建子类等操作后，可以看出以上代码总共做了两件事：</p>
+<p>1、对原始 <code>-forwardInvocation:</code> 方法执行 swizzling method ，将实现替换成 <code>__ASPECTS_ARE_BEING_CALLED__</code> ，以便在 <code>__ASPECTS_ARE_BEING_CALLED__</code> 函数中执行了额外的切片操作。<br><br>2、对被 hook 的方法执行 swizzling method ，将实现替换成 <code>_objc_msgForward</code> / <code>_objc_msgForward_stret</code> ，以便触发被 hook 方法的消息转发机制，然后在步骤 1 的 <code>__ASPECTS_ARE_BEING_CALLED__</code> 函数中，进行切片操作。<br></p>
+<p>值得一提的是， JSPatch 也是利用相似的机制，实现用 <code>defineClass</code> 接口任意替换一个类的方法的功能，不同的是 JSPatch 在它的 <code>__ASPECTS_ARE_BEING_CALLED__</code> 函数中，直接把参数传给了 JavaScript 的实现。</p>
+<!-- ## Dependency Injection -->
+<!-- ## 依靠协议的依赖注入 -->
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>消息转发有三步，分别是 Lazy method resolution （动态添加方法）、 Fast forwarding path （转发至可响应对象）、 Normal forwarding path （获取 NSInvocation 信息）。关于消息转发的应用，本文主要摘录了以下几个例子：</p>
+<ul>
+<li>Week Proxy</li>
+<li>Delegate Proxy</li>
+<li>Multicast Delegate</li>
+<li>Record Message Call</li>
+<li>Intercept Any Message Call</li>
+</ul>
+<p>可以看出，在这些例子中，都创建了一个代理类，并且这个代理类几乎没有实现自定义方法，或者直接是 NSProxy 的子类。这样，基本上所有的发送给代理类对象的消息，都会触发消息转发机制，而这个代理类就可以对拦截的消息做额外处理。</p>
+<p>其中大部分应用场景都涉及到消息转发的第二三步，即 Fast forwarding path、Normal forwarding path 。特别是 Normal forwarding path ，配合 <code>_objc_msgForward</code> / <code>_objc_msgForward_stret</code> 函数强行进行消息转发，可以获取携带完整调用信息的 NSInvocation 。借助于 NSInvocation 的灵活性，开发者就可以完成一些非常有意思的事情了。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://github.com/robbiehanson/XMPPFramework/wiki/MulticastDelegate" target="_blank" rel="noopener">MulticastDelegate</a><br><br><a href="http://petersteinberger.com/blog/2013/smart-proxy-delegation/" target="_blank" rel="noopener">Smart Proxy Delegation</a><br><br><a href="https://mikeash.com/pyblog/friday-qa-2009-03-27-objective-c-message-forwarding.html" target="_blank" rel="noopener">Objective-C Message Forwarding</a><br><br><a href="http://blog.ibireme.com/2013/11/26/objective-c-messaging/" target="_blank" rel="noopener">Objective-C 中的消息与消息转发</a> <br><br><a href="http://yulingtianxia.com/blog/2016/06/15/Objective-C-Message-Sending-and-Forwarding/" target="_blank" rel="noopener">Objective-C 消息发送与转发机制原理</a><br><br><a href="https://codeshaker.blogspot.jp/2012/01/aop-delivered.html" target="_blank" rel="noopener">AOP. Delivered</a> <br><br><a href="https://wereadteam.github.io/2016/06/30/Aspects/" target="_blank" rel="noopener">面向切面编程之 Aspects 源码解析及应用</a><br><br><a href="https://github.com/bang590/JSPatch/wiki/JSPatch-%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86%E8%AF%A6%E8%A7%A3" target="_blank" rel="noopener">JSPatch 实现原理详解</a><br></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Interview/" rel="tag"># Interview</a>
+          
+            <a href="/tags/objective-c/" rel="tag"># objective-c</a>
+          
+            <a href="/tags/Message-Forwarding/" rel="tag"># Message Forwarding</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/" rel="next" title="闲谈 IGListKit">
+                <i class="fa fa-chevron-left"></i> 闲谈 IGListKit
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/07/28/2017-07-28-blockhe-nsmethodsignature/" rel="prev" title="用 Block 实现委托方法">
+                用 Block 实现委托方法 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#简说消息转发"><span class="nav-number">1.</span> <span class="nav-text">简说消息转发</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Lazy-method-resolution"><span class="nav-number">1.1.</span> <span class="nav-text">Lazy method resolution</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Fast-forwarding-path"><span class="nav-number">1.2.</span> <span class="nav-text">Fast forwarding path</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Normal-forwarding-path"><span class="nav-number">1.3.</span> <span class="nav-text">Normal forwarding path</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Week-Proxy"><span class="nav-number">2.</span> <span class="nav-text">Week Proxy</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Delegate-Proxy"><span class="nav-number">3.</span> <span class="nav-text">Delegate Proxy</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Multicast-Delegate"><span class="nav-number">4.</span> <span class="nav-text">Multicast Delegate</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Record-Message-Call"><span class="nav-number">5.</span> <span class="nav-text">Record Message Call</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Intercept-Any-Message-Call"><span class="nav-number">6.</span> <span class="nav-text">Intercept Any Message Call</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">7.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">8.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/';
+          this.page.identifier = '2017/07/09/2017-07-09-objective-cxiao-xi-zhuan-fa-ying-yong-zhi-ji-chu/';
+          this.page.title = 'Objective-C 消息转发应用场景摘录';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

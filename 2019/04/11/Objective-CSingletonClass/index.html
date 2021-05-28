@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Ruby,Singleton Class,KVO,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Ruby 是解释强类型动态语言，Objective-C 是编译弱类型(动态 &amp;amp; 静态)语言，两者看似没什么关联，但是实际上可以说是师出同门，它们很大程度上继承了 Smalltalk 的关键特性，所以很多设计理念是共通的，比如 Ruby 和 Objective-C 拥有相似的消息传递机制 (dynamic message dispatch)、对象模型 (object model —— obj">
+<meta name="keywords" content="Ruby,Singleton Class,KVO">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ruby Singleton Class 与 Objective-C KVO">
+<meta property="og:url" content="https://triplecc.github.io/2019/04/11/Objective-CSingletonClass/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="Ruby 是解释强类型动态语言，Objective-C 是编译弱类型(动态 &amp;amp; 静态)语言，两者看似没什么关联，但是实际上可以说是师出同门，它们很大程度上继承了 Smalltalk 的关键特性，所以很多设计理念是共通的，比如 Ruby 和 Objective-C 拥有相似的消息传递机制 (dynamic message dispatch)、对象模型 (object model —— obj">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-ruby-n1.png">
+<meta property="og:image" content="https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-n.png">
+<meta property="og:image" content="https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-kvo.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.933Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ruby Singleton Class 与 Objective-C KVO">
+<meta name="twitter:description" content="Ruby 是解释强类型动态语言，Objective-C 是编译弱类型(动态 &amp;amp; 静态)语言，两者看似没什么关联，但是实际上可以说是师出同门，它们很大程度上继承了 Smalltalk 的关键特性，所以很多设计理念是共通的，比如 Ruby 和 Objective-C 拥有相似的消息传递机制 (dynamic message dispatch)、对象模型 (object model —— obj">
+<meta name="twitter:image" content="https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-ruby-n1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2019/04/11/Objective-CSingletonClass/">
+
+
+
+
+
+  <title>Ruby Singleton Class 与 Objective-C KVO | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2019/04/11/Objective-CSingletonClass/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Ruby Singleton Class 与 Objective-C KVO</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-11T20:24:45+00:00">
+                2019-04-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/04/11/Objective-CSingletonClass/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/04/11/Objective-CSingletonClass/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Ruby 是解释强类型动态语言，Objective-C 是编译弱类型(动态 &amp; 静态)语言，两者看似没什么关联，但是实际上可以说是师出同门，它们很大程度上继承了 Smalltalk 的关键特性，所以很多设计理念是共通的，比如 Ruby 和 Objective-C 拥有相似的消息传递机制 (dynamic message dispatch)、对象模型 (object model —— object class metaclass)，并且都提供极其强大的运行时特性以及支撑运行时特性所需的接口等。 Ruby 和 Objective-C 的异同其实有挺多可以说的，但是本文不会过多地去探讨，这里只是窥探下 singleton class 和 KVO 两个技术点间的联系。<br><a id="more"></a></p>
+<h2 id="初始设定"><a href="#初始设定" class="headerlink" title="初始设定"></a>初始设定</h2><p>假设当前有 Animal 类，Dog 类继承自 Animal，分别用 Ruby 和 Objective-C 创建 Dog 对象。</p>
+<p>Ruby ：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Animal</span></span></span><br><span class="line">  <span class="keyword">attr_accessor</span> <span class="symbol">:name</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Dog</span> &lt; Animal</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">bark</span></span></span><br><span class="line">    puts <span class="string">'wangwang!'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">myDog = Dog.new</span><br><span class="line">myDog.bark <span class="comment"># wangwang!</span></span><br></pre></td></tr></table></figure>
+<p>Objective-C：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Animal</span> : <span class="title">NSObject</span></span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">copy</span>, <span class="keyword">nonatomic</span>) <span class="built_in">NSString</span> *name;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Animal</span></span></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Dog</span> : <span class="title">Animal</span></span></span><br><span class="line">- (<span class="keyword">void</span>)bark;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Dog</span></span></span><br><span class="line">- (<span class="keyword">void</span>)bark &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"wangwang!"</span>); </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">void</span>)clsBark &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"wangwang!"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> main(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> * argv[]) &#123;</span><br><span class="line">    <span class="keyword">@autoreleasepool</span> &#123;</span><br><span class="line">        Dog *myDog = [Dog new];</span><br><span class="line">        [myDog bark]; <span class="comment">// wangwang!</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中变量 myDog 指向的对象（下文为了方便统一用 myDog 对象描述）无法像 Dog 类对象一样，创建其他对象，所以这里将 myDog 对象称为终端对象 (terminal object)。</p>
+<p>既然师承 Smalltalk ，根据其对象模型，Dog 类就会负责描述 myDog 对象的行为，即 <code>bark</code> 方法将会保存在 Dog 类中，Dog 类也会是一个对象，并且 Dog 类对象也有对应的类用以描述自身行为，在 Ruby 中，这个创建 Dog 类实例的类叫 singleton class ，Objecitve-C 中则称为 metaclass 。Ruby 中的终端对象也可以有 singleton class ，Objecitve-C 在语言层面上并没有实现这一点。</p>
+<h2 id="Ruby-的-Singleton-Class"><a href="#Ruby-的-Singleton-Class" class="headerlink" title="Ruby 的 Singleton Class"></a>Ruby 的 Singleton Class</h2><p>首先要明确的是 singleton class 区别于 singleton pattern 中创建的 class，在 Ruby 的对象模型中，singleton class 又可以称作 metaclass（元类）、eigenclasses（特征类），这里统一称做单件类。</p>
+<p>考虑以下代码：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">myDog = Dog.new</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">myDog</span>.<span class="title">bark</span></span></span><br><span class="line">  puts <span class="string">'zizizi!'</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">myDog.bark <span class="comment"># zizizi!</span></span><br><span class="line"></span><br><span class="line">yourDog = Dog.new</span><br><span class="line">yourDog.bark <span class="comment"># wangwang!</span></span><br></pre></td></tr></table></figure>
+<p>在 Ruby 中，我们可以给特定对象定义专属的方法，可以知道的是，新定义的 <code>bark</code> 方法不在 Dog 类中，因为给 yourDog 发送 <code>bark</code> 消息后的输出并没有改变，这种针对单个对象定义的方法称为单件方法 (singleton method)。当我们定义单件方法或者调用 <code>singleton_class</code> 方法时，Ruby 会自动创建一个 “匿名类” 来保存单件方法（惰性求值），这个类就是单件类，我们可以通过 <code>singleton_class</code> 方法用来访问单件类。</p>
+<p>除了使用上述的 <code>def</code> ，Ruby 还可以使用 <code>&lt;&lt;</code> 语法打开对象的单件类，并且可以在单件类中使用 <code>super</code> 访问其父类：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> &lt;&lt; myDog</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">bark</span></span></span><br><span class="line">    <span class="keyword">super</span></span><br><span class="line">    puts <span class="string">'zizizi!'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">myDog.bark </span><br><span class="line"><span class="comment"># wangwang!</span></span><br><span class="line"><span class="comment"># zizizi!</span></span><br></pre></td></tr></table></figure>
+<p>根据最新的示例代码，可以得到 Ruby 的对象模型图：</p>
+<p><img src="https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-ruby-n1.png" alt="object-model-ruby"></p>
+<p>需要注意的是，和 myDog 对象不一样，yourDog 对象还没有 #yourDog 单件类，其 <code>klass</code> (Objective-C 中的 isa) 还是直接指向 Dog 类 (测试方法在文末 《Ruby 调用 C 扩展一节》 给出)。</p>
+<p>如模型图所示，类对象天然拥有一个对应的单件类 (对比 Objective-C 创建类时，必须同时创建元类)，也就是说我们定义的类方法都是单件方法，直接存放在类对象的单件类中。采用下面几种方式定义类方法，其结果都是一致的：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Dog</span> &lt; Animal</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">self</span>.<span class="title">create</span> </span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="comment">####################</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Dog</span> &lt; Animal</span></span><br><span class="line">  <span class="class"><span class="keyword">class</span> &lt;&lt; self</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">create</span></span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="comment">####################</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">Dog</span>.<span class="title">create</span></span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="comment">####################</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> &lt;&lt; Dog</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">create</span></span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>简单来说，<strong>Ruby 中的单件类是只属于一个对象的类，它负责描述此对象的行为</strong>。</p>
+<h2 id="Objective-C-的-KVO"><a href="#Objective-C-的-KVO" class="headerlink" title="Objective-C 的 KVO"></a>Objective-C 的 KVO</h2><p>Objective-C 可以支持多个根类 (NSObject、NSProxy、或者使用 OBJC_ROOT_CLASS 宏自行创建的根类)，这里使用了 NSObject 作为根类，针对初始设定的示例代码，可以得到以下对象模型图：</p>
+<p><img src="https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-n.png" alt="object-model-objective-c"></p>
+<p>可以看到，对于终端对象 myDog 来说，其 <code>isa</code> 指向的是 Dog 类，这和上述 Ruby 实现中 yourDog 对象的 <code>kclass</code> 指向一致。接下来，我们给 myDog 添加一个观察者 ：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Observer</span> : <span class="title">NSObject</span></span></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Observer</span></span></span><br><span class="line">- (<span class="keyword">void</span>)observeValueForKeyPath:(<span class="built_in">NSString</span> *)keyPath ofObject:(<span class="keyword">id</span>)object change:(<span class="built_in">NSDictionary</span>&lt;<span class="built_in">NSKeyValueChangeKey</span>,<span class="keyword">id</span>&gt; *)change context:(<span class="keyword">void</span> *)context &#123;</span><br><span class="line">    Class cls = object_getClass(object);</span><br><span class="line">    Class superCls = class_getSuperclass(cls);</span><br><span class="line">    <span class="comment">// cls: NSKVONotifying_Dog, super cls Dog</span></span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"cls: %@, super cls %@"</span>, cls, superCls); </span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> main(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> * argv[]) &#123;</span><br><span class="line">    <span class="keyword">@autoreleasepool</span> &#123;</span><br><span class="line">        Dog *myDog = [Dog new];</span><br><span class="line"></span><br><span class="line">        Observer *observer = [Observer new];</span><br><span class="line">        [myDog addObserver:observer forKeyPath:<span class="string">@"name"</span> options:<span class="built_in">NSKeyValueObservingOptionNew</span> context:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">        myDog.name = <span class="string">@"Bob"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>KVO 对属性监听的实现，本质上是对监听属性 setter 方法的切片，Objective-C 中实现方法切片最直接的方式是 method swizzling ，不过由于 setter 实例方法保存在监听对象所属类中，如果直接替换，势必会影响到这个类的其他实例化对象，于是 Objective-C 在这里采用了另一种方式————继承 + 多态。在添加观察者之后，Objective-C 会创建 Dog 类的子类 NSKVONotifying_Dog ，并将 myDog 对象的 <code>isa</code> 指向 NSKVONotifying_Dog 类，接着在 NSKVONotifying_Dog 类中重写监听属性的 setter 方法，变更之后的对象模型图如下 ：</p>
+<p><img src="https://github.com/tripleCC/tripleCC.github.io/raw/hexo/source/images/object-model-objective-c-kvo.png" alt="object-model-objective-c"></p>
+<p>可以看到，NSKVONotifying_Dog 类的功能几乎和 Ruby 实现中 #myDog 单件类一致了，我们可以在这个类中给 myDog 对象添加实例方法，而不会对 Dog 类实例化的其他对象产生影响，这个类只负责描述 myDog 对象。</p>
+<p>一旦实现了属性的监听，剩下的就是处理监听者和监听属性的关系了，最直接的实现就是在监听对象中维护一个 Map ，根据 Map 的值去派发属性变更消息，这一块还是比较直观的。</p>
+<h2 id="Aspects-中-hook-对象方法"><a href="#Aspects-中-hook-对象方法" class="headerlink" title="Aspects 中 hook 对象方法"></a>Aspects 中 hook 对象方法</h2><p>Aspects 是针对 Objective-C 的 AOP 库，我们可以使用 Aspects 做三件事情 (<a href="http://math.hws.edu/javanotes/c5/s1.html" target="_blank" rel="noopener">这里的实例方法和类方法所属描述，建立在从逻辑上讲实例方法属于类实例化的对象，从物理实现上讲属于类的这一假设之上</a>)：</p>
+<ul>
+<li>hook 单个终端对象的实例方法</li>
+<li>hook 某个类所有实例化对象的实例方法</li>
+<li>hook 某个类的类方法</li>
+</ul>
+<p>其中 hook 单个终端对象的实例方法，本质上也属于 hook 某个类所有实例化对象的实例方法，只不过这个类只会有 hook 对象这一个实例。三种 hook 的示例代码如下 ：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">Dog *myDog = [Dog new];</span><br><span class="line">[myDog aspect_hookSelector:<span class="keyword">@selector</span>(bark) withOptions:AspectPositionAfter usingBlock:^(<span class="keyword">id</span> &lt;AspectInfo&gt; info)&#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"zizizi!"</span>);</span><br><span class="line">&#125; error:<span class="literal">nil</span>];</span><br><span class="line">[myDog bark]; </span><br><span class="line"><span class="comment">// wangwang!</span></span><br><span class="line"><span class="comment">// zizizi!</span></span><br><span class="line"><span class="meta">####################</span></span><br><span class="line">[Dog aspect_hookSelector:<span class="keyword">@selector</span>(bark) withOptions:AspectPositionAfter usingBlock:^(<span class="keyword">id</span> &lt;AspectInfo&gt; info)&#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"zizizi!"</span>);</span><br><span class="line">&#125; error:<span class="literal">nil</span>];</span><br><span class="line">Dog *myDog = [Dog new];</span><br><span class="line">[myDog bark];</span><br><span class="line"><span class="comment">// wangwang!</span></span><br><span class="line"><span class="comment">// zizizi!</span></span><br><span class="line"><span class="meta">####################</span></span><br><span class="line"><span class="keyword">id</span> meta = object_getClass([Dog <span class="keyword">class</span>]);</span><br><span class="line">[meta aspect_hookSelector:<span class="keyword">@selector</span>(clsBark) withOptions:AspectPositionAfter usingBlock:^(<span class="keyword">id</span> &lt;AspectInfo&gt; info)&#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"zizizi!"</span>);</span><br><span class="line">&#125; error:<span class="literal">nil</span>];</span><br><span class="line">[Dog clsBark];</span><br><span class="line"><span class="comment">// wangwang!</span></span><br><span class="line"><span class="comment">// zizizi!</span></span><br></pre></td></tr></table></figure>
+<p>第一种 hook 和 KVO 面临一样的问题，所以需要做子类化处理，而第二种和第三种 hook 因为影响范围都是全局的，所以可以直接操作类 / 元类的方法列表，在知道 hook 具体方法的前提下，我们也可以直接用 method swizzling 来替换 Aspects 的后两种 hook 方式。</p>
+<p>Aspects 创建了 <a href="https://github.com/steipete/Aspects/blob/c3125c5063748c6aa80f18cce54ecc128b51ba8f/Aspects.m#L350-L388" target="_blank" rel="noopener">aspect_hookClass</a> 函数来处理这几种 hook ，这个函数大概做了这么几件准备工作：</p>
+<ul>
+<li>如果传入对象所属类有 <code>_Aspects_</code> 专属前缀，直接返回这个类 (这个对象为终端对象)</li>
+<li>如果传入对象为类 / 元类，则直接执行替换消息转发入口函数操作，并返回这个类 / 元类 (类和元类执行 <code>object_getClass</code> 后返回的都是元类，后者为 NSObject 元类)</li>
+<li>如果传入对象所属类和 class 返回的类不一致，则直接执行替换消息转发入口函数操作，并返回对象所属类 (这里考虑了 KVO 已经创建了 “单件类”，并且重写了 class 方法，所以直接操作这个“单件类”)</li>
+<li>惰性创建 <code>_Aspects_</code> 前缀的子类 (“单件类”)，其父类为传入对象所属类，并且设置传入对象所属类为刚创建的子类 (这个对象为终端对象，此步骤和 KVO 实现一致)</li>
+</ul>
+<p>可以看到，hook 终端对象时，为了变更范围能局限在终端对象中，Aspects 也创建了属于 Objective-C 的“单件类”。</p>
+<h2 id="Ruby-调用-C-扩展"><a href="#Ruby-调用-C-扩展" class="headerlink" title="Ruby 调用 C 扩展"></a>Ruby 调用 C 扩展</h2><p>Ruby 可以通过扩展调用 C 函数，从而打印出内存中对象所属的类。</p>
+<p>创建 real_klass.c 文件 ：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ruby.h&gt; </span></span></span><br><span class="line"></span><br><span class="line"><span class="function">VALUE <span class="title">real_klass</span><span class="params">(VALUE self)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> RBASIC(self)-&gt;klass;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">Init_real_klass</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  rb_define_method(rb_cObject,<span class="string">"real_klass"</span>,real_klass,<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>创建 extconf.rb 文件 ：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">require</span> <span class="string">'mkmf'</span></span><br><span class="line">    </span><br><span class="line">extension_name = <span class="string">'real_klass'</span></span><br><span class="line">dir_config(extension_name)</span><br><span class="line">create_makefile(extension_name)</span><br></pre></td></tr></table></figure>
+<p>生成扩展模块 ：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ruby extconf.rb &amp;&amp; make</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls</span></span><br><span class="line">Makefile           real_klass.bundle real_klass.o</span><br><span class="line">extconf.rb         real_klass.c      animal.rb</span><br></pre></td></tr></table></figure>
+<p>编辑 animal.rb 引入 real_class 模块 :</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">require</span> <span class="string">'./real_klass.bundle'</span></span><br><span class="line"></span><br><span class="line">... </span><br><span class="line"></span><br><span class="line">myDog = Dog.new</span><br><span class="line"><span class="class"><span class="keyword">class</span> &lt;&lt; myDog</span></span><br><span class="line">  <span class="function"><span class="keyword">def</span> <span class="title">bark</span></span></span><br><span class="line">    puts <span class="string">'zizizi!'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">myDog.bark <span class="comment"># zizizi!</span></span><br><span class="line">yourDog = Dog.new</span><br><span class="line">yourDog.bark <span class="comment"># wangwang!</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># myDog 对象单例类已创建，klass 指向单例类</span></span><br><span class="line">p myDog.real_klass                 <span class="comment"># #&lt;Class:#&lt;Dog:0x007fcae98f1d10&gt;&gt;</span></span><br><span class="line">p myDog.singleton_class            <span class="comment"># #&lt;Class:#&lt;Dog:0x007fcae98f1d10&gt;&gt;</span></span><br><span class="line"><span class="comment"># myDog 对象单例类的 klass 指向 Dog 类对象的单例类</span></span><br><span class="line"><span class="comment"># (在 myDog.singleton_class 没有创建属于它的单例类的情况下)</span></span><br><span class="line">p Dog.singleton_class              <span class="comment"># #&lt;Class:Dog&gt;</span></span><br><span class="line">p myDog.singleton_class.real_klass <span class="comment"># #&lt;Class:Dog&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># yourDog 对象单例类还未创建，klass 指向 Dog 类对象</span></span><br><span class="line">p yourDog.real_klass      <span class="comment"># Dog</span></span><br><span class="line"><span class="comment"># yourDog 对象单例类已创建，klass 指向单例类</span></span><br><span class="line">p yourDog.singleton_class <span class="comment"># #&lt;Class:#&lt;Dog:0x007fdb2f049518&gt;&gt;</span></span><br><span class="line">p yourDog.real_klass      <span class="comment"># #&lt;Class:#&lt;Dog:0x007fdb2f049518&gt;&gt;</span></span><br></pre></td></tr></table></figure>
+<p>更完善的 Ruby 对象模型可以查看 <a href="https://en.wikipedia.org/wiki/Metaclass#/media/File:Ruby-metaclass-sample.svg" target="_blank" rel="noopener">wiki 上的示意图</a> 。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>如果要在不影响一个类实例化其他对象前提下，给这个了创建的某个对象添加专属的实例方法，在 Ruby 中我们可以通过将实例方法添加到对象的单件类中解决这个需求，并且 Ruby 在语言层面上就可以提供终端对象的单件类，而 Objective-C 没有提供，在了解了 Ruby 单件类的实现之后，借助 Objective-C 强大的运行时能力，我们可以自己去实现这个“语言特性”，主要有两个关键步骤： </p>
+<ul>
+<li>创建终端对象所属类的子类 </li>
+<li>设置终端对象的类为刚创建的子类</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="http://www.sealiesoftware.com/blog/archive/2009/04/14/objc_explain_Classes_and_metaclasses.html" target="_blank" rel="noopener">Classes and metaclasses</a></p>
+<p><a href="https://blog.sunnyxx.com/2014/03/09/objc_kvo_secret/" target="_blank" rel="noopener">objc kvo简单探索</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Smalltalk" target="_blank" rel="noopener">Smalltalk</a></p>
+<p><a href="https://en.wikipedia.org/wiki/Metaclass#In_Objective-C" target="_blank" rel="noopener">Metaclass</a></p>
+<p><a href="https://genius.com/Soroush-khanlou-objective-c-isnt-what-you-think-it-is-if-you-think-like-a-rubyist-annotated" target="_blank" rel="noopener">Objective-C isn’t what you think it is (if you think like a Rubyist)</a></p>
+<p><a href="https://stackoverflow.com/questions/25336033/in-ruby-are-the-terms-metaclass-eigenclass-and-singleton-class-complete" target="_blank" rel="noopener">In Ruby, are the terms “metaclass”, “eigenclass”, and “singleton class” completely synonymous and fungible?</a></p>
+<p><a href="https://ruby-doc.com/docs/ProgrammingRuby/html/classes.html" target="_blank" rel="noopener">Classes and Objects</a></p>
+<p><a href="http://leohetsch.com/demystifying-ruby-singleton-classes/" target="_blank" rel="noopener">Demystifying Ruby Singleton Classes</a></p>
+<p><a href="https://www.devalot.com/articles/2008/09/ruby-singleton" target="_blank" rel="noopener">Understanding Ruby Singleton Classes</a></p>
+<p><a href="https://hokstad.com/ruby-object-model" target="_blank" rel="noopener">The Ruby Object Model - Structure and Semantics </a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Ruby/" rel="tag"># Ruby</a>
+          
+            <a href="/tags/Singleton-Class/" rel="tag"># Singleton Class</a>
+          
+            <a href="/tags/KVO/" rel="tag"># KVO</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/20/objective-c-weak-implement/" rel="next" title="Objective-C weak 弱引用实现">
+                <i class="fa fa-chevron-left"></i> Objective-C weak 弱引用实现
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/04/14/Objective-CBlock补充/" rel="prev" title="对 Block 的一点补充">
+                对 Block 的一点补充 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#初始设定"><span class="nav-number">1.</span> <span class="nav-text">初始设定</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ruby-的-Singleton-Class"><span class="nav-number">2.</span> <span class="nav-text">Ruby 的 Singleton Class</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Objective-C-的-KVO"><span class="nav-number">3.</span> <span class="nav-text">Objective-C 的 KVO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Aspects-中-hook-对象方法"><span class="nav-number">4.</span> <span class="nav-text">Aspects 中 hook 对象方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Ruby-调用-C-扩展"><span class="nav-number">5.</span> <span class="nav-text">Ruby 调用 C 扩展</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">6.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2019/04/11/Objective-CSingletonClass/';
+          this.page.identifier = '2019/04/11/Objective-CSingletonClass/';
+          this.page.title = 'Ruby Singleton Class 与 Objective-C KVO';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

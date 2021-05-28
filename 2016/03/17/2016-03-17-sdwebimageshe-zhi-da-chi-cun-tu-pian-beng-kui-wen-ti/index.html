@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Crash,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="昨天产品在teambition上提了一个bug：点击特定的页面app闪退。我很是纳闷，因为通过其它类型索引进入的详情页面都不会出现这样的情况，为什么偏偏是这个页面？还是因为memory warning而闪退？而且内存不是慢慢增加，而是从80M左右激增到600M＋接着我查看了进入这个页面时获取的json，仔细观察后，发现并没有特别的地方。于是我决定使用instruments的Allocations查">
+<meta name="keywords" content="Crash">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SDWebImage设置大尺寸图片崩溃问题">
+<meta property="og:url" content="https://triplecc.github.io/2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="昨天产品在teambition上提了一个bug：点击特定的页面app闪退。我很是纳闷，因为通过其它类型索引进入的详情页面都不会出现这样的情况，为什么偏偏是这个页面？还是因为memory warning而闪退？而且内存不是慢慢增加，而是从80M左右激增到600M＋接着我查看了进入这个页面时获取的json，仔细观察后，发现并没有特别的地方。于是我决定使用instruments的Allocations查">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20160317_2.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20160317_4.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20160317_1.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20160317_5.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="SDWebImage设置大尺寸图片崩溃问题">
+<meta name="twitter:description" content="昨天产品在teambition上提了一个bug：点击特定的页面app闪退。我很是纳闷，因为通过其它类型索引进入的详情页面都不会出现这样的情况，为什么偏偏是这个页面？还是因为memory warning而闪退？而且内存不是慢慢增加，而是从80M左右激增到600M＋接着我查看了进入这个页面时获取的json，仔细观察后，发现并没有特别的地方。于是我决定使用instruments的Allocations查">
+<meta name="twitter:image" content="https://triplecc.github.io/images/Snip20160317_2.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/">
+
+
+
+
+
+  <title>SDWebImage设置大尺寸图片崩溃问题 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">SDWebImage设置大尺寸图片崩溃问题</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-03-17T10:41:01+00:00">
+                2016-03-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ios/" itemprop="url" rel="index">
+                    <span itemprop="name">ios</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>昨天产品在teambition上提了一个bug：点击特定的页面app闪退。<br><br>我很是纳闷，因为通过其它类型索引进入的详情页面都不会出现这样的情况，为什么偏偏是这个页面？还是因为memory warning而闪退？而且内存不是慢慢增加，而是从80M左右激增到600M＋<br><br>接着我查看了进入这个页面时获取的json，仔细观察后，发现并没有特别的地方。于是我决定使用instruments的Allocations查看到底是什么操作占用了如此庞大的内存。<br><br>进入界面之后，展示的界面如下图：<br><a id="more"></a></p>
+<p><img src="/images/Snip20160317_2.png" alt=""></p>
+<p>追踪到底是哪个函数调用申请了这么多内存：</p>
+<p><img src="/images/Snip20160317_4.png" alt=""></p>
+<p>根据经验，考虑到SDWebImage是直接使用原图进行渲染，所以初步可以断定是图片渲染导致内存的问题。<br><br>于是我查看了这个界面唯一的图片：</p>
+<p><img src="/images/Snip20160317_1.png" alt=""></p>
+<p><img src="/images/Snip20160317_5.png" alt=""></p>
+<p>…WTF…<br><br>问了后台，这个图片是企业上传的，最大不超过2M，而且给App的图片并没有经过压缩处理。接着我又查看了安卓端，发现他们并没有显示出这一张logo。。。<br></p>
+<p><a href="http://cv.qiaobutang.com//uploads//company_logos//2014//12//12//20//548ae4240cf23e379a82db93//original.png" target="_blank" rel="noopener">图片链接</a></p>
+<p>虽然图片只有1.8M，但是像素为15497*10166，iOS解压到内存并显示所需要的内存通过以下公式计算出：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#define bytesPerMB 1048576.0f </span></span><br><span class="line"><span class="comment">// 这里针对32色来说 (32 / 8)</span></span><br><span class="line"><span class="meta">#define bytesPerPixel 4.0f</span></span><br><span class="line"><span class="meta">#define pixelsPerMB ( bytesPerMB / bytesPerPixel )</span></span><br><span class="line"></span><br><span class="line"> Width x Height / pixelsPerMB</span><br></pre></td></tr></table></figure>
+<p>所以大概可以计算出这张图片需要600M左右的内存进行解码显示。</p>
+<p>google了下，最多的解决方式是利用UIGraphicsBeginImageContext对图片进行裁剪后渲染：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="built_in">UIGraphicsBeginImageContext</span>(size);</span><br><span class="line"><span class="built_in">CGContextRef</span> context = <span class="built_in">UIGraphicsGetCurrentContext</span>();</span><br><span class="line"><span class="built_in">CGContextClearRect</span>(context, <span class="built_in">CGRectMake</span>(<span class="number">0</span>, <span class="number">0</span>, size.width, size.height));</span><br><span class="line"></span><br><span class="line"><span class="built_in">CGContextSetInterpolationQuality</span>(context, <span class="number">0.8</span>);</span><br><span class="line"></span><br><span class="line">[<span class="keyword">self</span> drawInRect:drawRect blendMode:kCGBlendModeNormal alpha:<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line"><span class="built_in">UIImage</span> *image = <span class="built_in">UIGraphicsGetImageFromCurrentImageContext</span>();</span><br><span class="line"><span class="built_in">UIGraphicsEndImageContext</span>();</span><br></pre></td></tr></table></figure>
+<p>虽然这样做最终会让内存稳定在80M左右，但是在回落之前，内存会有一小段时间上升至300M左右。也就是说，这种方法在处理10000*10000px的图片时，还是有崩溃的危险的。<br></p>
+<p>然后我又尝试了苹果提供的使用ImageIO进行缩小图片的方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">CGImageRef</span> MyCreateThumbnailImageFromData (<span class="built_in">NSData</span> * data, <span class="keyword">int</span> imageSize)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">CGImageRef</span>        myThumbnailImage = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="built_in">CGImageSourceRef</span>  myImageSource;</span><br><span class="line">    <span class="built_in">CFDictionaryRef</span>   myOptions = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="built_in">CFStringRef</span>       myKeys[<span class="number">3</span>];</span><br><span class="line">    <span class="built_in">CFTypeRef</span>         myValues[<span class="number">3</span>];</span><br><span class="line">    <span class="built_in">CFNumberRef</span>       thumbnailSize;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Create an image source from NSData; no options.</span></span><br><span class="line">    myImageSource = <span class="built_in">CGImageSourceCreateWithData</span>((<span class="built_in">CFDataRef</span>)data,</span><br><span class="line">                                                <span class="literal">NULL</span>);</span><br><span class="line">    <span class="comment">// Make sure the image source exists before continuing.</span></span><br><span class="line">    <span class="keyword">if</span> (myImageSource == <span class="literal">NULL</span>)&#123;</span><br><span class="line">        fprintf(stderr, <span class="string">"Image source is NULL."</span>);</span><br><span class="line">        <span class="keyword">return</span>  <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Package the integer as a  CFNumber object. Using CFTypes allows you</span></span><br><span class="line">    <span class="comment">// to more easily create the options dictionary later.</span></span><br><span class="line">    thumbnailSize = <span class="built_in">CFNumberCreate</span>(<span class="literal">NULL</span>, kCFNumberIntType, &amp;imageSize);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Set up the thumbnail options.</span></span><br><span class="line">    myKeys[<span class="number">0</span>] = kCGImageSourceCreateThumbnailWithTransform;</span><br><span class="line">    myValues[<span class="number">0</span>] = (<span class="built_in">CFTypeRef</span>)kCFBooleanTrue;</span><br><span class="line">    myKeys[<span class="number">1</span>] = kCGImageSourceCreateThumbnailFromImageIfAbsent;</span><br><span class="line">    myValues[<span class="number">1</span>] = (<span class="built_in">CFTypeRef</span>)kCFBooleanTrue;</span><br><span class="line">    myKeys[<span class="number">2</span>] = kCGImageSourceThumbnailMaxPixelSize;</span><br><span class="line">    myValues[<span class="number">2</span>] = (<span class="built_in">CFTypeRef</span>)thumbnailSize;</span><br><span class="line">    </span><br><span class="line">    myOptions = <span class="built_in">CFDictionaryCreate</span>(<span class="literal">NULL</span>, (<span class="keyword">const</span> <span class="keyword">void</span> **) myKeys,</span><br><span class="line">                                   (<span class="keyword">const</span> <span class="keyword">void</span> **) myValues, <span class="number">2</span>,</span><br><span class="line">                                   &amp;kCFTypeDictionaryKeyCallBacks,</span><br><span class="line">                                   &amp; kCFTypeDictionaryValueCallBacks);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Create the thumbnail image using the specified options.</span></span><br><span class="line">    myThumbnailImage = <span class="built_in">CGImageSourceCreateThumbnailAtIndex</span>(myImageSource,</span><br><span class="line">                                                           <span class="number">0</span>,</span><br><span class="line">                                                           myOptions);</span><br><span class="line">    <span class="comment">// Release the options dictionary and the image source</span></span><br><span class="line">    <span class="comment">// when you no longer need them.</span></span><br><span class="line">    <span class="built_in">CFRelease</span>(thumbnailSize);</span><br><span class="line">    <span class="built_in">CFRelease</span>(myOptions);</span><br><span class="line">    <span class="built_in">CFRelease</span>(myImageSource);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Make sure the thumbnail image exists before continuing.</span></span><br><span class="line">    <span class="keyword">if</span> (myThumbnailImage == <span class="literal">NULL</span>)&#123;</span><br><span class="line">        fprintf(stderr, <span class="string">"Thumbnail image not created from image source."</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> myThumbnailImage;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结果和使用UIGraphicsBeginImageContext一样，会有一个内存波峰。<br></p>
+<p>最终还是通过苹果找到了对应的解决方案：<br><a href="https://developer.apple.com/library/ios/samplecode/LargeImageDownsizing/" target="_blank" rel="noopener">LargeImageDownsizing</a>(最终尝试后只对jpg有效)<br><br>在stackoverflow上用蹩脚的书面英文也获取了对应的方案：<br><a href="http://stackoverflow.com/questions/36031808/app-crashed-when-i-display-a-large-image-by-uiimageview/36032154#36032154" target="_blank" rel="noopener">App crashed when I display a large image by UIImageView</a></p>
+<p>不过最终我还是采用了和安卓端一样的处理方法（考虑到后台以后会进行图片裁剪）。因为是针对所有显示图片的地方，所以我给UIImageView添加了一个分类来对图片大小进行限制：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">UIImageView</span> (<span class="title">Extension</span>)</span></span><br><span class="line">+ (<span class="keyword">void</span>)load</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">    <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        Class <span class="keyword">class</span> = [<span class="keyword">self</span> <span class="keyword">class</span>];</span><br><span class="line">        </span><br><span class="line">        SEL origionSel = <span class="keyword">@selector</span>(setImage:);</span><br><span class="line">        SEL swizzlingSel = <span class="keyword">@selector</span>(bq_setImage:);</span><br><span class="line">        Method origionMethod = class_getInstanceMethod(<span class="keyword">class</span>, origionSel);</span><br><span class="line">        Method swizzlingMethod = class_getInstanceMethod(<span class="keyword">class</span>, swizzlingSel);</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">BOOL</span> hasAdded = class_addMethod(<span class="keyword">class</span>, origionSel, method_getImplementation(swizzlingMethod), method_getTypeEncoding(swizzlingMethod));</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (hasAdded) &#123;</span><br><span class="line">            class_replaceMethod(<span class="keyword">class</span>, swizzlingSel, method_getImplementation(origionMethod), method_getTypeEncoding(origionMethod));</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            method_exchangeImplementations(origionMethod, swizzlingMethod);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)bq_setImage:(<span class="built_in">UIImage</span> *)image &#123;</span><br><span class="line">    <span class="built_in">CGFloat</span> maxImageWH = <span class="number">3000</span>;</span><br><span class="line">    <span class="keyword">if</span> (image.size.width &gt; maxImageWH || image.size.height &gt; maxImageWH) &#123;</span><br><span class="line">        image = <span class="keyword">self</span>.placeholder;</span><br><span class="line">    &#125;</span><br><span class="line">    [<span class="keyword">self</span> bq_setImage:image];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)setPlaceholder:(<span class="built_in">UIImage</span> *)placeholder &#123;</span><br><span class="line">    objc_setAssociatedObject(<span class="keyword">self</span>, <span class="keyword">@selector</span>(placeholder), placeholder, OBJC_ASSOCIATION_RETAIN);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="built_in">UIImage</span> *)placeholder &#123;</span><br><span class="line">    <span class="keyword">return</span> objc_getAssociatedObject(<span class="keyword">self</span>, _cmd);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>在宽度或者高度可能超过3000的地方，提前设置placeholder，否则显示的将是一个空白UIImageView。<br><br>对于苹果提供的那种方法，后面再继续研究下，和<a href="https://github.com/ibireme/YYWebImage" target="_blank" rel="noopener">YYWebImage</a>的显示方式有点像，都是进行逐步显示，而不是直接对整个原图进行渲染。</p>
+<h2 id="2016-9-12-新动态"><a href="#2016-9-12-新动态" class="headerlink" title="2016-9-12 新动态"></a>2016-9-12 新动态</h2><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="built_in">UIGraphicsBeginImageContext</span>(size);</span><br><span class="line"><span class="built_in">CGContextRef</span> context = <span class="built_in">UIGraphicsGetCurrentContext</span>();</span><br><span class="line"><span class="built_in">CGContextClearRect</span>(context, <span class="built_in">CGRectMake</span>(<span class="number">0</span>, <span class="number">0</span>, size.width, size.height));</span><br><span class="line"></span><br><span class="line"><span class="built_in">CGContextSetInterpolationQuality</span>(context, <span class="number">0.8</span>);</span><br><span class="line"></span><br><span class="line">[<span class="keyword">self</span> drawInRect:drawRect blendMode:kCGBlendModeNormal alpha:<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line"><span class="built_in">UIImage</span> *image = <span class="built_in">UIGraphicsGetImageFromCurrentImageContext</span>();</span><br><span class="line"><span class="built_in">UIGraphicsEndImageContext</span>();</span><br></pre></td></tr></table></figure>
+<p>以上代码针对jpg是有效的，针对png会出现原来说的那种情况。</p>
+<h2 id="2016-9-23-新动态＝＝，我傻逼了！"><a href="#2016-9-23-新动态＝＝，我傻逼了！" class="headerlink" title="2016-9-23 新动态＝＝，我傻逼了！"></a>2016-9-23 新动态＝＝，我傻逼了！</h2><p>嗯，苹果提供的方法是可行的，下面代码创建字典的时候漏了一个限定图片大小的键值对。＝＝|</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">CGImageRef</span> MyCreateThumbnailImageFromData (<span class="built_in">NSData</span> * data, <span class="keyword">int</span> imageSize)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">CGImageRef</span>        myThumbnailImage = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="built_in">CGImageSourceRef</span>  myImageSource;</span><br><span class="line">    <span class="built_in">CFDictionaryRef</span>   myOptions = <span class="literal">NULL</span>;</span><br><span class="line">    <span class="built_in">CFStringRef</span>       myKeys[<span class="number">3</span>];</span><br><span class="line">    <span class="built_in">CFTypeRef</span>         myValues[<span class="number">3</span>];</span><br><span class="line">    <span class="built_in">CFNumberRef</span>       thumbnailSize;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Create an image source from NSData; no options.</span></span><br><span class="line">    myImageSource = <span class="built_in">CGImageSourceCreateWithData</span>((<span class="built_in">CFDataRef</span>)data,</span><br><span class="line">                                                <span class="literal">NULL</span>);</span><br><span class="line">    <span class="comment">// Make sure the image source exists before continuing.</span></span><br><span class="line">    <span class="keyword">if</span> (myImageSource == <span class="literal">NULL</span>)&#123;</span><br><span class="line">        fprintf(stderr, <span class="string">"Image source is NULL."</span>);</span><br><span class="line">        <span class="keyword">return</span>  <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Package the integer as a  CFNumber object. Using CFTypes allows you</span></span><br><span class="line">    <span class="comment">// to more easily create the options dictionary later.</span></span><br><span class="line">    thumbnailSize = <span class="built_in">CFNumberCreate</span>(<span class="literal">NULL</span>, kCFNumberIntType, &amp;imageSize);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Set up the thumbnail options.</span></span><br><span class="line">    myKeys[<span class="number">0</span>] = kCGImageSourceCreateThumbnailWithTransform;</span><br><span class="line">    myValues[<span class="number">0</span>] = (<span class="built_in">CFTypeRef</span>)kCFBooleanTrue;</span><br><span class="line">    myKeys[<span class="number">1</span>] = kCGImageSourceCreateThumbnailFromImageIfAbsent;</span><br><span class="line">    myValues[<span class="number">1</span>] = (<span class="built_in">CFTypeRef</span>)kCFBooleanTrue;</span><br><span class="line">    myKeys[<span class="number">2</span>] = kCGImageSourceThumbnailMaxPixelSize;</span><br><span class="line">    myValues[<span class="number">2</span>] = (<span class="built_in">CFTypeRef</span>)thumbnailSize;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 就是这里，numValues应该是3，不是2。＝＝</span></span><br><span class="line">    myOptions = <span class="built_in">CFDictionaryCreate</span>(<span class="literal">NULL</span>, (<span class="keyword">const</span> <span class="keyword">void</span> **) myKeys,</span><br><span class="line">                                   (<span class="keyword">const</span> <span class="keyword">void</span> **) myValues, <span class="number">3</span>,</span><br><span class="line">                                   &amp;kCFTypeDictionaryKeyCallBacks,</span><br><span class="line">                                   &amp; kCFTypeDictionaryValueCallBacks);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Create the thumbnail image using the specified options.</span></span><br><span class="line">    myThumbnailImage = <span class="built_in">CGImageSourceCreateThumbnailAtIndex</span>(myImageSource,</span><br><span class="line">                                                           <span class="number">0</span>,</span><br><span class="line">                                                           myOptions);</span><br><span class="line">    <span class="comment">// Release the options dictionary and the image source</span></span><br><span class="line">    <span class="comment">// when you no longer need them.</span></span><br><span class="line">    <span class="built_in">CFRelease</span>(thumbnailSize);</span><br><span class="line">    <span class="built_in">CFRelease</span>(myOptions);</span><br><span class="line">    <span class="built_in">CFRelease</span>(myImageSource);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// Make sure the thumbnail image exists before continuing.</span></span><br><span class="line">    <span class="keyword">if</span> (myThumbnailImage == <span class="literal">NULL</span>)&#123;</span><br><span class="line">        fprintf(stderr, <span class="string">"Thumbnail image not created from image source."</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> myThumbnailImage;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>还有一篇关于这个的文章<a href="http://pulkitgoyal.in/resizing-high-resolution-images-on-ios-without-memory-issues/" target="_blank" rel="noopener">resizing-high-resolution-images-on-ios-without-memory-issues</a>。</p>
+<p>大体的意思就是有以下几点:</p>
+<ul>
+<li>解码PNG占用了高内存</li>
+<li>CoreGraphic缩放图片时，还是会对图片进行解码</li>
+<li>需要在不解码的情况下对图片进行缩放</li>
+<li>ImageIO的ImageSource可以满足这一点，不解码并可以缩放</li>
+</ul>
+<p>代码差不多是这样：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">CGImageRef</span> thumbnailImageWithData(<span class="built_in">NSData</span> *data, <span class="built_in">NSInteger</span> imageSize) &#123;</span><br><span class="line">    <span class="built_in">CGImageSourceRef</span> imageSource = <span class="built_in">CGImageSourceCreateWithData</span>((<span class="built_in">CFDataRef</span>)data, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="built_in">CFDictionaryRef</span> options =</span><br><span class="line">        (__bridge <span class="built_in">CFDictionaryRef</span>) @&#123;</span><br><span class="line">                                     (<span class="keyword">id</span>) kCGImageSourceCreateThumbnailWithTransform : @YES,</span><br><span class="line">                                     (<span class="keyword">id</span>) kCGImageSourceCreateThumbnailFromImageAlways : @YES,</span><br><span class="line">                                     (<span class="keyword">id</span>) kCGImageSourceThumbnailMaxPixelSize : @(imageSize)</span><br><span class="line">                                     &#125;;</span><br><span class="line">    <span class="built_in">CGImageRef</span> thumbnail = <span class="built_in">CGImageSourceCreateThumbnailAtIndex</span>(imageSource, <span class="number">0</span>, options);</span><br><span class="line">    <span class="built_in">CFRelease</span>(imageSource);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> thumbnail;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样的话，最终的解决方案差不多可以是这样的：</p>
+<ul>
+<li>用MethodSwizzling替换UIImageView的setImage方法</li>
+<li>然后判断当前图片大小，如果大于某个限制，就用上面的函数缩放图片</li>
+</ul>
+<p>嗯，就酱紫。还是要理解原理，然后细心点。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Crash/" rel="tag"># Crash</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/03/09/2016-03-09-ioszhi-shi-sui-pian-wu/" rel="next" title="iOS知识碎片五">
+                <i class="fa fa-chevron-left"></i> iOS知识碎片五
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/04/23/2016-04-23-geng-jia-kuai-su-di-she-zhi-frame/" rel="prev" title="更加快速地设置Frame">
+                更加快速地设置Frame <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#2016-9-12-新动态"><span class="nav-number">1.</span> <span class="nav-text">2016-9-12 新动态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2016-9-23-新动态＝＝，我傻逼了！"><span class="nav-number">2.</span> <span class="nav-text">2016-9-23 新动态＝＝，我傻逼了！</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/';
+          this.page.identifier = '2016/03/17/2016-03-17-sdwebimageshe-zhi-da-chi-cun-tu-pian-beng-kui-wen-ti/';
+          this.page.title = 'SDWebImage设置大尺寸图片崩溃问题';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

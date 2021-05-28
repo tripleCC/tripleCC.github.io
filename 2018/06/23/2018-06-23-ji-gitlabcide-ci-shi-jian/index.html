@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="组件化,GitLab CI,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="目前掌柜团队内部缺少组件发布平台，每次 App 发版都需要组件负责人去发布自己名下涉及的组件。这中间存在组件间依赖以及发布时间差问题，上层组件需要依赖下层组件的发布，负责人之间沟通起来极为耗时。所以团队暂时没有限制私有源仓库的推送权限，当发布时间比较紧时，方便负责人绕过 lint， 直接推送 podspec 到私有源仓库。 虽然这种发布方式能节省一部分时间，但是容易出现下层组件 lint 失败向上">
+<meta name="keywords" content="组件化,GitLab CI">
+<meta property="og:type" content="article">
+<meta property="og:title" content="火掌柜 iOS 团队 GitLab CI 集成实践">
+<meta property="og:url" content="https://triplecc.github.io/2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="目前掌柜团队内部缺少组件发布平台，每次 App 发版都需要组件负责人去发布自己名下涉及的组件。这中间存在组件间依赖以及发布时间差问题，上层组件需要依赖下层组件的发布，负责人之间沟通起来极为耗时。所以团队暂时没有限制私有源仓库的推送权限，当发布时间比较紧时，方便负责人绕过 lint， 直接推送 podspec 到私有源仓库。 虽然这种发布方式能节省一部分时间，但是容易出现下层组件 lint 失败向上">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/cicd_pipeline_infograph.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180715_13.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180718_1.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180712_4.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180713_5.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180713_6.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180713_11.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180713_10.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180713_9.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180713_12.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180711_2.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180711_1.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20180711_3.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="火掌柜 iOS 团队 GitLab CI 集成实践">
+<meta name="twitter:description" content="目前掌柜团队内部缺少组件发布平台，每次 App 发版都需要组件负责人去发布自己名下涉及的组件。这中间存在组件间依赖以及发布时间差问题，上层组件需要依赖下层组件的发布，负责人之间沟通起来极为耗时。所以团队暂时没有限制私有源仓库的推送权限，当发布时间比较紧时，方便负责人绕过 lint， 直接推送 podspec 到私有源仓库。 虽然这种发布方式能节省一部分时间，但是容易出现下层组件 lint 失败向上">
+<meta name="twitter:image" content="https://triplecc.github.io/images/cicd_pipeline_infograph.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/">
+
+
+
+
+
+  <title>火掌柜 iOS 团队 GitLab CI 集成实践 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">火掌柜 iOS 团队 GitLab CI 集成实践</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-23T02:42:50+00:00">
+                2018-06-23
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ci/" itemprop="url" rel="index">
+                    <span itemprop="name">ci</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>目前掌柜团队内部缺少组件发布平台，每次 App 发版都需要组件负责人去发布自己名下涉及的组件。这中间存在组件间依赖以及发布时间差问题，上层组件需要依赖下层组件的发布，负责人之间沟通起来极为耗时。所以团队暂时没有限制私有源仓库的推送权限，当发布时间比较紧时，方便负责人绕过 lint， 直接推送 podspec 到私有源仓库。</p>
+<p>虽然这种发布方式能节省一部分时间，但是容易出现下层组件 lint 失败向上层传递的情况。久而久之，lint 不通过的组件将会越来越多。为了尽量避免这种情况的发生，引入 CI 对组件进行 lint 监测是个不错的选择。</p>
+<p>以上就是掌柜团队当初引入 CI 的初衷。不过 CI 能带来的便利远不止如此，当然，这都是后话了。</p>
+<a id="more"></a>
+<h2 id="GitLab-CI"><a href="#GitLab-CI" class="headerlink" title="GitLab CI"></a>GitLab CI</h2><blockquote>
+<p>本文使用 GitLab Community Edition 10.4.0 版本</p>
+</blockquote>
+<p><img src="/images/cicd_pipeline_infograph.png" alt="cicd_pipeline_infograph"></p>
+<p>GitLab 在 8.0 版本之后，就集成了 GitLab CI ，随着版本的迭代，其功能越来越强大。使用者只需要在仓库根目录下 （可以通过仓库的 Setting -&gt; CI/CD -&gt; General pipelines settings -&gt; Custom CI config path 设置加载路径，默认根目录）添加 <code>.gitlab-ci.yml</code> 配置文件，并且存在可用的 GitLab Runner ，就可以实现持续集成。</p>
+<p>如果在仓库中没有发现 CI/CD 设置项，则需要到 Setting -&gt; CI/CD -&gt; Permissions -&gt; Pipeline 打开设置。</p>
+<p>首先需要明确的是和 GitLab CI 任务相关的几个概念： pipeline、stage、job。</p>
+<h3 id="pipeline"><a href="#pipeline" class="headerlink" title="pipeline"></a>pipeline</h3><p>pipeline 实际是一组 stages 中执行 job 的集合，代表着使用者触发的一次构建 。任何提交，包括 MR 在符合配置文件要求的情况下都可以触发 pipeline，其在网页中的体现如下：</p>
+<p><img src="/images/Snip20180715_13.png" alt="pipeline 示意图"></p>
+<h3 id="stage"><a href="#stage" class="headerlink" title="stage"></a>stage</h3><p>pipeline 中的 jobs 按照构建阶段进行分类，这些分类就是一个个 stage 。如 pipeline 示意图所示，一个 pipeline 中可以定义多个 stage ，比如 <code>build</code>,  <code>test</code>,  <code>staging</code>,  <code>production</code>，其对应配置语法如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">stages:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">build</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">test</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">staging</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">production</span></span><br></pre></td></tr></table></figure>
+<p>stage 的触发顺序和 <code>stages</code> 字段值定义的顺序一致，并且只有完成当前 stage ， pipeline 才会触发下一个 stage ，如果 stage 失败了，则下一个 stage 将不会被触发，完成所有的 stage 表示此次 pipeline 构建成功。</p>
+<h3 id="job"><a href="#job" class="headerlink" title="job"></a>job</h3><p>job 表示 stage 中实际执行的任务。如 pipeline 示意图所示，一个 stage 中可以有多个 job，比如 Test stage 的 <code>test1</code>、<code>test2</code>  job，其对应配置语法如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="attr">test1:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">Test</span></span><br><span class="line"><span class="attr">  script:</span> </span><br><span class="line"><span class="bullet">    -</span> <span class="string">xxxx</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">xxxx</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">xxxx</span></span><br><span class="line">    </span><br><span class="line"><span class="attr">test2:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">Test</span></span><br><span class="line"><span class="attr">  script:</span> </span><br><span class="line"><span class="bullet">    -</span> <span class="string">xxxx</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">xxxx</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">xxxx</span></span><br></pre></td></tr></table></figure>
+<p>在有足够 runner （job 执行宿主机） 的情况下，同个 stage 中的 job 是并行的，当 stage 中的所有 job 都执行成功后，该 stage 才算完成，否则视为失败。</p>
+<h2 id="GitLab-Runner"><a href="#GitLab-Runner" class="headerlink" title="GitLab Runner"></a>GitLab Runner</h2><blockquote>
+<p>下文操作基于 macOS 系统</p>
+</blockquote>
+<p><img src="/images/Snip20180718_1.png" alt="how_does_gitlab_ci_work"></p>
+<p>GitLab Runner 和 GitLab 的关系大体如上所示， GitLab Runner 内部会起一个无限循环，根据 <code>check_interval</code> 字段设置的时间间隔，去 GitLab 请求需要执行的任务。更详细的信息可以查看 <a href="https://docs.gitlab.com/ce/ci/runners/#how-shared-runners-pick-jobs" target="_blank" rel="noopener">How shared Runners pick jobs </a>，<a href="https://gitlab.com/gitlab-org/gitlab-runner/blob/master/docs/configuration/advanced-configuration.md#how-check_interval-works" target="_blank" rel="noopener">How check_interval works</a>。</p>
+<p>GitLab Runner 按服务对象可划分 shared runner  和 specific runner ，10.8 版本后还有 group runner，三者应用场景如下：</p>
+<ul>
+<li><strong>shared runner</strong> <ul>
+<li>主要针对要求配置相似的工程，可以运行不同仓库上的任务。</li>
+</ul>
+</li>
+<li><strong>specific runner</strong><ul>
+<li>主要针对要求特殊配置的工程，只能运行特定仓库上的任务。</li>
+</ul>
+</li>
+<li><strong>group runner</strong> <ul>
+<li>主要针对某个分组下的所有工程（10.8 及以后版本才有）。</li>
+</ul>
+</li>
+</ul>
+<p>因为团队内部对工程进行了组件化，所以 specific runner 是比较合适的选择，也利于后期向其他业务线推广 CI 。  specific runner 注册需要  shared-runner token ，这个 token 只有 admin 账户可见，一般找 GitLab 的管理人员获取即可。以下为注册成功页（工程页 -&gt; CI / CD -&gt; Runners setting）：</p>
+<p><img src="/images/Snip20180712_4.png" alt="Snip20180712_4"></p>
+<p>左边为注册的 specific runner ，使用上方显示的 <code>npeoZhFa1nHYvTAsf7f_</code> token 即可，右边即是注册成功的 shared runner，运行状态为绿色表示正在运行。</p>
+<p>接下来看下如何在 macOS 上安装注册 GitLab Runner。</p>
+<h3 id="安装-Gitlab-Runner"><a href="#安装-Gitlab-Runner" class="headerlink" title="安装 Gitlab Runner"></a>安装 Gitlab Runner</h3><blockquote>
+<p> In GitLab Runner 10, the name of the executable was renamed from<em> </em>gitlab-ci-multi-runner to gitlab-runner</p>
+</blockquote>
+<p>通过 homebrew 安装：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brew install gitlab-runner</span><br></pre></td></tr></table></figure>
+<p>随着 GitLab Runner 10 的发布，其可执行文件已经从 gitlab-ci-multi-runner 更名为 gitlab-runner，如果需要访问旧版本，可以访问<a href="https://gitlab-ci-multi-runner-downloads.s3.amazonaws.com/latest/index.html" target="_blank" rel="noopener">这里</a>下载手动安装 。</p>
+<h3 id="注册-Gitlab-Runner"><a href="#注册-Gitlab-Runner" class="headerlink" title="注册 Gitlab Runner"></a>注册 Gitlab Runner</h3><p>1、注册 runner </p>
+<blockquote>
+<p>Currently, the only proven to work mode for macOS is running service in user-mode.</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gitlab-runner register</span><br></pre></td></tr></table></figure>
+<p>对应的反向操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gitlab-runner unregister -u url -t token</span><br><span class="line"></span><br><span class="line"># url 为下一个步骤输入值</span><br><span class="line"># token 可以从网页端或者配置文件中查看</span><br></pre></td></tr></table></figure>
+<p>截止到  GitLab Runner 10， MacOS 中已验证可行的运行模式是用户模式，使用系统模式 <strong>(sudo)</strong> 注册的 Runner 会一直处于 Stuck 状态。</p>
+<p>2、输入 GitLab URL 地址 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com )</span><br><span class="line">&gt; GitLab URL 地址</span><br></pre></td></tr></table></figure>
+<p>3、输入注册 Runner 需要的 Token </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Please enter the gitlab-ci token for this runner</span><br><span class="line">&gt; Token</span><br></pre></td></tr></table></figure>
+<p>Token 分为 special token 和 shared token，前者在项目设置页可以拿到，后者只能联系 GitLab 管理员或者有 Admin 权限的情况下获得。注册后，会分别成为 special runner 和 shared runner。</p>
+<p>4、输入标志 Runner 的 Tags </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Please enter the gitlab-ci tags for this runner (comma separated):</span><br><span class="line">iOS,Andriod</span><br></pre></td></tr></table></figure>
+<p><code>.gitlab-ci.yml</code> 中可以设置 <strong>tags</strong> 字段来声明，当前任务只在拥有匹配 Tags 的 Runner 上运行。比如 iOS 编译阶段只能在 Mac Runner 上运行，那么就可以设置这个 Runner 的 Tags 为 <strong>‘iOS’</strong>，并且在 iOS 工程中在字段 <strong>tags </strong>中，添加<strong>‘iOS’</strong> 值。 Tags 最好不要随便命名，遵循适当的命名规则会让后期 CI 的维护轻松许多。</p>
+<p>5、是否允许运行没有设置 tags 的任务 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Whether to run untagged jobs [true/false]:</span><br><span class="line">[false]: false</span><br></pre></td></tr></table></figure>
+<p>可以在 GitLab 界面上更改 ，一般为 false。</p>
+<p>6、是否锁定当前工程 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Whether to lock Runner to current project [true/false]:</span><br><span class="line">[true]: true</span><br></pre></td></tr></table></figure>
+<p>在 Runner 是 special 的情况下比较有用，可以在 GitLab 界面上更改。</p>
+<p>7、Runner 执行者 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Please enter the executor: ssh, docker+machine, docker-ssh+machine, kubernetes, docker, parallels, virtualbox, docker-ssh, shell:</span><br><span class="line">shell</span><br></pre></td></tr></table></figure>
+<p>一般为 shell。</p>
+<p>8、选择 docker 为执行者时，需要设置默认的 docker image </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Please enter the Docker image (eg. ruby:2.1):</span><br><span class="line">alpine:latest</span><br></pre></td></tr></table></figure>
+<p>非 docker 执行者，没有这一步。</p>
+<h3 id="启动-关闭-Gitlab-Runner"><a href="#启动-关闭-Gitlab-Runner" class="headerlink" title="启动/关闭 Gitlab Runner"></a>启动/关闭 Gitlab Runner</h3><p>执行以下命令安装 runner 服务，并且启动它：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gitlab-runner install [--working-directory]</span><br><span class="line">gitlab-runner start</span><br></pre></td></tr></table></figure>
+<p>如已经启动 runner 服务，添加了新的 runner ，直接执行 <code>gitlab-runner start</code> 即可。</p>
+<p>关闭操作：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gitlab-runner stop</span><br><span class="line">gitlab-runner uninstall</span><br></pre></td></tr></table></figure>
+<p>需要注意的是， 在不加 <code>--working-directory</code>  参数的情况下，runner 工作目录默认为执行 <code>install</code> 命令目录 ，触发了任务后，runner 会在此目录下创建 builds 文件夹 。</p>
+<p>更多关于 runner 的命令，可以查看 <a href="https://docs.gitlab.com/runner/commands/README.html" target="_blank" rel="noopener">GitLab Runner Commands</a></p>
+<h3 id="配置GitLab-Runner"><a href="#配置GitLab-Runner" class="headerlink" title="配置GitLab Runner"></a>配置GitLab Runner</h3><p>注册后 runner 的配置信息默认保存在  <code>~/.gitlab-runner/config.toml</code> 文件中，其文件格式如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">concurrent = 1</span><br><span class="line">check_interval = 0</span><br><span class="line"></span><br><span class="line">[[runners]]</span><br><span class="line">  name = &quot;iOS &amp; Android CI Runner on packboy&quot;</span><br><span class="line">  url = &quot;http://git.2dfire-inc.com/&quot;</span><br><span class="line">  token = &quot;1ff160dc4d8f9c36e9b138adc4712a&quot;</span><br><span class="line">  executor = &quot;shell&quot;</span><br><span class="line">  output_limit = 4096</span><br><span class="line">  [runners.cache]</span><br><span class="line">  </span><br><span class="line">[[runners]]</span><br><span class="line">  name = &quot;xxxx&quot;</span><br><span class="line">  ...</span><br><span class="line">  [runners.cache]</span><br></pre></td></tr></table></figure>
+<p>文件分为 <code>Global Section</code> 和  <code>[[runners]] Section</code> 两部分，这里只说下常用字段，想要了解更多信息，可以查看 <a href="https://docs.gitlab.com/runner/configuration/advanced-configuration.html" target="_blank" rel="noopener">GitLab Runner advanced configuration</a> 。</p>
+<p><code>Global Section</code>  常用部分：</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>concurrent</code></td>
+<td>可并发执行的最大任务数，0 不代表无限制</td>
+</tr>
+<tr>
+<td><code>log_level</code></td>
+<td>Log 等级  (可选择: debug, info, warn, error, fatal, panic)。优先级比通过命令行 —debug， -l 或 –log-level 设置低</td>
+</tr>
+<tr>
+<td><code>check_interval</code></td>
+<td>设置轮询新任务的周期，单位（秒）。默认值为 3 秒，如果设置为 0 或者比 3 小，此字段使用默认值。</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+<p>这里需要注意的是， <a href="http://blog.cocoapods.org/CocoaPods-1.3.0/" target="_blank" rel="noopener">CocoaPods 1.3.0 Release Blog</a> 在  <a href="http://blog.cocoapods.org/CocoaPods-1.3.0/" target="_blank" rel="noopener">Notable Enhancements</a>  一节指出：</p>
+<blockquote>
+<p>Each lint execution now runs in a unique temp folder. This allows for running multiple lint processes in parallel, for example within a CI environment.</p>
+</blockquote>
+<p>也就是说， 在 1.3.0 版本之前，由于共用了承载 lint 操作的文件夹， CocoaPods 并不支持多个组件同时进行 lint。这就需要我们在设置 runner 的 concurrenct 配置时，确认实际使用的 CocoaPods 版本，如果低于 1.3.0 ，concurrenct 必须设置成 1 。</p>
+<p> <code>[[runners]] Section</code> 常用部分</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>runner 名称</td>
+</tr>
+<tr>
+<td><code>url</code></td>
+<td>GitLab URL</td>
+</tr>
+<tr>
+<td><code>token</code></td>
+<td>runner 专有 token (不是注册 runner 时输入的 GitLab token)，unregister 时可以使用</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>这个 token 下可并发执行的最大任务数，默认 0 ，表示无限制（<strong>需要结合上述 CocoaPods 1.3.0 版本以下的限制考虑</strong>）</td>
+</tr>
+<tr>
+<td><code>builds_dir</code></td>
+<td>runner 工作目录，默认会在 <code>install</code> 目录下创建 builds 文件夹</td>
+</tr>
+<tr>
+<td><code>cache_dir</code></td>
+<td>cache 保存目录</td>
+</tr>
+<tr>
+<td><code>environment</code></td>
+<td>添加/覆盖环境变量，如 <code>environment = [&quot;ENV=value&quot;, &quot;LC_ALL=en_US.UTF-8&quot;]</code></td>
+</tr>
+<tr>
+<td><code>output_limit</code></td>
+<td>输出 log 大小限制，默认 4096 (4M)，建议设置成 4096000</td>
+</tr>
+<tr>
+<td><code>pre_clone_script</code></td>
+<td>clone 之前执行的脚本，可以用来调整 Git 客户端配置</td>
+</tr>
+<tr>
+<td><code>pre_build_script</code></td>
+<td>clone 之后，build 之前执行的脚本</td>
+</tr>
+<tr>
+<td><code>post_build_script</code></td>
+<td>build 之后，<code>after_script</code> 之前执行的脚本</td>
+</tr>
+<tr>
+<td><code>clone_url</code></td>
+<td>自定义 clone 仓库的 url</td>
+</tr>
+</tbody>
+</table>
+<p><br></p>
+<h2 id="配置-gitlab-ci-yml"><a href="#配置-gitlab-ci-yml" class="headerlink" title="配置 .gitlab-ci.yml"></a>配置 .gitlab-ci.yml</h2><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">before_script:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">export</span> <span class="string">LANG=en_US.UTF-8</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">export</span> <span class="string">LANGUAGE=en_US:en</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">export</span> <span class="string">LC_ALL=en_US.UTF-8</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">pwd</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">git</span> <span class="string">clone</span> <span class="string">git@git.2dfire-inc.com:ios/ci-yaml-shell.git</span> </span><br><span class="line"><span class="bullet">  -</span> <span class="string">ci-yaml-shell/before_shell_executor.sh</span></span><br><span class="line"></span><br><span class="line"><span class="attr">after_script:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">rm</span> <span class="bullet">-fr</span> <span class="string">ci-yaml-shell</span></span><br><span class="line"></span><br><span class="line"><span class="attr">stages:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">check</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">lint</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">test</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">package</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">publish</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">report</span></span><br><span class="line"></span><br><span class="line"><span class="attr">component_check:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">check</span></span><br><span class="line"><span class="attr">  script:</span> </span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/component_check_executor.rb</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">master</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/^release.*$/</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">CI</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOS</span></span><br><span class="line">    </span><br><span class="line"><span class="attr">lib_lint:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">lint</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">master</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/^release.*$/</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">CI</span></span><br><span class="line"><span class="attr">  retry:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">  script:</span> </span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/lib_lint_executor.sh</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOS</span></span><br><span class="line">    </span><br><span class="line"><span class="attr">oc_lint:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">lint</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">master</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">CI</span></span><br><span class="line"><span class="attr">  retry:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">  script:</span> </span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/oclint_executor.sh</span> <span class="string">lint_result</span></span><br><span class="line"><span class="attr">  after_script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">cat</span> <span class="string">lint_result</span> <span class="string">| python -m json.tool</span></span><br><span class="line"><span class="string"></span><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOS</span></span><br><span class="line">    </span><br><span class="line"><span class="attr">unit_test:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">test</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">master</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">CI</span></span><br><span class="line"><span class="attr">  retry:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">  script:</span> </span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/unit_test_executor.sh</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOS</span></span><br><span class="line">    </span><br><span class="line"><span class="attr">package_framework:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">package</span> </span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">  script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/framework_pack_executor.sh</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOS</span></span><br><span class="line">    </span><br><span class="line"><span class="attr">publish_pod:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">publish</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">  retry:</span> <span class="number">2</span></span><br><span class="line"><span class="attr">  script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/publish_executor.sh</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOS</span></span><br><span class="line">    </span><br><span class="line"><span class="attr">report_to_director:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">report</span></span><br><span class="line"><span class="attr">  script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/report_executor.sh</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">master</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">  when:</span> <span class="string">on_failure</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOS</span></span><br></pre></td></tr></table></figure>
+<p>以上是掌柜团队目前采用的 <code>.gitlab-ci.yml</code>  配置，涉及的关键字在官方文档 <a href="https://docs.gitlab.com/ce/ci/yaml/README.html" target="_blank" rel="noopener">Configuration of your jobs with .gitlab-ci.yml</a> 有非常详细的介绍，这里不做赘述，只说下这样配置的几点考虑。</p>
+<p>1、所有 stage 脚本，都保存在 ci-yaml-shell 仓库中，在执行 global <code>before_script</code> 时下载（通过 ssh ，不受 GitLab CI 权限影响）。这是因为工程在组件化后会产生非常多的仓库 ，这样做有利于 CI 脚本的统一修改和管理，只要在每个仓库的 <code>.gitlab-ci.yml</code>配置中预留足够多的入口即可，后期修改调试比较方便。比如需要新增 <code>xcpretty</code> 依赖，只需在 <code>before_shell_executor.sh</code> 脚本中添加 <code>gem install xcpretty --no-ri --no-rdoc</code>  即可辐射到所有组件。</p>
+<p>2、考虑到组件集成 CI 时，最好能创建相应的调试分支，我们在 <code>check</code>、<code>test</code>、<code>lint</code> 三个 stage 的 <code>only</code> 字段中都添加了 <code>CI</code> 分支。由于在调试阶段，此分支的 CI 执行结果并且不会推送至钉钉。<code>package</code> 和 <code>publish</code> 已经是 CD 阶段了，所以只在提交 tags 时触发。</p>
+<p>3、掌柜团队采用 GitFlow 工作流 （在组件较多的情况下，维护 master 和 develop 两个相似分支的工作量比较大，后期会考虑优化工作流，比如采用 GitLab Flow，或者自定义 GitHub Flow），在提交 MR （release -&gt; master） 时需要触发 CI ，当 CI 成功后方可合并，所以在 <code>component_check</code> 和 <code>lib_lint</code>  两个 job 的 <code>only</code> 字段中都添加了 <code>/^release.*$/</code> 正则。</p>
+<p><img src="/images/Snip20180713_5.png" alt="Snip20180713_5"></p>
+<p>4、<code>report</code> stage 负责在 CI 执行失败后，推送钉钉消息 @ 相应的负责人和触发者，这块思路可以参照 <a href="http://triplecc.github.io/blog/2017-11-08-chuang-jian-cocoapodscha-jian/">编写自己的 CocoaPods 插件</a>，后期我也重构并优化了这块代码。 <code>publish</code> stage 在发布组件成功后，同样会推送钉钉消息。</p>
+<p><img src="/images/Snip20180713_6.png" alt="Snip20180713_6"></p>
+<p>5、stage 的失败条件是任务<strong>最后一个执行的命令</strong>返回非零结果 (<strong>$?</strong>)，所以在编写 shell 脚本的时候需要注意，如果有 shell 命令执行抛错了，要提前 exit ：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># framework_pack_executor.sh</span></span><br><span class="line"></span><br><span class="line">...</span><br><span class="line">ruby $(dirname <span class="string">"<span class="variable">$0</span>"</span>)/validate_specification.rb || &#123; <span class="built_in">exit</span> 1; &#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>否则即使 shell 脚本中间有某些命令执行失败，但最后一个命令执行成功，stage 最终结果也会是成功的。如果是 ruby 脚本，比如上方配置的 <code>component_check</code>  任务 ，就可以规避这个问题，直接 <code>raise</code> 即可。</p>
+<p>6、由于所有配置都在  ci-yaml-shell  仓库中，会导致安装的 gem 依赖都是一致的，如果其他业务线使用不同版本的CocoaPods ，可能会导致 CI 报错。所以组件仓库可以添加自己的 Gemfile ，定制 gem 依赖，脚本会对这种情况进行兼容 ：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># publish_executor.sh</span></span><br><span class="line">...</span><br><span class="line"><span class="keyword">if</span> [[ -f <span class="string">"Gemfile"</span> ]]; <span class="keyword">then</span> </span><br><span class="line">  bundle install</span><br><span class="line">  bundle <span class="built_in">exec</span> pod binary publish --verbose</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">  pod $(pod_gem_version) binary publish --verbose</span><br><span class="line"><span class="keyword">fi</span></span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>7、<code>component_check</code> 这个入口主要对组件进行一些简单快速的校验，比如我们针对目前掌柜团队组件中存在的一些问题，设置的 podspec 校验：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># validate_specification.rb</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">'cocoapods'</span></span><br><span class="line"></span><br><span class="line">spec_file = Pathname.glob(<span class="string">'*.podspec'</span>).first</span><br><span class="line"></span><br><span class="line">raise <span class="string">"can`t find specfile at <span class="subst">#&#123;Dir.pwd&#125;</span>"</span> <span class="keyword">if</span> spec_file.<span class="literal">nil</span>?</span><br><span class="line"></span><br><span class="line">spec = Pod::Specification.from_file(spec_file)</span><br><span class="line"></span><br><span class="line">Pod::UI.section(<span class="string">'校验依赖限制'</span>) <span class="keyword">do</span></span><br><span class="line">  none_requirement_dependencies = spec.dependencies.select <span class="keyword">do</span> <span class="params">|dep|</span></span><br><span class="line">    dep.requirement.none?</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  fire_source = Pod::Config.instance.sources_manager.all.select <span class="keyword">do</span> <span class="params">|s|</span></span><br><span class="line">    s.url.downcase.<span class="keyword">include</span>?(<span class="string">'2dfire'</span>)</span><br><span class="line">  <span class="keyword">end</span>.first</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> none_requirement_dependencies.any?</span><br><span class="line">    version_hash = &#123;&#125;</span><br><span class="line">    none_requirement_dependencies.each <span class="keyword">do</span> <span class="params">|dep|</span></span><br><span class="line">      versions = fire_source.versions(dep.root_name)</span><br><span class="line">      <span class="keyword">next</span> <span class="keyword">if</span> versions.<span class="literal">nil</span>?</span><br><span class="line"></span><br><span class="line">      newest_version = versions.sort.last</span><br><span class="line">      version_hash[dep.root_name] = <span class="string">"<span class="subst">#&#123;newest_version.major&#125;</span>.<span class="subst">#&#123;newest_version.minor&#125;</span>"</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">    old_require = none_requirement_dependencies.map &#123; <span class="params">|dep|</span> <span class="string">"s.dependency '<span class="subst">#&#123;dep.name&#125;</span>'"</span> &#125;.join(<span class="string">"\n"</span>)</span><br><span class="line">    new_require = none_requirement_dependencies.map &#123; <span class="params">|dep|</span> <span class="string">"s.dependency '<span class="subst">#&#123;dep.name&#125;</span>', '~&gt; <span class="subst">#&#123;version_hash[dep.root_name]&#125;</span>'"</span> &#125;.join(<span class="string">"\n"</span>)</span><br><span class="line">    err_message = <span class="string">"podspec 依赖需要设置限制，将：\n<span class="subst">#&#123;old_require&#125;</span> \n依赖更换为：\n<span class="subst">#&#123;new_require&#125;</span>"</span></span><br><span class="line">    Pod::UI.puts err_message.red</span><br><span class="line">    raise err_message</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Pod::UI.section(<span class="string">'校验版本层级标识'</span>) <span class="keyword">do</span></span><br><span class="line">  COMPONENTS_LABELS = <span class="string">%w[</span></span><br><span class="line"><span class="string">    basic</span></span><br><span class="line"><span class="string">    weakbusiness</span></span><br><span class="line"><span class="string">    business</span></span><br><span class="line"><span class="string">  ]</span>.freeze</span><br><span class="line"></span><br><span class="line">  labels = COMPONENTS_LABELS.select <span class="keyword">do</span> <span class="params">|l|</span></span><br><span class="line">    spec.summary.start_with?(l)	</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">if</span> labels.empty?</span><br><span class="line">    err_message = <span class="string">"podspec 需要在 summary 字段中，为组件添加层级标识。分为以下层级 <span class="subst">#&#123;COMPONENTS_LABELS&#125;</span>，如:\ns.summary = '<span class="subst">#&#123;COMPONENTS_LABELS.first&#125;</span> <span class="subst">#&#123;spec.summary&#125;</span>'"</span></span><br><span class="line">    Pod::UI.puts err_message.red</span><br><span class="line">    raise err_message</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Pod::UI.section(<span class="string">'校验业务线私有组件包含关系'</span>) <span class="keyword">do</span></span><br><span class="line">  SPECIFiC_BUSSINESS_LINE_PODS =  <span class="string">%w[</span></span><br><span class="line"><span class="string">    TDFLoginAssistant</span></span><br><span class="line"><span class="string">    TDFBossBaseInfoDefaults</span></span><br><span class="line"><span class="string">  ]</span>.freeze</span><br><span class="line"></span><br><span class="line">  specific_pods = spec.dependencies.select <span class="keyword">do</span> <span class="params">|dep|</span></span><br><span class="line">    SPECIFiC_BUSSINESS_LINE_PODS.<span class="keyword">include</span>?(dep.root_name)</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> specific_pods.any?</span><br><span class="line">    err_message = <span class="string">"podspec 中不能包含业务线特殊组件/调试组件 <span class="subst">#&#123;specific_pods.map(&amp;<span class="symbol">:name</span>).join(<span class="string">', '</span>)&#125;</span>"</span></span><br><span class="line">    Pod::UI.puts err_message.red</span><br><span class="line">    raise err_message</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">Pod::UI.section(<span class="string">'校验 pch 文件引用'</span>) <span class="keyword">do</span></span><br><span class="line">  <span class="keyword">if</span> spec.prefix_header_file</span><br><span class="line">    err_message = <span class="string">"podspec 不能设置 pch 属性，删除 prefix_header_file 的设置，调整头文件引用"</span></span><br><span class="line">    Pod::UI.puts err_message.red</span><br><span class="line">    raise err_message</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>这些校验自动监测了组件规范，可以减少一些组件的人工维护成本。</p>
+<p>以下分别是 master、tags、release 分支触发 CI 后的 pipeline 截图：</p>
+<p><img src="/images/Snip20180713_11.png" alt="Snip20180713_7"></p>
+<p><img src="/images/Snip20180713_10.png" alt="Snip20180713_8"></p>
+<p><img src="/images/Snip20180713_9.png" alt="Snip20180713_9"></p>
+<p>master 和 tags 触发的 CI 会将执行结果推送至钉钉，release 分支推送比较频繁，所以只执行了两个必须的 stage，减少 runner 资源的占用。由于 master 是线上分支，必须进行最严格的检查，而 tags 主要是进行 CD 操作，为了加快组件的发布，省略了一些检测任务。为了更加清晰地展示所有组件的 CI 执行结果，可以利用 cocoapods gem 获取私有源的所有组件，并将 <a href="https://docs.gitlab.com/ee/user/project/pipelines/settings.html#pipeline-status-badge" target="_blank" rel="noopener"> pipeline badge</a> 展示在网页上：</p>
+<p><img src="/images/Snip20180713_12.png" alt="Snip20180713_12"></p>
+<p>在开发中，可能会遇到不想触发 CI 情况，这时只需要让 commit 信息包含 <code>[ci skip]</code> 或者  <code>[skip ci]</code> （不分大小写）即可。</p>
+<h2 id="提示汇总"><a href="#提示汇总" class="headerlink" title="提示汇总"></a>提示汇总</h2><h3 id="编码错误"><a href="#编码错误" class="headerlink" title="编码错误"></a>编码错误</h3><p>搭建 CI 时，发现只有 shared runner 会因为编码问题而执行失败，special runner 仅仅报了 warning。</p>
+<p>根据  <a href="https://gitlab.com/gitlab-org/gitlab-ce/issues/14983" target="_blank" rel="noopener">CI: How to set UTF-8 in the server?</a>  和 <a href="https://github.com/supermarin/xcpretty/issues/48" target="_blank" rel="noopener">xcpretty US-ASCII encoding problems</a>  上的解答，可以在 <code>before_script</code>  下添加以下配置：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- <span class="keyword">export</span> LANG=en_US.UTF<span class="number">-8</span></span><br><span class="line">- <span class="keyword">export</span> LANGUAGE=en_US:en</span><br><span class="line">- <span class="keyword">export</span> LC_ALL=en_US.UTF<span class="number">-8</span></span><br></pre></td></tr></table></figure>
+<h3 id="unit-test-出现-Scheme-is-not-currently-configured-for-the-test-action"><a href="#unit-test-出现-Scheme-is-not-currently-configured-for-the-test-action" class="headerlink" title="unit test 出现 Scheme is not currently configured for the test action"></a>unit test 出现 Scheme is not currently configured for the test action</h3><p>这个问题分为必现和概现两种情况，先说必现的情况。</p>
+<p>执行单测时，需要在对应 scheme 下添加 test targets：</p>
+<p><img src="/images/Snip20180711_2.png" alt="Snip20180711_2"></p>
+<p>一般 Xcode 会在创建工程时，默认添加这些配置。如果发现此栏没有问题， CI 的单测还是提示 action 错误，那就要排查下是否是 .gitignore 引起的问题了。</p>
+<p>在我们点击 Edit Scheme / Manager Schemes 后，会发现每个 scheme 都会有个 shared 选项，勾选了之后，就会在 <code>*.xcodeproj/xcshareddata/xcschemes</code> 目录下生成相关文件，里面存储了可以在版本控制系统共享的项目配置。</p>
+<p><img src="/images/Snip20180711_1.png" alt="Snip20180711_1"></p>
+<p>在没有勾选时，项目配置都保存在  <code>*.xcodeproj/xcuserdata</code> 目录下，一般针对 iOS 工程的 .gitignore 都会包含以下条目：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">xcuserdata/</span><br></pre></td></tr></table></figure>
+<p>这就导致即使本地正确地设置了 scheme ，可以正常运行单测 ，远程 runner 执行相应操作时，还是获取不到正确的配置。所以要添加单测的组件， scheme 这栏一定要勾选 shared 。</p>
+<p>接下来说下概现的情况。</p>
+<p>先看下的 <code>pod lib create</code> 获取老 <code>pod-template</code> 工程所暴露的问题 ：<a href="https://github.com/CocoaPods/CocoaPods/issues/2929" target="_blank" rel="noopener">pod lib create generates a project that randomly crashes when running tests</a></p>
+<p>简单来说，就是有两个 scheme 重名了 （工程 scheme，及 pod 生成的组件 scheme）， xcodebuild 无法找到正确的 scheme 执行单测。</p>
+<p>事实上，手动创建的工程也会存在这个问题，其工程结构和老  <code>pod-template</code>  相似。</p>
+<p>要规避这两种情况，最简单的方法就是使用 <code>pod lib create</code> 拉取新的 <code>pod-template</code>，将旧工程直接挪过去。我们也可以根据自己的需求，创建私有  <code>pod-template</code>，然后通过指定 <code>--template-url</code> 获取。</p>
+<h3 id="Pipeline-Job-卡在-Cloning-repository…，Runner-宿主机提示输入-Keychain-密码"><a href="#Pipeline-Job-卡在-Cloning-repository…，Runner-宿主机提示输入-Keychain-密码" class="headerlink" title="Pipeline Job 卡在 Cloning repository…，Runner 宿主机提示输入 Keychain 密码"></a>Pipeline Job 卡在 Cloning repository…，Runner 宿主机提示输入 Keychain 密码</h3><p>登录 runner 的宿主机后，可以看到提示如下：</p>
+<p><img src="/images/Snip20180711_3.png" alt="Snip20180711_3"></p>
+<p>runner 默认通过 http / https 对代码进行 clone / fetch ，在没有配置用户名密码，或配置错误时，就会出现如上提示。输入密码后，一段时间内可以正常下载代码，过了有效时间，又会弹出上方提示框。</p>
+<p>参照 <a href="https://git-scm.com/book/zh/v2/Git-%E5%B7%A5%E5%85%B7-%E5%87%AD%E8%AF%81%E5%AD%98%E5%82%A8" target="_blank" rel="noopener">Git-工具-凭证存储</a>，我们使用 <code>store</code> 模式来处理凭证信息（这里更推荐使用 <code>osxkeychain</code> 模式，可以参照 <a href="https://stackoverflow.com/questions/16052602/disable-git-credential-osxkeychain" target="_blank" rel="noopener">disable git credential-osxkeychain</a> ），创建 <code>.gitconfig</code> 如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">[credential]</span><br><span class="line">  helper = store --file $HOME/.git-credentials</span><br><span class="line">[user]</span><br><span class="line">  name = gitlab-runner</span><br><span class="line">  email = xxxx</span><br></pre></td></tr></table></figure>
+<p><code>--file</code> 是 <code>store</code> 模式用来自定义存放密码的文件路径（默认是<code>~/.git-credentials</code>）。<code>.git-credentials</code> 文件内容格式如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">https://用户名:密码@GitHost</span><br><span class="line"></span><br><span class="line"># 如 http://gitlab-ci-token:a8mzWa7FKb1Wzbf9MQeS@git.2dfire-inc.com</span><br></pre></td></tr></table></figure>
+<p>设置完后，可以使用 <code>git config --list</code> 查看配置信息，注意 helper 的先后顺序会影响最终执行结果。</p>
+<p>如果有需要用到 ssh 的情况，可以参考 <a href="https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-runners-ssh-section" target="_blank" rel="noopener">GitLab Runner The runners ssh section</a>，<a href="https://docs.gitlab.com/ee/ci/ssh_keys/" target="_blank" rel="noopener">Using SSH keys with GitLab CI/CD</a>，<a href="https://stackoverflow.com/questions/39208420/how-do-i-enable-cloning-over-ssh-for-a-gitlab-runner" target="_blank" rel="noopener">How do I enable cloning over SSH for a Gitlab runner?</a></p>
+<h3 id="xcodebuild-编译时无法找到对应模拟器的-OS-版本"><a href="#xcodebuild-编译时无法找到对应模拟器的-OS-版本" class="headerlink" title="xcodebuild 编译时无法找到对应模拟器的 OS 版本"></a>xcodebuild 编译时无法找到对应模拟器的 OS 版本</h3><p>xcodebuild 编译时需要指定 <code>-destination</code> 参数，在有多台 runner 的情况下，模拟器对应的 OS 版本是未知的，所以不能在脚本中写死，可以通过以下方式统一使用 iPhoneX ：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">build_destination</span></span>()&#123;</span><br><span class="line">  devices=$(instruments -s devices)</span><br><span class="line">  os=$(<span class="built_in">echo</span> <span class="variable">$&#123;devices##*iPhone X&#125;</span> | grep -Eo <span class="string">'[0-9]+[.][0-9]+'</span>)</span><br><span class="line">  destination=<span class="string">"platform=iOS Simulator,name=iPhone X,OS=<span class="variable">$os</span>"</span>	</span><br><span class="line">  <span class="built_in">echo</span> <span class="variable">$destination</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="兼容-Example-scheme"><a href="#兼容-Example-scheme" class="headerlink" title="兼容 -Example scheme"></a>兼容 -Example scheme</h3><p>xcodebuild 编译时需要指定 <code>-scheme</code>  参数，<code>pod lib create</code> 创建的工程 scheme 名称都以 <code>-Example</code> 结尾，手动创建的工程则一般和文件夹名一致，可以通过以下脚本获取 scheme 的名称：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">infors = <span class="string">`xcodebuild -list`</span>.split(<span class="string">"\n"</span>).map(&amp;<span class="symbol">:strip</span>)</span><br><span class="line"></span><br><span class="line">scheme = <span class="literal">nil</span></span><br><span class="line">flag = <span class="literal">false</span></span><br><span class="line">infors.each <span class="keyword">do</span> <span class="params">|i|</span></span><br><span class="line">  flag = <span class="literal">true</span> <span class="keyword">if</span> i == <span class="string">'Schemes:'</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> flag &amp;&amp; i.end_with?(<span class="string">'Example'</span>)</span><br><span class="line">    scheme = i</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">puts scheme</span><br></pre></td></tr></table></figure>
+<h3 id="GitLab-Runner-failed-to-requeue-the-runner"><a href="#GitLab-Runner-failed-to-requeue-the-runner" class="headerlink" title="GitLab Runner failed to requeue the runner"></a>GitLab Runner failed to requeue the runner</h3><p>遇到这类错误，网页输出就提供不了什么有价值的信息了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Running with gitlab-runner 10.6.0 (a3543a27)</span><br><span class="line">  on iOS Runner on packgirl 935e8829</span><br><span class="line">Using Shell executor...</span><br><span class="line">Running on PackgirldeMac-mini.local...</span><br><span class="line">Fetching changes...</span><br><span class="line">ERROR: Job failed: exit status 1</span><br></pre></td></tr></table></figure>
+<p>这时就需要 ssh 到 runner 的宿主机，使用 <code>--debug</code> 模式重启 runner ：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gitlab-runner --debug run</span><br></pre></td></tr></table></figure>
+<p>然后在此 runner 上触发任务：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">Checking for jobs... nothing                        runner=2ac70a89</span><br><span class="line">Feeding runners to channel                          builds=0</span><br><span class="line">Checking for jobs... received                       job=259319 repo_url=http://git.2dfire-inc.com/ios/TDFWebViewKit.git runner=2ac70a89</span><br><span class="line">Failed to requeue the runner:                       builds=1 runner=2ac70a89</span><br><span class="line">Running with gitlab-runner 10.6.0 (a3543a27)        job=259319 project=2941 runner=2ac70a89</span><br><span class="line">  on iOS Runner on packsun 2ac70a89                 job=259319 project=2941 runner=2ac70a89</span><br><span class="line">Shell configuration: environment: []</span><br><span class="line">dockercommand:</span><br><span class="line">- sh</span><br><span class="line">- -c</span><br><span class="line">- &quot;if [ -x /usr/local/bin/bash ]; then\n\texec /usr/local/bin/bash --login\nelif [</span><br><span class="line">  -x /usr/bin/bash ]; then\n\texec /usr/bin/bash --login\nelif [ -x /bin/bash ]; then\n\texec</span><br><span class="line">  /bin/bash --login\nelif [ -x /usr/local/bin/sh ]; then\n\texec /usr/local/bin/sh</span><br><span class="line">  --login\nelif [ -x /usr/bin/sh ]; then\n\texec /usr/bin/sh --login\nelif [ -x /bin/sh</span><br><span class="line">  ]; then\n\texec /bin/sh --login\nelse\n\techo shell not found\n\texit 1\nfi\n\n&quot;</span><br><span class="line">command: bash</span><br><span class="line">arguments:</span><br><span class="line">- --login</span><br><span class="line">passfile: false</span><br><span class="line">extension: &quot;&quot;</span><br><span class="line">  job=259319 project=2941 runner=2ac70a89</span><br><span class="line">Using Shell executor...                             job=259319 project=2941 runner=2ac70a89</span><br><span class="line">Waiting for signals...                              job=259319 project=2941 runner=2ac70a89</span><br><span class="line">WARNING: Job failed: exit status 1                  job=259319 project=2941 runner=2ac70a89</span><br><span class="line">Submitting job to coordinator... ok                 job=259319 runner=2ac70a89</span><br></pre></td></tr></table></figure></p>
+<p>解决方案是在 <code>.bashrc</code> / <code>.bash_profile</code> 中添加 <code>unset cd</code> 。详细讨论可以查看 <a href="https://gitlab.com/gitlab-org/gitlab-runner/issues/114#note_26832022" target="_blank" rel="noopener">ERROR: Build failed with: exit status 1</a> 。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://docs.gitlab.com/ee/ci/variables/" target="_blank" rel="noopener">GitLab CI/CD Variables</a></p>
+<p><a href="https://docs.gitlab.com/ce/ci/README.html" target="_blank" rel="noopener">GitLab Continuous Integration </a></p>
+<p><a href="https://docs.gitlab.com/ce/ci/runners/" target="_blank" rel="noopener">Configuring GitLab Runners</a></p>
+<p><a href="https://docs.gitlab.com/ce/ci/yaml/README.html" target="_blank" rel="noopener">Configuration of your jobs with .gitlab-ci.yml</a></p>
+<p><a href="https://docs.gitlab.com/runner/install/osx.html" target="_blank" rel="noopener">Install GitLab Runner on macOS</a></p>
+<p><a href="https://docs.gitlab.com/ce/ci/pipelines.html" target="_blank" rel="noopener">Introduction to pipelines and jobs</a></p>
+<p><a href="https://www.rubydoc.info/gems/gitlab/3.6.1" target="_blank" rel="noopener">A Ruby wrapper and CLI for the GitLab API</a></p>
+<p><a href="https://gitlab.com/gitlab-org/gitlab-runner/blob/master/docs/configuration/advanced-configuration.md" target="_blank" rel="noopener">GitLab Runner advanced configuration</a> </p>
+<p><a href="https://git-scm.com/book/zh/v2/Git-%E5%B7%A5%E5%85%B7-%E5%87%AD%E8%AF%81%E5%AD%98%E5%82%A8" target="_blank" rel="noopener">Git 工具 - 凭证存储</a> </p>
+<p><a href="https://docs.gitlab.com/ce/user/project/new_ci_build_permissions_model.html#new-ci-job-permissions-model" target="_blank" rel="noopener">New CI job permissions model</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/组件化/" rel="tag"># 组件化</a>
+          
+            <a href="/tags/GitLab-CI/" rel="tag"># GitLab CI</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/06/20/2018-06-20-cocoapodshu-lue-san-fang-zu-jian-bian-yi-jing-gao/" rel="next" title="CocoaPods忽略三方组件编译警告">
+                <i class="fa fa-chevron-left"></i> CocoaPods忽略三方组件编译警告
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/07/19/GitLabCI凭证/" rel="prev" title="GitLab CI 与 Jenkins 凭证">
+                GitLab CI 与 Jenkins 凭证 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#GitLab-CI"><span class="nav-number">1.</span> <span class="nav-text">GitLab CI</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pipeline"><span class="nav-number">1.1.</span> <span class="nav-text">pipeline</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#stage"><span class="nav-number">1.2.</span> <span class="nav-text">stage</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#job"><span class="nav-number">1.3.</span> <span class="nav-text">job</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GitLab-Runner"><span class="nav-number">2.</span> <span class="nav-text">GitLab Runner</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#安装-Gitlab-Runner"><span class="nav-number">2.1.</span> <span class="nav-text">安装 Gitlab Runner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注册-Gitlab-Runner"><span class="nav-number">2.2.</span> <span class="nav-text">注册 Gitlab Runner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#启动-关闭-Gitlab-Runner"><span class="nav-number">2.3.</span> <span class="nav-text">启动/关闭 Gitlab Runner</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置GitLab-Runner"><span class="nav-number">2.4.</span> <span class="nav-text">配置GitLab Runner</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置-gitlab-ci-yml"><span class="nav-number">3.</span> <span class="nav-text">配置 .gitlab-ci.yml</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#提示汇总"><span class="nav-number">4.</span> <span class="nav-text">提示汇总</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#编码错误"><span class="nav-number">4.1.</span> <span class="nav-text">编码错误</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#unit-test-出现-Scheme-is-not-currently-configured-for-the-test-action"><span class="nav-number">4.2.</span> <span class="nav-text">unit test 出现 Scheme is not currently configured for the test action</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Pipeline-Job-卡在-Cloning-repository…，Runner-宿主机提示输入-Keychain-密码"><span class="nav-number">4.3.</span> <span class="nav-text">Pipeline Job 卡在 Cloning repository…，Runner 宿主机提示输入 Keychain 密码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#xcodebuild-编译时无法找到对应模拟器的-OS-版本"><span class="nav-number">4.4.</span> <span class="nav-text">xcodebuild 编译时无法找到对应模拟器的 OS 版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#兼容-Example-scheme"><span class="nav-number">4.5.</span> <span class="nav-text">兼容 -Example scheme</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GitLab-Runner-failed-to-requeue-the-runner"><span class="nav-number">4.6.</span> <span class="nav-text">GitLab Runner failed to requeue the runner</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/';
+          this.page.identifier = '2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/';
+          this.page.title = '火掌柜 iOS 团队 GitLab CI 集成实践';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

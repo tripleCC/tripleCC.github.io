@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Animation,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="原文由ariok发表，地址是implementing-the-twitter-ios-app-ui 效果图如下： 原来作者的代码会存在一个Bug：  当快速下拉时，个人头像并不会立刻显示在HeaderView上方，我已经向作者提交了Pull requests  编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。">
+<meta name="keywords" content="Animation">
+<meta property="og:type" content="article">
+<meta property="og:title" content="翻译篇：实现Twitter个人详情动态效果">
+<meta property="og:url" content="https://triplecc.github.io/2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="原文由ariok发表，地址是implementing-the-twitter-ios-app-ui 效果图如下： 原来作者的代码会存在一个Bug：  当快速下拉时，个人头像并不会立刻显示在HeaderView上方，我已经向作者提交了Pull requests  编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/2015-09-08%2014_55_03.gif">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20150908_3.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20150908_4.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20150908_5.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="翻译篇：实现Twitter个人详情动态效果">
+<meta name="twitter:description" content="原文由ariok发表，地址是implementing-the-twitter-ios-app-ui 效果图如下： 原来作者的代码会存在一个Bug：  当快速下拉时，个人头像并不会立刻显示在HeaderView上方，我已经向作者提交了Pull requests  编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。">
+<meta name="twitter:image" content="https://triplecc.github.io/images/2015-09-08%2014_55_03.gif">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/">
+
+
+
+
+
+  <title>翻译篇：实现Twitter个人详情动态效果 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">翻译篇：实现Twitter个人详情动态效果</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2015-09-07T17:32:07+00:00">
+                2015-09-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ios/" itemprop="url" rel="index">
+                    <span itemprop="name">ios</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>原文由<a href="https://github.com/ariok" target="_blank" rel="noopener">ariok</a>发表，地址是<a href="http://www.thinkandbuild.it/implementing-the-twitter-ios-app-ui/" target="_blank" rel="noopener">implementing-the-twitter-ios-app-ui</a></p>
+<p>效果图如下：<br><br><img src="/images/2015-09-08 14_55_03.gif" alt=""></p>
+<p>原来作者的代码会存在一个Bug：<br></p>
+<blockquote>
+<p>当快速下拉时，个人头像并不会立刻显示在HeaderView上方，我已经向作者提交了Pull requests</p>
+</blockquote>
+<p>编译过程中会发生错误，因为swift更新了，所以需要自己解决下错误。</p>
+<a id="more"></a>
+<h2 id="结构描述"><a href="#结构描述" class="headerlink" title="结构描述"></a>结构描述</h2><p>在编码之前，我将对UI的结构做一个简单的介绍。<br></p>
+<p>打开Main.storyboard文件。在唯一的一个控制器view中，你可以发现两个主要的对象。第一个是显示Header的视图，第二个是一个包含个人头像(我们叫它Avatar)和其他与账号相关，比如用户名、follow按钮的ScrollView。Sizer控件只是用来确认ScrollView内容是否能进行垂直滚动。<br></p>
+<p>就像你所看到的，这个结构非常简单。需要的注意的是，我将Header放在ScrollView外面，而不是把它和其他ScrollView子控件放在一起。因为这样做可以让这个结构具备更好的扩展性。<br></p>
+<h2 id="开始编码"><a href="#开始编码" class="headerlink" title="开始编码"></a>开始编码</h2><p>如果你仔细看完动画，你会注意到你可以管理两个不同的动作：<br></p>
+<p>1) 用户下拉（当ScrollView内容已经在屏幕的顶部时）<br></p>
+<p>2) 用户上/下滚动<br></p>
+<p>这个动作可以分解成四步：<br></p>
+<p>2.1) 向上滚动，Header控件缩小直到它的尺寸和导航栏默认尺寸相等，然后这个Header控件就会粘在屏幕的上方<br></p>
+<p>2.2) 向上滚动， Avatar（头像）逐渐变小<br></p>
+<p>2.3) 当Header控件和ScrollView的子控件重叠时，Avatar（头像）在Header控件底部<br></p>
+<p>2.4) 当用户名Label的顶部和Header控件底部重叠时，一个新的白色Label将会从Header控件的中底部显示。并且Header控件的图片变模糊。<br></p>
+<p>打开ViewController.swift，让我们一步一步地实现这些功能<br></p>
+<h2 id="设置控制器"><a href="#设置控制器" class="headerlink" title="设置控制器"></a>设置控制器</h2><p>第一件需要去做的事是获取ScrollView的offset信息。通过实现UIScrollViewDelegate协议的scrollViewDidScroll方法，我们可以很容易地做到这一点。<br></p>
+<p>一种最简单的展示一个view上变化的方式是使用CoreAnimation三维变换，并且设置新值给layer.transform属性。<br></p>
+<p>这个关于CoreAnimation的教程可能会让它变得简便：<br><br><a href="http://www.thinkandbuild.it/playing-around-with-core-graphics-core-animation-and-touch-events-part-1/." target="_blank" rel="noopener">http://www.thinkandbuild.it/playing-around-with-core-graphics-core-animation-and-touch-events-part-1/.</a></p>
+<p>以下是scrollViewDidScroll方法的第一部分：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">let offset = scrollView.contentOffset.y</span><br><span class="line">var avatarTransform = <span class="built_in">CATransform3DIdentity</span></span><br><span class="line">var headerTransform = <span class="built_in">CATransform3DIdentity</span></span><br></pre></td></tr></table></figure>
+<p>我们可以在这个方法里面获取当前的竖直偏移，并且初始化两个将要在方法后面设置的转换信息。</p>
+<h2 id="下拉"><a href="#下拉" class="headerlink" title="下拉"></a>下拉</h2><p>让我们对下拉动作进行处理：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> offset &lt; <span class="number">0</span> &#123;</span><br><span class="line">    </span><br><span class="line">    let headerScaleFactor:<span class="built_in">CGFloat</span> = -(offset) / header.bounds.height</span><br><span class="line">    let headerSizevariation = ((header.bounds.height * (<span class="number">1.0</span> + headerScaleFactor)) - header.bounds.height)/<span class="number">2.0</span></span><br><span class="line">    headerTransform = <span class="built_in">CATransform3DTranslate</span>(headerTransform, <span class="number">0</span>, headerSizevariation, <span class="number">0</span>)</span><br><span class="line">    headerTransform = <span class="built_in">CATransform3DScale</span>(headerTransform, <span class="number">1.0</span> + headerScaleFactor, <span class="number">1.0</span> + headerScaleFactor, <span class="number">0</span>)</span><br><span class="line">    </span><br><span class="line">    header.layer.transform = headerTransform</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先，我们检查偏移量是否为负数，即ScrollView是否已出现弹性区域。<br></p>
+<p>剩下的代码是一些简单的数学运算。<br></p>
+<p>这个Header控件需要放大来保持它的上边缘和屏幕顶部相对固定，并且这个图片是从底部开始放大的。<br></p>
+<p>总的来说，这个变换主要由缩放，然后转化view的尺寸变化为到顶部的距离构成。事实上，你可以朝屏幕顶端移动ImageView图层的中点并且进行缩放来相同的效果。<br></p>
+<p><img src="/images/Snip20150908_3.png" alt=""></p>
+<p>使用一个属性来对头部缩放比例进行计算。我们希望Header控件参照偏移量进行适当的缩放。换种说法：当偏移量为Header视图控件的两倍时，头部缩放比例应该设置为2.0。<br></p>
+<p>我们需要处理的第二个动作是上下滚动。让我们看看如何一步一步地完成主要视图的变换。<br></p>
+<h2 id="Header（第一阶段）"><a href="#Header（第一阶段）" class="headerlink" title="Header（第一阶段）"></a>Header（第一阶段）</h2><p>当前的偏移量应该大于0。Header控件应该根据以下的偏移量来进行竖直移动，直到它到达指定高度（我们下面将会对Header模糊进行讲解）。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">headerTransform = <span class="built_in">CATransform3DTranslate</span>(headerTransform, <span class="number">0</span>, max(-offset_HeaderStop, -offset), <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>这段代码真的是很简单。我们只需要设置Header控件偏移一个最小值，Header控件将会在offset_HeaderStop这个点停止移动。<br></p>
+<p>因为我比较懒，所以我写死了一些数值，比如offset_HeaderStop。我们可以通过更加优雅的方式，比如计算UI控件的位置来实现相同的效果。或许在下一次我会试试。<br></p>
+<h2 id="AVATAR（头像）"><a href="#AVATAR（头像）" class="headerlink" title="AVATAR（头像）"></a>AVATAR（头像）</h2><p>这个头像（图片）以和下拉相同的逻辑进行缩放，只是在这种情况下，图片是和底部贴合而不是顶部。这段代码和上面比较相似，除了减小缩放的比例为1.4。<br></p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">let avatarScaleFactor = (min(offset_HeaderStop, offset)) / avatarImage.bounds.height / <span class="number">1.4</span> <span class="comment">// Slow down the animation</span></span><br><span class="line">let avatarSizeVariation = ((avatarImage.bounds.height * (<span class="number">1.0</span> + avatarScaleFactor)) - avatarImage.bounds.height) / <span class="number">2.0</span></span><br><span class="line">avatarTransform = <span class="built_in">CATransform3DTranslate</span>(avatarTransform, <span class="number">0</span>, avatarSizeVariation, <span class="number">0</span>)</span><br><span class="line">avatarTransform = <span class="built_in">CATransform3DScale</span>(avatarTransform, <span class="number">1.0</span> - avatarScaleFactor, <span class="number">1.0</span> - avatarScaleFactor, <span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p>就像你看到的，当Header控件停止变化时，我们通过min函数来停止对个人头像的缩放（offset_HeaderStop）。<br></p>
+<p>此时，我们根据当前的偏移量来设置最顶层的图层。除非偏移量大于等于offset_HeaderStop，否则顶部图层始终是个人头像。当偏移量大于offset_HeaderStop，这个图层就变成了Header控件。<br></p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> offset &lt;= offset_HeaderStop &#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> avatarImage.layer.zPosition &lt; header.layer.zPosition&#123;</span><br><span class="line">        header.layer.zPosition = <span class="number">0</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;<span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> avatarImage.layer.zPosition &gt;= header.layer.zPosition&#123;</span><br><span class="line">        header.layer.zPosition = <span class="number">2</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="白色Label"><a href="#白色Label" class="headerlink" title="白色Label"></a>白色Label</h2><p>以下是白色Label执行动画的代码：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">let labelTransform = <span class="built_in">CATransform3DMakeTranslation</span>(<span class="number">0</span>, max(-distance_W_LabelHeader, offset_B_LabelHeader - offset), <span class="number">0</span>)</span><br><span class="line">headerLabel.layer.transform = labelTransform</span><br></pre></td></tr></table></figure>
+<p>这里介绍两个新的变量：当偏移量等于offset_B_LabelHeader时，这个黑色的用户名Label刚好到达Header视图的底部。<br></p>
+<p><img src="/images/Snip20150908_4.png" alt=""><br></p>
+<p>distance_W_LabelHeader是Header控件的底部和Header中的白色Label中点的距离。<br><br><img src="/images/Snip20150908_5.png" alt=""><br></p>
+<p>这个转换通过以下逻辑进行计算：黑色Label一旦喝Header控件相交，白色Label就立即显示，并且白色Label到达Header控件的中点时停止。所以使用以下代码来创建Y的偏移：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">max(-distance_W_LabelHeader, offset_B_LabelHeader - offset)</span><br></pre></td></tr></table></figure>
+<h2 id="模糊"><a href="#模糊" class="headerlink" title="模糊"></a>模糊</h2><p>最后一个效果是模糊Header控件。为了得到合适的解决方案，我使用了三个不同的库…我还尝试创建自己的OpenGL ES，但是实时更新模糊效果总是非常迟缓。<br></p>
+<p>我了解到我可以只对模糊进行一次计算，让模糊和非模糊的图片进行重叠，并且改变透明度值。我很确定，这就是Twitter采用的方法。<br></p>
+<p>在viewDidAppear中我们计算模糊的Header并且通过设置透明度为0来进行隐藏。<br></p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">headerBlurImageView = <span class="built_in">UIImageView</span>(frame: header.bounds)</span><br><span class="line">headerBlurImageView?.image = <span class="built_in">UIImage</span>(named: <span class="string">"header_bg"</span>)?.blurredImageWithRadius(<span class="number">10</span>, iterations: <span class="number">20</span>, tintColor: <span class="built_in">UIColor</span>.clearColor())</span><br><span class="line">headerBlurImageView?.contentMode = <span class="built_in">UIViewContentMode</span>.ScaleAspectFill</span><br><span class="line">headerBlurImageView?.alpha = <span class="number">0.0</span></span><br><span class="line">header.insertSubview(headerBlurImageView, belowSubview: headerLabel)</span><br></pre></td></tr></table></figure>
+<p>模糊的view可以使用<a href="https://github.com/nicklockwood/FXBlurView" target="_blank" rel="noopener">FXBlurView</a>得到。<br></p>
+<p>在scrollViewDidScroll方法中，我们只需要根据偏移量来更新透明度就行了。<br></p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">headerBlurImageView?.alpha = min (<span class="number">1.0</span>, (offset - offset_B_LabelHeader)/distance_W_LabelHeader)</span><br></pre></td></tr></table></figure>
+<p>以上计算逻辑主要为：透明度最大值必须为1，模糊效果必须在黑色Label到达Header控件时出现，在白色Label停止后停止加深模糊。<br></p>
+<p><a href="https://github.com/ariok/TB_TwitterUI" target="_blank" rel="noopener">源码地址</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Animation/" rel="tag"># Animation</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/09/05/2015-09-06-ioszhi-shi-sui-pian-yi/" rel="next" title="iOS知识碎片一">
+                <i class="fa fa-chevron-left"></i> iOS知识碎片一
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/09/26/2015-09-26-phphou-tai-bian-cheng-chu-tan/" rel="prev" title="PHP后台编程初探">
+                PHP后台编程初探 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#结构描述"><span class="nav-number">1.</span> <span class="nav-text">结构描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#开始编码"><span class="nav-number">2.</span> <span class="nav-text">开始编码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设置控制器"><span class="nav-number">3.</span> <span class="nav-text">设置控制器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下拉"><span class="nav-number">4.</span> <span class="nav-text">下拉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Header（第一阶段）"><span class="nav-number">5.</span> <span class="nav-text">Header（第一阶段）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AVATAR（头像）"><span class="nav-number">6.</span> <span class="nav-text">AVATAR（头像）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#白色Label"><span class="nav-number">7.</span> <span class="nav-text">白色Label</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模糊"><span class="nav-number">8.</span> <span class="nav-text">模糊</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/';
+          this.page.identifier = '2015/09/07/2015-09-08-fan-yi-pian-:shi-xian-twitterge-ren-xiang-qing-dong-tai-xiao-guo/';
+          this.page.title = '翻译篇：实现Twitter个人详情动态效果';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

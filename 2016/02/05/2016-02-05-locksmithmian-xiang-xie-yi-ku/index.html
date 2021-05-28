@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Swift,Locksmith,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。 Locksmith基本实现iOS系统中有5种keychain类型：generic passwords, internet passwords, certificates, keys,以及 identities。并且针对每个类型都有4种操作：create, read, update,以及">
+<meta name="keywords" content="Swift,Locksmith">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于keychain封装库Locksmith">
+<meta property="og:url" content="https://triplecc.github.io/2016/02/05/2016-02-05-locksmithmian-xiang-xie-yi-ku/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。 Locksmith基本实现iOS系统中有5种keychain类型：generic passwords, internet passwords, certificates, keys,以及 identities。并且针对每个类型都有4种操作：create, read, update,以及">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="关于keychain封装库Locksmith">
+<meta name="twitter:description" content="Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。 Locksmith基本实现iOS系统中有5种keychain类型：generic passwords, internet passwords, certificates, keys,以及 identities。并且针对每个类型都有4种操作：create, read, update,以及">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/02/05/2016-02-05-locksmithmian-xiang-xie-yi-ku/">
+
+
+
+
+
+  <title>关于keychain封装库Locksmith | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/02/05/2016-02-05-locksmithmian-xiang-xie-yi-ku/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">关于keychain封装库Locksmith</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-02-05T06:57:48+00:00">
+                2016-02-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/swift/" itemprop="url" rel="index">
+                    <span itemprop="name">swift</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/02/05/2016-02-05-locksmithmian-xiang-xie-yi-ku/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/02/05/2016-02-05-locksmithmian-xiang-xie-yi-ku/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Locksmith是一个面向协议编程的keychain封装库，也是我见过的对面向协议贯彻最彻底的一个第三方库。<br></p>
+<h2 id="Locksmith基本实现"><a href="#Locksmith基本实现" class="headerlink" title="Locksmith基本实现"></a>Locksmith基本实现</h2><p>iOS系统中有5种keychain类型：generic passwords, internet passwords, certificates, keys,以及 identities。并且针对每个类型都有4种操作：create, read, update,以及 delete。<br></p>
+<p>对于以上复杂的逻辑关系，Cocoa采用了一系列字符串常量以及对应的key/value进行操作。只是对于Swift来说，这种方式过于冗余而且难以记忆，并没有充分利用到其语言特性。<br></p>
+<p>Locksmith作者采用了protocol来解决原生方案过于复杂的问题。就像乐高玩具一样，可以随意组装不同的组件来达到不同的视觉效果，Locksmith可以让使用者遵守特定的protocol来获取对应的功能，比如需要delete功能，那么就遵循DeleteableSecureStorable协议；需要read功能，那么就遵守ReadableSecureStorable协议。而在对应的模型中，不需要额外添加函数，协议内部通过extension已经实现了对应的功能函数。开发者直接调用deleteFromKeychain或者readFromKeychain即可实现想要的功能。<br><a id="more"></a><br>并且，Locksmith还通过protocol提供了更加友好的Result类型。通过遵守GenericPasswordSecureStorable或者InternetPasswordSecureStorable，就可以<br>读取不同的结果类型GenericPasswordResult或者InternetPasswordResult，而后面这两个结构体又分别遵守了GenericPasswordSecureStorableResultType和InternetPasswordSecureStorableResultType协议，这两个协议又针对结构体中的结果分别进行了以下处理：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// InternetPasswordSecureStorableResultType</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">protocol</span> <span class="title">InternetPasswordSecureStorableResultType</span>: <span class="title">AccountBasedSecureStorableResultType</span>, <span class="title">DescribableSecureStorableResultType</span>, <span class="title">CommentableSecureStorableResultType</span>, <span class="title">CreatorDesignatableSecureStorableResultType</span>, <span class="title">TypeDesignatableSecureStorableResultType</span>, <span class="title">IsInvisibleAssignableSecureStorableResultType</span>, <span class="title">IsNegativeAssignableSecureStorableResultType</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">extension</span> <span class="title">InternetPasswordSecureStorableResultType</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="function"><span class="keyword">func</span> <span class="title">stringFromResultDictionary</span><span class="params">(key: CFString)</span></span> -&gt; <span class="type">String</span>? &#123;</span><br><span class="line">        <span class="keyword">return</span> resultDictionary[<span class="type">String</span>(key)] <span class="keyword">as</span>? <span class="type">String</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">var</span> server: <span class="type">String</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> stringFromResultDictionary(kSecAttrServer)!</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">var</span> port: <span class="type">Int</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> resultDictionary[<span class="type">String</span>(kSecAttrPort)] <span class="keyword">as</span>! <span class="type">Int</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">var</span> internetProtocol: <span class="type">LocksmithInternetProtocol</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="type">LocksmithInternetProtocol</span>(rawValue: stringFromResultDictionary(kSecAttrProtocol)!)!</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">var</span> authenticationType: <span class="type">LocksmithInternetAuthenticationType</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="type">LocksmithInternetAuthenticationType</span>(rawValue:  stringFromResultDictionary(kSecAttrAuthenticationType)!)!</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">var</span> securityDomain: <span class="type">String</span>? &#123;</span><br><span class="line">        <span class="keyword">return</span> stringFromResultDictionary(kSecAttrSecurityDomain)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">var</span> path: <span class="type">String</span>? &#123;</span><br><span class="line">        <span class="keyword">return</span> stringFromResultDictionary(kSecAttrPath)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// GenericPasswordSecureStorableResultType</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">protocol</span> <span class="title">GenericPasswordSecureStorableResultType</span>: <span class="title">GenericPasswordSecureStorable</span>, <span class="title">SecureStorableResultType</span>, <span class="title">AccountBasedSecureStorableResultType</span>, <span class="title">DescribableSecureStorableResultType</span>, <span class="title">CommentableSecureStorableResultType</span>, <span class="title">CreatorDesignatableSecureStorableResultType</span>, <span class="title">LabellableSecureStorableResultType</span>, <span class="title">TypeDesignatableSecureStorableResultType</span>, <span class="title">IsInvisibleAssignableSecureStorableResultType</span>, <span class="title">IsNegativeAssignableSecureStorableResultType</span> </span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">extension</span> <span class="title">GenericPasswordSecureStorableResultType</span> </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> service: <span class="type">String</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> resultDictionary[<span class="type">String</span>(kSecAttrService)] <span class="keyword">as</span>! <span class="type">String</span></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">var</span> generic: <span class="type">NSData</span>? &#123;</span><br><span class="line">        <span class="keyword">return</span> resultDictionary[<span class="type">String</span>(kSecAttrGeneric)] <span class="keyword">as</span>? <span class="type">NSData</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，最终的版本的协议遵守了很多组件协议。从上面代码块中，初步可见protocol extension的强大之处了。不过还没完，最后还要通过extension的where子句，完成读取结果的统一接口：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">extension</span> <span class="title">ReadableSecureStorable</span> <span class="title">where</span> <span class="title">Self</span> : <span class="title">GenericPasswordSecureStorable</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">readFromSecureStore</span><span class="params">()</span></span> -&gt; <span class="type">GenericPasswordSecureStorableResultType</span>? &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> result = <span class="keyword">try</span> performSecureStorageAction(performReadRequestClosure, secureStoragePropertyDictionary: asReadableSecureStoragePropertyDictionary) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="type">GenericPasswordResult</span>(resultDictionary: result)</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">extension</span> <span class="title">ReadableSecureStorable</span> <span class="title">where</span> <span class="title">Self</span> : <span class="title">InternetPasswordSecureStorable</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">readFromSecureStore</span><span class="params">()</span></span> -&gt; <span class="type">InternetPasswordSecureStorableResultType</span>? &#123;</span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">let</span> result = <span class="keyword">try</span> performSecureStorageAction(performReadRequestClosure, secureStoragePropertyDictionary: asReadableSecureStoragePropertyDictionary) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="type">InternetPasswordResult</span>(resultDictionary: result)</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>通过以上实现方式，开发者最终面向的就是协议，不管是返回的查询结果还是遵循的增删改查组件协议。而结构体在这个框架中基本起数据中转作用，比如以下结构体：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 网络结果</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">InternetPasswordResult</span>: <span class="title">InternetPasswordSecureStorableResultType</span> </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> resultDictionary: [<span class="type">String</span>: <span class="type">AnyObject</span>]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 通用结果</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">GenericPasswordResult</span>: <span class="title">GenericPasswordSecureStorableResultType</span> </span>&#123;</span><br><span class="line">    <span class="keyword">var</span> resultDictionary: [<span class="type">String</span>: <span class="type">AnyObject</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面两个结构体给ReadableSecureStorable的readFromSecureStore做读取数据的存储中转，最终我们想要的数据还是需要分别到InternetPasswordSecureStorableResultType或者GenericPasswordSecureStorableResultType对应的属性中获取。<br></p>
+<p>Locksmith中大量应用了protocol的extension特性，暂且不论其做法是否真的可取，但也算是面向协议编程强大之处的一种体现。</p>
+<h2 id="参考文章"><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h2><p><a href="http://matthewpalmer.net/blog/2015/08/30/protocol-oriented-programming-in-the-real-world/" target="_blank" rel="noopener">protocol-oriented-programming-in-the-real-world</a><br><br>为现有类型添加新功能/解藕以增加灵活性与可测试性/方便同步快速发展的API/更少的代码更多的功能<br><br><a href="https://github.com/matthewpalmer/Locksmith" target="_blank" rel="noopener">Locksmith源码－有更详细的使用说明</a></p>
+<h2 id="一些其它关于面向协议编程应用文章"><a href="#一些其它关于面向协议编程应用文章" class="headerlink" title="一些其它关于面向协议编程应用文章"></a>一些其它关于面向协议编程应用文章</h2><p><a href="http://code.tutsplus.com/tutorials/protocol-oriented-programming-in-swift-2--cms-24979" target="_blank" rel="noopener">Protocol-Oriented Programming in Swift 2</a><br><br>解决多继承/协议扩展/Classes的重要性<br><br><a href="http://www.captechconsulting.com/blogs/ios-9-tutorial-series-protocol-oriented-programming-with-uikit" target="_blank" rel="noopener">iOS 9 Tutorial Series: Protocol-Oriented Programming with UIKit</a><br><br>现有文章示例代码大多为人为创造的情景下工作/面向协议真对UIKit 的应用/Swift协议的好处与限制/不能给Objective-C协议中的方法提供默认实现/可以给Objective-C协议添加新方法/协议for模型,数据格式,UI风格/协议及其扩展适合在添加共享、范性功能时使用，并不很切合UI<br><br><a href="http://www.capitalone.io/blog/improved-protocol-oriented-programming-untyped-type-aliases/" target="_blank" rel="noopener">Improved Protocol-Oriented Programming with Untyped Type Aliases</a><br></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Swift/" rel="tag"># Swift</a>
+          
+            <a href="/tags/Locksmith/" rel="tag"># Locksmith</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/02/02/2016-02-02-ioszhi-shi-sui-pian-si/" rel="next" title="iOS知识碎片四">
+                <i class="fa fa-chevron-left"></i> iOS知识碎片四
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/03/09/2016-03-09-ioszhi-shi-sui-pian-wu/" rel="prev" title="iOS知识碎片五">
+                iOS知识碎片五 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Locksmith基本实现"><span class="nav-number">1.</span> <span class="nav-text">Locksmith基本实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文章"><span class="nav-number">2.</span> <span class="nav-text">参考文章</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#一些其它关于面向协议编程应用文章"><span class="nav-number">3.</span> <span class="nav-text">一些其它关于面向协议编程应用文章</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/02/05/2016-02-05-locksmithmian-xiang-xie-yi-ku/';
+          this.page.identifier = '2016/02/05/2016-02-05-locksmithmian-xiang-xie-yi-ku/';
+          this.page.title = '关于keychain封装库Locksmith';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

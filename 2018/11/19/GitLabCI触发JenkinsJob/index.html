@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Ruby,GitLab,Jenkins,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="火展柜团队目前使用 Jenkins 做持续集成，在提测 / 预发阶段，开发人员需要频繁地在 Jenkins 平台上进行如下操作以构建测试包：  在团队的 View 下创建 Job ，一般以某个已存在 Job 为模版，这个模版已经设置好打包仓库 url 和常用配置 更改需要打包的代码分支 更改钉钉 token，构建结束后，需要将结果发送至测试钉钉群组 点击构建项目  在创建 Job 后，后续构建则只">
+<meta name="keywords" content="Ruby,GitLab,Jenkins">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Git Commit 触发 Jenkins Job">
+<meta property="og:url" content="https://triplecc.github.io/2018/11/19/GitLabCI触发JenkinsJob/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="火展柜团队目前使用 Jenkins 做持续集成，在提测 / 预发阶段，开发人员需要频繁地在 Jenkins 平台上进行如下操作以构建测试包：  在团队的 View 下创建 Job ，一般以某个已存在 Job 为模版，这个模版已经设置好打包仓库 url 和常用配置 更改需要打包的代码分支 更改钉钉 token，构建结束后，需要将结果发送至测试钉钉群组 点击构建项目  在创建 Job 后，后续构建则只">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.933Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Git Commit 触发 Jenkins Job">
+<meta name="twitter:description" content="火展柜团队目前使用 Jenkins 做持续集成，在提测 / 预发阶段，开发人员需要频繁地在 Jenkins 平台上进行如下操作以构建测试包：  在团队的 View 下创建 Job ，一般以某个已存在 Job 为模版，这个模版已经设置好打包仓库 url 和常用配置 更改需要打包的代码分支 更改钉钉 token，构建结束后，需要将结果发送至测试钉钉群组 点击构建项目  在创建 Job 后，后续构建则只">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2018/11/19/GitLabCI触发JenkinsJob/">
+
+
+
+
+
+  <title>Git Commit 触发 Jenkins Job | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2018/11/19/GitLabCI触发JenkinsJob/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Git Commit 触发 Jenkins Job</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-11-19T14:40:46+00:00">
+                2018-11-19
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/11/19/GitLabCI触发JenkinsJob/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/11/19/GitLabCI触发JenkinsJob/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>火展柜团队目前使用 Jenkins 做持续集成，在提测 / 预发阶段，开发人员需要频繁地在 Jenkins 平台上进行如下操作以构建测试包：</p>
+<ol>
+<li><strong>在团队的 View 下创建 Job</strong> ，一般以某个已存在 Job 为模版，这个模版已经设置好打包仓库 url 和常用配置</li>
+<li><strong>更改需要打包的代码分支</strong></li>
+<li><strong>更改钉钉 token</strong>，构建结束后，需要将结果发送至测试钉钉群组</li>
+<li><strong>点击构建项目</strong></li>
+</ol>
+<p>在创建 Job 后，后续构建则只需要以下两步：</p>
+<ol>
+<li><strong>更新 Podfile.lock 并提交至远程仓库</strong></li>
+<li><strong>点击构建项目</strong></li>
+</ol>
+<a id="more"></a>
+<h2 id="效率提升"><a href="#效率提升" class="headerlink" title="效率提升"></a>效率提升</h2><p>虽然只有两步，但切至网页操作还是挺烦的，于是就催生了 <a href="https://github.com/tripleCC/fire-jenkins-builder" target="_blank" rel="noopener"><strong>fire-jenkins-builder</strong></a> 。</p>
+<p>有了 <a href="https://github.com/tripleCC/fire-jenkins-builder" target="_blank" rel="noopener"><strong>fire-jenkins-builder</strong></a> 并结合简单的配置，开发者提交如下 commit 便会触发 Jenkins 打包：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git commit -m &quot;[jb] XXXXXX&quot;</span><br></pre></td></tr></table></figure>
+<p>当然，特殊情况下也可以使用命令触发 Job ：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jb -p PATH -b BRANCH -l LOG_LEVEL</span><br></pre></td></tr></table></figure>
+<ul>
+<li><strong>PATH</strong> 为配置文件路径，关于配置文件，下文会进行说明</li>
+<li><strong>BRANCH</strong> 为分支名称，也可在配置文件中设置</li>
+<li><strong>LOG_LEVEL</strong> 为日志等级，默认输出等级为 Info</li>
+</ul>
+<h2 id="配置详情"><a href="#配置详情" class="headerlink" title="配置详情"></a>配置详情</h2><p>添加 <code>.fire-jenkins.yml</code> 配置文件至目标工程根目录下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"># jenkins job 配置文件</span><br><span class="line"># 可以通过在 commit 中添加 prefix ，使 CI 触发 jenkins job 的创建/构建行为</span><br><span class="line"># 提交 commit 信息</span><br><span class="line"># [jb] XXXXXX 执行 jenkins job ，如果不存在 job ，则会在对应 job_view 下创建并执行</span><br><span class="line">#</span><br><span class="line">########################</span><br><span class="line">#         选填</span><br><span class="line">########################</span><br><span class="line"># job 参数</span><br><span class="line"># 添加自己的钉钉消息等健值对</span><br><span class="line"># 需要注意的是，这里面的配置，模版必须已经存在了，这里只是修改对应的值</span><br><span class="line">parameters:</span><br><span class="line">  REPORTER_ACCESS_TOKEN: XXXXXX</span><br><span class="line">  DEBUG: true</span><br><span class="line"></span><br><span class="line">########################</span><br><span class="line">#         必填</span><br><span class="line">########################</span><br><span class="line"># 打包 job 名称 / 前缀名</span><br><span class="line"># 如果 job_name 为空，则采用 job_name_prefix + 分支名称</span><br><span class="line"># job_name: XXXX</span><br><span class="line">job_name_prefix: ZGiOS_</span><br><span class="line"># jenkins 上的分组，对应 view</span><br><span class="line">job_view: 掌柜iOS</span><br><span class="line"></span><br><span class="line"># branch 可以从 CI 变量中拿到，不需要设置</span><br><span class="line"># branch: feature/jenkins-executer</span><br><span class="line"></span><br><span class="line"># 下面配置可选</span><br><span class="line"># 如果没有设置，则采用模版值</span><br><span class="line"># remote_url: git@git.2dfire-inc.com:ios/restapp.git</span><br><span class="line"># credentials_id: xxx</span><br><span class="line"></span><br><span class="line"># jenkins 用户名密码</span><br><span class="line">username: qingmu</span><br><span class="line">password: xxx</span><br><span class="line"></span><br><span class="line"># 各业务线采用不同的模版，配置这里</span><br><span class="line"># 模版工程名称（需要唯一）</span><br><span class="line">template_job_name: ZGiOS_develop</span><br><span class="line"></span><br><span class="line"># 这里不动</span><br><span class="line">server_url: &apos;http://jenkins-shopkeeper-client.2dfire.net&apos;</span><br><span class="line">server_port: 80</span><br></pre></td></tr></table></figure>
+<p>然后针对自己所在业务线进行定制，同业务线开发人员后续只需要更改 <code>job_name</code> 和 <code>parameters</code> 即可，比如根据项目群组设置钉钉 token。</p>
+<p>配置 <code>.gitlab-ci.yml</code> :</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">stages:</span><br><span class="line">...</span><br><span class="line">  - build</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line">jenkins_build:</span><br><span class="line">  before_script:</span><br><span class="line">    - gem install fire-jenkins-builder -v 0.1.3 --no-ri --no-rdoc --conservative</span><br><span class="line">  stage: build</span><br><span class="line">  only:</span><br><span class="line">    variables:</span><br><span class="line">      - $CI_COMMIT_MESSAGE =~ /^\[jb\]/</span><br><span class="line">  script: </span><br><span class="line">    - jb -p .fire-jenkins.yml -b $CI_COMMIT_REF_NAME</span><br><span class="line">  tags:</span><br><span class="line">    - iOSCI</span><br><span class="line">  allow_failure: true</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>配置之后，只要 commit 信息满足 <code>/^\[jb\]/</code> <a href="https://docs.gitlab.com/ee/ci/variables/#variables-expressions" target="_blank" rel="noopener">正则</a>，就会触发 <a href="https://docs.gitlab.com/ee/ci/" target="_blank" rel="noopener">GitLab CI</a> ，<a href="https://docs.gitlab.com/runner/index.html#gitlab-runner" target="_blank" rel="noopener">GitLab Runner</a> 就会执行  <code>jb -p .fire-jenkins.yml -b $CI_COMMIT_REF_NAME</code>  触发 Jenkins 构建 Job ，其中 <a href="https://docs.gitlab.com/ee/ci/variables/#priority-of-variables" target="_blank" rel="noopener">CI_COMMIT_REF_NAME</a> 为分支名称。</p>
+<h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><p>commit 触发 GitLab CI 部分如上节所示 ，这里主要讲下 <a href="https://github.com/tripleCC/fire-jenkins-builder" target="_blank" rel="noopener"><strong>fire-jenkins-builder</strong></a>  的内部实现。</p>
+<p> <a href="https://github.com/tripleCC/fire-jenkins-builder" target="_blank" rel="noopener"><strong>fire-jenkins-builder</strong></a>  实现代码很少，主要依赖了两个 gem：</p>
+<ul>
+<li><strong>jenkins_api_client</strong> ,  提供 <a href="https://wiki.jenkins.io/display/JENKINS/Remote+access+API" target="_blank" rel="noopener">Jenkins Api</a> 封装</li>
+<li><strong>nokogiri</strong> ，提供 XML 解析更改</li>
+</ul>
+<p>先来看下 <code>build</code> 代码：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">build</span></span></span><br><span class="line">  jobs = client.job.list(job_name)</span><br><span class="line">  <span class="keyword">if</span> jobs.empty?</span><br><span class="line">    create</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">    job_name = client.job.chain(jobs, <span class="string">'success'</span>, [<span class="string">'all'</span>])[<span class="number">0</span>]</span><br><span class="line">    client.job.build(job_name, config[<span class="string">'parameters'</span>])</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">create</span></span></span><br><span class="line">  client.job.create_or_update(job_name, target_xml)</span><br><span class="line">  client.view.add_job(config[<span class="string">'job_view'</span>], job_name)</span><br><span class="line">  build</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>首先 <code>build</code> 方法会根据 <code>job_name</code> 去查询 Jenkins 上是否已存在同名 Job ，不存在就去创建并且添加到业务线配置的 <code>job_view</code>，否则就以 <code>parameters</code> 为参数去构建 Job  ，这里的参数对应 Jenkins 配置页面中的<a href="https://wiki.jenkins.io/display/JENKINS/Parameterized+Build" target="_blank" rel="noopener"> <strong>参数化构建过程</strong> </a>。</p>
+<p>其中 <code>create_or_update</code> 方法第二个入参为 XML 配置数据， <code>target_xml</code> 方法如下：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">target_xml</span></span></span><br><span class="line">  job_config = client.job.get_config(config[<span class="string">'template_job_name'</span>])		</span><br><span class="line">  parameters = config[<span class="string">'parameters'</span>] <span class="params">||</span> []</span><br><span class="line"></span><br><span class="line">  doc = Nokogiri::XML(job_config)</span><br><span class="line">  properties = doc.search(<span class="string">'//parameterDefinitions'</span>)</span><br><span class="line">  properties.children.each <span class="keyword">do</span> <span class="params">|child|</span></span><br><span class="line">    <span class="keyword">next</span> <span class="keyword">if</span> child.children.empty?</span><br><span class="line"></span><br><span class="line">    children = child.children.reject &#123; <span class="params">|c|</span> c.name.<span class="literal">nil</span>? &#125;</span><br><span class="line">    matched = <span class="literal">false</span></span><br><span class="line">    defaultValue = <span class="literal">nil</span></span><br><span class="line">    children.each <span class="keyword">do</span> <span class="params">|c|</span></span><br><span class="line">      <span class="keyword">if</span> c.name == <span class="string">'name'</span> &amp;&amp; parameters.keys.<span class="keyword">include</span>?(c.content)</span><br><span class="line">    	matched = <span class="literal">true</span> </span><br><span class="line">        defaultValue = parameters[c.content]</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">      c.content = defaultValue <span class="keyword">if</span> matched &amp;&amp; c.name == <span class="string">'defaultValue'</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  branch_spec_node = doc.search(<span class="string">"//hudson.plugins.git.BranchSpec"</span>)</span><br><span class="line">  branch_node = branch_spec_node.children.find &#123; <span class="params">|c|</span> c.name == <span class="string">'name'</span> &#125;</span><br><span class="line">  branch_node.content = config[<span class="string">'branch'</span>]</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> config[<span class="string">'remote_url'</span>]</span><br><span class="line">    user_remote_config_node = doc.search(<span class="string">"//hudson.plugins.git.UserRemoteConfig"</span>)</span><br><span class="line">    url_node = user_remote_config_node.children.find &#123; <span class="params">|c|</span> c.name == <span class="string">'url'</span> &#125;</span><br><span class="line">    url_node.content = config[<span class="string">'remote_url'</span>]</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> config[<span class="string">'credentials_id'</span>]</span><br><span class="line">    credentials_id_node = user_remote_config_node.children.find &#123; <span class="params">|c|</span> c.name == <span class="string">'credentialsId'</span> &#125;</span><br><span class="line">    credentials_id_node.content = config[<span class="string">'credentials_id'</span>]</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  doc.to_xml</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p><code>target_xml</code> 先获取 <code>template_job_name</code> 模版 Job 的配置 XML ，然后根据开发者传入的 <code>parameters</code> 修改 XML 中对应节点的数据 (分支和仓库地址配置功能都由插件提供)，生成一份新的 XML 供 <code>create_or_update</code> 创建 Job。 </p>
+<p>以上代码再结合 GitLab CI ，就可以愉快地构建 Jenkins Job 了。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Ruby/" rel="tag"># Ruby</a>
+          
+            <a href="/tags/GitLab/" rel="tag"># GitLab</a>
+          
+            <a href="/tags/Jenkins/" rel="tag"># Jenkins</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/07/19/GitLabCI凭证/" rel="next" title="GitLab CI 与 Jenkins 凭证">
+                <i class="fa fa-chevron-left"></i> GitLab CI 与 Jenkins 凭证
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/12/29/CocoaPods加载插件/" rel="prev" title="CocoaPods 如何加载插件">
+                CocoaPods 如何加载插件 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#效率提升"><span class="nav-number">1.</span> <span class="nav-text">效率提升</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#配置详情"><span class="nav-number">2.</span> <span class="nav-text">配置详情</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实现细节"><span class="nav-number">3.</span> <span class="nav-text">实现细节</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2018/11/19/GitLabCI触发JenkinsJob/';
+          this.page.identifier = '2018/11/19/GitLabCI触发JenkinsJob/';
+          this.page.title = 'Git Commit 触发 Jenkins Job';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

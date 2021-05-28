@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="CocoaPods,Localization,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。 问题来了：在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SD">
+<meta name="keywords" content="CocoaPods,Localization">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CocoaPods和Localization">
+<meta property="og:url" content="https://triplecc.github.io/2017/06/08/2017-06-08-cocoapodshe-localization/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。 问题来了：在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SD">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20170608_1.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20170608_4.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20170608_5.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20170608_3.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20170608_4.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20170608_6.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CocoaPods和Localization">
+<meta name="twitter:description" content="一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。 问题来了：在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SD">
+<meta name="twitter:image" content="https://triplecc.github.io/images/Snip20170608_1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2017/06/08/2017-06-08-cocoapodshe-localization/">
+
+
+
+
+
+  <title>CocoaPods和Localization | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2017/06/08/2017-06-08-cocoapodshe-localization/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">CocoaPods和Localization</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-06-08T01:23:01+00:00">
+                2017-06-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/cocoapods/" itemprop="url" rel="index">
+                    <span itemprop="name">cocoapods</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/06/08/2017-06-08-cocoapodshe-localization/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/06/08/2017-06-08-cocoapodshe-localization/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>一直没有很好地理清 CocoaPods 对图片、NIB等资源的管理方式，趁着跟进 “智齿” 国际化失效问题，摘录下浏览的相关资料。另外吐槽下 “智齿”， 这家的 iOS SDK 是我目前集成的所有 SDK 中，对开发者最不友好的了。</p>
+<p>问题来了：在使用 CocoaPods 集成“智齿”后，“智齿”的国际化信息就一直显示英文版本，即使系统语言设置成中文。但是如果不通过 CocoaPods，直接把 SDK 拉进工程中，国际化信息就又生效了。在咨询其开发人员无果后，只能自己慢慢排雷了。由于问题只在 “通过 CocoaPods 引入 SDK” 这种情况下出现，所以要想彻底解决这个问题，就需要明确 CocoaPods 是如何对国际化资源进行管理的。</p>
+<a id="more"></a>
+<h2 id="CocoaPods-如何管理资源"><a href="#CocoaPods-如何管理资源" class="headerlink" title="CocoaPods 如何管理资源"></a>CocoaPods 如何管理资源</h2><p>从 <a href="http://blog.cocoapods.org/CocoaPods-0.36/" target="_blank" rel="noopener">CocoaPods 0.36 的 release 文档</a> 看，它对资源的管理方式，取决于是否以 Frameworks 的方式对 CocoaPods 进行集成，从 Podfile 层面看，就是是否使用了 use_frameworks! 。</p>
+<h3 id="以-Static-Libraries-的方式集成"><a href="#以-Static-Libraries-的方式集成" class="headerlink" title="以 Static Libraries 的方式集成"></a>以 Static Libraries 的方式集成</h3><p><strong>CocoaPods 会把所有的资源塞进 app bundle</strong> ，开发者可以使用 <code>[NSBundle mainBundle]</code> 访问里面的所有资源，也可以从生成 product 的根目录查看资源（显示包内容后）。由于苹果不允许 Swift 代码被编译成静态库，所以如果 Swift 项目想使用 CocoaPods 管理源码的话，是一定要使用 Dynamic Frameworks 方式进行集成的。一般来说， Objective-C 项目都是使用此方式集成。</p>
+<h3 id="以-Dynamic-Frameworks-的方式集成"><a href="#以-Dynamic-Frameworks-的方式集成" class="headerlink" title="以 Dynamic Frameworks 的方式集成"></a>以 Dynamic Frameworks 的方式集成</h3><p><strong>CocoaPods 会把资源塞进对应的 Frameworks</strong> ，只有通过指定 Frameworks 的 bundle 才能访问到资源：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Objective-C</span></span><br><span class="line">[<span class="built_in">NSBundle</span> bundleForClass:&lt;<span class="meta">#ClassFromPodspec#&gt;]</span></span><br><span class="line"><span class="comment">// Swift</span></span><br><span class="line"><span class="built_in">NSBundle</span>(forClass: &lt;<span class="meta">#ClassFromPodspec#&gt;)</span></span><br></pre></td></tr></table></figure>
+<p>这种方式对于 Static Libraries 和 Dynamic Frameworks 都是有效的。如果编写的框架包含一些资源的话，内部访问资源时，应该以这种方式指定确切的 bundle ，因为无法确定开发者是以何种方式集成你的框架。</p>
+<p>顺带说下，由于没有很好的方式来构建<strong>传递依赖</strong>中含有 static libraries（如果不是传递依赖，即使存在含有 static libraries 的 Pod ，构建时还是会直接归并入最终的可执行文件中），使用 CocoaPods 时，选择哪种集成方式对于单个 target 来说是一件 “all or  nothing” 的事情，也就是说开发者无法<strong>主动</strong>针对个别 Pod 采用不同的集成方式。（如有需要，可以使用 <a href="https://github.com/Carthage/Carthage" target="_blank" rel="noopener">carthage</a>）</p>
+<p>举个例子：假如当前主工程依赖了 PodA 、 PodB ，而 PodA 依赖了 PodB，并且 PodB 中有静态库 (这里需要注意的是，有些 SDK 是 .framework 格式，但是本质还是静态库，可用 file 命令查看, 参考 <a href="https://stackoverflow.com/questions/32591878/ios-is-it-a-static-or-a-dynamic-framework" target="_blank" rel="noopener">iOS is it a static or a dynamic framework?</a>)，那么在执行 <code>pod update</code> 时，就会报 <code>transitive dependencies that include static binaries</code> 错误。这样在组件化时，就很难引入使用 Swift 编写的 Pod 了，因为如果项目足够大，就肯定会存在<strong>传递依赖</strong>中含有 static libraries 的情况。</p>
+<h2 id="SobotKit-存在的问题"><a href="#SobotKit-存在的问题" class="headerlink" title="SobotKit 存在的问题"></a>SobotKit 存在的问题</h2><p>SobotKit 是“智齿”的 iOS SDK ，下面是 SobotKit podspec 文件的部分代码：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">s.frameworks =  <span class="string">"AudioToolbox"</span>,<span class="string">"AssetsLibrary"</span>,<span class="string">"SystemConfiguration"</span>,<span class="string">"AVFoundation"</span>,<span class="string">"MobileCoreServices"</span></span><br><span class="line">s.library   = 'z.1.2.5'</span><br><span class="line"></span><br><span class="line"><span class="meta"># s.resource  = <span class="meta-string">"icon.png"</span></span></span><br><span class="line">s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','en.lproj/SobotLocalizable.strings','zh-Hans.lproj/SobotLocalizable.strings'</span><br><span class="line">s.ios.vendored_frameworks = 'SobotKit.framework'</span><br></pre></td></tr></table></figure>
+<p>下面是以 Static Libraries 的方式集成进工程后的目录结构：</p>
+<p><img src="/images/Snip20170608_1.png" alt=""><br><img src="/images/Snip20170608_4.png" alt=""></p>
+<p>构建工程后，进入 product 根目录。可以看到，虽然在目录中，Pod 增加了 en.lproj、zh-Hans 两个文件夹，但是拷贝到 app bundle 后，却并没有这两个文件夹，同名的 .strings 文件相互覆盖了。</p>
+<p><img src="/images/Snip20170608_5.png" alt=""></p>
+<p>下面是修改后的 podspec：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">s.resources = 'SobotKit.bundle','ZCEmojiExpression.bundle','*.lproj'</span><br></pre></td></tr></table></figure>
+<p>构建工程后，可以看下目录：</p>
+<p><img src="/images/Snip20170608_3.png" alt=""><br><img src="/images/Snip20170608_4.png" alt=""></p>
+<p>构建后的 product 根目录：</p>
+<p><img src="/images/Snip20170608_6.png" alt=""></p>
+<p>最终结果表明， SobotKit 的 podspec 写错了。不过工程的目录结构还是让我迷惑了很久，Pod 目录里面居然有实体文件，着实让我走了点弯路。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>在明确构建当前工程会将 SobotKit 的相关资源直接塞到 app bundle 后，排查问题就变得简单了。因为在我这个项目的上下文中，直接把 SobotKit 拉进主工程和通过 Pod 集成，其资源最终存放的的位置都是 app bundle ，这也就排除了 SobotKit 内部调用Localizaton宏错误这一猜测。</p>
+<p>CocoaPods 推荐以 Dynamic Frameworks 的方式集成，不过要注意的是引用资源时，要指定对应的 bundle 。</p>
+<h2 id="补充"><a href="#补充" class="headerlink" title="补充"></a>补充</h2><p>2017.7.15: Pod 中稀奇古怪的 xib 访问不到崩溃问题，除了连线错误外，80% 以上都是因为 podspec 资源管理方式和实际代码调用方式不一致造成。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="http://blog.xianqu.org/2015/08/pod-resources/" target="_blank" rel="noopener">给 Pod 添加资源文件</a><br><br><a href="http://blog.cocoapods.org/CocoaPods-0.36/" target="_blank" rel="noopener">CocoaPods 0.36 - Framework and Swift Support</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CocoaPods/" rel="tag"># CocoaPods</a>
+          
+            <a href="/tags/Localization/" rel="tag"># Localization</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/05/13/2017-05-13-wan-wan-ni-xiang-zhi-lan-jie-ding-ding-xin-xi-de-yi-du-zhuang-tai/" rel="next" title="玩玩逆向之拦截钉钉消息已读状态">
+                <i class="fa fa-chevron-left"></i> 玩玩逆向之拦截钉钉消息已读状态
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/06/23/2017-06-23-ru-he-kuai-su-da-jian-biao-dan-jie-mian/" rel="prev" title="闲谈 IGListKit">
+                闲谈 IGListKit <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#CocoaPods-如何管理资源"><span class="nav-number">1.</span> <span class="nav-text">CocoaPods 如何管理资源</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#以-Static-Libraries-的方式集成"><span class="nav-number">1.1.</span> <span class="nav-text">以 Static Libraries 的方式集成</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#以-Dynamic-Frameworks-的方式集成"><span class="nav-number">1.2.</span> <span class="nav-text">以 Dynamic Frameworks 的方式集成</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SobotKit-存在的问题"><span class="nav-number">2.</span> <span class="nav-text">SobotKit 存在的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">3.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#补充"><span class="nav-number">4.</span> <span class="nav-text">补充</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2017/06/08/2017-06-08-cocoapodshe-localization/';
+          this.page.identifier = '2017/06/08/2017-06-08-cocoapodshe-localization/';
+          this.page.title = 'CocoaPods和Localization';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

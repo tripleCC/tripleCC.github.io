@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="PhotoBrowser,策略模式,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的MWPhotoBrowser，IDMPhotoBrowser或者Swift版本的SKPhotoBrowser。 从核心功能来看，MWPhotoBrowser，IDMPhotoBrowser这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，在我看来，这是他的优势，但同时，高">
+<meta name="keywords" content="PhotoBrowser,策略模式">
+<meta property="og:type" content="article">
+<meta property="og:title" content="利用策略模式增强图片浏览器的扩展性">
+<meta property="og:url" content="https://triplecc.github.io/2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的MWPhotoBrowser，IDMPhotoBrowser或者Swift版本的SKPhotoBrowser。 从核心功能来看，MWPhotoBrowser，IDMPhotoBrowser这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，在我看来，这是他的优势，但同时，高">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20160915_3.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20160915_4.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="利用策略模式增强图片浏览器的扩展性">
+<meta name="twitter:description" content="说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的MWPhotoBrowser，IDMPhotoBrowser或者Swift版本的SKPhotoBrowser。 从核心功能来看，MWPhotoBrowser，IDMPhotoBrowser这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，在我看来，这是他的优势，但同时，高">
+<meta name="twitter:image" content="https://triplecc.github.io/images/Snip20160915_3.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/">
+
+
+
+
+
+  <title>利用策略模式增强图片浏览器的扩展性 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">利用策略模式增强图片浏览器的扩展性</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-09-15T02:33:54+00:00">
+                2016-09-15
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ios/" itemprop="url" rel="index">
+                    <span itemprop="name">ios</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>说到图片浏览器，项目中比较常用的成熟框架有Objective-C版本的<a href="https://github.com/mwaterfall/MWPhotoBrowser" target="_blank" rel="noopener">MWPhotoBrowser</a>，<a href="https://github.com/ideaismobile/IDMPhotoBrowser" target="_blank" rel="noopener">IDMPhotoBrowser</a>或者Swift版本的<a href="https://github.com/suzuki-0000/SKPhotoBrowser" target="_blank" rel="noopener">SKPhotoBrowser</a>。<br></p>
+<p>从核心功能来看，MWPhotoBrowser，IDMPhotoBrowser这两个框架，都很好地实现了对本地资源、相册资源、网络资源的获取与显示。并且很好地封装了网络和相册的获取方式，在我看来，这是他的优势，但同时，高度的集成也催生了一些不足。<br></p>
+<p>这样做的优势不言而喻，调用者只需要很少的几行代码，就可以集成一个图片浏览器框架，省时省力。以MWPhotoBrowser为例，在不设置额外属性的情况下，只需要下面两行代码就可以创建：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">MWPhotoBrowser *browser = [[MWPhotoBrowser alloc] initWithPhotos:<span class="keyword">self</span>.photos];</span><br><span class="line">[<span class="keyword">self</span>.navigationController pushViewController:browser animated:<span class="literal">YES</span>];</span><br></pre></td></tr></table></figure>
+<p>使用者只要关注如何提供MWPhotoBrowser所要展示资源就可以了，不需要做额外的操作，非常地简洁方便。<br></p>
+<p>关于不足，由于MWPhotoBrowser内部实现了获取网络图片功能，在追求内部实现尽量精简的前提下，不可避免地要依赖加载图片的第三方库(SDWebImage)。如果原来项目并没有使用SDWebImage，而是用YYWebImage或者Kingfisher，那么使用MWPhotoBrowser便会引入冗余的框架，从而让项目额外增加了一种图片缓存机制，不利于内存以及磁盘使用率的优化。<br></p>
+<p>对于相册资源的访问，MWPhotoBrowser内部也实现了通过PHAsset或者ALAsset获取相片的功能。不过一般来说，项目会有自己的一套相册选择器，进而会有相应的相册资源获取策略。所以以个人观点来看，如何获取相册资源，应该由使用者告知，而不是在框架内部自己实现一套，这样更加符合DRY。<br></p>
+<p>接下来，我会针对上面的不足，实现一套兼容本地资源、相册资源、网络资源的简易图片选择器。<br><br>本文章对应的所有代码在仓库<a href="https://github.com/tobevoid/TBVImageBrowser" target="_blank" rel="noopener">TBVImageBrowser</a>中。<br><a id="more"></a></p>
+<h3 id="框架概览"><a href="#框架概览" class="headerlink" title="框架概览"></a>框架概览</h3><p>TBVImageBrowser的主要组成如下：<br><br><img src="/images/Snip20160915_3.png" alt="图一"><br><br><img src="/images/Snip20160915_4.png" alt="图二"><br></p>
+<p>从图一可以看出，TBVImageBrowserView持有了一个遵守TBVImageProviderManagerProtocol的对象。根据此持有的策略管理对象，可以通过抽象策略接口TBVImageProviderProtocol访问对应的具体策略类：TBVWebImageProvider、TBVLocalImageProvider、TBVAssetImageProvider和自定义的Provider。<br></p>
+<p>实际上具体的策略都可以由使用者实现，也就是说图一中的TBVWebImageProvider、TBVLocalImageProvider、TBVAssetImageProvider都可以去除，只要提供遵守策略接口TBVImageProviderProtocol的具体策略类就行了。一般来说，访问资源的策略由使用者提供，因为使用者知道自己实际的获取方式。<br></p>
+<p>从图二中可以看出，TBVImageBrowserView持有的策略管理对象的内部组成。只要遵守TBVImageProviderManagerProtocol协议，都可以成为策略管理对象。</p>
+<p>除了以上几个协议，我还抽出了TBVImageIdentifierProtocol、TBVImageElementProtocol以及TBVImageProgressPresenterProtocol协议。<br>TBVImageProviderIdentifierProtocol的声明如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">TBVImageIdentifierProtocol</span> &lt;<span class="title">NSObject</span>&gt;</span></span><br><span class="line"><span class="keyword">@required</span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">strong</span>, <span class="keyword">nonatomic</span>, <span class="keyword">readonly</span>) <span class="built_in">NSString</span> *identifier;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>identifier作为匹配Provider和资源类型的标志，是每个策略必须要实现的。<br><br>TBVImageElementProtocol的声明如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">TBVImageElementProtocol</span> &lt;<span class="title">TBVImageIdentifierProtocol</span>&gt;</span></span><br><span class="line"><span class="keyword">@required</span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) <span class="built_in">NSObject</span> *resource;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">assign</span>, <span class="keyword">nonatomic</span>) <span class="built_in">CGFloat</span> progress;</span><br><span class="line"><span class="keyword">@optional</span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) <span class="built_in">NSDictionary</span> *options;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>TBVImageElementProtocol遵守了TBVImageProviderIdentifierProtocol协议，提供解析自身资源的Provider标志。resource用来存储实际需要获取的资源，progress则表示获取的进度。<br><br>TBVImageProgressPresenterProtocol的声明如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">TBVImageProgressPresenterProtocol</span> &lt;<span class="title">NSObject</span>&gt;</span></span><br><span class="line">+ (<span class="keyword">instancetype</span>)presenter;</span><br><span class="line">- (<span class="keyword">void</span>)setPresenterProgress:(<span class="built_in">CGFloat</span>)progress animated:(<span class="built_in">BOOL</span>)animated;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>由于项目中可能有自己的一套loading progress控件，仅仅为了图片选择器而引入另一套控件是不划算的，所以BVImageBrowser的loading progress控件也让使用者来提供，尽量减少不必要依赖。</p>
+<h3 id="TBVImageProviderManager"><a href="#TBVImageProviderManager" class="headerlink" title="TBVImageProviderManager"></a>TBVImageProviderManager</h3><p>TBVImageProviderManager帮助TBVImageBrowserView管理所有添加的策略，让TBVImageBrowserView得以关注其浏览业务本身，而不必掺杂获取资源的具体逻辑。<br></p>
+<p>首先是添加删除策略接口：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)addImageProvider:(<span class="keyword">id</span>&lt;TBVImageProviderProtocol&gt;)provider &#123;</span><br><span class="line">    <span class="built_in">NSCParameterAssert</span>(provider);</span><br><span class="line">    <span class="built_in">NSAssert</span>(provider.identifier, <span class="string">@"identifier of %@ can not be nil."</span>, provider);</span><br><span class="line">    TBVLogInfo(<span class="string">@"add provider %@"</span>, provider);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">@synchronized</span> (<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">self</span>.providerMap[provider.identifier] = provider;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="built_in">BOOL</span>)removeImageProvider:(<span class="keyword">id</span>&lt;TBVImageProviderProtocol&gt;)provider &#123;</span><br><span class="line">    <span class="built_in">NSAssert</span>(provider.identifier, <span class="string">@"identifier of %@ can not be nil."</span>, provider);</span><br><span class="line">    TBVLogInfo(<span class="string">@"remove provider %@"</span>, provider);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">@synchronized</span> (<span class="keyword">self</span>) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.providerMap removeObjectForKey:provider.identifier];</span><br><span class="line">        <span class="keyword">return</span> [<span class="keyword">self</span>.providerMap.allKeys containsObject:provider.identifier];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>TBVImageProviderManager中会声明一个providerMap字典，以策略的identifier作key，策略作为value。<br>接下来是获取资源的接口：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">- (RACSignal *)imageSignalForElement:(<span class="keyword">id</span>&lt;TBVImageElementProtocol&gt;)element &#123;</span><br><span class="line">    <span class="built_in">NSAssert</span>(element.identifier, <span class="string">@"identifier of %@ can not be nil."</span>, element);</span><br><span class="line">    </span><br><span class="line">    @weakify(<span class="keyword">self</span>)</span><br><span class="line">    <span class="keyword">return</span> [[[RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        @strongify(<span class="keyword">self</span>)</span><br><span class="line">        TBVLogInfo(<span class="string">@"\nimage resource:\n\t%@;\nidentifier:\n\t%@;\n"</span>, element.resource, element.identifier);</span><br><span class="line">        <span class="keyword">if</span> ([<span class="keyword">self</span>.providerMap.allKeys containsObject:element.identifier]) &#123;</span><br><span class="line">            [subscriber sendNext:[<span class="keyword">self</span>.providerMap[element.identifier]</span><br><span class="line">                    imageSignalForElement:element</span><br><span class="line">                    progress:^(<span class="built_in">CGFloat</span> progress) &#123;</span><br><span class="line">                        element.progress = progress;</span><br><span class="line">                    &#125;]];</span><br><span class="line">            [subscriber sendCompleted];</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">NSMutableDictionary</span> *userInfo = [<span class="built_in">NSMutableDictionary</span> dictionary];</span><br><span class="line">            userInfo[kTBVImageBrowserErrorKey] =</span><br><span class="line">            [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"image provider with identifier %@ was not found"</span>, element.identifier];</span><br><span class="line">            [subscriber sendError:[<span class="built_in">NSError</span> errorWithDomain:<span class="string">@"TBVImageProviderManager"</span></span><br><span class="line">                                                        code:<span class="number">-1</span></span><br><span class="line">                                                    userInfo:userInfo]];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;]</span><br><span class="line">        switchToLatest]</span><br><span class="line">        catch:^RACSignal *(<span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">            TBVLogError(<span class="string">@"\nerror domain: \n\t%@; \nerror code: \n\t%ld; \nerror info: \n\t%@;\n"</span>, error.domain, error.code, error.userInfo);</span><br><span class="line">            <span class="keyword">return</span> [RACSignal empty];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>TBVImageProviderManager根据element提供的identifier，去providerMap字典中查找匹配的策略，并调用策略接口，获取element的resource中存储的资源。</p>
+<h3 id="载入自定义loading-progress控件"><a href="#载入自定义loading-progress控件" class="headerlink" title="载入自定义loading progress控件"></a>载入自定义loading progress控件</h3><p>在加载一个loading progress控件时，我需要什么样的接口?<br><br>首先是控件本身，TBVImageBrowserView需要使用者创建这个控件的实体给TBVImageBrowserView，而控件的具体属性则由调用者在创建控件时一并设置。然后因为是loading progress控件，理所当然地应该提供设置progress的接口。由这两个需求催生TBVImageProgressPresenterProtocol协议，来对使用者提供的loading progress控件进行限定。<br></p>
+<p>有了满足要求的控件，如何在内部进行创建？TBVImageBrowserView需要使用者提供控件对应Class，然后在内部以以下方式进行添加：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)setupProgressPresenter:(Class)progressPresenter&#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">self</span>.progressView || !progressPresenter) <span class="keyword">return</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> ([progressPresenter conformsToProtocol:<span class="class"><span class="keyword">@protocol</span>(<span class="title">TBVImageProgressPresenterProtocol</span>)]) </span>&#123;</span><br><span class="line">        <span class="keyword">id</span> presenter = [progressPresenter presenter];</span><br><span class="line">        <span class="keyword">if</span> ([presenter isKindOfClass:[<span class="built_in">UIView</span> <span class="keyword">class</span>]]) &#123;</span><br><span class="line">            <span class="keyword">self</span>.progressView = presenter;</span><br><span class="line">            [<span class="keyword">self</span>.contentView addSubview:<span class="keyword">self</span>.progressView];</span><br><span class="line">            <span class="built_in">CGSize</span> size = <span class="built_in">CGSizeEqualToSize</span>(<span class="built_in">CGSizeZero</span>, <span class="keyword">self</span>.progressView.frame.size) ?</span><br><span class="line">                <span class="built_in">CGSizeMake</span>(<span class="number">40.0</span>f, <span class="number">40.0</span>f) : <span class="keyword">self</span>.progressView.frame.size ;</span><br><span class="line">            [<span class="keyword">self</span>.progressView mas_makeConstraints:^(MASConstraintMaker *make) &#123;</span><br><span class="line">                make.width.equalTo(@(size.width));</span><br><span class="line">                make.height.equalTo(@(size.height));</span><br><span class="line">                make.center.equalTo(<span class="keyword">self</span>.contentView);</span><br><span class="line">            &#125;];</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            TBVLogError(<span class="string">@"progressPresenter should be subclass of UIView."</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        TBVLogError(<span class="string">@"progressPresenter should comfirm TBVImageProgressPresenterProtocol."</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>至此，载入自定义的loading progress控件已经实现了。接下来以DACircularProgress控件为例，说明如何使用。<br><br>首先，创建DALabeledCircularProgressView的分类，然后在分类中遵守TBVImageProgressPresenterProtocol协议，并实现其中的接口:</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">DALabeledCircularProgressView</span> (<span class="title">TBVImageProgressPresenter</span>)</span></span><br><span class="line">+ (<span class="keyword">instancetype</span>)presenter &#123;</span><br><span class="line">    DALabeledCircularProgressView *progressView = [[DALabeledCircularProgressView alloc] initWithFrame:<span class="built_in">CGRectMake</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="number">40</span>, <span class="number">40</span>)];</span><br><span class="line">    progressView.thicknessRatio = <span class="number">0.1</span>;</span><br><span class="line">    progressView.progressLabel.textColor = [<span class="built_in">UIColor</span> whiteColor];</span><br><span class="line">    progressView.progressLabel.font = [<span class="built_in">UIFont</span> systemFontOfSize:<span class="number">12</span>];</span><br><span class="line">    progressView.userInteractionEnabled = <span class="literal">NO</span>;</span><br><span class="line">    <span class="keyword">return</span> progressView;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)setPresenterProgress:(<span class="built_in">CGFloat</span>)progress animated:(<span class="built_in">BOOL</span>)animated &#123;</span><br><span class="line">    [<span class="keyword">self</span> setProgress:progress animated:animated];</span><br><span class="line">    <span class="keyword">if</span> (progress != <span class="number">0</span> &amp;&amp; progress != <span class="number">1</span>) TBVLogDebug(<span class="string">@"load progress %f"</span>, progress);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">self</span>.progressLabel.text = [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%.02f"</span>, progress];</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>并且在初始化TBVImageBrowserView时，传入DALabeledCircularProgressView类：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">_configuration.progressPresenterClass = [DALabeledCircularProgressView <span class="keyword">class</span>];</span><br></pre></td></tr></table></figure>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>TBVImageBrowser是在自己做IM发送相册图片时造的轮子，由于后期项目本身并没有使用SDWebImage，并且有一套自己访问相册的策略，所以MWPhotoBrowser并不是很符合自己的需求。<br></p>
+<p>TBVImageBrowser遵循了一个原则：使用者应该知道自己如何得到资源，并向框架提供获取资源的方法，这样才能让框架具有更好的扩展性。<br><br>详细的使用方法在<a href="https://github.com/tobevoid/TBVImageBrowser" target="_blank" rel="noopener">仓库说明</a>中。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/PhotoBrowser/" rel="tag"># PhotoBrowser</a>
+          
+            <a href="/tags/策略模式/" rel="tag"># 策略模式</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/" rel="next" title="使用AssetsLibrary和PhotoKit做一个简易的相片选择器">
+                <i class="fa fa-chevron-left"></i> 使用AssetsLibrary和PhotoKit做一个简易的相片选择器
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/09/24/2016-09-24-ioszhi-shi-sui-pian-qi/" rel="prev" title="iOS知识碎片七">
+                iOS知识碎片七 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#框架概览"><span class="nav-number">1.</span> <span class="nav-text">框架概览</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#TBVImageProviderManager"><span class="nav-number">2.</span> <span class="nav-text">TBVImageProviderManager</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#载入自定义loading-progress控件"><span class="nav-number">3.</span> <span class="nav-text">载入自定义loading progress控件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/';
+          this.page.identifier = '2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/';
+          this.page.title = '利用策略模式增强图片浏览器的扩展性';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

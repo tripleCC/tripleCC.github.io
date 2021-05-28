@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="AssetsLibrary,PhotoKit,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业务时，可以更加得心应手。github上的开发者针对PhotoKit做了一层很优秀的封装CTAssetsPickerController，如果只需要支持iOS8+，那么可定制程度非常高的CTAssetsPickerController是个不错的选择。但是由于现有的业务还是需要支持iOS7，所以并不能完全舍弃使用AssetsLibra">
+<meta name="keywords" content="AssetsLibrary,PhotoKit">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用AssetsLibrary和PhotoKit做一个简易的相片选择器">
+<meta property="og:url" content="https://triplecc.github.io/2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业务时，可以更加得心应手。github上的开发者针对PhotoKit做了一层很优秀的封装CTAssetsPickerController，如果只需要支持iOS8+，那么可定制程度非常高的CTAssetsPickerController是个不错的选择。但是由于现有的业务还是需要支持iOS7，所以并不能完全舍弃使用AssetsLibra">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用AssetsLibrary和PhotoKit做一个简易的相片选择器">
+<meta name="twitter:description" content="iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业务时，可以更加得心应手。github上的开发者针对PhotoKit做了一层很优秀的封装CTAssetsPickerController，如果只需要支持iOS8+，那么可定制程度非常高的CTAssetsPickerController是个不错的选择。但是由于现有的业务还是需要支持iOS7，所以并不能完全舍弃使用AssetsLibra">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/">
+
+
+
+
+
+  <title>使用AssetsLibrary和PhotoKit做一个简易的相片选择器 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">使用AssetsLibrary和PhotoKit做一个简易的相片选择器</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-09-10T13:25:36+00:00">
+                2016-09-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ios/" itemprop="url" rel="index">
+                    <span itemprop="name">ios</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>iOS8之后，苹果推出了PhotoKit，让开发者在处理相册相关的业务时，可以更加得心应手。github上的开发者针对PhotoKit做了一层很优秀的封装<a href="https://github.com/chiunam/CTAssetsPickerController" target="_blank" rel="noopener">CTAssetsPickerController</a>，如果只需要支持iOS8+，那么可定制程度非常高的<a href="https://github.com/chiunam/CTAssetsPickerController" target="_blank" rel="noopener">CTAssetsPickerController</a>是个不错的选择。<br><br>但是由于现有的业务还是需要支持iOS7，所以并不能完全舍弃使用<code>AssetsLibrary</code>的方式来访问相册。因此也就需要自己封装一套兼容iOS7的相册管理器。</p>
+<p>本文涉及代码：<a href="https://github.com/tobevoid/TBVAssetsPicker" target="_blank" rel="noopener">TBVAssetsPicker</a></p>
+<a id="more"></a>
+<h2 id="统一asset以及collection"><a href="#统一asset以及collection" class="headerlink" title="统一asset以及collection"></a>统一asset以及collection</h2><table>
+<thead>
+<tr>
+<th style="text-align:left">AssetsLibrary</th>
+<th style="text-align:left">PhotoKit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">ALAssetsGroup</td>
+<td style="text-align:left">PHAssetCollection</td>
+</tr>
+<tr>
+<td style="text-align:left">ALAsset</td>
+<td style="text-align:left">PHAsset</td>
+</tr>
+<tr>
+<td style="text-align:left">TBVAsset</td>
+<td style="text-align:left">TBVCollection</td>
+</tr>
+</tbody>
+</table>
+<p>相片选择器最终需要向外部提供统一的标识相片的结构。同样，统一结构能让相片选择器更加优雅地实现内部逻辑。所以这里我声明了两个对应的类：<code>TBVAsset</code>、<code>TBVCollection</code>，并提供一些最基本的功能。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVAsset</span> : <span class="title">NSObject</span></span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *  PHAsset or ALAsset</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) <span class="built_in">NSObject</span>  *asset;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">instancetype</span>)assetWithOriginAsset:(<span class="built_in">NSObject</span> *)asset;</span><br><span class="line"><span class="comment">/** 本地标识 */</span></span><br><span class="line">- (<span class="built_in">NSString</span> *)assetLocalIdentifer;</span><br><span class="line"><span class="comment">/** 源照片尺寸 */</span></span><br><span class="line">- (<span class="built_in">CGSize</span>)assetPixelSize;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVCollection</span> : <span class="title">NSObject</span></span></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *  ALAssetsGroup or PHAssetCollection</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) <span class="built_in">NSObject</span>  *collection;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">instancetype</span>)collectionWithOriginCollection:(<span class="built_in">NSObject</span> *)aCollection;</span><br><span class="line"><span class="comment">/** 相簿名 */</span></span><br><span class="line">- (<span class="built_in">NSString</span> *)collectionTitle;</span><br><span class="line"><span class="comment">/** 估算的相簿相片个数 */</span></span><br><span class="line">- (<span class="built_in">NSInteger</span>)collectionEstimatedAssetCount;</span><br><span class="line"><span class="comment">/** 精确的相簿相片个数 */</span></span><br><span class="line">- (<span class="built_in">NSInteger</span>)collectionAccurateAssetCountWithFetchOptions:(<span class="keyword">id</span>)filterOptions;</span><br><span class="line">- (<span class="built_in">NSInteger</span>)collectionAccurateAssetCountWithMediaType:(TBVAssetsPickerMediaType)mediaType;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>有了这些最基本的功能，在实现相册选择器时，就可以方便地对资源进行操作了。<br><br>其实对于这部分的兼容处理，主要就是对两个不同的库进行封装，使其呈现同样的外观，后续的几步大体也是围绕这个目标进行。</p>
+<h2 id="封装manager"><a href="#封装manager" class="headerlink" title="封装manager"></a>封装manager</h2><p>由于是两个不同版本的库，并且AssetsLibrary已经在iOS9时被弃用，使用时会产生<code>deprecated</code>警告，所以我分别对<code>ALAssetsLibrary</code>和<code>PHCachingImageManager</code>进行了封装，然后通过统一的接口<code>TBVAssetsManagerProtocol</code>暴露其功能。</p>
+<p>一般相册选择器具有如下页面及对应功能（UI展示）：</p>
+<ul>
+<li>首页<ul>
+<li>相簿名</li>
+<li>相簿缩略图</li>
+<li>相簿拥有相片数</li>
+</ul>
+</li>
+<li>预览页<ul>
+<li>相片缩略图</li>
+<li>选中相片大小</li>
+</ul>
+</li>
+<li>浏览页<ul>
+<li>相片大图</li>
+<li>选中相片大小</li>
+</ul>
+</li>
+</ul>
+<p>所以我提供的接口如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//====================================</span></span><br><span class="line"><span class="comment">//              image</span></span><br><span class="line"><span class="comment">//====================================</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** requestImage返回都是一个RACTuple，first是Image，second是是否为degraded */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求特定大小的图片 */</span></span><br><span class="line">- (RACSignal *)requestImageForAsset:(TBVAsset *)asset</span><br><span class="line">                         targetSize:(<span class="built_in">CGSize</span>)targetSize</span><br><span class="line">                        contentMode:(TBVAssetsPickerContentMode)contentMode;</span><br><span class="line"><span class="comment">/** 请求相簿缩略图 */</span></span><br><span class="line">- (RACSignal *)requestPosterImageForCollection:(TBVCollection *)collection</span><br><span class="line">                                     mediaType:(TBVAssetsPickerMediaType)mediaType;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求相片缩略图 */</span></span><br><span class="line">- (RACSignal *)requestPosterImageForAsset:(TBVAsset *)asset;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求相片原图 */</span></span><br><span class="line">- (RACSignal *)requestFullResolutionImageForAsset:(TBVAsset *)asset;</span><br><span class="line"></span><br><span class="line"><span class="comment">//====================================</span></span><br><span class="line"><span class="comment">//              asset / collection</span></span><br><span class="line"><span class="comment">//====================================</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求相片资源大小 */</span></span><br><span class="line">- (RACSignal *)requestSizeForAssets:(<span class="built_in">NSArray</span> &lt;TBVAsset *&gt; *)assets;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求所有相簿 */</span></span><br><span class="line">- (RACSignal *)requestAllCollections;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求所有相片资源 */</span></span><br><span class="line">- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection</span><br><span class="line">                                mediaType:(TBVAssetsPickerMediaType)mediaType;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求相机胶卷相簿（针对一般业务首先进入相机胶卷的预览页） */</span></span><br><span class="line">- (RACSignal *)requestCameraRollCollection;</span><br><span class="line"></span><br><span class="line"><span class="comment">//====================================</span></span><br><span class="line"><span class="comment">//              video</span></span><br><span class="line"><span class="comment">//====================================</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求AVPlayerItem */</span></span><br><span class="line">- (RACSignal *)requestVideoForAsset:(TBVAsset *)asset;</span><br><span class="line"></span><br><span class="line"><span class="comment">/** 请求AVURLAsset */</span></span><br><span class="line">- (RACSignal *)requestURLAssetForAsset:(TBVAsset *)asset;</span><br></pre></td></tr></table></figure>
+<p>实现以上接口，一般相册选择器的功能点就已经完成大半了。<br></p>
+<h2 id="TBVAssetsPickerManager"><a href="#TBVAssetsPickerManager" class="headerlink" title="TBVAssetsPickerManager"></a>TBVAssetsPickerManager</h2><p>由于自定义的相册manager都遵守<code>TBVAssetsManagerProtocol</code>，<code>TBVAssetsPickerManager</code><br>的实现就变得相对简单，没有一大串令人厌烦的<code>if-else</code>。当然<code>TBVAssetsPickerManager</code>本身也是遵守<code>TBVAssetsManagerProtocol</code>的。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TBVAssetsPickerManager</span>() </span></span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) <span class="built_in">NSObject</span>&lt;TBVAssetsManagerProtocol&gt; *realManager;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">strong</span>, <span class="keyword">nonatomic</span>) <span class="built_in">NSMutableArray</span> *requestIdList;</span><br><span class="line"><span class="keyword">@property</span> (<span class="keyword">assign</span>, <span class="keyword">nonatomic</span>) <span class="built_in">BOOL</span> photoKitAvailable;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#pragma mark life cycle</span></span><br><span class="line">- (<span class="keyword">instancetype</span>)init &#123;</span><br><span class="line">    <span class="keyword">self</span> = [<span class="keyword">super</span> init];</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">self</span>) &#123;</span><br><span class="line">        _photoKitAvailable = <span class="built_in">NSClassFromString</span>(<span class="string">@"PHImageManager"</span>) != <span class="literal">nil</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">self</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#pragma mark TBVAssetsManagerProtocol</span></span><br><span class="line">....</span><br><span class="line"></span><br><span class="line"><span class="meta">#pragma mark getter setter</span></span><br><span class="line">- (<span class="built_in">NSObject</span> *)realManager</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">if</span> (_realManager == <span class="literal">nil</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">self</span>.photoKitAvailable) &#123;</span><br><span class="line">            _realManager = [[TBVCachingImageManager alloc] init];</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            _realManager = [[TBVAssetsLibrary alloc] init];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> _realManager;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样<code>_realManager</code>拿到的就是当前版本最新的相册manager了。</p>
+<h2 id="接口的实现"><a href="#接口的实现" class="headerlink" title="接口的实现"></a>接口的实现</h2><p>其实接口文档描述的还是非常清晰的，所以这里只是罗列了下代码，并没有针对每一步做解释，因为这些基本的操作进去头文件看看就全明白了。</p>
+<h3 id="requestImageForAsset-targetSize-CGSize-targetSize-contentMode"><a href="#requestImageForAsset-targetSize-CGSize-targetSize-contentMode" class="headerlink" title="- requestImageForAsset:targetSize:(CGSize)targetSize:contentMode:"></a>- requestImageForAsset:targetSize:(CGSize)targetSize:contentMode:</h3><p>这个接口主要用来获取非原图。</p>
+<ul>
+<li>TBVCachingImageManager<ul>
+<li>关于PHImageRequestOptions的deliveryMode，<ul>
+<li>设置为PHImageRequestOptionsDeliveryModeOpportunistic并且synchronous为NO时，请求可能会先返回一张缩略图，然后再返回一张大图，这个可以通过获取请求回调字典中PHImageResultIsDegradedKey对应value来判别</li>
+<li>PHImageRequestOptionsDeliveryModeHighQualityFormat和PHImageRequestOptionsDeliveryModeFastFormat都返回一张图片，只不过前者返回的图片的质量高于或等于请求的质量，而后者可能返回一张质量稍低的图片</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>TBVAssetsLibrary<ul>
+<li>由于AssetsLibrary并没有提供获取特定尺寸的相片接口，所以这里只是返回thumbnail、aspectRatioThumbnail、fullScreenImage中尺寸和目标大小最接近的一张图片。</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestImageForAsset:(TBVAsset *)asset</span><br><span class="line">                         targetSize:(<span class="built_in">CGSize</span>)targetSize</span><br><span class="line">                        contentMode:(TBVAssetsPickerContentMode)contentMode &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        PHImageRequestID requestId = [<span class="keyword">self</span>.imageManager</span><br><span class="line">                                      requestImageForAsset:(PHAsset *)asset.asset</span><br><span class="line">                                      targetSize:targetSize</span><br><span class="line">                                      contentMode:[<span class="keyword">self</span> contentModeForCustomContentMode:contentMode]</span><br><span class="line">                                      options:<span class="keyword">self</span>.defaultImageRequestOptions</span><br><span class="line">                                      resultHandler:^(<span class="built_in">UIImage</span> * _Nullable result,</span><br><span class="line">                                                      <span class="built_in">NSDictionary</span> * _Nullable info) &#123;</span><br><span class="line">                                          [subscriber sendNext:RACTuplePack(result, info[PHImageResultIsDegradedKey])];</span><br><span class="line">                                          <span class="keyword">if</span> (![info[PHImageResultIsDegradedKey] boolValue]) &#123;</span><br><span class="line">                                              [subscriber sendCompleted];</span><br><span class="line">                                          &#125;</span><br><span class="line">                                      &#125;];</span><br><span class="line">        <span class="keyword">return</span> [RACDisposable disposableWithBlock:^&#123;</span><br><span class="line">            [<span class="keyword">self</span>.imageManager cancelImageRequest:requestId];</span><br><span class="line">        &#125;];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestImageForAsset:(TBVAsset *)aAsset</span><br><span class="line">                         targetSize:(<span class="built_in">CGSize</span>)targetSize</span><br><span class="line">                        contentMode:(TBVAssetsPickerContentMode)contentMode &#123;</span><br><span class="line">    <span class="keyword">return</span> [[[RACSignal <span class="keyword">return</span>:aAsset.asset]</span><br><span class="line">                deliverOn:[RACScheduler scheduler]]</span><br><span class="line">                map:^<span class="keyword">id</span>(ALAsset * asset) &#123;</span><br><span class="line">        <span class="built_in">CGImageRef</span> resultImageRef = <span class="literal">nil</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">BOOL</span> degraded = <span class="literal">NO</span>;</span><br><span class="line">        <span class="keyword">if</span> (targetSize.width &lt; <span class="built_in">CGImageGetWidth</span>(asset.thumbnail) &amp;&amp;</span><br><span class="line">            targetSize.height &lt; <span class="built_in">CGImageGetHeight</span>(asset.thumbnail)) &#123;</span><br><span class="line">            <span class="comment">// TBVAssetsPickerContentModeFill</span></span><br><span class="line">            resultImageRef = asset.thumbnail;</span><br><span class="line">            degraded = <span class="literal">YES</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!resultImageRef) &#123;</span><br><span class="line">            <span class="built_in">CGImageRef</span> aspectRatioThumbnail = asset.aspectRatioThumbnail;</span><br><span class="line">            <span class="keyword">if</span> (targetSize.width &lt; <span class="built_in">CGImageGetWidth</span>(aspectRatioThumbnail) &amp;&amp;</span><br><span class="line">                targetSize.height &lt; <span class="built_in">CGImageGetHeight</span>(aspectRatioThumbnail)) &#123;</span><br><span class="line">                <span class="comment">// TBVAssetsPickerContentModeFit</span></span><br><span class="line">                resultImageRef = aspectRatioThumbnail;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (!resultImageRef) &#123;</span><br><span class="line">                ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];</span><br><span class="line">                resultImageRef = [assetRepresentation fullScreenImage];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="built_in">UIImage</span> *resultImage = <span class="literal">nil</span>;</span><br><span class="line">        <span class="keyword">if</span> (resultImageRef) &#123;</span><br><span class="line">            resultImage = [<span class="built_in">UIImage</span> imageWithCGImage:resultImageRef</span><br><span class="line">                                              scale:BQAP_SCREEN_SCALE</span><br><span class="line">                                        orientation:<span class="built_in">UIImageOrientationUp</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> RACTuplePack(resultImage, @(degraded));</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestPosterImageForCollection-mediaType"><a href="#requestPosterImageForCollection-mediaType" class="headerlink" title="-requestPosterImageForCollection:mediaType:"></a>-requestPosterImageForCollection:mediaType:</h3><ul>
+<li>TBVCachingImageManager<ul>
+<li>通过-fetchKeyAssetsInAssetCollection:options:获取相簿keyAssets，最多可以返回三个</li>
+<li>最终还是通过requestPosterImageForAsset:获取缩略图<ul>
+<li>获取keyAssets前，需要设置options对资源进行过滤：</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">+ (<span class="keyword">instancetype</span>)tbv_fetchOptionsWithCustomMediaType:(TBVAssetsPickerMediaType)mediaType &#123;</span><br><span class="line">    <span class="built_in">NSArray</span> *mediaTypes = [<span class="keyword">self</span> tbv_mediaTypesWithCustonMediaType:mediaType];</span><br><span class="line">    <span class="keyword">if</span> (!mediaTypes.count) <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    </span><br><span class="line">    PHFetchOptions *options = [[PHFetchOptions alloc] init];</span><br><span class="line">    <span class="built_in">NSMutableString</span> *predicateString = [<span class="built_in">NSMutableString</span> string];</span><br><span class="line">    <span class="keyword">for</span> (<span class="built_in">NSNumber</span> *mediaType <span class="keyword">in</span> mediaTypes) &#123;</span><br><span class="line">        [predicateString appendFormat:<span class="string">@"mediaType = %@"</span>, mediaType];</span><br><span class="line">        <span class="keyword">if</span> (![mediaType isEqual:mediaTypes.lastObject]) [predicateString appendString:<span class="string">@" || "</span>];</span><br><span class="line">    &#125;</span><br><span class="line">    options.predicate = [<span class="built_in">NSPredicate</span> predicateWithFormat:predicateString];</span><br><span class="line">    <span class="keyword">return</span> options;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>TBVAssetsLibrary<ul>
+<li>ALAssetsGroup有posterImage属性，直接返回相簿缩略图</li>
+<li>和PhotoKit不同，AssetLibrary通过ALAssetsGroup的setAssetsFilter方法进行过滤</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[group setAssetsFilter:[ALAssetsFilter tbv_assetsFilterWithCustomMediaType:mediaType]];</span><br></pre></td></tr></table></figure>
+<p>这样设置以后，后续针对group的操作都会在过滤的结果中进行了。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestPosterImageForCollection:(TBVCollection *)collection</span><br><span class="line">                              mediaType:(TBVAssetsPickerMediaType)mediaType &#123;</span><br><span class="line">    <span class="keyword">return</span> [[RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        PHFetchOptions *fetchOptions = [PHFetchOptions tbv_fetchOptionsWithCustomMediaType:mediaType];</span><br><span class="line">        fetchOptions.sortDescriptors = @[[<span class="built_in">NSSortDescriptor</span> sortDescriptorWithKey:<span class="string">@"creationDate"</span></span><br><span class="line">                                                                       ascending:<span class="literal">YES</span>]];</span><br><span class="line">        PHAssetCollection *realCollection = (PHAssetCollection *)collection.collection;</span><br><span class="line">        <span class="comment">/* fetchKeyAssetsInAssetCollection 获取至多三张 */</span></span><br><span class="line">        PHFetchResult *result = [PHAsset fetchKeyAssetsInAssetCollection:realCollection</span><br><span class="line">                                                                 options:fetchOptions];</span><br><span class="line">        <span class="keyword">if</span> (!result.count) &#123;</span><br><span class="line">            [subscriber sendNext:[RACSignal empty]];</span><br><span class="line">            [subscriber sendCompleted];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        TBVAsset *posterAsset = [TBVAsset assetWithOriginAsset:result.firstObject];</span><br><span class="line">        [subscriber sendNext:[<span class="keyword">self</span> requestPosterImageForAsset:posterAsset]];</span><br><span class="line">        [subscriber sendCompleted];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;] switchToLatest];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection</span><br><span class="line">                                mediaType:(TBVAssetsPickerMediaType)mediaType &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *assets = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        ALAssetsGroup *group = (ALAssetsGroup *)collection.collection;</span><br><span class="line">        [group setAssetsFilter:[ALAssetsFilter tbv_assetsFilterWithCustomMediaType:mediaType]];</span><br><span class="line">        [group enumerateAssetsUsingBlock:^(ALAsset *result, <span class="built_in">NSUInteger</span> index, <span class="built_in">BOOL</span> *stop) &#123;</span><br><span class="line">            <span class="keyword">if</span> (result) &#123;</span><br><span class="line">                [assets addObject:[TBVAsset assetWithOriginAsset:result]];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                [subscriber sendNext:assets];</span><br><span class="line">                [subscriber sendCompleted];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestPosterImageForAsset"><a href="#requestPosterImageForAsset" class="headerlink" title="-requestPosterImageForAsset:"></a>-requestPosterImageForAsset:</h3><p>获取asset的缩略图，需要注意的一点就是：在获取缩略图的情况下，Fill比Fit获取的图片要清晰</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestPosterImageForAsset:(TBVAsset *)asset &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        <span class="built_in">CGSize</span> posterSize = <span class="built_in">CGSizeMake</span>(kBQPosterImageWidth * BQAP_SCREEN_SCALE,</span><br><span class="line">                                       kBQPosterImageHeight * BQAP_SCREEN_SCALE);</span><br><span class="line">        <span class="comment">/* 在获取缩略图的情况下，Fill比Fit获取的图片要清晰 */</span></span><br><span class="line">        PHImageRequestID requestId = [<span class="keyword">self</span>.imageManager</span><br><span class="line">                                      requestImageForAsset:(PHAsset *)asset.asset</span><br><span class="line">                                      targetSize:posterSize</span><br><span class="line">                                      contentMode:PHImageContentModeAspectFill</span><br><span class="line">                                      options:<span class="keyword">self</span>.defaultImageRequestOptions</span><br><span class="line">                                      resultHandler:^(<span class="built_in">UIImage</span> * _Nullable result,</span><br><span class="line">                                                      <span class="built_in">NSDictionary</span> * _Nullable info) &#123;</span><br><span class="line">                                          [subscriber sendNext:RACTuplePack(result, info[PHImageResultIsDegradedKey])];</span><br><span class="line">                                          <span class="keyword">if</span> (![info[PHImageResultIsDegradedKey] boolValue]) &#123;</span><br><span class="line">                                              [subscriber sendCompleted];</span><br><span class="line">                                          &#125;</span><br><span class="line">                                      &#125;];</span><br><span class="line">        <span class="keyword">return</span> [RACDisposable disposableWithBlock:^&#123;</span><br><span class="line">            [<span class="keyword">self</span>.imageManager cancelImageRequest:requestId];</span><br><span class="line">        &#125;];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestPosterImageForAsset:(TBVAsset *)asset &#123;</span><br><span class="line">    <span class="keyword">return</span> [[RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        <span class="built_in">CGSize</span> posterSize = <span class="built_in">CGSizeMake</span>(kBQPosterImageWidth * BQAP_SCREEN_SCALE,</span><br><span class="line">                                       kBQPosterImageHeight * BQAP_SCREEN_SCALE);</span><br><span class="line">        [subscriber sendNext:[<span class="keyword">self</span> requestImageForAsset:asset</span><br><span class="line">                                             targetSize:posterSize</span><br><span class="line">                                            contentMode:TBVAssetsPickerContentModeFill]];</span><br><span class="line">        [subscriber sendCompleted];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;] switchToLatest];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestFullResolutionImageForAsset"><a href="#requestFullResolutionImageForAsset" class="headerlink" title="-requestFullResolutionImageForAsset:"></a>-requestFullResolutionImageForAsset:</h3><p>获取原图时有一点很重要，就是尽量不要快速连续地获取原图，大图也可以列入这个范畴。连续地获取大图或者原图，设备的内存会急剧增高，甚至崩溃，这种情况通常在上传图片时比较常见。<br>所以在上传图片时，尽量上传一张原图后再获取下一张原图进行上传，而不是全部获取完成之后再上传。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestFullResolutionImageForAsset:(TBVAsset *)asset &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        <span class="keyword">self</span>.defaultImageRequestOptions.networkAccessAllowed = <span class="literal">YES</span>;</span><br><span class="line">        PHImageRequestID requestId = [<span class="keyword">self</span>.imageManager</span><br><span class="line">                                      requestImageForAsset:(PHAsset *)asset.asset</span><br><span class="line">                                      targetSize:PHImageManagerMaximumSize</span><br><span class="line">                                      contentMode:PHImageContentModeDefault</span><br><span class="line">                                      options:<span class="keyword">self</span>.defaultImageRequestOptions</span><br><span class="line">                                      resultHandler:^(<span class="built_in">UIImage</span> * _Nullable result,</span><br><span class="line">                                                      <span class="built_in">NSDictionary</span> * _Nullable info) &#123;</span><br><span class="line">                                          [subscriber sendNext:RACTuplePack(result, info[PHImageResultIsDegradedKey])];</span><br><span class="line">                                          <span class="keyword">if</span> (![info[PHImageResultIsDegradedKey] boolValue]) &#123;</span><br><span class="line">                                              [subscriber sendCompleted];</span><br><span class="line">                                          &#125;</span><br><span class="line">                                      &#125;];</span><br><span class="line">        <span class="keyword">return</span> [RACDisposable disposableWithBlock:^&#123;</span><br><span class="line">            [<span class="keyword">self</span>.imageManager cancelImageRequest:requestId];</span><br><span class="line">        &#125;];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestFullResolutionImageForAsset:(TBVAsset *)asset &#123;</span><br><span class="line">    <span class="keyword">return</span> [[[RACSignal <span class="keyword">return</span>:asset.asset]</span><br><span class="line">        deliverOn:[RACScheduler scheduler]]</span><br><span class="line">        map:^<span class="keyword">id</span>(ALAsset * asset) &#123;</span><br><span class="line">            ALAssetRepresentation *assetRepresentation = [asset defaultRepresentation];</span><br><span class="line">            <span class="built_in">CGImageRef</span> fullResolutionImage = [assetRepresentation fullResolutionImage];</span><br><span class="line">            <span class="built_in">UIImage</span> *resultImage = [<span class="built_in">UIImage</span> imageWithCGImage:fullResolutionImage</span><br><span class="line">                                                       scale:BQAP_SCREEN_SCALE</span><br><span class="line">                                                 orientation:<span class="built_in">UIImageOrientationUp</span>];</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">return</span> RACTuplePack(resultImage, @(<span class="literal">NO</span>));</span><br><span class="line">        &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestSizeForAssets"><a href="#requestSizeForAssets" class="headerlink" title="-requestSizeForAssets:"></a>-requestSizeForAssets:</h3><p>请求大小是针对的图片，所以对非图片的asset进行了过滤</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestSizeForAssets:(<span class="built_in">NSArray</span>&lt;TBVAsset *&gt; *)assets &#123;</span><br><span class="line">    RACSequence *requestSequence = [[assets.rac_sequence</span><br><span class="line">        filter:^<span class="built_in">BOOL</span>(TBVAsset *asset) &#123;</span><br><span class="line">            <span class="keyword">return</span> ((PHAsset *)asset.asset).mediaType == PHAssetMediaTypeImage;</span><br><span class="line">        &#125;]</span><br><span class="line">        map:^<span class="keyword">id</span>(TBVAsset *asset) &#123;</span><br><span class="line">            <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">                <span class="keyword">self</span>.defaultImageRequestOptions.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;</span><br><span class="line">                PHImageRequestID requestId =[<span class="keyword">self</span>.imageManager</span><br><span class="line">                                             requestImageDataForAsset:(PHAsset *)asset.asset</span><br><span class="line">                                             options:<span class="keyword">self</span>.defaultImageRequestOptions</span><br><span class="line">                                             resultHandler:^(<span class="built_in">NSData</span> * _Nullable imageData,</span><br><span class="line">                                                             <span class="built_in">NSString</span> * _Nullable dataUTI,</span><br><span class="line">                                                             <span class="built_in">UIImageOrientation</span> orientation,</span><br><span class="line">                                                             <span class="built_in">NSDictionary</span> * _Nullable info) &#123;</span><br><span class="line">                                                 [subscriber sendNext:@(imageData.length)];</span><br><span class="line">                                                 [subscriber sendCompleted];</span><br><span class="line">                                             &#125;];</span><br><span class="line">                <span class="keyword">return</span> [RACDisposable disposableWithBlock:^&#123;</span><br><span class="line">                    [<span class="keyword">self</span>.imageManager cancelImageRequest:requestId];</span><br><span class="line">                &#125;];</span><br><span class="line">            &#125;];</span><br><span class="line">        &#125;];</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> [[RACSignal</span><br><span class="line">        zip:requestSequence]</span><br><span class="line">        map:^<span class="keyword">id</span>(RACTuple *value) &#123;</span><br><span class="line">            <span class="keyword">return</span> [value.rac_sequence foldLeftWithStart:@<span class="number">0</span> reduce:^<span class="keyword">id</span>(<span class="keyword">id</span> accumulator, <span class="keyword">id</span> value) &#123;</span><br><span class="line">                <span class="keyword">return</span> @([accumulator integerValue] + [value integerValue]);</span><br><span class="line">            &#125;];</span><br><span class="line">        &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestSizeForAssets:(<span class="built_in">NSArray</span>&lt;TBVAsset *&gt; *)assets &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal</span><br><span class="line">        <span class="keyword">return</span>:[[[[assets.rac_sequence</span><br><span class="line">            map:^<span class="keyword">id</span>(TBVAsset *asset) &#123;</span><br><span class="line">               <span class="keyword">return</span> asset.asset;</span><br><span class="line">            &#125;]</span><br><span class="line">            filter:^<span class="built_in">BOOL</span>(ALAsset *asset) &#123;</span><br><span class="line">                <span class="keyword">return</span> [asset valueForProperty:ALAssetPropertyType] == ALAssetTypePhoto;</span><br><span class="line">            &#125;]</span><br><span class="line">            map:^<span class="keyword">id</span>(ALAsset *asset) &#123;</span><br><span class="line">                <span class="keyword">return</span> @([asset defaultRepresentation].size);</span><br><span class="line">            &#125;]</span><br><span class="line">            foldLeftWithStart:@(<span class="number">0</span>) reduce:^<span class="keyword">id</span>(<span class="keyword">id</span> accumulator, <span class="keyword">id</span> value) &#123;</span><br><span class="line">                <span class="keyword">return</span> @([accumulator integerValue] + [value integerValue]);</span><br><span class="line">            &#125;]];</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestAllCollections"><a href="#requestAllCollections" class="headerlink" title="-requestAllCollections"></a>-requestAllCollections</h3><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestAllCollections &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        PHFetchResult *smartResult = [PHAssetCollection</span><br><span class="line">                                      fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum</span><br><span class="line">                                      subtype:PHAssetCollectionSubtypeAlbumRegular</span><br><span class="line">                                      options:<span class="literal">nil</span>];</span><br><span class="line">        PHFetchResult *topLevelUserCollections = [PHCollectionList fetchTopLevelUserCollectionsWithOptions:<span class="literal">nil</span>];</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">NSMutableArray</span> *collections = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        <span class="keyword">for</span> (PHAssetCollection *aCollection <span class="keyword">in</span> smartResult) &#123;</span><br><span class="line">            TBVCollection *collection = [TBVCollection collectionWithOriginCollection:aCollection];</span><br><span class="line">            [collections addObject:collection];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (PHAssetCollection *aCollection <span class="keyword">in</span> topLevelUserCollections) &#123;</span><br><span class="line">            TBVCollection *collection = [TBVCollection collectionWithOriginCollection:aCollection];</span><br><span class="line">            [collections addObject:collection];</span><br><span class="line">        &#125;</span><br><span class="line">        [subscriber sendNext:collections];</span><br><span class="line">        [subscriber sendCompleted];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestAllCollections &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *collections = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        [<span class="keyword">self</span>.assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupAll</span><br><span class="line">                                          usingBlock:^(ALAssetsGroup *group, <span class="built_in">BOOL</span> *stop) &#123;</span><br><span class="line">            <span class="keyword">if</span> (group) &#123;</span><br><span class="line">                TBVCollection *collection = [TBVCollection collectionWithOriginCollection:group];</span><br><span class="line">                [collections addObject:collection];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                [subscriber sendNext:collections];</span><br><span class="line">                [subscriber sendCompleted];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; failureBlock:^(<span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">            [subscriber sendError:error];</span><br><span class="line">        &#125;];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestAssetsForCollection-mediaType"><a href="#requestAssetsForCollection-mediaType" class="headerlink" title="-requestAssetsForCollection:mediaType:"></a>-requestAssetsForCollection:mediaType:</h3><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection</span><br><span class="line">                                mediaType:(TBVAssetsPickerMediaType)mediaType &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        PHFetchOptions *options = [PHFetchOptions tbv_fetchOptionsWithCustomMediaType:mediaType];</span><br><span class="line">        PHFetchResult *fetchResult = [PHAsset fetchAssetsInAssetCollection:(PHAssetCollection *)collection.collection</span><br><span class="line">                                                                   options:options];</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *assets = [<span class="built_in">NSMutableArray</span> arrayWithCapacity:fetchResult.count];</span><br><span class="line">        <span class="keyword">for</span> (PHAsset *asset <span class="keyword">in</span> fetchResult) &#123;</span><br><span class="line">            [assets addObject:[TBVAsset assetWithOriginAsset:asset]];</span><br><span class="line">        &#125;</span><br><span class="line">        [subscriber sendNext:assets];</span><br><span class="line">        [subscriber sendCompleted];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestAssetsForCollection:(TBVCollection *)collection</span><br><span class="line">                                mediaType:(TBVAssetsPickerMediaType)mediaType &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *assets = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        ALAssetsGroup *group = (ALAssetsGroup *)collection.collection;</span><br><span class="line">        [group setAssetsFilter:[ALAssetsFilter tbv_assetsFilterWithCustomMediaType:mediaType]];</span><br><span class="line">        [group enumerateAssetsUsingBlock:^(ALAsset *result, <span class="built_in">NSUInteger</span> index, <span class="built_in">BOOL</span> *stop) &#123;</span><br><span class="line">            <span class="keyword">if</span> (result) &#123;</span><br><span class="line">                [assets addObject:[TBVAsset assetWithOriginAsset:result]];</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                [subscriber sendNext:assets];</span><br><span class="line">                [subscriber sendCompleted];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestCameraRollCollection"><a href="#requestCameraRollCollection" class="headerlink" title="-requestCameraRollCollection"></a>-requestCameraRollCollection</h3><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TBVCachingImageManager</span></span><br><span class="line">- (RACSignal *)requestCameraRollCollection &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        PHFetchResult *smartAlbums = [PHAssetCollection</span><br><span class="line">                                      fetchAssetCollectionsWithType:PHAssetCollectionTypeSmartAlbum</span><br><span class="line">                                      subtype:PHAssetCollectionSubtypeSmartAlbumUserLibrary</span><br><span class="line">                                      options:<span class="literal">nil</span>];</span><br><span class="line">        [subscriber sendNext:[TBVCollection collectionWithOriginCollection:smartAlbums.firstObject]];</span><br><span class="line">        [subscriber sendCompleted];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TBVAssetsLibrary</span></span><br><span class="line">- (RACSignal *)requestCameraRollCollection &#123;</span><br><span class="line">    <span class="keyword">return</span> [RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.assetsLibrary enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos usingBlock:^(ALAssetsGroup *group, <span class="built_in">BOOL</span> *stop) &#123;</span><br><span class="line">            [subscriber sendNext:[TBVCollection collectionWithOriginCollection:group]];</span><br><span class="line">            [subscriber sendCompleted];</span><br><span class="line">        &#125; failureBlock:^(<span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">            [subscriber sendError:error];</span><br><span class="line">        &#125;];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="requestVideoForAsset-和-requestURLAssetForAsset"><a href="#requestVideoForAsset-和-requestURLAssetForAsset" class="headerlink" title="-requestVideoForAsset:和-requestURLAssetForAsset:"></a>-requestVideoForAsset:和-requestURLAssetForAsset:</h3><p>由于业务上没有视频的需求，所以这一块还没有去实现。</p>
+<h2 id="实现过程中的一些小坑"><a href="#实现过程中的一些小坑" class="headerlink" title="实现过程中的一些小坑"></a>实现过程中的一些小坑</h2><h3 id="用ALAssetsLibrary申请访问相册权限"><a href="#用ALAssetsLibrary申请访问相册权限" class="headerlink" title="用ALAssetsLibrary申请访问相册权限"></a>用ALAssetsLibrary申请访问相册权限</h3><p>这一点貌似有些代码用authorizationStatus就能实现，不过<br>应用的时候还是发现不能触发请求权限alert，所以这里需要访问下相册的资源<a href="http://stackoverflow.com/questions/13572220/ask-permission-to-access-camera-roll" target="_blank" rel="noopener">ask-permission-to-access-camera-roll</a>，<br>来触发这个请求动作：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">+ (RACSignal *)tbv_forceTriggerPermissionAsking &#123;</span><br><span class="line">    <span class="keyword">return</span> [[RACSignal createSignal:^RACDisposable *(<span class="keyword">id</span>&lt;RACSubscriber&gt; subscriber) &#123;</span><br><span class="line">        <span class="keyword">void</span> (^sendStatus)() = ^&#123;</span><br><span class="line">            [subscriber sendNext:@([<span class="keyword">self</span> tbv_authorizationStatus])];</span><br><span class="line">            [subscriber sendCompleted];</span><br><span class="line">        &#125;;</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> ([<span class="keyword">self</span> tbv_authorizationStatus] != BQAuthorizationStatusNotDetermined) &#123;</span><br><span class="line">            sendStatus();</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        ALAssetsLibrary *lib = [[ALAssetsLibrary alloc] init];</span><br><span class="line">        [lib enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos usingBlock:^(ALAssetsGroup *group, <span class="built_in">BOOL</span> *stop) &#123;</span><br><span class="line">            sendStatus();</span><br><span class="line">            *stop = <span class="literal">YES</span>;</span><br><span class="line">        &#125; failureBlock:^(<span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">            sendStatus();</span><br><span class="line">        &#125;];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;] deliverOnMainThread];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="ALAssetsLibrary请求的ALAsset被置空问题"><a href="#ALAssetsLibrary请求的ALAsset被置空问题" class="headerlink" title="ALAssetsLibrary请求的ALAsset被置空问题"></a>ALAssetsLibrary请求的ALAsset被置空问题</h3><p>官方文档里面有这么一句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">The lifetimes of objects you get back from a library instance are tied to the lifetime of the library instance.</span><br></pre></td></tr></table></figure>
+<p>可以看到，在使用ALAssetsLibrary请求回来的资源时，是不能释放对应的ALAssetsLibrary对象的。在发送多图的场合，如果不注意保持住ALAssetsLibrary对象，很容易发生后面几张图片获取不到的情况。</p>
+<p>所以，要么在选择器返回选中的资源时，强引用对应的manager，要么这个manager由调用者传给相册选择器。</p>
+<h3 id="更改应用权限并切回前台"><a href="#更改应用权限并切回前台" class="headerlink" title="更改应用权限并切回前台"></a>更改应用权限并切回前台</h3><p>如果应用在后台时，更改了权限，当切回前台后，App会重新启动 。这里如果设置了断点，别以为是程序崩了。</p>
+<h2 id="不足"><a href="#不足" class="headerlink" title="不足"></a>不足</h2><p>一个很明显的问题是使用了RAC的版本后，相册选择器滚动的性能会下降，没有以前通过回调来的顺畅。如果稍微快速一点滚动的话，CPU很容易就上100%。</p>
+<p>可能是使用RAC的方式不是很正确造成的，后续尽可能优化这一块。</p>
+<h2 id="2016-9-25补充"><a href="#2016-9-25补充" class="headerlink" title="2016-9-25补充"></a>2016-9-25补充</h2><p>关于grid界面卡顿的原因:<br><br>因为这个界面的cell非常多，如果快速滚动时不对获取图片的信号进行throttle，那么CPU的占用率就会很高，从而界面就会变得卡顿。<br><br>在这里设置throttle为0.05左右就可以使界面变得比较顺畅，并且不会有太大的刷新延迟以至于影响用户体验。如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">RAC(self, contentImageView.image) = [[[viewModel.contentImageSignal</span><br><span class="line">        throttle:0.05]</span><br><span class="line">        takeUntil:self.rac_prepareForReuseSignal]</span><br><span class="line">        map:^id(RACTuple *value) &#123;</span><br><span class="line">            return [value first];</span><br><span class="line">        &#125;];</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/AssetsLibrary/" rel="tag"># AssetsLibrary</a>
+          
+            <a href="/tags/PhotoKit/" rel="tag"># PhotoKit</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/" rel="next" title="iOS知识碎片六">
+                <i class="fa fa-chevron-left"></i> iOS知识碎片六
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/09/15/2016-09-15-li-yong-ce-lue-mo-shi-zeng-qiang-tu-pian-liu-lan-qi-de-kuo-zhan-xing/" rel="prev" title="利用策略模式增强图片浏览器的扩展性">
+                利用策略模式增强图片浏览器的扩展性 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#统一asset以及collection"><span class="nav-number">1.</span> <span class="nav-text">统一asset以及collection</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#封装manager"><span class="nav-number">2.</span> <span class="nav-text">封装manager</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TBVAssetsPickerManager"><span class="nav-number">3.</span> <span class="nav-text">TBVAssetsPickerManager</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#接口的实现"><span class="nav-number">4.</span> <span class="nav-text">接口的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#requestImageForAsset-targetSize-CGSize-targetSize-contentMode"><span class="nav-number">4.1.</span> <span class="nav-text">- requestImageForAsset:targetSize:(CGSize)targetSize:contentMode:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestPosterImageForCollection-mediaType"><span class="nav-number">4.2.</span> <span class="nav-text">-requestPosterImageForCollection:mediaType:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestPosterImageForAsset"><span class="nav-number">4.3.</span> <span class="nav-text">-requestPosterImageForAsset:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestFullResolutionImageForAsset"><span class="nav-number">4.4.</span> <span class="nav-text">-requestFullResolutionImageForAsset:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestSizeForAssets"><span class="nav-number">4.5.</span> <span class="nav-text">-requestSizeForAssets:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestAllCollections"><span class="nav-number">4.6.</span> <span class="nav-text">-requestAllCollections</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestAssetsForCollection-mediaType"><span class="nav-number">4.7.</span> <span class="nav-text">-requestAssetsForCollection:mediaType:</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestCameraRollCollection"><span class="nav-number">4.8.</span> <span class="nav-text">-requestCameraRollCollection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#requestVideoForAsset-和-requestURLAssetForAsset"><span class="nav-number">4.9.</span> <span class="nav-text">-requestVideoForAsset:和-requestURLAssetForAsset:</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实现过程中的一些小坑"><span class="nav-number">5.</span> <span class="nav-text">实现过程中的一些小坑</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#用ALAssetsLibrary申请访问相册权限"><span class="nav-number">5.1.</span> <span class="nav-text">用ALAssetsLibrary申请访问相册权限</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ALAssetsLibrary请求的ALAsset被置空问题"><span class="nav-number">5.2.</span> <span class="nav-text">ALAssetsLibrary请求的ALAsset被置空问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#更改应用权限并切回前台"><span class="nav-number">5.3.</span> <span class="nav-text">更改应用权限并切回前台</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#不足"><span class="nav-number">6.</span> <span class="nav-text">不足</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2016-9-25补充"><span class="nav-number">7.</span> <span class="nav-text">2016-9-25补充</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/';
+          this.page.identifier = '2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/';
+          this.page.title = '使用AssetsLibrary和PhotoKit做一个简易的相片选择器';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Swift,RxSwift,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="create a disposable resource that has the same lifespan as the Observable，即创建一个和Observable具有相同生命周期的disposable资源。这是ReactiveX对于Using的描述。  可以看出，当一个ObserverA订阅Using返回的Observable时，Using会使用调用者传入的Resource工厂方">
+<meta name="keywords" content="Swift,RxSwift">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ReactiveX中Using操作的应用">
+<meta property="og:url" content="https://triplecc.github.io/2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="create a disposable resource that has the same lifespan as the Observable，即创建一个和Observable具有相同生命周期的disposable资源。这是ReactiveX对于Using的描述。  可以看出，当一个ObserverA订阅Using返回的Observable时，Using会使用调用者传入的Resource工厂方">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/2016-10-06-using.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ReactiveX中Using操作的应用">
+<meta name="twitter:description" content="create a disposable resource that has the same lifespan as the Observable，即创建一个和Observable具有相同生命周期的disposable资源。这是ReactiveX对于Using的描述。  可以看出，当一个ObserverA订阅Using返回的Observable时，Using会使用调用者传入的Resource工厂方">
+<meta name="twitter:image" content="https://triplecc.github.io/images/2016-10-06-using.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/">
+
+
+
+
+
+  <title>ReactiveX中Using操作的应用 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">ReactiveX中Using操作的应用</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-10-06T15:22:34+00:00">
+                2016-10-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/swift/" itemprop="url" rel="index">
+                    <span itemprop="name">swift</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p><code>create a disposable resource that has the same lifespan as the Observable</code>，即创建一个和Observable具有相同生命周期的disposable资源。<br><br>这是ReactiveX对于Using的描述。</p>
+<p><img src="/images/2016-10-06-using.png" alt=""></p>
+<p>可以看出，当一个ObserverA订阅Using返回的Observable时，Using会使用调用者传入的Resource工厂方法[resourceFactory]创建对应的资源，并且使用Observable工厂方法[observableFactory]创建ObserverA实际上想要订阅的Observable。当ObserverA终止时，对应的Resource也会被释放[dispose]。<br><a id="more"></a></p>
+<p>下面是一个简单的例子(以下的代码都基于RxSwift)：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyDisposables</span>: <span class="title">Disposable</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">dispose</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">"dispose"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">......</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="number">_</span> = <span class="type">Observable</span></span><br><span class="line">    .using(&#123; () -&gt; <span class="type">MyDisposables</span> <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">return</span> <span class="type">MyDisposables</span>()</span><br><span class="line">    &#125;) &#123; <span class="number">_</span> <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">return</span> <span class="type">Observable</span>&lt;<span class="type">Int</span>&gt;</span><br><span class="line">            .interval(<span class="number">1</span>, scheduler: <span class="type">MainScheduler</span>.instance)</span><br><span class="line">            .take(<span class="number">5</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    .subscribe(onNext: &#123;</span><br><span class="line">        <span class="built_in">print</span>($<span class="number">0</span>)</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+<p>代码段对应的输出：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0</span></span><br><span class="line"><span class="number">1</span></span><br><span class="line"><span class="number">2</span></span><br><span class="line"><span class="number">3</span></span><br><span class="line"><span class="number">4</span></span><br><span class="line">dispose</span><br></pre></td></tr></table></figure>
+<p>可以看到，当AnonymousObserver[匿名观察者]订阅using返回的Observable时，using内部创建了定期输出Int值的ObservableA，以及资源MyDisposables。在发送5个消息之后，ObservableA被终止，与此同时，MyDisposables资源被using释放。<br></p>
+<p>理解起来还是比较简单的，但是在什么场景中会使用到这个操作呢？<br></p>
+<hr>
+<h3 id="监听Obervable"><a href="#监听Obervable" class="headerlink" title="监听Obervable"></a>监听Obervable</h3><p>先看下RxSwift官方Demo中的一段关于GitHub登陆的代码：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> signingIn = <span class="type">ActivityIndicator</span>()</span><br><span class="line"><span class="keyword">self</span>.signingIn = signingIn.asObservable()</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> usernameAndPassword = <span class="type">Observable</span>.combineLatest(input.username, input.password) &#123; ($<span class="number">0</span>, $<span class="number">1</span>) &#125;</span><br><span class="line"></span><br><span class="line">signedIn = input.loginTaps.withLatestFrom(usernameAndPassword)</span><br><span class="line">    .flatMapLatest &#123; (username, password) <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">return</span> <span class="type">API</span>.signup(username, password: password)</span><br><span class="line">            .observeOn(<span class="type">MainScheduler</span>.instance)</span><br><span class="line">            .catchErrorJustReturn(<span class="literal">false</span>)</span><br><span class="line">            .trackActivity(signingIn)</span><br><span class="line">    &#125;</span><br><span class="line">    .flatMapLatest &#123; loggedIn -&gt; <span class="type">Observable</span>&lt;<span class="type">Bool</span>&gt; <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">let</span> message = loggedIn ? <span class="string">"Mock: Signed in to GitHub."</span> : <span class="string">"Mock: Sign in to GitHub failed"</span></span><br><span class="line">        <span class="keyword">return</span> wireframe.promptFor(message, cancelAction: <span class="string">"OK"</span>, actions: [])</span><br><span class="line">            <span class="comment">// propagate original value</span></span><br><span class="line">            .<span class="built_in">map</span> &#123; <span class="number">_</span> <span class="keyword">in</span></span><br><span class="line">                loggedIn</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    .shareReplay(<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>signingIn是当前是否正在登陆Observable；signedIn是当前登陆动作Observable。<br><br>signedIn体现的事件流如下:</p>
+<ul>
+<li>按下登陆按钮</li>
+<li>使用当前用户名及密码进行登陆</li>
+<li>展示登陆结果</li>
+</ul>
+<p>其中涉及到的Rx相关操作（<a href="http://rxmarbles.com" target="_blank" rel="noopener">详细图示</a>）：</p>
+<ul>
+<li>combineLatest: 合并最后的username和password，形成一个新的Observable</li>
+<li>withLatestFrom: 形成一个以loginTaps发送事件时间为采样时间点，发送usernameAndPassword内容的Observable</li>
+</ul>
+<hr>
+<h3 id="困惑点"><a href="#困惑点" class="headerlink" title="困惑点"></a>困惑点</h3><p>接下来当时比较困扰我的一个点：这段代码是如何做到监听当前是否正在登陆的？<br><br>其中涉及到记录开始登陆的操作如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line"></span><br><span class="line"><span class="type">API</span>.signup(username, password: password)</span><br><span class="line">.observeOn(<span class="type">MainScheduler</span>.instance)</span><br><span class="line">.catchErrorJustReturn(<span class="literal">false</span>)</span><br><span class="line">.trackActivity(signingIn)</span><br><span class="line"></span><br><span class="line">......</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">extension</span> <span class="title">ObservableConvertibleType</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">trackActivity</span><span class="params">(<span class="number">_</span> activityIndicator: ActivityIndicator)</span></span> -&gt; <span class="type">Observable</span>&lt;<span class="type">E</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">return</span> activityIndicator.trackActivityOfObservable(<span class="keyword">self</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重点关注<code>.trackActivity(signingIn)</code>这个调用。当时我的困惑是这样的：</p>
+<ul>
+<li><code>.trackActivity(signingIn)</code>是在<code>signup(username, password: password)</code>后调用的，也就是说登陆事件已经结束了，程序才开始监听登陆动作？（这个理解是错误的）</li>
+</ul>
+<p>上面的假设当然是错误的。那么，要想获得正确的结果，事件流应该是一个怎么样的执行顺序呢？<br><br>最直白的想法应该就是下面三步：</p>
+<ul>
+<li>设置当前状态为正在执行登陆</li>
+<li>执行登陆操作</li>
+<li>设置当前状态为没有执行登陆</li>
+</ul>
+<p>那么问题来了。首先，<code>signup(username, password: password)</code>生成了登陆动作Observable，当有Observer订阅这个Observable时，Observable就会执行登陆操作，并发送对应的结果。这就造成了<code>.trackActivity(signingIn)</code> 不能直接返回上游传递过来的事件流，因为这样做的话，刚好切合了上面的那个假设。所以<code>.trackActivity(signingIn)</code>应该做到以下几件事情：</p>
+<ul>
+<li>A1、保留登陆动作ObservableA，返回自定义的一个ObservableB           </li>
+<li>A2、当外部Observer订阅ObservableB时，设置当前状态为正在执行登陆</li>
+<li>A3、设置当前状态为正在执行登陆，然后让外部的Observer重新订阅到ObservableA</li>
+<li>A4、登陆操作执行完毕后，设置当前状态为没有执行登陆</li>
+</ul>
+<hr>
+<h3 id="解惑"><a href="#解惑" class="headerlink" title="解惑"></a>解惑</h3><p>下面时signingIn所属类ActivityIndicator的实现：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ActivityIndicator</span> : <span class="title">DriverConvertibleType</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">typealias</span> <span class="type">E</span> = <span class="type">Bool</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">let</span> _lock = <span class="type">NSRecursiveLock</span>()</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">let</span> _variable = <span class="type">Variable</span>(<span class="number">0</span>)</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">let</span> _loading: <span class="type">Driver</span>&lt;<span class="type">Bool</span>&gt;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">init</span>() &#123;</span><br><span class="line">        _loading = _variable.asDriver()</span><br><span class="line">            .<span class="built_in">map</span> &#123; $<span class="number">0</span> &gt; <span class="number">0</span> &#125;</span><br><span class="line">            .distinctUntilChanged()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fileprivate</span> <span class="function"><span class="keyword">func</span> <span class="title">trackActivityOfObservable</span>&lt;O: ObservableConvertibleType&gt;<span class="params">(<span class="number">_</span> source: O)</span></span> -&gt; <span class="type">Observable</span>&lt;<span class="type">O</span>.<span class="type">E</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="type">Observable</span>.using(&#123; () -&gt; <span class="type">ActivityToken</span>&lt;<span class="type">O</span>.<span class="type">E</span>&gt; <span class="keyword">in</span></span><br><span class="line">            <span class="keyword">self</span>.increment()</span><br><span class="line">            <span class="keyword">return</span> <span class="type">ActivityToken</span>(source: source.asObservable(), disposeAction: <span class="keyword">self</span>.decrement)</span><br><span class="line">        &#125;) &#123; t <span class="keyword">in</span></span><br><span class="line">            <span class="keyword">return</span> t.asObservable()</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="function"><span class="keyword">func</span> <span class="title">increment</span><span class="params">()</span></span> &#123;</span><br><span class="line">        _lock.lock()</span><br><span class="line">        _variable.value = _variable.value + <span class="number">1</span></span><br><span class="line">        _lock.unlock()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="function"><span class="keyword">func</span> <span class="title">decrement</span><span class="params">()</span></span> &#123;</span><br><span class="line">        _lock.lock()</span><br><span class="line">        _variable.value = _variable.value - <span class="number">1</span></span><br><span class="line">        _lock.unlock()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">asDriver</span><span class="params">()</span></span> -&gt; <span class="type">Driver</span>&lt;<span class="type">E</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">return</span> _loading</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>先看下<code>_variable</code>对应的Variable类型。<br><br>Variable实际上是BehaviorSubject的一层包装，不同的是它只暴露数据，不会被终止或者失败。<br><br>BehaviorSubject会在订阅者订阅时，发送一个最近或初始数据，并且订阅者可以接收BehaviorSubject随后发送的所有数据。<br><br>下面是一个Variable的例子：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> v = <span class="type">Variable</span>(<span class="number">0</span>)</span><br><span class="line">v.asObservable()</span><br><span class="line">    .subscribe(onNext: &#123;</span><br><span class="line">        <span class="built_in">print</span>($<span class="number">0</span>)</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line">v.value = <span class="number">1</span></span><br><span class="line">v.value = <span class="number">2</span></span><br></pre></td></tr></table></figure>
+<p>代码段对应的输出：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0</span></span><br><span class="line"><span class="number">1</span></span><br><span class="line"><span class="number">2</span></span><br></pre></td></tr></table></figure>
+<p>现在回过头来看下<code>_variable</code>、<code>_loading</code>这两个属性。<br><br><code>_loading</code>在ActivityIndicator的初始化方法中的赋值如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">_loading = _variable.asDriver()</span><br><span class="line">	.<span class="built_in">map</span> &#123; $<span class="number">0</span> &gt; <span class="number">0</span> &#125;</span><br><span class="line">	.distinctUntilChanged()</span><br></pre></td></tr></table></figure>
+<p>其中<code>_variable</code>的初始值为0。所以这部分的逻辑很容易理解：<code>_loading</code>通过<code>_variable</code>发送的值是否大于0来判断当前是否在执行动作，并且通过increment、decrement方法来设置<code>_variable</code>发送的值（改变当前正在执行的动作数）。<br></p>
+<p>重点还是在trackActivityOfObservable方法：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fileprivate</span> <span class="function"><span class="keyword">func</span> <span class="title">trackActivityOfObservable</span>&lt;O: ObservableConvertibleType&gt;<span class="params">(<span class="number">_</span> source: O)</span></span> -&gt; <span class="type">Observable</span>&lt;<span class="type">O</span>.<span class="type">E</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="type">Observable</span>.using(&#123; () -&gt; <span class="type">ActivityToken</span>&lt;<span class="type">O</span>.<span class="type">E</span>&gt; <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">self</span>.increment()</span><br><span class="line">        <span class="keyword">return</span> <span class="type">ActivityToken</span>(source: source.asObservable(), disposeAction: <span class="keyword">self</span>.decrement)</span><br><span class="line">    &#125;) &#123; t <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">return</span> t.asObservable()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中对应的resourceFactory：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&#123; () -&gt; <span class="type">ActivityToken</span>&lt;<span class="type">O</span>.<span class="type">E</span>&gt; <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">self</span>.increment()</span><br><span class="line">        <span class="keyword">return</span> <span class="type">ActivityToken</span>(source: source.asObservable(), disposeAction: <span class="keyword">self</span>.decrement)</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>observableFactory：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123; t <span class="keyword">in</span></span><br><span class="line">        <span class="keyword">return</span> t.asObservable()</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>ActivityToken的实现如下：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="class"><span class="keyword">struct</span> <span class="title">ActivityToken</span>&lt;<span class="title">E</span>&gt; : <span class="title">ObservableConvertibleType</span>, <span class="title">Disposable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">let</span> _source: <span class="type">Observable</span>&lt;<span class="type">E</span>&gt;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">let</span> _dispose: <span class="type">Cancelable</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">init</span>(source: <span class="type">Observable</span>&lt;<span class="type">E</span>&gt;, disposeAction: @escaping () -&gt; ()) &#123;</span><br><span class="line">        _source = source</span><br><span class="line">        _dispose = <span class="type">Disposables</span>.create(with: disposeAction)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">dispose</span><span class="params">()</span></span> &#123;</span><br><span class="line">        _dispose.dispose()</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">asObservable</span><span class="params">()</span></span> -&gt; <span class="type">Observable</span>&lt;<span class="type">E</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">return</span> _source</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，ActivityToken就是一个保存了当前需要监听的Observable的资源。<br><br>当外部Observer订阅trackActivityOfObservable返回的ObservableB时，using调用resourceFactory做了以下操作：</p>
+<ul>
+<li>增加当前正在执行的动作数</li>
+<li>使用ActivityToken保存需要监听的ObservableA，并且在ActivityToken释放时，恢复当前正在执行的动作数</li>
+</ul>
+<p>接下来在调用observableFactory时，using把在resourceFactory中保存的ObservableA重新暴露给Observer。<br><br>通过这种方式，就能在ObservableA发送数据之前，执行额外的操作<code>self.increment()</code>，也就是上面<code>.trackActivity(signingIn)</code>应该做到的A2。并且因为using会在observableFactory返回的ObservableA终止时释放resourceFactory创建的资源，所以当ObservableA终止时，会执行<code>self.decrement</code>，也就是A4。<br><br>嗯，目前为止，上面的疑惑算是解决了。<br><br>总结一下，就是通过using操作hold主需要监听的Observable，然后在执行了想要的额外动作后，重新暴露Observable给外部的Observer。</p>
+<hr>
+<h3 id="using内部实现"><a href="#using内部实现" class="headerlink" title="using内部实现"></a>using内部实现</h3><p>最后，研究下using的内部实现：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">func</span> <span class="title">using</span>&lt;R: Disposable&gt;<span class="params">(<span class="number">_</span> resourceFactory: @escaping <span class="params">()</span></span></span> <span class="keyword">throws</span> -&gt; <span class="type">R</span>, observableFactory: @escaping (<span class="type">R</span>) <span class="keyword">throws</span> -&gt; <span class="type">Observable</span>&lt;<span class="type">E</span>&gt;) -&gt; <span class="type">Observable</span>&lt;<span class="type">E</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="type">Using</span>(resourceFactory: resourceFactory, observableFactory: observableFactory)</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>using实际上返回的是一个Using类：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Using</span>&lt;<span class="title">SourceType</span>, <span class="title">ResourceType</span>: <span class="title">Disposable</span>&gt;: <span class="title">Producer</span>&lt;<span class="title">SourceType</span>&gt; </span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">typealias</span> <span class="type">E</span> = <span class="type">SourceType</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">typealias</span> <span class="type">ResourceFactory</span> = () <span class="keyword">throws</span> -&gt; <span class="type">ResourceType</span></span><br><span class="line">    <span class="keyword">typealias</span> <span class="type">ObservableFactory</span> = (<span class="type">ResourceType</span>) <span class="keyword">throws</span> -&gt; <span class="type">Observable</span>&lt;<span class="type">SourceType</span>&gt;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">fileprivate</span> <span class="keyword">let</span> _resourceFactory: <span class="type">ResourceFactory</span></span><br><span class="line">    <span class="keyword">fileprivate</span> <span class="keyword">let</span> _observableFactory: <span class="type">ObservableFactory</span></span><br><span class="line">    </span><br><span class="line">    </span><br><span class="line">    <span class="keyword">init</span>(resourceFactory: @escaping <span class="type">ResourceFactory</span>, observableFactory: @escaping <span class="type">ObservableFactory</span>) &#123;</span><br><span class="line">        _resourceFactory = resourceFactory</span><br><span class="line">        _observableFactory = observableFactory</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">func</span> <span class="title">run</span>&lt;O : ObserverType&gt;<span class="params">(<span class="number">_</span> observer: O)</span></span> -&gt; <span class="type">Disposable</span> <span class="keyword">where</span> <span class="type">O</span>.<span class="type">E</span> == <span class="type">E</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> sink = <span class="type">UsingSink</span>(parent: <span class="keyword">self</span>, observer: observer)</span><br><span class="line">        sink.disposable = sink.run()</span><br><span class="line">        <span class="keyword">return</span> sink</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Using为Producer的子类，并且重载了run方法。<br><br>再看下Producer的实现：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Producer</span>&lt;<span class="title">Element</span>&gt; : <span class="title">Observable</span>&lt;<span class="title">Element</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">init</span>() &#123;</span><br><span class="line">        <span class="keyword">super</span>.<span class="keyword">init</span>()</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">func</span> <span class="title">subscribe</span>&lt;O : ObserverType&gt;<span class="params">(<span class="number">_</span> observer: O)</span></span> -&gt; <span class="type">Disposable</span> <span class="keyword">where</span> <span class="type">O</span>.<span class="type">E</span> == <span class="type">Element</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> !<span class="type">CurrentThreadScheduler</span>.isScheduleRequired &#123;</span><br><span class="line">            <span class="keyword">return</span> run(observer)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="type">CurrentThreadScheduler</span>.instance.schedule(()) &#123; <span class="number">_</span> <span class="keyword">in</span></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">self</span>.run(observer)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">run</span>&lt;O : ObserverType&gt;<span class="params">(<span class="number">_</span> observer: O)</span></span> -&gt; <span class="type">Disposable</span> <span class="keyword">where</span> <span class="type">O</span>.<span class="type">E</span> == <span class="type">Element</span> &#123;</span><br><span class="line">        abstractMethod()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Producer调用subscribe时，会调用子类的run，并传入当前的Oberver。回到Using的实现，Producer的run方法中创建了UsingSink实例，并调用它的run方法。那么来看下最关键的UsingSink：</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">UsingSink</span>&lt;<span class="title">SourceType</span>, <span class="title">ResourceType</span>: <span class="title">Disposable</span>, <span class="title">O</span>: <span class="title">ObserverType</span>&gt; : <span class="title">Sink</span>&lt;<span class="title">O</span>&gt;, <span class="title">ObserverType</span> <span class="title">where</span> <span class="title">O</span>.<span class="title">E</span> == <span class="title">SourceType</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">typealias</span> <span class="type">Parent</span> = <span class="type">Using</span>&lt;<span class="type">SourceType</span>, <span class="type">ResourceType</span>&gt;</span><br><span class="line">    <span class="keyword">typealias</span> <span class="type">E</span> = <span class="type">O</span>.<span class="type">E</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">let</span> _parent: <span class="type">Parent</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">init</span>(parent: <span class="type">Parent</span>, observer: <span class="type">O</span>) &#123;</span><br><span class="line">        _parent = parent</span><br><span class="line">        <span class="keyword">super</span>.<span class="keyword">init</span>(observer: observer)</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">run</span><span class="params">()</span></span> -&gt; <span class="type">Disposable</span> &#123;</span><br><span class="line">        <span class="keyword">var</span> disposable = <span class="type">Disposables</span>.create()</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">do</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> resource = <span class="keyword">try</span> _parent._resourceFactory()</span><br><span class="line">            disposable = resource</span><br><span class="line">            <span class="keyword">let</span> source = <span class="keyword">try</span> _parent._observableFactory(resource)</span><br><span class="line">            </span><br><span class="line">            <span class="keyword">return</span> <span class="type">Disposables</span>.create(</span><br><span class="line">                source.subscribe(<span class="keyword">self</span>),</span><br><span class="line">                disposable</span><br><span class="line">            )</span><br><span class="line">        &#125; <span class="keyword">catch</span> <span class="keyword">let</span> error &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="type">Disposables</span>.create(</span><br><span class="line">                <span class="type">Observable</span>.error(error).subscribe(<span class="keyword">self</span>),</span><br><span class="line">                disposable</span><br><span class="line">            )</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">func</span> <span class="title">on</span><span class="params">(<span class="number">_</span> event: Event&lt;E&gt;)</span></span> &#123;</span><br><span class="line">        <span class="keyword">switch</span> event &#123;</span><br><span class="line">        <span class="keyword">case</span> <span class="keyword">let</span> .next(value):</span><br><span class="line">            forwardOn(.next(value))</span><br><span class="line">        <span class="keyword">case</span> <span class="keyword">let</span> .error(error):</span><br><span class="line">            forwardOn(.error(error))</span><br><span class="line">            dispose()</span><br><span class="line">        <span class="keyword">case</span> .completed:</span><br><span class="line">            forwardOn(.completed)</span><br><span class="line">            dispose()</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，在run方法中，UsingSink先是调用<code>_resourceFactory()</code>创建了资源resource，然后以resource为参数调用<code>_observableFactory()</code>来创建想要的Obervable。并且通过<code>Disposables.create(source.subscribe(self),disposable)</code>让resource的生命周期和Obervable一致。<br><br>实际上UsingSink只是在run中做了两件特殊的事情：</p>
+<ul>
+<li>在让source订阅自身前，创建了resource（一般会在这里做额外的操作）</li>
+<li>使用的source不是由上游给的，而是通过<code>_observableFactory</code>创建的（一般的操作比如map、flatMap等，都是由上游给的）</li>
+</ul>
+<hr>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p><a href="http://www.introtorx.com/Content/v1.0.10621.0/11_AdvancedErrorHandling.html#Using" target="_blank" rel="noopener">.Net中关于Using的例子</a><br><br><a href="http://rxmarbles.com" target="_blank" rel="noopener">Rx操作图示</a><br><br><a href="http://reactivex.io/documentation/operators/using.html" target="_blank" rel="noopener">官方文档中对于using的说明</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Swift/" rel="tag"># Swift</a>
+          
+            <a href="/tags/RxSwift/" rel="tag"># RxSwift</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/10/03/2016-10-03-guan-yu-rxswiftzhong-de-disposebag/" rel="next" title="关于RxSwift中的DisposeBag">
+                <i class="fa fa-chevron-left"></i> 关于RxSwift中的DisposeBag
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/10/15/2016-10-15-shi-yong-rxswift-plus-moya-plus-objectmapperjie-ru-mo-xing/" rel="prev" title="使用RxSwift+Moya+ObjectMapper接入模型">
+                使用RxSwift+Moya+ObjectMapper接入模型 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#监听Obervable"><span class="nav-number">1.</span> <span class="nav-text">监听Obervable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#困惑点"><span class="nav-number">2.</span> <span class="nav-text">困惑点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解惑"><span class="nav-number">3.</span> <span class="nav-text">解惑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#using内部实现"><span class="nav-number">4.</span> <span class="nav-text">using内部实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考"><span class="nav-number">5.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/';
+          this.page.identifier = '2016/10/06/2016-10-06-rxswiftzhong-usingde-ying-yong/';
+          this.page.title = 'ReactiveX中Using操作的应用';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

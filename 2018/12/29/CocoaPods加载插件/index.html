@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="CocoaPods 为开发者提供了插件注册功能，可以使用 pod plugins create NAME 命令创建插件，并在 Podfile 中通过 plugin &amp;#39;NAME&amp;#39; 语句引入插件。虽然在一般情况下很少使用这个功能，但在某些场景下，利用插件能比较方便快捷地解决问题，比如清除 input，output 文件、创建 Podfile DSL 等。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CocoaPods 如何加载插件">
+<meta property="og:url" content="https://triplecc.github.io/2018/12/29/CocoaPods加载插件/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="CocoaPods 为开发者提供了插件注册功能，可以使用 pod plugins create NAME 命令创建插件，并在 Podfile 中通过 plugin &amp;#39;NAME&amp;#39; 语句引入插件。虽然在一般情况下很少使用这个功能，但在某些场景下，利用插件能比较方便快捷地解决问题，比如清除 input，output 文件、创建 Podfile DSL 等。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CocoaPods 如何加载插件">
+<meta name="twitter:description" content="CocoaPods 为开发者提供了插件注册功能，可以使用 pod plugins create NAME 命令创建插件，并在 Podfile 中通过 plugin &amp;#39;NAME&amp;#39; 语句引入插件。虽然在一般情况下很少使用这个功能，但在某些场景下，利用插件能比较方便快捷地解决问题，比如清除 input，output 文件、创建 Podfile DSL 等。">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2018/12/29/CocoaPods加载插件/">
+
+
+
+
+
+  <title>CocoaPods 如何加载插件 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2018/12/29/CocoaPods加载插件/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">CocoaPods 如何加载插件</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-12-29T14:40:46+00:00">
+                2018-12-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2018/12/29/CocoaPods加载插件/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2018/12/29/CocoaPods加载插件/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>CocoaPods 为开发者提供了插件注册功能，可以使用 <code>pod plugins create NAME</code> 命令创建插件，并在 Podfile 中通过 <code>plugin &#39;NAME&#39;</code> 语句引入插件。虽然在一般情况下很少使用这个功能，但在某些场景下，利用插件能比较方便快捷地解决问题，比如<a href="https://github.com/tripleCC/cocoapods-input-output-cleaner" target="_blank" rel="noopener">清除 <code>input</code>，<code>output</code> 文件</a>、<a href="https://github.com/tripleCC/cocoapods-tdfire-binary" target="_blank" rel="noopener">创建 Podfile DSL</a> 等。</p>
+<a id="more"></a>
+<p>刚开始写 CocoaPods 插件时，对其怎么执行没有 <code>require</code> 的插件代码比较好奇，但限于对 ruby 以及 gem 知识的了解，也就没有进一步地探索其实现原理，毕竟首要任务是解决工作问题。如今回过头来看这个问题，发现实现起来还是比较简单的。来看下 CocoaPods 是如何实现的。</p>
+<h2 id="实现探索"><a href="#实现探索" class="headerlink" title="实现探索"></a>实现探索</h2><p>首先，由于 <code>pod install</code> 过程会涉及到插件的加载，所以直接查看 <code>installer.rb</code> 文件:</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Runs the registered callbacks for the plugins post install hooks.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run_plugins_post_install_hooks</span></span></span><br><span class="line">  context = PostInstallHooksContext.generate(sandbox, aggregate_targets)</span><br><span class="line">  HooksManager.run(<span class="symbol">:post_install</span>, context, plugins)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Runs the registered callbacks for the plugins pre install hooks.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># <span class="doctag">@return</span> [void]</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">run_plugins_pre_install_hooks</span></span></span><br><span class="line">  context = PreInstallHooksContext.generate(sandbox, podfile, lockfile)</span><br><span class="line">  HooksManager.run(<span class="symbol">:pre_install</span>, context, plugins)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Ensures that all plugins specified in the &#123;#podfile&#125; are loaded.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># <span class="doctag">@return</span> [void]</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">ensure_plugins_are_installed!</span></span></span><br><span class="line">  <span class="keyword">require</span> <span class="string">'claide/command/plugin_manager'</span></span><br><span class="line"></span><br><span class="line">  loaded_plugins = Command::PluginManager.specifications.map(&amp;<span class="symbol">:name</span>)</span><br><span class="line"></span><br><span class="line">  podfile.plugins.keys.each <span class="keyword">do</span> <span class="params">|plugin|</span></span><br><span class="line">    <span class="keyword">unless</span> loaded_plugins.<span class="keyword">include</span>? plugin</span><br><span class="line">      raise Informative, <span class="string">"Your Podfile requires that the plugin `<span class="subst">#&#123;plugin&#125;</span>` be installed. Please install it and try installation again."</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>其中 <code>run_plugins_pre_install_hooks</code> 和 <code>run_plugins_post_install_hooks</code> 分别执行了插件注册的 <code>pre_install</code> 和 <code>pod_install</code> 方法， <code>ensure_plugins_are_installed</code> 则确认插件是否已被安装。</p>
+<p>接下来看下 <code>Command::PluginManager</code> ，这个类在 <code>claide/command/plugin_manager</code> 文件内，属于 <code>claide</code> gem :</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># <span class="doctag">@return</span> [Array&lt;Gem::Specification&gt;] Loads plugins via RubyGems looking</span></span><br><span class="line"><span class="comment">#         for files named after the `PLUGIN_PREFIX_plugin` and returns the</span></span><br><span class="line"><span class="comment">#         specifications of the gems loaded successfully.</span></span><br><span class="line"><span class="comment">#         Plugins are required safely.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">self</span>.<span class="title">load_plugins</span><span class="params">(plugin_prefix)</span></span></span><br><span class="line">  loaded_plugins[plugin_prefix] <span class="params">||</span>=</span><br><span class="line">    plugin_gems_for_prefix(plugin_prefix).map <span class="keyword">do</span> <span class="params">|spec, paths|</span></span><br><span class="line">      spec <span class="keyword">if</span> safe_activate_and_require(spec, paths)</span><br><span class="line">    <span class="keyword">end</span>.compact</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># <span class="doctag">@group</span> Helper Methods</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># <span class="doctag">@return</span> [Array&lt;[Gem::Specification, Array&lt;String&gt;]&gt;]</span></span><br><span class="line"><span class="comment">#         Returns an array of tuples containing the specifications and</span></span><br><span class="line"><span class="comment">#         plugin files to require for a given plugin prefix.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">self</span>.<span class="title">plugin_gems_for_prefix</span><span class="params">(prefix)</span></span></span><br><span class="line">  glob = <span class="string">"<span class="subst">#&#123;prefix&#125;</span>_plugin<span class="subst">#&#123;Gem.suffix_pattern&#125;</span>"</span></span><br><span class="line">  Gem::Specification.latest_specs(<span class="literal">true</span>).map <span class="keyword">do</span> <span class="params">|spec|</span></span><br><span class="line">    matches = spec.matches_for_glob(glob)</span><br><span class="line">    [spec, matches] <span class="keyword">unless</span> matches.empty?</span><br><span class="line">  <span class="keyword">end</span>.compact</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Activates the given spec and requires the given paths.</span></span><br><span class="line"><span class="comment"># If any exception occurs it is caught and an</span></span><br><span class="line"><span class="comment"># informative message is printed.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># <span class="doctag">@param</span>  [Gem::Specification] spec</span></span><br><span class="line"><span class="comment">#         The spec to be activated.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># <span class="doctag">@param</span>  [String] paths</span></span><br><span class="line"><span class="comment">#         The paths to require.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># <span class="doctag">@return</span> [Bool] Whether activation and requiring succeeded.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">self</span>.<span class="title">safe_activate_and_require</span><span class="params">(spec, paths)</span></span></span><br><span class="line">  spec.activate</span><br><span class="line">  paths.each &#123; <span class="params">|path|</span> <span class="keyword">require</span>(path) &#125;</span><br><span class="line">  <span class="literal">true</span></span><br><span class="line"><span class="keyword">rescue</span> Exception =&gt; exception <span class="comment"># rubocop:disable RescueException</span></span><br><span class="line">  message = <span class="string">"\n---------------------------------------------"</span></span><br><span class="line">  message &lt;&lt; <span class="string">"\nError loading the plugin `<span class="subst">#&#123;spec.full_name&#125;</span>`.\n"</span></span><br><span class="line">  message &lt;&lt; <span class="string">"\n<span class="subst">#&#123;exception.<span class="keyword">class</span>&#125;</span> - <span class="subst">#&#123;exception.message&#125;</span>"</span></span><br><span class="line">  message &lt;&lt; <span class="string">"\n<span class="subst">#&#123;exception.backtrace.join(<span class="string">"\n"</span>)&#125;</span>"</span></span><br><span class="line">  message &lt;&lt; <span class="string">"\n---------------------------------------------\n"</span></span><br><span class="line">  warn message.ansi.yellow</span><br><span class="line">  <span class="literal">false</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>以上代码调用几个的 <code>Gem::Specification</code> 方法如下：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 获取最新 spec 集合</span></span><br><span class="line"><span class="comment"># Return the latest specs, optionally including prerelease specs if prerelease is true.</span></span><br><span class="line">latest_specs(prerelease = <span class="literal">false</span>) </span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取 gem 中匹配的文件路径</span></span><br><span class="line"><span class="comment"># Return all files in this gem that match for glob.</span></span><br><span class="line">matches_for_glob(glob) </span><br><span class="line"></span><br><span class="line"><span class="comment"># 激活 spec，注册并将其 lib 路径添加到 $LOAD_PATH （$LOAD_PATH 环境变量存储 require 文件时查找的路径）</span></span><br><span class="line"><span class="comment"># Activate this spec, registering it as a loaded spec and adding it's lib paths to $LOAD_PATH. Returns true if the spec was activated, false if it was previously activated. Freaks out if there are conflicts upon activation.</span></span><br><span class="line">activate()</span><br></pre></td></tr></table></figure>
+<p>可以看到在 <code>loaded_plugins[plugin_prefix]</code> 为空的情况下，程序会执行 <code>plugin_gems_for_prefix</code> 方法，<code>plugin_gems_for_prefix</code> 方法通过 <code>latest_specs</code> 获取了最新的 spec ，并通过 spec 的 <code>matches_for_glob</code> 方法对文件进行匹配，当 spec 中存在匹配 <code>&quot;#{prefix}_plugin#{Gem.suffix_pattern}&quot;</code> 格式的文件时，则视其为 CocoaPods 插件。在拿到插件及其匹配文件后，<code>safe_activate_and_require</code> 方法将文件加入 $LOAD_PATH 中并 require 之。</p>
+<p>另外 <code>CLAide::Command</code> 类会在 <code>run</code> 类方法中加载所有插件，然后根据解析后的信息，执行对应的命令:</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># <span class="doctag">@param</span>  [Array, ARGV] argv</span></span><br><span class="line"><span class="comment">#         A list of (remaining) parameters.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># <span class="doctag">@return</span> [Command] An instance of the command class that was matched by</span></span><br><span class="line"><span class="comment">#         going through the arguments in the parameters and drilling down</span></span><br><span class="line"><span class="comment">#         command classes.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">self</span>.<span class="title">run</span><span class="params">(argv = [])</span></span></span><br><span class="line">  plugin_prefixes.each <span class="keyword">do</span> <span class="params">|plugin_prefix|</span></span><br><span class="line">    PluginManager.load_plugins(plugin_prefix)</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  argv = ARGV.coerce(argv)</span><br><span class="line">  command = parse(argv)</span><br><span class="line">  ANSI.disabled = !command.ansi_output?</span><br><span class="line">  <span class="keyword">unless</span> command.handle_root_options(argv)</span><br><span class="line">    command.validate!</span><br><span class="line">    command.run</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">rescue</span> Object =&gt; exception</span><br><span class="line">  handle_exception(command, exception)</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>对于通过 <code>pod plugin create</code> 命令创建的插件来说，lib 目录下都会自动生成一个 <code>cocoapods_plugin.rb</code> 文件，这个文件就是用来标识此 gem 为 CocoaPods 插件的。如果想手动创建 CocoaPods 插件，需要满足以下两个条件：<br><figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Handles plugin related logic logic for the `Command` class.</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># Plugins are loaded the first time a command run and are identified by the</span></span><br><span class="line"><span class="comment"># prefix specified in the command class. Plugins must adopt the following</span></span><br><span class="line"><span class="comment"># conventions:</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># - Support being loaded by a file located under the</span></span><br><span class="line"><span class="comment"># `lib/#&#123;plugin_prefix&#125;_plugin` relative path.</span></span><br><span class="line"><span class="comment"># - Be stored in a folder named after the plugin.</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># - 支持通过 `lib/#&#123;plugin_prefix&#125;_plugin` 路径的文件加载</span></span><br><span class="line"><span class="comment">#   (也就是说，如果要对外暴露插件内部存的方法，需要在此文件中 require 之，比如自定义的 Podfile DSL 文件)</span></span><br><span class="line"><span class="comment"># - 保存在以插件命名的文件夹中</span></span><br></pre></td></tr></table></figure></p>
+<p>在 CocoaPods 上下文中，以上的 <code>plugin_prefix</code> 如下：<br><figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">self</span>.plugin_prefixes = <span class="string">%w(claide cocoapods)</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>如果需要外部 gem 以插件的形式提供某些功能，可以通过和 CocoaPods 一样的方式实现，即规定特定的命名规则，然后通过 <code>Gem::Specification</code> 提供的方法获取满足条件的 gem ，再 require 入口文件:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">spec = Gem::Specification.find_by_name(&apos;naruto&apos;)</span><br><span class="line">spec.activate</span><br><span class="line">matches = spec.matches_for_glob(&apos;naruto&apos;)</span><br><span class="line">matches.each do |path|</span><br><span class="line">  require(path)</span><br><span class="line">end</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/11/19/GitLabCI触发JenkinsJob/" rel="next" title="Git Commit 触发 Jenkins Job">
+                <i class="fa fa-chevron-left"></i> Git Commit 触发 Jenkins Job
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/21/基于CocoaPods的组件二进制化实践/" rel="prev" title="基于 CocoaPods 的组件二进制化实践">
+                基于 CocoaPods 的组件二进制化实践 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#实现探索"><span class="nav-number">1.</span> <span class="nav-text">实现探索</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">2.</span> <span class="nav-text">小结</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2018/12/29/CocoaPods加载插件/';
+          this.page.identifier = '2018/12/29/CocoaPods加载插件/';
+          this.page.title = 'CocoaPods 如何加载插件';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

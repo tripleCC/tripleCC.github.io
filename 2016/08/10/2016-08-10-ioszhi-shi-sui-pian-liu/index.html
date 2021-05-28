@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="碎片系列,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="1、dispatch_after及NSTimer造成对象无法释放2、宏定义##与#3、Swift实现原子属性4、Xcode图像化调试错误5、UITabBarController调用viewDidLoad的时机">
+<meta name="keywords" content="碎片系列">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS知识碎片六">
+<meta property="og:url" content="https://triplecc.github.io/2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="1、dispatch_after及NSTimer造成对象无法释放2、宏定义##与#3、Swift实现原子属性4、Xcode图像化调试错误5、UITabBarController调用viewDidLoad的时机">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="iOS知识碎片六">
+<meta name="twitter:description" content="1、dispatch_after及NSTimer造成对象无法释放2、宏定义##与#3、Swift实现原子属性4、Xcode图像化调试错误5、UITabBarController调用viewDidLoad的时机">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/">
+
+
+
+
+
+  <title>iOS知识碎片六 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">iOS知识碎片六</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-08-10T13:23:43+00:00">
+                2016-08-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/碎片系列/" itemprop="url" rel="index">
+                    <span itemprop="name">碎片系列</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>1、dispatch_after及NSTimer造成对象无法释放<br><br>2、宏定义<code>##</code>与<code>#</code><br><br>3、Swift实现原子属性<br><br>4、Xcode图像化调试错误<br><br>5、UITabBarController调用viewDidLoad的时机<br><br><a id="more"></a></p>
+<h2 id="dispatch-after及NSTimer造成对象无法释放"><a href="#dispatch-after及NSTimer造成对象无法释放" class="headerlink" title="dispatch_after及NSTimer造成对象无法释放"></a>dispatch_after及NSTimer造成对象无法释放</h2><p>dispatch_after：<br></p>
+<ul>
+<li>由于dispatch_after会持有block内的对象，所以会使这个对象延迟释放。使用时最好能确保block内的对象都是weak的，这样不容易出问题。</li>
+</ul>
+<p>NSTimer:</p>
+<ul>
+<li>NSTimer在手动停止或截止时间点到达前，是不会释放的。所以为了能让使用NSTimer的对象能够顺利释放自身，最好对NSTimer使用<strong>__weak</strong>关键字，并且在dealloc时，手动停止NSTimer。如下：</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">    __<span class="keyword">weak</span> <span class="built_in">NSTimer</span> *_timer;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)dealloc &#123;</span><br><span class="line"></span><br><span class="line">    [_timer invalidate]</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="宏定义-与"><a href="#宏定义-与" class="headerlink" title="宏定义##与#"></a>宏定义<code>##</code>与<code>#</code></h2><ul>
+<li><p><code>##</code>链接符</p>
+<ul>
+<li><p>将两个字串连接起来</p>
+<ul>
+<li>“##”是一种分隔连接方式，它的作用是先分隔，然后进行强制连接。</li>
+</ul>
+<ul>
+<li><p>预处理器一般把<code>空格</code>解释成分段标志，对于每一段和前面比较，相同的就被替换。这样做的结果是， 被替换段之间存在一些空格。如果我们不希望出现这些空格，就可以通过添加一些 ##来替代空格。</p>
+</li>
+<li><p>另外一些分隔标志是，包括操作符，比如 +, -, *, /, [,], …，</p>
+</li>
+<li><p>强制连接的作用是，去掉和前面的字符串之间的空格，而把两者连接起来</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">#define A1(name, type) type name_##type##_type </span><br><span class="line"></span><br><span class="line">#define A2(name, type) type name##_##type##_type</span><br><span class="line"></span><br><span class="line">A1(a1, int); /* 等价于: int name_int_type; */ </span><br><span class="line"></span><br><span class="line">A2(a1, int); /* 等价于: int a1_int_type; */</span><br><span class="line"></span><br><span class="line">1) 在第一个宏定义中，”name”和第一个”_”之间，以及第2个”_”和第二个</span><br><span class="line"></span><br><span class="line"> ”type”之间没有被分隔，所以预处理器会把name_##type##_type解释成3段：</span><br><span class="line"></span><br><span class="line"> “name_”、“type”、以及“_type”，这中间只有“type”是在宏前面出现过</span><br><span class="line"></span><br><span class="line"> 的，所以它可以被宏替换。</span><br><span class="line"></span><br><span class="line">2) 而在第二个宏定义中，“name”和第一个“_”之间也被分隔了，所以</span><br><span class="line"></span><br><span class="line"> 预处理器会把name##_##type##_type解释成4段：“name”、“_”、“type”</span><br><span class="line"></span><br><span class="line"> 以及“_type”，这其间，就有两个可以被宏替换了。</span><br><span class="line"></span><br><span class="line">3) A1和A2的定义也可以如下：</span><br><span class="line"></span><br><span class="line">#define A1(name, type) type name_ ##type ##_type</span><br><span class="line"></span><br><span class="line">&lt;##前面随意加上一些空格&gt;</span><br><span class="line"></span><br><span class="line">#define A2(name, type) type name ##_ ##type ##_type</span><br><span class="line"></span><br><span class="line">结果是## 会把前面的空格去掉完成强连接，得到和上面结果相同的宏定义</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p><code>#</code></p>
+<ul>
+<li>对这个变量替换后，添加双引号</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 在打印枚举名时很好用</span></span><br><span class="line"><span class="meta">#define BQ_PUSH_MESSAGE_TYPE_ELEMENT(key) @(key) : @#key</span></span><br><span class="line"></span><br><span class="line">BQPushMessageTypeStringsMap = @&#123;</span><br><span class="line">                                    BQ_PUSH_MESSAGE_TYPE_ELEMENT(BQPushMessageTypeChat),</span><br><span class="line">                                    BQ_PUSH_MESSAGE_TYPE_ELEMENT(BQPushMessageTypeSystem),</span><br><span class="line">                                    BQ_PUSH_MESSAGE_TYPE_ELEMENT(BQPushMessageTypeLive),</span><br><span class="line">                                    &#125;;</span><br></pre></td></tr></table></figure>
+<h2 id="Swift实现原子属性"><a href="#Swift实现原子属性" class="headerlink" title="Swift实现原子属性"></a>Swift实现原子属性</h2><figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">struct</span> <span class="title">SafeForm</span> &lt;<span class="title">U</span>&gt; </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">var</span> lock: <span class="type">AnyObject</span>!</span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">var</span> value: <span class="type">U</span></span><br><span class="line">     <span class="keyword">public</span> <span class="keyword">var</span> safeValue: <span class="type">U</span> &#123;</span><br><span class="line">         <span class="keyword">get</span> &#123;</span><br><span class="line">             <span class="keyword">return</span> withLock &#123;</span><br><span class="line">	             <span class="keyword">return</span> value</span><br><span class="line">             &#125;</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">set</span> &#123;</span><br><span class="line">             withLock &#123;</span><br><span class="line">                 value = newValue</span><br><span class="line">             &#125;</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="comment">/* 不可与safeValue混用 */</span></span><br><span class="line">     <span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">sync_enter</span><span class="params">()</span></span> &#123;</span><br><span class="line">         objc_sync_enter(lock)</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="keyword">public</span> <span class="function"><span class="keyword">func</span> <span class="title">sync_exit</span><span class="params">()</span></span> &#123;</span><br><span class="line">         objc_sync_exit(lock)</span><br><span class="line">     &#125;</span><br><span class="line">     <span class="keyword">private</span> <span class="function"><span class="keyword">func</span> <span class="title">withLock</span>&lt;R&gt;<span class="params">(@noescape action: <span class="params">()</span></span></span> -&gt; <span class="type">R</span>) -&gt; <span class="type">R</span> &#123;</span><br><span class="line">         objc_sync_enter(lock)</span><br><span class="line">         <span class="keyword">let</span> result = action()</span><br><span class="line">         objc_sync_exit(lock)</span><br><span class="line">         <span class="keyword">return</span> result</span><br><span class="line">     &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上感觉原子属性的作用并不是很明显，对一个多步操作，还是需要自己手动加锁。</p>
+<h2 id="Xcode图像化调试错误"><a href="#Xcode图像化调试错误" class="headerlink" title="Xcode图像化调试错误"></a>Xcode图像化调试错误</h2><p>报错：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Assertion failure in -[UITextView _firstBaselineOffsetFromTop], /BuildRoot/Library/Caches/com.apple.xbs/Sources/UIKit_Sim/UIKit-3512.60.7/UITextView.m:1683</span><br></pre></td></tr></table></figure>
+<p>添加以下代码即可：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">UITextView</span>(<span class="title">MYTextView</span>) </span></span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span> </span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">UITextView</span> (<span class="title">MYTextView</span>) </span></span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)_firstBaselineOffsetFromTop &#123; &#125; </span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)_baselineOffsetFromBottom &#123; &#125; </span><br><span class="line"></span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight swift"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">extension</span></span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class"><span class="title">UITextView</span> </span></span><br><span class="line"><span class="class"></span></span><br><span class="line"><span class="class"></span>&#123; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">_firstBaselineOffsetFromTop</span><span class="params">()</span></span> &#123; &#125; </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">_baselineOffsetFromBottom</span><span class="params">()</span></span> &#123; &#125; </span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="UITabBarController调用viewDidLoad的时机"><a href="#UITabBarController调用viewDidLoad的时机" class="headerlink" title="UITabBarController调用viewDidLoad的时机"></a>UITabBarController调用viewDidLoad的时机</h2><p>继承UITabBarController后，从外部调用init创建，即使没有加载它的view，它也会调用viewDidLoad，这点和UIViewController不一样。 <br><br>所以在使用Swift时，需要注意在UITableBarController中声明为!类型的属性，容易造成强制解包崩溃的问题。<br><br>详细信息</p>
+<ul>
+<li><a href="http://www.andrewmonshizadeh.com/2015/02/23/uitabbarcontroller-is-different/" target="_blank" rel="noopener">UITabBarController is Different</a></li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/碎片系列/" rel="tag"># 碎片系列</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2016/06/05/2016-06-05-yymodelyue-du-xiao-ji/" rel="next" title="YYModel阅读小记">
+                <i class="fa fa-chevron-left"></i> YYModel阅读小记
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2016/09/10/2016-09-10-shi-yong-assetslibraryhe-photokitzuo-ge-xiang-pian-xuan-ze-qi/" rel="prev" title="使用AssetsLibrary和PhotoKit做一个简易的相片选择器">
+                使用AssetsLibrary和PhotoKit做一个简易的相片选择器 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#dispatch-after及NSTimer造成对象无法释放"><span class="nav-number">1.</span> <span class="nav-text">dispatch_after及NSTimer造成对象无法释放</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#宏定义-与"><span class="nav-number">2.</span> <span class="nav-text">宏定义##与#</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Swift实现原子属性"><span class="nav-number">3.</span> <span class="nav-text">Swift实现原子属性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Xcode图像化调试错误"><span class="nav-number">4.</span> <span class="nav-text">Xcode图像化调试错误</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UITabBarController调用viewDidLoad的时机"><span class="nav-number">5.</span> <span class="nav-text">UITabBarController调用viewDidLoad的时机</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/';
+          this.page.identifier = '2016/08/10/2016-08-10-ioszhi-shi-sui-pian-liu/';
+          this.page.title = 'iOS知识碎片六';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Interview,objective-c,runtime,dyld,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="在 pre-main 时期，objc 会向 dyld 注册一个 init 回调，当 dyld 将要执行载入 image 的 initializers 流程时 (依赖的所有 image 已走完 initializers 流程时)，init 回调被触发，在这个回调中，objc 会按照父类-子类-分类顺序调用 +load 方法。因为 +load 方法执行地足够早，并且只执行一次，所以我们通常会在这个方法">
+<meta name="keywords" content="Interview,objective-c,runtime,dyld">
+<meta property="og:type" content="article">
+<meta property="og:title" content="计算 +load 方法的耗时">
+<meta property="og:url" content="https://triplecc.github.io/2019/05/27/计算load耗时/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="在 pre-main 时期，objc 会向 dyld 注册一个 init 回调，当 dyld 将要执行载入 image 的 initializers 流程时 (依赖的所有 image 已走完 initializers 流程时)，init 回调被触发，在这个回调中，objc 会按照父类-子类-分类顺序调用 +load 方法。因为 +load 方法执行地足够早，并且只执行一次，所以我们通常会在这个方法">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190524_1.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190524_2.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190527_9.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.933Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="计算 +load 方法的耗时">
+<meta name="twitter:description" content="在 pre-main 时期，objc 会向 dyld 注册一个 init 回调，当 dyld 将要执行载入 image 的 initializers 流程时 (依赖的所有 image 已走完 initializers 流程时)，init 回调被触发，在这个回调中，objc 会按照父类-子类-分类顺序调用 +load 方法。因为 +load 方法执行地足够早，并且只执行一次，所以我们通常会在这个方法">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190524_1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2019/05/27/计算load耗时/">
+
+
+
+
+
+  <title>计算 +load 方法的耗时 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2019/05/27/计算load耗时/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">计算 +load 方法的耗时</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-27T19:25:07+00:00">
+                2019-05-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/27/计算load耗时/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/05/27/计算load耗时/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>在 pre-main 时期，objc 会向 dyld <a href="https://github.com/tripleCC/Laboratory/blob/5c084263d79973805649b89d166b50751045e937/AppleSources/objc4-750/runtime/objc-os.mm#L875-L889" target="_blank" rel="noopener">注册一个 init 回调</a>，当 dyld 将要执行载入 image 的 initializers 流程时 (依赖的所有 image 已走完 initializers 流程时)，init 回调被触发，在这个回调中，objc 会按照<a href="https://github.com/tripleCC/Laboratory/blob/5c084263d79973805649b89d166b50751045e937/AppleSources/objc4-750/runtime/objc-runtime-new.mm#L2866-L2887" target="_blank" rel="noopener">父类-子类-分类</a>顺序调用 +load 方法。因为 +load 方法执行地足够早，并且只执行一次，所以我们通常会在这个方法中进行 method swizzling 或者自注册操作。也正是因为 +load 方法调用时间点的特殊性，导致此方法的耗时监测较为困难，而如何使监测代码先于 +load 方法执行成为解决此问题的关键点。</p>
+<a id="more"></a>
+<p>关于初始化流程的执行顺序，<a href="https://developer.apple.com/documentation/objectivec/nsobject/1418815-load?language=objc" target="_blank" rel="noopener">NSObject 文档</a>中有<a href="https://github.com/tripleCC/Laboratory/blob/8ed1b0c07cbb8e160e8191311ab1def387b37f16/AppleSources/dyld-635.2%202/src/dyld.cpp#L1442-L1453" target="_blank" rel="noopener">以下说明</a>：</p>
+<ol>
+<li>All initializers in any framework you link to.</li>
+<li><a href="https://github.com/tripleCC/Laboratory/blob/8ed1b0c07cbb8e160e8191311ab1def387b37f16/AppleSources/dyld-635.2%202/src/ImageLoader.cpp#L1181-L1185" target="_blank" rel="noopener">All +load methods in your image.</a> </li>
+<li><a href="https://github.com/tripleCC/Laboratory/blob/8ed1b0c07cbb8e160e8191311ab1def387b37f16/AppleSources/dyld-635.2%202/src/ImageLoader.cpp#L1187-L1188" target="_blank" rel="noopener">All C++ static initializers and C/C++ <code>__attribute__(constructor)</code> functions in your image. </a></li>
+<li>All initializers in frameworks that link to you.</li>
+</ol>
+<p>为了方便描述，这里我统称 2、3 步骤为 initializers 流程。可以看到，只要我们把监测代码塞进依赖动态库的 initializers 流程里(监测耗时库)，就可以解决执行时间问题 。考虑到工程内可能添加了其他动态库，我们还需要让监测耗时库的初始化函数早于这些库执行。解决了监测代码的执行问题，接下来就可以实现这些代码了，本文采用在 <code>__attribute__(constructor)</code> 初始化函数中 hook 所有 +load 方法来计算原 +load 执行的时间。</p>
+<h2 id="获取需要监测的-image"><a href="#获取需要监测的-image" class="headerlink" title="获取需要监测的 image"></a>获取需要监测的 image</h2><p>由于 dyld 加载的镜像中包含系统镜像，我们需要对这些镜像做次过滤，获取需要监测的镜像 ，也就是主 App 可执行文件和添加的自定义动态库对应的镜像</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">bool</span> isSelfDefinedImage(<span class="keyword">const</span> <span class="keyword">char</span> *imageName) &#123;</span><br><span class="line">    <span class="keyword">return</span> !strstr(imageName, <span class="string">"/Xcode.app/"</span>) &amp;&amp;</span><br><span class="line">    !strstr(imageName, <span class="string">"/Library/PrivateFrameworks/"</span>) &amp;&amp;</span><br><span class="line">    !strstr(imageName, <span class="string">"/System/Library/"</span>) &amp;&amp;</span><br><span class="line">    !strstr(imageName, <span class="string">"/usr/lib/"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">struct</span> mach_header **copyAllSelfDefinedImageHeader(<span class="keyword">unsigned</span> <span class="keyword">int</span> *outCount) &#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> imageCount = _dyld_image_count();</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">struct</span> mach_header **mhdrList = <span class="literal">NULL</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (imageCount &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        mhdrList = (<span class="keyword">const</span> <span class="keyword">struct</span> mach_header **)malloc(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> mach_header *) * imageCount);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">unsigned</span> <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; imageCount; i++) &#123;</span><br><span class="line">            <span class="keyword">const</span> <span class="keyword">char</span> *imageName = _dyld_get_image_name(i);</span><br><span class="line">            <span class="keyword">if</span> (isSelfDefinedImage(imageName)) &#123;</span><br><span class="line">                <span class="keyword">const</span> <span class="keyword">struct</span> mach_header *mhdr = _dyld_get_image_header(i);</span><br><span class="line">                mhdrList[count++] = mhdr;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        mhdrList[count] = <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (outCount) *outCount = count;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> mhdrList;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面代码逻辑很简单，遍历 dyld 加载的镜像，过滤掉名称中包含 <code>/Xcode.app/</code>、<code>/Library/PrivateFrameworks/</code>、<code>/System/Library/</code> 、<code>/usr/lib/</code> 的常见系统库，剩下的就是我们添加的自定义镜像和主镜像了。</p>
+<h2 id="获取定义了-load-方法的类和分类"><a href="#获取定义了-load-方法的类和分类" class="headerlink" title="获取定义了 +load 方法的类和分类"></a>获取定义了 +load 方法的类和分类</h2><p>目前我所知获取拥有 +load 类和分类的方法有两种，一种是通过 runtime api ，去读取对应镜像下所有类及其元类，并逐个遍历元类的实例方法，如果方法名称为 load ，则执行 hook 操作；一种是和 runtime 一样，直接通过 getsectiondata 函数，读取编译时期写入 mach-o 文件 DATA 段的 <a href="https://github.com/tripleCC/Laboratory/blob/5c084263d79973805649b89d166b50751045e937/AppleSources/objc4-750/runtime/objc-file.mm#L32-L47" target="_blank" rel="noopener"><code>__objc_nlclslist</code> 和 <code>__objc_nlcatlist</code> 节</a>，这两节分别用来保存 no lazy class 列表和 no lazy category 列表，所谓的 no lazy 结构，就是定义了 +load 方法的类或分类。</p>
+<p>上文说过 objc 会向 dyld 注册一个 init 回调，其实这个注册函数还会接收一个 mapped 回调 <code>_read_images</code>，dyld 会把当前已经载入或新添加的镜像信息通过回调函数传给 objc 设置程序，一般来说，除了手动 dlopen 的镜像外，在 objc 调用注册函数时，工程运行所需的镜像已经被 dyld 加载进内存了，所以 <code>_read_images</code> 回调会<a href="https://github.com/tripleCC/Laboratory/blob/5c084263d79973805649b89d166b50751045e937/AppleSources/dyld-635.2/src/dyld.cpp#L4312-L4314" target="_blank" rel="noopener">立即被调用</a>， 并读取这些镜像 DATA 段中保存的类、分类、协议等信息。对于 no lazy 的类和分类，<code>_read_images</code> 函数会提前对关联的类做 <a href="https://github.com/tripleCC/Laboratory/blob/5c084263d79973805649b89d166b50751045e937/AppleSources/objc4-750/runtime/objc-runtime-new.mm#L1858-L1974" target="_blank" rel="noopener">realize 操作</a>，这个操作包含了给类开辟可读写的信息存储空间、调整成员变量布局、插入分类方法属性等操作，简单来说就是让类可用 (realized)。值得注意的是，使用 <code>objc_getClass</code> 等查找接口，会触发对应类的 realize 操作，而正常情况下，只有我们使用某个类时，这个类才会执行上述操作，即类的懒加载。反观 +initialize ，只有首次向类发送消息时才会调用，不过两者目的不同，+initialize 更多的是提供一个入口，让开发者能在首次向类发送消息时，处理一些额外业务。</p>
+<p>回到上面的两种方法，第一种方法需要借助 <code>objc_copyClassNamesForImage</code> 和 <code>objc_getClass</code> 函数，而后者会触发类的 realize 操作，也就说需要把读取镜像中访问的所有类都变成 realized 状态，当类较多时，这样做会比较明显地影响到 pre-main 的整体时间，并且 <code>objc_copyClassNamesForImage</code> <a href="https://github.com/bukuzao/bukuzao/issues/2" target="_blank" rel="noopener">无法获取自定义 image 中分类的信息，特别是系统分类</a>，比如定义了 +load 方法的 NSObject+Custom 分类，对自定义 image 调用 <code>objc_copyClassNamesForImage</code> 函数，其返回值将不会包含 NSObject 类，这导致后续操作将不会包含 NSObject 类，也就无法测量它的 +load 耗时（可以使用 <code>objc_copyClassList</code> 获取所有类，并判断类方法列表是否有 +load 方法来规避这个问题，但是和 <code>objc_copyClassNamesForImage</code> 一样，此方法将更加耗时，也无法确认 +load 方法属于那个分类），所以本文采用了第二种方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="built_in">NSArray</span> &lt;LMLoadInfo *&gt; *getNoLazyArray(<span class="keyword">const</span> <span class="keyword">struct</span> mach_header *mhdr) &#123;</span><br><span class="line">    <span class="built_in">NSMutableArray</span> *noLazyArray = [<span class="built_in">NSMutableArray</span> new];</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> bytes = <span class="number">0</span>;</span><br><span class="line">    Class *clses = (Class *)getDataSection(mhdr, <span class="string">"__objc_nlclslist"</span>, &amp;bytes);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">unsigned</span> <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bytes / <span class="keyword">sizeof</span>(Class); i++) &#123;</span><br><span class="line">        LMLoadInfo *info = [[LMLoadInfo alloc] initWithClass:clses[i]];</span><br><span class="line">        <span class="keyword">if</span> (!shouldRejectClass(info.clsname)) [noLazyArray addObject:info];</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    bytes = <span class="number">0</span>;</span><br><span class="line">    Category *cats = getDataSection(mhdr, <span class="string">"__objc_nlcatlist"</span>, &amp;bytes);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">unsigned</span> <span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bytes / <span class="keyword">sizeof</span>(Category); i++) &#123;</span><br><span class="line">        LMLoadInfo *info = [[LMLoadInfo alloc] initWithCategory:cats[i]];</span><br><span class="line">        <span class="keyword">if</span> (!shouldRejectClass(info.clsname)) [noLazyArray addObject:info];</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> noLazyArray;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="hook-类和分类的-load-方法"><a href="#hook-类和分类的-load-方法" class="headerlink" title="hook 类和分类的 +load 方法"></a>hook 类和分类的 +load 方法</h2><p>获得了拥有 +load 方法的类和分类，就可以 hook 对应的 +load 方法了。如上一节所说，no lazy 分类的方法在 <code>_read_images</code> 阶段就已经插入到对应类的方法列表中了，所以我们可以在元类的方法列表中拿到在类和分类中的定义的 +load 方法：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> hookAllLoadMethods(LMLoadInfoWrapper *infoWrapper) &#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> count = <span class="number">0</span>;</span><br><span class="line">    Class metaCls = object_getClass(infoWrapper.cls);</span><br><span class="line">    Method *methodList = class_copyMethodList(metaCls, &amp;count);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">unsigned</span> <span class="keyword">int</span> i = <span class="number">0</span>, j = <span class="number">0</span>; i &lt; count; i++) &#123;</span><br><span class="line">        Method method = methodList[i];</span><br><span class="line">        SEL sel = method_getName(method);</span><br><span class="line">        <span class="keyword">const</span> <span class="keyword">char</span> *name = sel_getName(sel);</span><br><span class="line">        <span class="keyword">if</span> (!strcmp(name, <span class="string">"load"</span>)) &#123;</span><br><span class="line">            LMLoadInfo *info = <span class="literal">nil</span>;</span><br><span class="line">            <span class="keyword">if</span> (j &gt; infoWrapper.infos.count - <span class="number">1</span>) &#123;</span><br><span class="line">                info = [[LMLoadInfo alloc] initWithClass:infoWrapper.cls];</span><br><span class="line">                [infoWrapper insertLoadInfo:info];</span><br><span class="line">                LMAllLoadNumber++;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                info = infoWrapper.infos[j];</span><br><span class="line">            &#125;</span><br><span class="line">            ++j;</span><br><span class="line">            swizzleLoadMethod(infoWrapper.cls, method, info);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    free(methodList);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><strong>更新</strong>：处理多个动态库时，无法利用读取的 image 顺序对方法进行匹配，因为读取的 image 顺序并未考虑依赖关系，和 objc 初始化时遍历的 image 顺序并不一致，所以这里的处理方式是错误的，为了保证准确性，这里依旧需要使用 +load 方法的 imp 地址做对比，<a href="https://github.com/tripleCC/Laboratory/commit/c28f1721fe7e38136df5a00faa2dce5635c599db" target="_blank" rel="noopener">具体更新</a>。</p>
+<p>为了让 <code>infos</code> 列表能和类方法列表中的 +load 方法顺序一致，在构造 <code>infoWrapper</code> 时，我按照后编译分类-先编译分类-类次序，将类信息追加入 <code>infos</code> 列表中，然后在遍历元类的方法列表时，将对应的 <code>LMLoadInfo</code> 对象取出以设置 +load 方法执行耗时变量：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> swizzleLoadMethod(Class cls, Method method, LMLoadInfo *info) &#123;</span><br><span class="line">retry:</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        SEL hookSel = getRandomLoadSelector();</span><br><span class="line">        Class metaCls = object_getClass(cls);</span><br><span class="line">        IMP hookImp = imp_implementationWithBlock(^ &#123;</span><br><span class="line">            info-&gt;_start = <span class="built_in">CFAbsoluteTimeGetCurrent</span>();</span><br><span class="line">            ((<span class="keyword">void</span> (*)(Class, SEL))objc_msgSend)(cls, hookSel);</span><br><span class="line">            info-&gt;_end = <span class="built_in">CFAbsoluteTimeGetCurrent</span>();</span><br><span class="line">            <span class="keyword">if</span> (!--LMAllLoadNumber) printLoadInfoWappers();</span><br><span class="line">        &#125;);</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">BOOL</span> didAddMethod = class_addMethod(metaCls, hookSel, hookImp, method_getTypeEncoding(method));</span><br><span class="line">        <span class="keyword">if</span> (!didAddMethod) <span class="keyword">goto</span> retry;</span><br><span class="line">        </span><br><span class="line">        info-&gt;_sel = hookSel;</span><br><span class="line">        Method hookMethod = class_getInstanceMethod(metaCls, hookSel);</span><br><span class="line">        method_exchangeImplementations(method, hookMethod);</span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在所有的 +load 方法执行完毕后，输出工程的 +load 耗时信息。</p>
+<h2 id="打印所有-load-耗时信息"><a href="#打印所有-load-耗时信息" class="headerlink" title="打印所有 +load 耗时信息"></a>打印所有 +load 耗时信息</h2><p>基本上我们统计 +load 的耗时主要想看到两个信息：总耗时和最大耗时，所以这里我除了输出了总耗时，还按照 +load 执行时间降序打印出类和分类：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> printLoadInfoWappers(<span class="keyword">void</span>) &#123;</span><br><span class="line">    <span class="built_in">NSMutableArray</span> *infos = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">    <span class="keyword">for</span> (LMLoadInfoWrapper *infoWrapper <span class="keyword">in</span> LMLoadInfoWappers) &#123;</span><br><span class="line">        [infos addObjectsFromArray:infoWrapper.infos];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">NSSortDescriptor</span> *descriptor = [<span class="built_in">NSSortDescriptor</span> sortDescriptorWithKey:<span class="string">@"duration"</span> ascending:<span class="literal">NO</span>];</span><br><span class="line">    [infos sortUsingDescriptors:@[descriptor]];</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">CFAbsoluteTime</span> totalDuration = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (LMLoadInfo *info <span class="keyword">in</span> infos) &#123;</span><br><span class="line">        totalDuration += info.duration;</span><br><span class="line">    &#125;</span><br><span class="line">    printf(<span class="string">"\n\t\t\t\t\t\t\tTotal load time: %f milliseconds"</span>, totalDuration * <span class="number">1000</span>);</span><br><span class="line">    <span class="keyword">for</span> (LMLoadInfo *info <span class="keyword">in</span> infos) &#123;</span><br><span class="line">        <span class="built_in">NSString</span> *clsname = [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%@"</span>, info.clsname];</span><br><span class="line">        <span class="keyword">if</span> (info.catname) clsname = [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%@(%@)"</span>, clsname, info.catname];</span><br><span class="line">        printf(<span class="string">"\n%40s load time: %f milliseconds"</span>, [clsname cStringUsingEncoding:<span class="built_in">NSUTF8StringEncoding</span>], info.duration * <span class="number">1000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    printf(<span class="string">"\n"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><a href="https://github.com/tripleCC/Laboratory/tree/master/HookLoadMethods" target="_blank" rel="noopener">例子</a>输出如下：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">               Total load time: <span class="number">2228.866100</span> milliseconds</span><br><span class="line">               B(sleep_1_s) load time: <span class="number">1001.139998</span> milliseconds</span><br><span class="line">DynamicFramework(sleep_1_s) load time: <span class="number">1001.088023</span> milliseconds</span><br><span class="line">            A(sleep_100_ms) load time: <span class="number">101.074934</span> milliseconds</span><br><span class="line">         A(copy_class_list) load time: <span class="number">68.153024</span> milliseconds</span><br><span class="line">ViewController(sleep_50_ms) load time: <span class="number">51.078916</span> milliseconds</span><br><span class="line">           DynamicFramework load time: <span class="number">4.286051</span> milliseconds</span><br><span class="line"> ViewController(sleep_1_ms) load time: <span class="number">1.210093</span> milliseconds</span><br><span class="line">             ViewController load time: <span class="number">0.580072</span> milliseconds</span><br><span class="line">                          A load time: <span class="number">0.254989</span> milliseconds</span><br></pre></td></tr></table></figure>
+<h2 id="制作动态库集成至主工程"><a href="#制作动态库集成至主工程" class="headerlink" title="制作动态库集成至主工程"></a>制作动态库集成至主工程</h2><p>编写完监测代码，需要将其打包成动态库加入工程中，也就是 Embedded Binaries 和 Linked Frameworks And Libraries：</p>
+<ul>
+<li>Embedded Binaries 一栏表示把列表中的二进制文件，集成到最终生成的 <code>.app</code> 文件中</li>
+<li>Linked Frameworks And Libraries 一栏表示链接时，按顺序依次链接列表中的库文件</li>
+</ul>
+<p>所以如果是我们自己添加的库文件，需要将库文件添加进上面的两个列表中，否则要么 dyld 加载库镜像时出现 Library not loaded 错误，要么直接不链接这个库文件。而系统库则不需要设置 Embedded 栏 ，只需要设置 Linked 栏，因为实际设备中会预置这些库。</p>
+<p><img src="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190524_1.png" width="500"></p>
+<p>以上图为例，Linked 栏中库的排列顺序，最终会体现在链接阶段命令的入参顺序上：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// Build Message</span><br><span class="line"></span><br><span class="line">Ld ...</span><br><span class="line">  .../clang ... -framework One -framework Two ... -o .../Demo.app/Demo</span><br></pre></td></tr></table></figure>
+<p>当参与链接的是动态库时，在生成主 App 可执行文件的 Load Commands 中，这些动态库对应的 LC_LOAD_DYLIB 排列顺序将和入参顺序一致。</p>
+<p><img src="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190524_2.png" width="200"></p>
+<p>当这些动态库间不存在依赖关系时，其初始化函数的调用顺序将和 LC_LOAD_DYLIB 的排列顺序一致，否则会优先调用依赖库的初始化函数。</p>
+<p><img src="https://raw.githubusercontent.com/tripleCC/tripleCC.github.io/hexo/source/images/Snip20190527_9.png" width="500"></p>
+<p>因为监测耗时库不依赖其他自定义动态库，所以我们直接将监测耗时库拖入工程，并调整其至 Linked 栏首位即可。</p>
+<h2 id="制作-pod-集成至主工程"><a href="#制作-pod-集成至主工程" class="headerlink" title="制作 pod 集成至主工程"></a>制作 pod 集成至主工程</h2><p>如果工程依赖由 CocoaPods 管理，我可能想要通过以下语句引入 +load 监测库：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod <span class="string">'A4LoadMeasure'</span>, <span class="symbol">configuration:</span> [<span class="string">'Debug'</span>]</span><br></pre></td></tr></table></figure>
+<p>这样只有在 Debug 状态下才会引入监测库。需要注意的是 CocoaPods 引入的动态库是由 xcconfig 文件的 OTHER_LDFLAGS 设置的，我们无法通过调整其在 Linked 栏的顺序来决定链接顺序，不过 Other Linker Flags 中 <code>-framework</code> 指定的库优先级比 Linked 栏中的要高，所以我们只需要关心 CocoaPods 如何生成 xcconfig 的 OTHER_LDFLAGS 字段即可。</p>
+<p>CocoaPods 在生成 Pods 工程时，会创建一个名称为<code>Pods-主target名</code>的 target (AggregateTarget)，这个 target 的 xcconfig 汇集了所有 pods target 的 xcconfig ，我们看下 CocoaPods 是如何创建这个文件的：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Pod::Generator::XCConfig::AggregateXCConfig</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">generate</span></span></span><br><span class="line">  ...</span><br><span class="line">  @xcconfig = Xcodeproj::Config.new(config)</span><br><span class="line">  ...</span><br><span class="line">  XCConfigHelper.generate_other_ld_flags(target, pod_targets, @xcconfig)</span><br><span class="line">  ...</span><br><span class="line">  @xcconfig</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save_as</span><span class="params">(path)</span></span></span><br><span class="line">  generate.save_as(path)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Xcodeproj::Config</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">save_as</span><span class="params">(path)</span></span></span><br><span class="line">  <span class="comment"># 间接执行了 to_hash 并保存至 xcconfig 文件中</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">to_hash</span><span class="params">(prefix = <span class="literal">nil</span>)</span></span></span><br><span class="line">  ...</span><br><span class="line">  [<span class="symbol">:libraries</span>, <span class="symbol">:frameworks</span>, <span class="symbol">:weak_frameworks</span>, <span class="symbol">:force_load</span>].each <span class="keyword">do</span> <span class="params">|key|</span></span><br><span class="line">    modifier = modifiers[key]</span><br><span class="line">    sorted = other_linker_flags[key].to_a.sort</span><br><span class="line">    <span class="keyword">if</span> key == <span class="symbol">:force_load</span></span><br><span class="line">      list += sorted.map &#123; <span class="params">|l|</span> <span class="string">%(<span class="subst">#&#123;modifier&#125;</span> <span class="subst">#&#123;l&#125;</span>)</span> &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      list += sorted.map &#123; <span class="params">|l|</span> <span class="string">%(<span class="subst">#&#123;modifier&#125;</span>"<span class="subst">#&#123;l&#125;</span>")</span> &#125;</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>可以看到，xcconfig 在保存时才对链接库进行排序，如 frameworks 会根据名称生序排序后再 map 成 <code>-framework 库名</code> 的形式保存在文件的 OTHER_LDFLAGS 字段中。所以我们只要保证监测库名比 Pods 工程引入的其他自定义动态库小就可以了，由于 0LoadMeasure、A+LoadMeasure 等非主流名称无法生成正确的 modulemap ，所以我采用 A4LoadMeasure 作为监测库名，A4 的值比 AA 等英文字母组成的名称小，针对这种情况已经基本够用了，毕竟很少会有用 A0 作为名称前缀的组件或动态库。</p>
+<p>经过以上命名处理，开发者就可以直接通过 CocoaPods 引入监测库，而不需要进行额外的调整操作。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>本文讨论了使用 hook 监测 +load 执行时间方案，并结合 CocoaPods 实现了一行代码集成耗时监测的功能。详细代码可查看 <a href="https://github.com/tripleCC/Laboratory/tree/master/HookLoadMethods/A4LoadMeasure" target="_blank" rel="noopener">A4LoadMeasure</a> ，或者可以直接使用以下语句引入：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod <span class="string">'A4LoadMeasure'</span>, <span class="symbol">configuration:</span> [<span class="string">'Debug'</span>]</span><br></pre></td></tr></table></figure>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://github.com/izhangxb/GMTC/blob/master/%E5%85%A8%E7%90%83%E7%A7%BB%E5%8A%A8%E6%8A%80%E6%9C%AF%E5%A4%A7%E4%BC%9AGMTC%202017%20PPT/%E6%89%8B%E6%B7%98iOS%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96%E6%8E%A2%E7%B4%A2%20.pdf" target="_blank" rel="noopener">手淘iOS性能优化探索</a></p>
+<p><a href="https://everettjf.github.io/2018/08/19/ios-hook-really-all-load/" target="_blank" rel="noopener">Hook所有+load方法（包括Category）</a></p>
+<p><a href="https://stackoverflow.com/questions/32675272/when-should-we-use-embedded-binaries-rather-than-linked-frameworks-in-xcode" target="_blank" rel="noopener">Embedded Binaries 和 Linked Frameworks And Libraries的区别</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Interview/" rel="tag"># Interview</a>
+          
+            <a href="/tags/objective-c/" rel="tag"># objective-c</a>
+          
+            <a href="/tags/runtime/" rel="tag"># runtime</a>
+          
+            <a href="/tags/dyld/" rel="tag"># dyld</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/14/Objective-CBlock补充/" rel="next" title="对 Block 的一点补充">
+                <i class="fa fa-chevron-left"></i> 对 Block 的一点补充
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/07/15/搭建自己的内存泄漏检测工具/" rel="prev" title="打造自己的内存泄漏检测工具">
+                打造自己的内存泄漏检测工具 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#获取需要监测的-image"><span class="nav-number">1.</span> <span class="nav-text">获取需要监测的 image</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取定义了-load-方法的类和分类"><span class="nav-number">2.</span> <span class="nav-text">获取定义了 +load 方法的类和分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hook-类和分类的-load-方法"><span class="nav-number">3.</span> <span class="nav-text">hook 类和分类的 +load 方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#打印所有-load-耗时信息"><span class="nav-number">4.</span> <span class="nav-text">打印所有 +load 耗时信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#制作动态库集成至主工程"><span class="nav-number">5.</span> <span class="nav-text">制作动态库集成至主工程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#制作-pod-集成至主工程"><span class="nav-number">6.</span> <span class="nav-text">制作 pod 集成至主工程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#小结"><span class="nav-number">7.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">8.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2019/05/27/计算load耗时/';
+          this.page.identifier = '2019/05/27/计算load耗时/';
+          this.page.title = '计算 +load 方法的耗时';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

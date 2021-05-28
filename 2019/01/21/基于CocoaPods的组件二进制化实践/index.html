@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Interview,CocoaPods,Ruby,二进制化,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="火掌柜 iOS 客户端经过近两年的组件化推进，组件数量已经颇具规模，达到了近 100 个。随着组件数量和代码量越来越多，主工程的打包时间从最初的十几分钟，增加到了现在的四十分钟左右。依赖组件较多，改动相对频繁的上层业务组件，其发布时间也较为漫长。编译时长的困扰，已经明显影响了日常开发体验，同时也造成 CI pipeline 执行时间过长，在 runner 资源匮乏的情况下，不利于内部 CI 的推广">
+<meta name="keywords" content="Interview,CocoaPods,Ruby,二进制化">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于 CocoaPods 的组件二进制化实践">
+<meta property="og:url" content="https://triplecc.github.io/2019/01/21/基于CocoaPods的组件二进制化实践/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="火掌柜 iOS 客户端经过近两年的组件化推进，组件数量已经颇具规模，达到了近 100 个。随着组件数量和代码量越来越多，主工程的打包时间从最初的十几分钟，增加到了现在的四十分钟左右。依赖组件较多，改动相对频繁的上层业务组件，其发布时间也较为漫长。编译时长的困扰，已经明显影响了日常开发体验，同时也造成 CI pipeline 执行时间过长，在 runner 资源匮乏的情况下，不利于内部 CI 的推广">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190122_1.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.933Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="基于 CocoaPods 的组件二进制化实践">
+<meta name="twitter:description" content="火掌柜 iOS 客户端经过近两年的组件化推进，组件数量已经颇具规模，达到了近 100 个。随着组件数量和代码量越来越多，主工程的打包时间从最初的十几分钟，增加到了现在的四十分钟左右。依赖组件较多，改动相对频繁的上层业务组件，其发布时间也较为漫长。编译时长的困扰，已经明显影响了日常开发体验，同时也造成 CI pipeline 执行时间过长，在 runner 资源匮乏的情况下，不利于内部 CI 的推广">
+<meta name="twitter:image" content="https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190122_1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2019/01/21/基于CocoaPods的组件二进制化实践/">
+
+
+
+
+
+  <title>基于 CocoaPods 的组件二进制化实践 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2019/01/21/基于CocoaPods的组件二进制化实践/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">基于 CocoaPods 的组件二进制化实践</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-01-21T19:49:08+00:00">
+                2019-01-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/01/21/基于CocoaPods的组件二进制化实践/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/01/21/基于CocoaPods的组件二进制化实践/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>火掌柜 iOS 客户端经过近两年的组件化推进，组件数量已经颇具规模，达到了近 100 个。随着组件数量和代码量越来越多，主工程的打包时间从最初的十几分钟，增加到了现在的四十分钟左右。依赖组件较多，改动相对频繁的上层业务组件，其发布时间也较为漫长。编译时长的困扰，已经明显影响了日常开发体验，同时也造成 CI pipeline 执行时间过长，在 runner 资源匮乏的情况下，不利于内部 CI 的推广。当前时间节点下，如何减少编译时长，已经成为开发团队较为迫切的需求。</p>
+<a id="more"></a>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><blockquote>
+<p>组件化除了让模块复用更加便捷，业务开发更加轻量，还有一个不可忽视的优势———组件二进制化，即可通过将非开发中的组件预先编译打包成静态 / 动态库并存放至某处，待集成此组件时，直接使用二进制包，从而提升集成此组件的 App 或者上层组件的编译速度。</p>
+</blockquote>
+<p>对比源码依赖，二进制依赖的组件只需要进行链接而无需编译，可以极大地提升集成效率。掌柜主工程在大部分组件都二进制化的情况下，打包时长从四十分钟左右，下降到最快十二分钟，整整减少了三倍多， CI pipeline 涉及到编译环节的 lint、打包、发布，其耗时也成数倍减少，二进制化所带来的好处不言而喻。</p>
+<p>在实践二进制化过程中，由于没有找到较为成熟的依赖切换工具，我们编写了 <a href="https://github.com/tripleCC/cocoapods-bin.git" target="_blank" rel="noopener">cocoapods-bin</a> 通用插件，有需要的开发者可以尝试下。</p>
+<p>需要说明的是有些二进制方案是在首次编译后，保留组件生成的二进制包，后续编译直接使用此二进制包。在大多数情况下，比如 App 打包，组件 lint 与发布，这类只进行一次编译的操作，首次编译才是主要关注点。本文所说的二进制化和此类方案的最大区别，就是将组件二进制包制作放到首次编译前，更多的是在组件发布时，同时生成二进制包。</p>
+<p>另外，鉴于 CocoaPods 在 1.3.0 后的版本，增加了类似<a href="http://blog.cocoapods.org/CocoaPods-1.3.0/" target="_blank" rel="noopener">增量编译的功能</a>，在首次 install / update 编译之后，后续再进行 install / update 操作，会根据更改结果进行增量编译，个人感觉针对 “非首次 install / update 后的编译“ 优化，并不是必须的，因为 CocoaPods 已经帮我们做好了。</p>
+<h2 id="二进制化需求"><a href="#二进制化需求" class="headerlink" title="二进制化需求"></a>二进制化需求</h2><p>以下是根据掌柜团队日常开发情况，提出的二进制化需求点：</p>
+<ol>
+<li>不影响未接入二进制化方案的业务团队</li>
+<li>组件级别的源码 / 二进制依赖切换功能</li>
+<li>无二进制版本时，自动采用源码版本</li>
+<li>接近原生 CocoaPods 的使用体验 （为了满足此需求，我们决定开发自定义的 CocoaPods 插件。）</li>
+<li>不增加过多额外的工作量</li>
+</ol>
+<p>下面我会参照这几个需求点，逐步说明掌柜 iOS 团队的二进制化过程。</p>
+<h2 id="宏定义处理"><a href="#宏定义处理" class="headerlink" title="宏定义处理"></a>宏定义处理</h2><p>预编译阶段处理的宏定义，在组件进行二进制化后会失效，特别是某些依赖 DEBUG 宏的调试工具，在二进制化之后就不可见了。为了方便处理，我把使用宏的地方分为两种：</p>
+<ul>
+<li>方法内部</li>
+<li>方法外部</li>
+</ul>
+<p>针对方法内部，我们创建了 TDFMacro 类来替换宏，将逻辑挪到运行时处理：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// TDFMacro.h</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">TDFMacro</span> : <span class="title">NSObject</span></span></span><br><span class="line">+ (<span class="built_in">BOOL</span>)enterprise;</span><br><span class="line">+ (<span class="built_in">BOOL</span>)debug;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">void</span>)debugExecute:(<span class="keyword">void</span>(^)(<span class="keyword">void</span>))debugExecute elseExecute:(<span class="keyword">void</span>(^)(<span class="keyword">void</span>))elseExecute;</span><br><span class="line">+ (<span class="keyword">void</span>)enterpriseExecute:(<span class="keyword">void</span>(^)(<span class="keyword">void</span>))enterpriseExecute elseExecute:(<span class="keyword">void</span>(^)(<span class="keyword">void</span>))elseExecute;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// TDFMacro.m</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">TDFMacro</span></span></span><br><span class="line">+ (<span class="built_in">BOOL</span>)enterprise &#123;</span><br><span class="line"><span class="meta">#if ENTERPRISE</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line"><span class="meta">#else</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line"><span class="meta">#endif</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="built_in">BOOL</span>)debug &#123;</span><br><span class="line"><span class="meta">#if DEBUG</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line"><span class="meta">#else</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line"><span class="meta">#endif</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">void</span>)debugExecute:(<span class="keyword">void</span> (^)(<span class="keyword">void</span>))debugExecute elseExecute:(<span class="keyword">void</span> (^)(<span class="keyword">void</span>))elseExecute &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span> debug]) &#123;</span><br><span class="line">        !debugExecute ?: debugExecute();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        !elseExecute ?: elseExecute();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">void</span>)enterpriseExecute:(<span class="keyword">void</span> (^)(<span class="keyword">void</span>))enterpriseExecute elseExecute:(<span class="keyword">void</span> (^)(<span class="keyword">void</span>))elseExecute &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span> enterprise]) &#123;</span><br><span class="line">        !enterpriseExecute ?: enterpriseExecute();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        !elseExecute ?: elseExecute();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+<p>这样一来，只需要确保 TDFMacro 组件中的宏有效就可以了————不对其进行二进制化。</p>
+<p>针对方法外部，我们尽量将能改写到方法内部的代码改写后按第一种情况处理，不能处理的对代码进行重构以消除宏定义，比如我们网络层的常量，重写前后：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 前</span></span><br><span class="line"><span class="meta">#if DEBUG </span></span><br><span class="line"><span class="built_in">NSString</span> * kTDFRootAPI = <span class="string">@"xxx"</span>;</span><br><span class="line"><span class="meta">#else</span></span><br><span class="line"><span class="built_in">NSString</span> * <span class="keyword">const</span> kTDFRootAPI = <span class="string">@"xxx"</span>;</span><br><span class="line"><span class="meta">#end</span></span><br><span class="line"><span class="comment">// 后</span></span><br><span class="line"><span class="built_in">NSString</span> * kTDFRootAPI = <span class="string">@"xxx"</span>;</span><br></pre></td></tr></table></figure>
+<p>个人建议尽量不要跨模块使用宏定义，特别是可以用常量或函数代替的宏。比如有组件 A、B ，B 依赖 A，它们包含如下代码：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// A</span></span><br><span class="line"><span class="meta">#define TDF_THEME_BACKGROUNDCOLOR [[UIColor whiteColor] colorWithAlphaComponent:0.7]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// B</span></span><br><span class="line"><span class="comment">// .m 使用了 TDF_THEME_BACKGROUNDCOLOR</span></span><br></pre></td></tr></table></figure>
+<p>假设 A 和 B 都已二进制化，假设后续我们修改了 A ：</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// A</span></span><br><span class="line"><span class="meta">#define TDF_THEME_BACKGROUNDCOLOR [[UIColor whiteColor] colorWithAlphaComponent:0.4]</span></span><br></pre></td></tr></table></figure>
+<p>由于 B 中的 TDF_THEME_BACKGROUNDCOLOR 宏已经在二进制化打包预编译时被替换为 <code>[[UIColor whiteColor] colorWithAlphaComponent:0.7]</code> ，所以 B 并不会感知到此次 A 的变更，这时我们就不得不重新打包组件 B 以同步 A 的变更，即使 B 并未做任何更改，当存在较多使用 TDF_THEME_BACKGROUNDCOLOR 宏的组件时，就容易遗漏同步某些组件。</p>
+<h2 id="制作二进制包"><a href="#制作二进制包" class="headerlink" title="制作二进制包"></a>制作二进制包</h2><p>二进制化第一步，先要把组件的二进制包打出来。这里说下比较通用的打包工具 <a href="https://github.com/CocoaPods/cocoapods-packager" target="_blank" rel="noopener">cocoapods-packager</a> 和 <a href="https://github.com/Carthage/Carthage/issues" target="_blank" rel="noopener">Carthage</a> ，目前我们使用  <a href="https://github.com/CocoaPods/cocoapods-packager" target="_blank" rel="noopener">cocoapods-packager</a> 将组件构建 static-framework 。</p>
+<p> <a href="https://github.com/CocoaPods/cocoapods-packager" target="_blank" rel="noopener">cocoapods-packager</a>  的工作原理和 <code>pod spec/lib lint</code> 差不多，都是通过 podspec 动态生成 Podfile ，然后 install 出目标工程，最后通过 <code>xcodebuild</code> 命令构建出二进制包。这种方式有一个好处，只要保证组件 lint 通过了，就可以打出二进制包，不需要和 Example 工程挂钩，很方便。但是这个插件作者几乎不维护了，很多较久之前的 issue 和 pull request 都是未处理状态。</p>
+<p>以下是我们用来构建 static-framework 的命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod package TDFNavigationBarKit.podspec --exclude-deps --force --no-mangle --spec-sources=http://git.xxxxx.net/ios/cocoapods-spec.git</span><br></pre></td></tr></table></figure>
+<p>在使用过程中，我遇到了两个关于组件资源的问题 ：</p>
+<ul>
+<li>使用了 <code>--exclude-deps</code> option 后，虽然没有把 dependency 的符号信息打进可执行文件，但是它把 dependency 的 bundle 给拷贝过来了 (见 <code>builder.rb 229 copy_resources</code> 方法)</li>
+<li>subspec 声明的 resource 不会被拷贝进 framework 中</li>
+</ul>
+<p>鉴于 cocoapods-packager  <a href="https://github.com/CocoaPods/cocoapods-packager/issues/200" target="_blank" rel="noopener">近期没有发布新版本的计划</a>，我只能 fork 并更新代码之后，重新发布 <a href="https://github.com/tripleCC/cocoapods-packager" target="_blank" rel="noopener">cocoapods-packager-pro</a> 来修复这两个问题。使用  cocoapods-packager-pro  之后，构建  static-framework 的命令变为：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod package-pro TDFNavigationBarKit.podspec --exclude-deps --force --no-mangle --spec-sources=http://git.xxxxx.net/ios/cocoapods-spec.git</span><br></pre></td></tr></table></figure>
+<p>二级命令 package 改成 package-pro 即可。</p>
+<p>cocoapods-packager 创建二进制包中的 modulemap 时，会先查看目标组件的 podspec 是否设置了 module_map 字段，如有直接拷贝，否则会查看是否有和组件同名的头文件，如有则创建 modulemap ，并设置 <code>umbrella header</code> 为此文件，如无则不创建 modulemap 。所以 cocoapods-packager 给没有和组件同名的头文件，又没有指定 module_map 的组件打二进制包时，是不会创建 modulemap 的，比如 SDWebImage ，这时候需要我们自行添加 modulemap，否则使用 swift 的 <code>import</code> 就会找不到对应的 module，这点需要注意下。</p>
+<p>CocoaPods 目前发布了 1.6.0 beta 版本，试用之后，发现由于某些类的构造函数参数发生了变更， 导致 cocoapods-packager 现有代码已经无法正常工作了，所以 cocoapods-packager  只适用低于 1.6.0 版本的 CocoaPods，后期如果官方 cocoapods-packager 还是没有更新的话，我们应该会在 cocoapods-packager-pro 中适配新版本 CocoaPods。</p>
+<p>cocoapods-packager 作者最近还创建了插件 <a href="https://github.com/square/cocoapods-generate" target="_blank" rel="noopener">cocoapods-generate</a> ，此插件可以直接根据 podspec 生成目标工程，相当于 cocoapods-packager 前半部分功能的增强版。目前这个插件支持 CocoaPods 1.6.0 beta 版本，不想用 cocoapods-packager 的开发者，可以先利用 cocoapods-generate 创建目标工程，然后接管构建二进制包的后续操作，可以选择自己实现打包脚本，也可以选择使用 Carthage。</p>
+<p>关于 Carthage 如何打 static-framework ，可以参照 <a href="https://github.com/Carthage/Carthage#build-static-frameworks-to-speed-up-your-apps-launch-times" target="_blank" rel="noopener">Build static frameworks to speed up your app’s launch times</a> 。其中有一步是将需要打包的 scheme 设置为 shared ，这个 scheme 对应 CocoaPods 组件的 develpement pod ，一般来说通过 CocoaPods 模版工程或者 cocoapods-generate 插件生成目标工程的 scheme 都是 shared 的，如果没有 shared ，可参照<a href="https://triplecc.github.io/2018/04/07/2018-04-07-rang-cocoapodszu-jian-zhi-chi-carthageda-bao/">让 CocoaPods 组件支持 Carthage 打包</a>一文进行设置。</p>
+<p>构建出 <code>.framework</code> 文件后，需要对其进行压缩，我们使用以下命令将文件压缩成 zip 格式：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zip --symlinks -r TDFNavigationBarKit.framework.zip TDFNavigationBarKit.framework</span><br></pre></td></tr></table></figure>
+<p>通过上述两个步骤，我们就得到了组件的二进制 zip 包。</p>
+<p>需要注意的是，如果使用 cocoapods-packager 打包，其 <code>.framework</code> 中的目录结构如下 ：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">TDFNavigationBarKit.framework/</span><br><span class="line">├── Headers -&gt; Versions/Current/Headers</span><br><span class="line">├── Modules</span><br><span class="line">│   └── module.modulemap</span><br><span class="line">├── Resources -&gt; Versions/Current/Resources</span><br><span class="line">├── TDFNavigationBarKit -&gt; Versions/Current/TDFNavigationBarKit</span><br><span class="line">└── Versions</span><br><span class="line">    ├── A</span><br><span class="line">    │   ├── Headers</span><br><span class="line">    │   │   ├── TDFNavigationBarKit.h</span><br><span class="line">    │   │   ├── UIViewController+BackgroundConfigure.h</span><br><span class="line">    │   │   └── UIViewController+NavigationBarConfigure.h</span><br><span class="line">    │   ├── Resources</span><br><span class="line">    │   │   └── Media.xcassets</span><br><span class="line">    │   │       ├── Contents.json</span><br><span class="line">    │   │       ├── common_nbc_back.imageset</span><br><span class="line">    │   │       │   ├── Contents.json</span><br><span class="line">    │   │       │   └── common_nbc_back.png</span><br><span class="line">    │   │       ├── common_nbc_cancel.imageset</span><br><span class="line">    │   │       │   ├── Contents.json</span><br><span class="line">    │   │       │   └── common_nbc_cancel.png</span><br><span class="line">    │   │       ├── common_nbc_ok.imageset</span><br><span class="line">    │   │       │   ├── Contents.json</span><br><span class="line">    │   │       │   └── common_nbc_ok.png</span><br><span class="line">    │   └── TDFNavigationBarKit</span><br><span class="line">    └── Current -&gt; A</span><br></pre></td></tr></table></figure>
+<p>可以看到，其中的 <code>Headers</code>、<code>Resources</code>、<code>Versions/Current</code> 都是软链接。podspec 中涉及到文件匹配的字段，如 <code>source_files</code>、<code>public_header_files</code>、<code>resources</code> 等，对软链接是无效的，所以需要设置为文件实际存放的路径：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">s.source_files = TDFNavigationBarKit.framework/Versions/A/Headers/*.h</span><br><span class="line">s.public_header_files = TDFNavigationBarKit.framework/Versions/A/Headers/*.h</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者更全面一点</span></span><br><span class="line">s.source_files = TDFNavigationBarKit.framework/Versions/A/Headers/*.h, TDFNavigationBarKit.framework/Headers/*.h</span><br><span class="line">s.public_header_files = TDFNavigationBarKit.framework/Versions/A/Headers/*.h, TDFNavigationBarKit.framework/Headers/*.h</span><br></pre></td></tr></table></figure>
+<p>针对二进制包的制作，我们创建了以下命令供团队内部使用：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 将源码打包成二进制，并压缩成 zip 包</span></span><br><span class="line">pod binary package</span><br></pre></td></tr></table></figure>
+<h2 id="存储二进制包"><a href="#存储二进制包" class="headerlink" title="存储二进制包"></a>存储二进制包</h2><p>通常二进制包存放的地址有两种，目前我们使用的是第二种 ( 服务器代码可参照 <a href="https://github.com/tripleCC/binary-server" target="_blank" rel="noopener">binary-server</a>  )：</p>
+<ul>
+<li>组件所在 git 仓库</li>
+<li>静态文件服务器</li>
+</ul>
+<p>相较于 git 仓库，我认为存放至静态文件服务器的优势如下：</p>
+<ul>
+<li>接口访问，易于扩展与自动化处理</li>
+<li>源码和二进制分离，依赖二进制时，只下载二进制包比 clone 仓库快</li>
+<li>不会增大 git 仓库大小，这点也涉及到源码依赖的下载速度</li>
+</ul>
+<p>这里说下为什么我们对组件的下载速度这么敏感。</p>
+<p>首先，CocoaPods 针对下载的组件是有缓存的，在第一次下载后，CocoaPods 会将组件存放在 Caches 文件夹中，后续 install 操作会先从 Caches 中查找是否有此组件的缓存，如果没有的话，再执行下载流程（是不是感觉和 SDWebImage 有点像）。但是目前 CocoaPods 在同一台机器上，只能有一个版本的缓存 （ ~/Library/Caches/CocoaPods/Pods 下的 VERSION 记录着当前缓存对应的 CocoaPods 版本 ），也就是说我第一次使用 <code>pod _1.5.3_ install</code> 下载了所有组件，再执行 <code>pod _1.4.1_ install</code> ， CocoaPods 会把 1.5.3 版本的所有组件缓存清空，然后重新下载 。</p>
+<p>由于团队内部只有 5 台 Mac mini 机器，我们只能在机器上同时部署 GitLab CI Runner 和 Jenkins Slaver ，CI 脚本中使用的 CocoaPods 版本可以统一控制成 1.4.0 ( 这里不使用最新的 1.5.3 是由于<a href="https://github.com/CocoaPods/CocoaPods/issues/7617" target="_blank" rel="noopener">这个 bug</a> 会导致 lint 失败)，但是其他业务线打包时使用的 CocoaPods 版本就没法统一了，有 1.5.3 的，有 1.6.0.beta 的，加上各业务线的打包频率还比较高，导致机器频繁地在不同 CocoaPods 版本中切换 。</p>
+<p>结合上诉两个原因，我们趋向采用下载速度更快的方案。</p>
+<p>针对二进制包的增删查，我们创建了以下命令供团队内部使用：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 查看所有二进制版本信息</span></span><br><span class="line">pod binary list </span><br><span class="line"><span class="meta">#</span><span class="bash"> 查找组件二进制版本信息</span></span><br><span class="line">pod binary search NAME</span><br><span class="line"><span class="meta">#</span><span class="bash"> 下载二进制 zip 包</span></span><br><span class="line">pod binary pull NAME VERSION</span><br><span class="line"><span class="meta">#</span><span class="bash"> 推送二进制 zip 包 </span></span><br><span class="line">pod binary push [PATH] [-name=组件名] [--version=版本号] [--commit=版本日志]</span><br></pre></td></tr></table></figure>
+<h2 id="切换依赖方式"><a href="#切换依赖方式" class="headerlink" title="切换依赖方式"></a>切换依赖方式</h2><p>二进制化后，整体构建速度变快了，但是不利于开发人员跟踪调试，所以就需要有依赖切换功能。这里所说的依赖切换功能包括整个工程、单个组件的切换，以及二进制版本的使用封装，这也是组件二进制化耗费时间和精力最多的地方。</p>
+<p>在整个过程中，我总共尝试了三种方案，分别是单私有源单版本、单私有源双版本以及最终采用的<strong>双私有源单版本</strong>。下面我会简单地说下各方案以及实践中遇到的问题。</p>
+<h3 id="单私有源单版本"><a href="#单私有源单版本" class="headerlink" title="单私有源单版本"></a>单私有源单版本</h3><blockquote>
+<p>在不更改私有源和组件版本的前提下，通过动态变更源码 podspec，达到切换依赖的目的</p>
+</blockquote>
+<p>单私有源单版本是我第一次实践采用的方案，也创建了对应的插件 <a href="https://github.com/tripleCC/cocoapods-tdfire-binary" target="_blank" rel="noopener">cocoapods-tdfire-binary</a> ，这里结合插件的实现过程，聊聊实现这类方案时遇到的坑。</p>
+<p>前期调研二进制化方案时，我主要参考了 <a href="https://www.jianshu.com/p/5338bc626eaf" target="_blank" rel="noopener">iOS CocoaPods组件平滑二进制化解决方案</a> 一文，所以整体思路和这篇文章差不多，也是通过环境变量加判断语句实现 podspec 的内容变更（虽说 podspec 支持使用 ruby 语法定制，我还是建议最终以 json 格式发布到私有源上，因为 CocoaPods 内部会将 podspec json 化后再执行一些操作，比如缓存，如果这一动作不幂等，操作结果便是不可预知的，从而破坏 CocoaPods 自身的运行机制）。</p>
+<p>这种方案最大的困扰在于切换依赖时，如何规避组件缓存带来的负面影响，处理不当容易出现工程组件目录为空的情况，以下是我实践过的两种方案：</p>
+<ol>
+<li><p>确保缓存中同时存在源码和二进制的资源及文件（设置 preserve_paths）</p>
+</li>
+<li><p>切换依赖前，删除目标组件缓存以及本地 Pods 下的组件目录</p>
+</li>
+</ol>
+<p>在使用二进制服务器的前提下，方案一的常见实现方式为，在 pre_command 中设置下载二进制包脚本，并设置 preserve_paths ，让 CocoaPods 同时保留两种依赖方式所需要的文件即可。考虑到组件本身有二进制版本，组件 Cache 还没有下载的情况，这种方案通常辅以方案二。由于需要同时下载两种依赖的资源，个人并不是很喜欢这种方案，这也是我们弃用  cocoapods-tdfire-binary 的主要原因。</p>
+<p>方案二需要 hook  Pod::Installer 类的 resolve_dependencies 方法，在这个方法中清除缓存及本地资源，并且设置组件的沙盒变动标记，这样 CocoaPods 就会重新下载对应的组件了：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">cache_descriptors</span></span></span><br><span class="line">  @cache_descriptors <span class="params">||</span>= <span class="keyword">begin</span></span><br><span class="line">    cache = Downloader::Cache.new(Config.instance.cache_root + <span class="string">'Pods'</span>)</span><br><span class="line">    cache_descriptors = cache.cache_descriptors_per_pod</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">clean_local_cache</span><span class="params">(spec)</span></span></span><br><span class="line">  pod_dir = Config.instance.sandbox.pod_dir(spec.root.name)</span><br><span class="line">  framework_file = pod_dir + <span class="string">"<span class="subst">#&#123;spec.root.name&#125;</span>.framework"</span></span><br><span class="line">  <span class="keyword">if</span> pod_dir.exist? &amp;&amp; !framework_file.exist?</span><br><span class="line">    <span class="comment"># 设置沙盒变动标记，去 cache 中拿</span></span><br><span class="line">    <span class="comment"># 只有 :changed 、:added 两种状态才会重新去 cache 中拿</span></span><br><span class="line">    @analysis_result.sandbox_state.add_name(spec.name, <span class="symbol">:changed</span>)</span><br><span class="line">    <span class="keyword">begin</span></span><br><span class="line">      FileUtils.rm_rf(pod_dir)</span><br><span class="line">    <span class="keyword">rescue</span> =&gt; err</span><br><span class="line">      puts err</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">clean_pod_cache</span><span class="params">(spec)</span></span></span><br><span class="line">  descriptors = cache_descriptors[spec.root.name]</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">if</span> descriptors.<span class="literal">nil</span>?</span><br><span class="line">  descriptors = descriptors.select &#123; <span class="params">|d|</span> d[<span class="symbol">:version</span>] == spec.version&#125;</span><br><span class="line">  descriptors.each <span class="keyword">do</span> <span class="params">|d|</span></span><br><span class="line">    <span class="comment"># pod cache 文件名由文件内容的 sha1 组成，由于生成时使用的是 podspec，获取时使用的是 podspec.json 导致生成的目录名不一致</span></span><br><span class="line">    <span class="comment"># Downloader::Request slug</span></span><br><span class="line">    <span class="comment"># cache_descriptors_per_pod 表明，specs_dir 中都是以 .json 形式保存 spec</span></span><br><span class="line">    slug = d[<span class="symbol">:slug</span>].dirname + <span class="string">"<span class="subst">#&#123;spec.version&#125;</span>-<span class="subst">#&#123;spec.checksum[<span class="number">0</span>, <span class="number">5</span>]&#125;</span>"</span></span><br><span class="line">    framework_file = slug + <span class="string">"<span class="subst">#&#123;spec.root.name&#125;</span>.framework"</span></span><br><span class="line">    <span class="keyword">unless</span> (framework_file.exist?)</span><br><span class="line">      <span class="keyword">begin</span></span><br><span class="line">        FileUtils.rm(d[<span class="symbol">:spec_file</span>])</span><br><span class="line">        FileUtils.rm_rf(slug)</span><br><span class="line">      <span class="keyword">rescue</span> =&gt; err</span><br><span class="line">        puts err</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>需要注意的是，CocoaPods 在 podspec 不是 json 格式时，<a href="https://github.com/CocoaPods/CocoaPods/issues/8422" target="_blank" rel="noopener">缓存目录是有问题的</a>，所以需要我们自己去拼装缓存路径后再执行删除动作。</p>
+<p>使用 cocoapods-tdfire-binary 时，我们需要在 podspec 文件中添加以下代码：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">....</span><br><span class="line">tdfire_source_configurator = lambda <span class="keyword">do</span> <span class="params">|s|</span></span><br><span class="line">  <span class="comment"># 源码依赖配置</span></span><br><span class="line">  s.source_files = <span class="string">'$&#123;POD_NAME&#125;/Classes/**/*'</span></span><br><span class="line">  s.public_header_files = <span class="string">'$&#123;POD_NAME&#125;/Classes/**/*.&#123;h&#125;'</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="keyword">unless</span> <span class="string">%w[tdfire_set_binary_download_configurations tdfire_source tdfire_binary]</span>.reduce(<span class="literal">true</span>) &#123; <span class="params">|r, m|</span> s.respond_to?(m) &amp; r &#125;</span><br><span class="line">  tdfire_source_configurator.call s</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">  <span class="comment"># 内部生成源码依赖配置</span></span><br><span class="line">  s.tdfire_source tdfire_source_configurator</span><br><span class="line">  <span class="comment"># 内部生成二进制依赖配置</span></span><br><span class="line">  s.tdfire_binary tdfire_source_configurator</span><br><span class="line">  <span class="comment"># 设置下载脚本，preseve_paths</span></span><br><span class="line">  s.tdfire_set_binary_download_configurations</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>然后在 Podfile 使用以下语句切换依赖：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">plugin <span class="string">'cocoapods-tdfire-binary'</span></span><br><span class="line"></span><br><span class="line">tdfire_use_binary!</span><br><span class="line"></span><br><span class="line"><span class="comment"># tdfire_third_party_use_binary!</span></span><br><span class="line">tdfire_use_source_pods [<span class="string">'AFNetworking'</span>]</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>由于编写此插件时，我对 CocoaPods 源码以及 ruby 并不熟悉，导致我没有把 podspec 的配置放到插件内部，现在回过头看，更加合理的做法应该是在 podspec 中设置依赖标志，然后在 hook 的 resolve_dependencies  方法中，变更 podspec 的 source 及依赖相关的字段，这样的话，只需要采用上诉的方案二即可。</p>
+<p>可以看到，单私有源单版本对 CocoaPods 缓存策略的侵入还是比较大的。</p>
+<p>这里顺便说下 cocoapods-tdfire-binary 是如何处理 subspec 的，首先要说明的是，对于存在 subspec 的组件，我们将其整体打为一个二进制包，并没有分 subspec 构建。假设有组件 A ，B，他们对应的部分 podspec 如下：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># A</span></span><br><span class="line">Pod::Spec.new <span class="keyword">do</span> <span class="params">|s|</span></span><br><span class="line">  s.name             = <span class="string">'A'</span></span><br><span class="line">  ...</span><br><span class="line">  s.subspec <span class="string">'Core'</span> <span class="keyword">do</span> <span class="params">|ss|</span></span><br><span class="line">    ss.source_files = <span class="string">'A/Classes/A.&#123;h,m&#125;'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  s.subspec <span class="string">'Model'</span> <span class="keyword">do</span> <span class="params">|ss|</span></span><br><span class="line">    ss.dependency <span class="string">'A/Core'</span></span><br><span class="line">    ss.dependency <span class="string">'YYModel'</span></span><br><span class="line">    ss.source_files = <span class="string">'A/Classes/Next.&#123;h,m&#125;'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  s.subspec <span class="string">'Image'</span> <span class="keyword">do</span> <span class="params">|ss|</span></span><br><span class="line">    ss.dependency <span class="string">'A/Core'</span></span><br><span class="line">    ss.dependency <span class="string">'SDWebImage'</span></span><br><span class="line">    ss.source_files = <span class="string">'A/Classes/Prev.&#123;h,m&#125;'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># B</span></span><br><span class="line">Pod::Spec.new <span class="keyword">do</span> <span class="params">|s|</span></span><br><span class="line">  s.name             = <span class="string">'B'</span></span><br><span class="line">  ...</span><br><span class="line">  s.dependency <span class="string">'A/Model'</span></span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>当 B 为源码版本，A 为二进制版本时，A 的 subspec 必须要包含 Model ，也就是说 A 的二进制 podspec 必须保证源码 podspec 中的 subspec 都存在，这样切换依赖时才不会出错。 cocoapods-tdfire-binary 在组件 A 为二进制版本时，会动态创建一个名为 TdfireBinary 的 default subspec ，然后将源码 subspec 的依赖上移至 TdfireBinary ：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># A</span></span><br><span class="line">Pod::Spec.new <span class="keyword">do</span> <span class="params">|s|</span></span><br><span class="line">  s.name             = <span class="string">'A'</span></span><br><span class="line">  ...</span><br><span class="line">  s.subspec <span class="string">'TdfireBinary'</span> <span class="keyword">do</span> <span class="params">|ss|</span></span><br><span class="line">	ss.vendored_frameworks = <span class="string">"A.framework"</span></span><br><span class="line">    ss.source_files = <span class="string">"A.framework/Headers/*"</span>, <span class="string">"A.framework/Versions/A/Headers/*"</span></span><br><span class="line">    ss.public_header_files = <span class="string">"A.framework/Headers/*"</span>, <span class="string">"A.framework/Versions/A/Headers/*"</span></span><br><span class="line">    ss.dependency <span class="string">'YYModel'</span>    </span><br><span class="line">    ss.dependency <span class="string">'SDWebImage'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  s.subspec <span class="string">'Core'</span> <span class="keyword">do</span> <span class="params">|ss|</span></span><br><span class="line">    ss.dependency <span class="string">'A/TdfireBinary'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  s.subspec <span class="string">'Model'</span> <span class="keyword">do</span> <span class="params">|ss|</span></span><br><span class="line">    ss.dependency <span class="string">'A/TdfireBinary'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  s.subspec <span class="string">'Image'</span> <span class="keyword">do</span> <span class="params">|ss|</span></span><br><span class="line">	ss.dependency <span class="string">'A/TdfireBinary'</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  ...</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>以下是我们实现过程中遇到的部分问题：</p>
+<ul>
+<li>二进制版本时，依赖 subspec 会引入整个组件</li>
+<li>需要拷贝 subspec 的属性至 TdfireBinary ，实现起来比较繁琐</li>
+<li>由于是在插件内部对 podspec 进行转化，扩展性比较差</li>
+</ul>
+<p>基于以上问题，我们后续创建 cocoapods-bin 插件时，就把这部分工作交给使用者处理了，如果组件拥有 subspec，那么就需要使用者提供一个模版二进制 podspec ，插件只负责同步 source 和 version。</p>
+<p>另外，在大部分情况下，我更建议对功能不纯粹的组件进行物理剥离，而不是组件内部再划分 subspec ，subspec 这种结构不仅会增加组件二进制化的难度，而且<strong>会造成 lint 耗时成倍增加</strong>，大大降低 lint 执行效率。</p>
+<h3 id="单私有源双版本"><a href="#单私有源双版本" class="headerlink" title="单私有源双版本"></a>单私有源双版本</h3><blockquote>
+<p> 在不更改私有源的前提下，通过变更组件版本（版本号加 <code>-binary</code>），达到切换依赖的目的</p>
+</blockquote>
+<p>由于单私有源单版本要么需要同时下载两种版本的资源，要么切换依赖时需要重新下载目标版本的资源，我们决定以组件缓存为切入点，按照 CocoaPods 的设计规则，将二进制版本和源码版本从物理上区分开来。</p>
+<p>最初我想到的就是使用双版本，在源码版本号后添加 <code>-binary</code>，即预发布版本，作为二进制版本的版本号。接下来只要在 CocoaPods 使用源码 podspec 下载资源前，将其替换为二进制 podspec 就可以实现二进制版本的切换了。</p>
+<p>首先，我们来看下 Pod::Resolver 类，这个类会给 target 创建最终可用的 specifications ，只不过依赖分析工作并不在  Pod::Resolver 中进行，它扮演了类似 DataSource 的角色，将需要分析的数据提供给 Molinillo::Resolver 类处理。</p>
+<p>这里说下我尝试从依赖分析切入时遇到的问题。要成为 Molinillo::Resolver 的数据源，需要实现/覆盖 Molinillo::SpecificationProvider 模块中的方法，以下是 Pod::Resolver 实现的 search_for ：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">search_for</span><span class="params">(dependency)</span></span></span><br><span class="line">  @search <span class="params">||</span>= &#123;&#125;</span><br><span class="line">  @search[dependency] <span class="params">||</span>= <span class="keyword">begin</span></span><br><span class="line">    locked_requirement = requirement_for_locked_pod_named(dependency.name)</span><br><span class="line">    additional_requirements = Array(locked_requirement)</span><br><span class="line">    specifications_for_dependency(dependency, additional_requirements)</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  @search[dependency].dup</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">specifications_for_dependency</span><span class="params">(dependency, additional_requirements = [])</span></span></span><br><span class="line">  requirement = Requirement.new(dependency.requirement.as_list + additional_requirements.flat_map(&amp;<span class="symbol">:as_list</span>))</span><br><span class="line">  find_cached_set(dependency).</span><br><span class="line">    all_specifications(installation_options.warn_for_multiple_pod_sources).</span><br><span class="line">    select &#123; <span class="params">|s|</span> requirement.satisfied_by? s.version &#125;.</span><br><span class="line">    map &#123; <span class="params">|s|</span> s.subspec_by_name(dependency.name, <span class="literal">false</span>, <span class="literal">true</span>) &#125;.</span><br><span class="line">    compact</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>当时我通过 hook  specifications_for_dependency 方法，更改了 requirement ，以使方法返回我想要的 specification，最终也实现了替换 specification 的目的。但是在执行  lint， push 等操作时，由于 Podfile 为内部自动生成，很多组件都是间接依赖的，在目标组件的 podspec 中并没有声明版本，比如间接依赖了 YYModel ，requirement 为 <code>~&gt; 1.0</code> ，如果替换 requirement 为 <code>= 1.0.1-binary</code> 就会出现以下错误：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Due to the previous naïve CocoaPods resolver, you were using a pre-release version of `YYModel`, </span><br><span class="line">without explicitly asking for a pre-release version, which now leads to a conflict. </span><br><span class="line">Please decide to either use that pre-release version by</span><br><span class="line">adding the version requirement to your Podfile (e.g. `pod &apos;YYModel&apos;, &apos;= 1.0.1-binary, ~&gt; 1.0&apos;`) or</span><br><span class="line">revert to a stable version by running `pod update YYModel`</span><br></pre></td></tr></table></figure>
+<p>要解决这个问题，可以显式依赖一个预发布版本，也可以更改 <code>requirement_satisfied_by?</code> 方法的处理逻辑。<br>当然，我们也不可能会在 podspec 中显式依赖一个预发布版本，也不想过多干涉 CocoaPods 的依赖分析逻辑，所以这条路最终失败了。实际上我们并不需要关心依赖是如何分析的，只需要等依赖分析完，将最终生成的 specification 替换掉即可，让我们看下 Pod::Resolver 的 resolve 方法：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">resolve</span></span></span><br><span class="line">  dependencies = @podfile_dependency_cache.target_definition_list.flat_map <span class="keyword">do</span> <span class="params">|target|</span></span><br><span class="line">    @podfile_dependency_cache.target_definition_dependencies(target).each <span class="keyword">do</span> <span class="params">|dep|</span></span><br><span class="line">      <span class="keyword">next</span> <span class="keyword">unless</span> target.platform</span><br><span class="line">      @platforms_by_dependency[dep].push(target.platform)</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  @platforms_by_dependency.each_value(&amp;<span class="symbol">:uniq!</span>)</span><br><span class="line">  @activated = Molinillo::Resolver.new(<span class="keyword">self</span>, <span class="keyword">self</span>).resolve(dependencies, locked_dependencies)</span><br><span class="line">  resolver_specs_by_target</span><br><span class="line"><span class="keyword">rescue</span> Molinillo::ResolverError =&gt; e</span><br><span class="line">  handle_resolver_error(e)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">resolver_specs_by_target</span></span></span><br><span class="line">  @resolver_specs_by_target <span class="params">||</span>= &#123;&#125;.tap <span class="keyword">do</span> <span class="params">|resolver_specs_by_target|</span></span><br><span class="line">    dependencies = &#123;&#125;</span><br><span class="line">    @podfile_dependency_cache.target_definition_list.each <span class="keyword">do</span> <span class="params">|target|</span></span><br><span class="line">      specs = @podfile_dependency_cache.target_definition_dependencies(target).flat_map <span class="keyword">do</span> <span class="params">|dep|</span></span><br><span class="line">        name = dep.name</span><br><span class="line">        node = @activated.vertex_named(name)</span><br><span class="line">        (valid_dependencies_for_target_from_node(target, dependencies, node) &lt;&lt; node).map &#123; <span class="params">|s|</span> [s, node.payload.test_specification?] &#125;</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">      resolver_specs_by_target[target] = specs.</span><br><span class="line">        group_by(&amp;<span class="symbol">:first</span>).</span><br><span class="line">        map <span class="keyword">do</span> <span class="params">|vertex, spec_test_only_tuples|</span></span><br><span class="line">          test_only = spec_test_only_tuples.all? &#123; <span class="params">|tuple|</span> tuple[<span class="number">1</span>] &#125;</span><br><span class="line">          payload = vertex.payload</span><br><span class="line">          spec_source = payload.respond_to?(<span class="symbol">:spec_source</span>) &amp;&amp; payload.spec_source</span><br><span class="line">          ResolverSpecification.new(payload, test_only, spec_source)</span><br><span class="line">        <span class="keyword">end</span>.</span><br><span class="line">        sort_by(&amp;<span class="symbol">:name</span>)</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>上面的 resolver_specs_by_target 方法返回就是最终结果，我们只需要变更其返回值就可以了。为了不污染源码私有源以及能更好地维护源码和二进制 podspec ，我们最终没有采用单私有源双版本，而是采用了双私有源单版本，不过两者的实现思路和入口差不多是一致的，这次尝试也给后续的实践铺了路。</p>
+<h3 id="双私有源单版本"><a href="#双私有源单版本" class="headerlink" title="双私有源单版本"></a>双私有源单版本</h3><blockquote>
+<p>在不更改组件版本的前提下，通过变更组件的私有源，达到切换依赖的目的</p>
+</blockquote>
+<p>双私有源分别为源码私有源和二进制私有源，这两个私有源中有相同版本组件，只是 podspec 中的 source 和依赖等字段不一样，所以切换了组件对应的私有源即切换了组件的依赖方式。</p>
+<p>以 YYModel 为例，现有源码私有源 cocoapods-spec 及 二进制私有源 cocoapods-spec-binary ，它们都有 YYModel 组件 1.0.4.2 版本的 podspec 如下：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"># cocoapods-spec </span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"name"</span>: <span class="string">"YYModel"</span>,</span><br><span class="line">  <span class="attr">"summary"</span>: <span class="string">"High performance model framework for iOS/OSX."</span>,</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"1.0.4.2"</span>,</span><br><span class="line">  <span class="attr">"license"</span>: &#123;</span><br><span class="line">    <span class="attr">"type"</span>: <span class="string">"MIT"</span>,</span><br><span class="line">    <span class="attr">"file"</span>: <span class="string">"LICENSE"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"authors"</span>: &#123;</span><br><span class="line">    <span class="attr">"ibireme"</span>: <span class="string">"ibireme@gmail.com"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"social_media_url"</span>: <span class="string">"http://blog.ibireme.com"</span>,</span><br><span class="line">  <span class="attr">"homepage"</span>: <span class="string">"https://github.com/ibireme/YYModel"</span>,</span><br><span class="line">  <span class="attr">"platforms"</span>: &#123;</span><br><span class="line">    <span class="attr">"ios"</span>: <span class="string">"6.0"</span>,</span><br><span class="line">    <span class="attr">"osx"</span>: <span class="string">"10.7"</span>,</span><br><span class="line">    <span class="attr">"watchos"</span>: <span class="string">"2.0"</span>,</span><br><span class="line">    <span class="attr">"tvos"</span>: <span class="string">"9.0"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"source"</span>: &#123;</span><br><span class="line">    <span class="attr">"git"</span>: <span class="string">"git@git.xxxxx.net:cocoapods-repos/YYModel.git"</span>,</span><br><span class="line">    <span class="attr">"tag"</span>: <span class="string">"1.0.4.2"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"frameworks"</span>: [</span><br><span class="line">    <span class="string">"Foundation"</span>,</span><br><span class="line">    <span class="string">"CoreFoundation"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="attr">"requires_arc"</span>: <span class="literal">true</span>,</span><br><span class="line">  <span class="attr">"source_files"</span>: <span class="string">"YYModel/*.&#123;h,m&#125;"</span>,</span><br><span class="line">  <span class="attr">"public_header_files"</span>: <span class="string">"YYModel/*.&#123;h&#125;"</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"># cocoapods-spec-binary </span><br><span class="line">&#123;</span><br><span class="line">  <span class="attr">"name"</span>: <span class="string">"YYModel"</span>,</span><br><span class="line">  <span class="attr">"summary"</span>: <span class="string">"High performance model framework for iOS/OSX."</span>,</span><br><span class="line">  <span class="attr">"version"</span>: <span class="string">"1.0.4.2"</span>,</span><br><span class="line">  <span class="attr">"authors"</span>: &#123;</span><br><span class="line">    <span class="attr">"ibireme"</span>: <span class="string">"ibireme@gmail.com"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"social_media_url"</span>: <span class="string">"http://blog.ibireme.com"</span>,</span><br><span class="line">  <span class="attr">"homepage"</span>: <span class="string">"https://github.com/ibireme/YYModel"</span>,</span><br><span class="line">  <span class="attr">"platforms"</span>: &#123;</span><br><span class="line">    <span class="attr">"ios"</span>: <span class="string">"6.0"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"source"</span>: &#123;</span><br><span class="line">    <span class="attr">"http"</span>: <span class="string">"http://iosframeworkserver-shopkeeperclient.app.2dfire.com/download/YYModel/1.0.4.2.zip"</span></span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="attr">"frameworks"</span>: [</span><br><span class="line">    <span class="string">"Foundation"</span>,</span><br><span class="line">    <span class="string">"CoreFoundation"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="attr">"requires_arc"</span>: <span class="literal">true</span>,</span><br><span class="line">  <span class="attr">"source_files"</span>: [</span><br><span class="line">    <span class="string">"YYModel.framework/Headers/*"</span>,</span><br><span class="line">    <span class="string">"YYModel.framework/Versions/A/Headers/*"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="attr">"public_header_files"</span>: [</span><br><span class="line">    <span class="string">"YYModel.framework/Headers/*"</span>,</span><br><span class="line">    <span class="string">"YYModel.framework/Versions/A/Headers/*"</span></span><br><span class="line">  ],</span><br><span class="line">  <span class="attr">"vendored_frameworks"</span>: <span class="string">"YYModel.framework"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当采用 YYModel 的源码版本时，我们从 cocoapods-spec 私有源获取组件的 podspec，那么下载地址为 <code>git@git.xxxxx.net:cocoapods-repos/YYModel.git</code>  的  <code>1.0.4.2</code>  tag ；当采用 YYModel 的二进制版本时，我们从 cocoapods-spec-binary 私有源获取组件的 podspec，那么下载地址为<code>http://iosframeworkserver-shopkeeperclient.app.2dfire.com/download/YYModel/1.0.4.2.zip</code>。</p>
+<p>通过上个方案，我们可以知道 resolver_specs_by_target 方法创建了最终使用的 specifications ，接下来我们结合 cocoapods-bin 插件代码，看下如何切换组件的私有源：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">module</span> <span class="title">Pod</span></span></span><br><span class="line">  <span class="class"><span class="keyword">class</span> <span class="title">Resolver</span></span></span><br><span class="line">    <span class="comment"># &gt;= 1.4.0 才有 resolver_specs_by_target 以及 ResolverSpecification</span></span><br><span class="line">    <span class="comment"># &gt;= 1.5.0 ResolverSpecification 才有 source，供 install 或者其他操作时，输入 source 变更</span></span><br><span class="line">    <span class="comment"># </span></span><br><span class="line">    <span class="keyword">if</span> Pod.match_version?(<span class="string">'~&gt; 1.4'</span>) </span><br><span class="line">      old_resolver_specs_by_target = instance_method(<span class="symbol">:resolver_specs_by_target</span>)</span><br><span class="line">      define_method(<span class="symbol">:resolver_specs_by_target</span>) <span class="keyword">do</span> </span><br><span class="line">        specs_by_target = old_resolver_specs_by_target.bind(<span class="keyword">self</span>).call()</span><br><span class="line"></span><br><span class="line">        sources_manager = Config.instance.sources_manager</span><br><span class="line">        use_source_pods = podfile.use_source_pods</span><br><span class="line"></span><br><span class="line">        missing_binary_specs = []</span><br><span class="line">        specs_by_target.each <span class="keyword">do</span> <span class="params">|target, rspecs|</span></span><br><span class="line">          <span class="comment"># use_binaries 并且 use_source_pods 不包含</span></span><br><span class="line">          use_binary_rspecs = <span class="keyword">if</span> podfile.use_binaries? <span class="params">||</span> podfile.use_binaries_selector</span><br><span class="line">                                rspecs.select <span class="keyword">do</span> <span class="params">|rspec|</span> </span><br><span class="line">                                  ([rspec.name, rspec.root.name] &amp; use_source_pods).empty? &amp;&amp;</span><br><span class="line">                                  (podfile.use_binaries_selector.<span class="literal">nil</span>? <span class="params">||</span> podfile.use_binaries_selector.call(rspec.spec))</span><br><span class="line">                                <span class="keyword">end</span></span><br><span class="line">                              <span class="keyword">else</span></span><br><span class="line">                                []</span><br><span class="line">                              <span class="keyword">end</span></span><br><span class="line">          specs_by_target[target] = rspecs.map <span class="keyword">do</span> <span class="params">|rspec|</span></span><br><span class="line">            <span class="comment"># developments 组件采用默认输入的 spec (development pods 的 source 为 nil)</span></span><br><span class="line">            <span class="keyword">next</span> rspec <span class="keyword">unless</span> rspec.spec.respond_to?(<span class="symbol">:spec_source</span>) &amp;&amp; rspec.spec.spec_source</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 采用二进制依赖并且不为开发组件 </span></span><br><span class="line">            use_binary = use_binary_rspecs.<span class="keyword">include</span>?(rspec)</span><br><span class="line">            source = use_binary ? sources_manager.binary_source : sources_manager.code_source </span><br><span class="line"></span><br><span class="line">            spec_version = rspec.spec.version</span><br><span class="line">            <span class="keyword">begin</span></span><br><span class="line">              <span class="comment"># 从新 source 中获取 spec</span></span><br><span class="line">              specification = source.specification(rspec.root.name, spec_version)   </span><br><span class="line"></span><br><span class="line">              <span class="comment"># 组件是 subspec</span></span><br><span class="line">              specification = specification.subspec_by_name(rspec.name, <span class="literal">false</span>, <span class="literal">true</span>) <span class="keyword">if</span> rspec.spec.subspec?</span><br><span class="line">              <span class="comment"># 这里可能出现分析依赖的 source 和切换后的 source 对应 specification 的 subspec 对应不上</span></span><br><span class="line">              <span class="comment"># 造成 subspec_by_name 返回 nil，这个是正常现象</span></span><br><span class="line">              <span class="keyword">next</span> <span class="keyword">unless</span> specification</span><br><span class="line"></span><br><span class="line">              <span class="comment"># 组装新的 rspec ，替换原 rspec</span></span><br><span class="line">              rspec = <span class="keyword">if</span> Pod.match_version?(<span class="string">'~&gt; 1.4.0'</span>)</span><br><span class="line">                        ResolverSpecification.new(specification, rspec.used_by_tests_only)</span><br><span class="line">                      <span class="keyword">else</span></span><br><span class="line">                        ResolverSpecification.new(specification, rspec.used_by_tests_only, source)</span><br><span class="line">                      <span class="keyword">end</span></span><br><span class="line">              rspec</span><br><span class="line">            <span class="keyword">rescue</span> Pod::StandardError =&gt; error  </span><br><span class="line">              <span class="comment"># 没有从新的 source 找到对应版本组件，直接返回原 rspec</span></span><br><span class="line">              missing_binary_specs &lt;&lt; rspec.spec <span class="keyword">if</span> use_binary</span><br><span class="line">              rspec</span><br><span class="line">            <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">            rspec </span><br><span class="line">          <span class="keyword">end</span>.compact</span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">        missing_binary_specs.uniq.each <span class="keyword">do</span> <span class="params">|spec|</span> </span><br><span class="line">          UI.message <span class="string">"【<span class="subst">#&#123;spec.name&#125;</span> | <span class="subst">#&#123;spec.version&#125;</span>】组件无对应二进制版本 , 将采用源码依赖."</span> </span><br><span class="line">        <span class="keyword">end</span> <span class="keyword">if</span> missing_binary_specs.any?</span><br><span class="line"></span><br><span class="line">        specs_by_target</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> Pod.match_version?(<span class="string">'~&gt; 1.4.0'</span>)</span><br><span class="line">    <span class="comment"># 1.4.0 没有 spec_source</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Specification</span></span></span><br><span class="line">      <span class="class"><span class="keyword">class</span> <span class="title">Set</span></span></span><br><span class="line">        <span class="class"><span class="keyword">class</span> <span class="title">LazySpecification</span> &lt; BasicObject</span></span><br><span class="line">          <span class="keyword">attr_reader</span> <span class="symbol">:spec_source</span></span><br><span class="line"></span><br><span class="line">          old_initialize = instance_method(<span class="symbol">:initialize</span>)</span><br><span class="line">          define_method(<span class="symbol">:initialize</span>) <span class="keyword">do</span> <span class="params">|name, version, source|</span></span><br><span class="line">            old_initialize.bind(<span class="keyword">self</span>).call(name, version, source)</span><br><span class="line"></span><br><span class="line">            @spec_source = source </span><br><span class="line">          <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">          <span class="function"><span class="keyword">def</span> <span class="title">respond_to?</span><span class="params">(method, include_all = <span class="literal">false</span>)</span></span> </span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">super</span> <span class="keyword">unless</span> method == <span class="symbol">:spec_source</span></span><br><span class="line">            <span class="literal">true</span></span><br><span class="line">          <span class="keyword">end</span></span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>上面就是切换私有源的代码逻辑，可以看到还是比较简短的，这里只单独说三点：</p>
+<ul>
+<li>我们默认 Development Pods 中的组件为未发布组件，没有二进制版本，所以始终采用原版本</li>
+<li>因为无法直接从 source 中获取组件的 subspec ，所以这里统一获取 root spec ，如果目标 spec 是 subspec 再从 root spec 中获取 subspec</li>
+<li>其他业务线的组件可能没有二进制化版本，这里我们如果没有找到组件目标版本的 spec ，会让组件采用原版本，这样就不会因为某个组件版本的缺失而导致 install 失败。</li>
+</ul>
+<p>存在两个私有源意味着会有两个不同的 podspec ，分别为源码 podspec 和二进制 podspec ，手动同步这两个 podspec 将会是一个很耗费精力的事情，这时候就需要 cocoapods-bin 插件的辅助命令了。针对没有 subspec 的组件，cocoapods-bin 会根据源码 podspec 自动生成对应的二进制 podspec ；针对有 subspec 的组件，cocoapods-bin 会根据使用者提供的 template podspec 和源码 podspec 自动生成对应的二进制 podspec 。由于源码 podspec 和二进制 podspec 的 diff 是可预见的，我们就可以通过这种半自动的方式避免同时维护两套 podspec 。</p>
+<p>更多使用信息可以查看 cocoapods-bin 的 <a href="https://github.com/tripleCC/cocoapods-bin" target="_blank" rel="noopener">README</a> ，这里就不赘述了。</p>
+<h2 id="整合-CI"><a href="#整合-CI" class="headerlink" title="整合 CI"></a>整合 CI</h2><p>从上文可以看出，二进制化还是增加了重复性工作，包括制作二进制包、发布二进制版本等，如果不辅以自动化工具，无疑会增加组件维护者的工作。</p>
+<p>在<a href="https://triplecc.github.io/2018/06/23/2018-06-23-ji-gitlabcide-ci-shi-jian/">火掌柜 iOS 团队 GitLab CI 集成实践</a>的基础上，我们对 CI 配置文件做了些调整：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">variables:</span></span><br><span class="line">  <span class="comment"># 二进制优先</span></span><br><span class="line"><span class="attr">  BINARY_FIRST:</span> <span class="number">1</span> </span><br><span class="line">  <span class="comment"># 不允许通知 </span></span><br><span class="line"><span class="attr">  DISABLE_NOTIFY:</span> <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="attr">before_script:</span></span><br><span class="line">  <span class="comment"># https://gitlab.com/gitlab-org/gitlab-ce/issues/14983</span></span><br><span class="line">  <span class="comment"># shared runner 会出现，special runner只会报warning</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">export</span> <span class="string">LANG=en_US.UTF-8</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">export</span> <span class="string">LANGUAGE=en_US:en</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">export</span> <span class="string">LC_ALL=en_US.UTF-8</span></span><br><span class="line">  </span><br><span class="line"><span class="bullet">  -</span> <span class="string">pwd</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">git</span> <span class="string">clone</span> <span class="string">git@git.xxxxx.net:ios/ci-yaml-shell.git</span> </span><br><span class="line"><span class="bullet">  -</span> <span class="string">ci-yaml-shell/before_shell_executor.sh</span></span><br><span class="line"></span><br><span class="line"><span class="attr">after_script:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">rm</span> <span class="bullet">-fr</span> <span class="string">ci-yaml-shell</span></span><br><span class="line"></span><br><span class="line"><span class="attr">stages:</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">check</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">lint</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">test</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">package</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">publish</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">report</span></span><br><span class="line"><span class="bullet">  -</span> <span class="string">cleanup</span></span><br><span class="line"></span><br><span class="line"><span class="attr">component_check:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">check</span></span><br><span class="line"><span class="attr">  script:</span> </span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/component_check_executor.rb</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">master</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/^release.*$/</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">/^hotfix.*$/</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">CI</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOSCI</span></span><br><span class="line"><span class="attr">  environment:</span></span><br><span class="line"><span class="attr">    name:</span> <span class="string">qa</span></span><br><span class="line"><span class="string">...</span></span><br><span class="line"></span><br><span class="line"><span class="attr">package_framework:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">package</span> </span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">  script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/framework_pack_executor.sh</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOSCD</span></span><br><span class="line"><span class="attr">  environment:</span></span><br><span class="line"><span class="attr">    name:</span> <span class="string">production</span></span><br><span class="line"></span><br><span class="line"><span class="attr">publish_code_pod:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">publish</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">  retry:</span> <span class="number">0</span></span><br><span class="line"><span class="attr">  script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/publish_code_pod.sh</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOSCD</span></span><br><span class="line"><span class="attr">  environment:</span></span><br><span class="line"><span class="attr">    name:</span> <span class="string">production</span></span><br><span class="line"></span><br><span class="line"><span class="attr">publish_binary_pod:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">publish</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">  retry:</span> <span class="number">0</span></span><br><span class="line"><span class="attr">  script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/publish_binary_pod.sh</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOSCD</span></span><br><span class="line"><span class="attr">  environment:</span></span><br><span class="line"><span class="attr">    name:</span> <span class="string">production</span></span><br><span class="line"></span><br><span class="line"><span class="attr">report_to_director:</span></span><br><span class="line"><span class="attr">  stage:</span> <span class="string">report</span></span><br><span class="line"><span class="attr">  script:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">ci-yaml-shell/report_executor.sh</span></span><br><span class="line"><span class="attr">  only:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">master</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">tags</span></span><br><span class="line"><span class="attr">  when:</span> <span class="string">on_failure</span></span><br><span class="line"><span class="attr">  tags:</span></span><br><span class="line"><span class="bullet">    -</span> <span class="string">iOSCD</span></span><br></pre></td></tr></table></figure>
+<p>推送 tag 后，如果一切顺利，可以看到 pipeline 执行结果如下：</p>
+<p><img src="https://github.com/tripleCC/tripleCC.github.io/raw/master/images/Snip20190122_1.png" alt="pipeline 结果"></p>
+<p>其中的 package 、 publish 这两个 stage 囊括了二进制化资源制作的主要工作，组件维护者依然可以像二进制化前一样，关注源码版本的发布流程即可。</p>
+<p>这里需要注意的是，由于 CocoaPods push 的 Validator 和 lint 基本一致，上文提到的<a href="https://github.com/CocoaPods/CocoaPods/issues/7617" target="_blank" rel="noopener">这个 bug</a> ，对 publish stage 也会有影响，需要暂时指定 CocoaPods 为 1.4.0 版本（<code>pod _1.4.0_ bin repo push</code>）。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>整个组件二进制化的尝试与实践，耗费了我大半年的主要精力，并且我们还需要多维护一个二进制文件服务器，以及对应的二进制版本，在组件 / 代码不多时，做这件事情费时费力，还收效甚微，因此我并不建议还未进行<strong>业务组件化</strong>并且没有上 CI 的团队去做这件事情。</p>
+<p>结合我们团队目前的业务性质以及业务组件化进程，在团队实施了组件二进制化之后，团队内部工程编译速度的提升还是显而易见的，并且受益于编译时间的减少，组件自动发布平台的发布时间也大大减少，所以对于我们来说，花时间去做这件事情还是值得的。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://www.jianshu.com/p/5338bc626eaf" target="_blank" rel="noopener">iOS CocoaPods组件平滑二进制化解决方案</a></p>
+<p><a href="https://www.jianshu.com/p/85c97dc9ab83" target="_blank" rel="noopener">iOS CocoaPods组件平滑二进制化解决方案及详细教程二之subspecs篇</a></p>
+<p><a href="https://www.valiantcat.cn/index.php/2017/05/16/48.html" target="_blank" rel="noopener">组件化-二进制方案</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Interview/" rel="tag"># Interview</a>
+          
+            <a href="/tags/CocoaPods/" rel="tag"># CocoaPods</a>
+          
+            <a href="/tags/Ruby/" rel="tag"># Ruby</a>
+          
+            <a href="/tags/二进制化/" rel="tag"># 二进制化</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/12/29/CocoaPods加载插件/" rel="next" title="CocoaPods 如何加载插件">
+                <i class="fa fa-chevron-left"></i> CocoaPods 如何加载插件
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/01/27/CocoaPods，GitLabCI与组件自动化发布/" rel="prev" title="CocoaPods，GitLab CI 与组件自动化发布">
+                CocoaPods，GitLab CI 与组件自动化发布 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#二进制化需求"><span class="nav-number">2.</span> <span class="nav-text">二进制化需求</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#宏定义处理"><span class="nav-number">3.</span> <span class="nav-text">宏定义处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#制作二进制包"><span class="nav-number">4.</span> <span class="nav-text">制作二进制包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#存储二进制包"><span class="nav-number">5.</span> <span class="nav-text">存储二进制包</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#切换依赖方式"><span class="nav-number">6.</span> <span class="nav-text">切换依赖方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#单私有源单版本"><span class="nav-number">6.1.</span> <span class="nav-text">单私有源单版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#单私有源双版本"><span class="nav-number">6.2.</span> <span class="nav-text">单私有源双版本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#双私有源单版本"><span class="nav-number">6.3.</span> <span class="nav-text">双私有源单版本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#整合-CI"><span class="nav-number">7.</span> <span class="nav-text">整合 CI</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">8.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">9.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2019/01/21/基于CocoaPods的组件二进制化实践/';
+          this.page.identifier = '2019/01/21/基于CocoaPods的组件二进制化实践/';
+          this.page.title = '基于 CocoaPods 的组件二进制化实践';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="碎片系列,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="1、NSSetUncaughtExceptionHandler注册捕获错误无法调用2、自定义提示宏3、frame和bounds4、Swift中inout和C/C++中指针/引用的区别5、获取UICollectionView的高度">
+<meta name="keywords" content="碎片系列">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS知识碎片三">
+<meta property="og:url" content="https://triplecc.github.io/2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="1、NSSetUncaughtExceptionHandler注册捕获错误无法调用2、自定义提示宏3、frame和bounds4、Swift中inout和C/C++中指针/引用的区别5、获取UICollectionView的高度">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20151231_1.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20151231_3.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20151231_4.png">
+<meta property="og:image" content="https://triplecc.github.io/images/Snip20151231_5.png">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="iOS知识碎片三">
+<meta name="twitter:description" content="1、NSSetUncaughtExceptionHandler注册捕获错误无法调用2、自定义提示宏3、frame和bounds4、Swift中inout和C/C++中指针/引用的区别5、获取UICollectionView的高度">
+<meta name="twitter:image" content="https://triplecc.github.io/images/Snip20151231_1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/">
+
+
+
+
+
+  <title>iOS知识碎片三 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">iOS知识碎片三</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2015-12-07T09:10:05+00:00">
+                2015-12-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/碎片系列/" itemprop="url" rel="index">
+                    <span itemprop="name">碎片系列</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>1、NSSetUncaughtExceptionHandler注册捕获错误无法调用<br><br>2、自定义提示宏<br><br>3、frame和bounds<br><br>4、Swift中inout和C/C++中指针/引用的区别<br><br>5、获取UICollectionView的高度<br><br><a id="more"></a></p>
+<h2 id="NSSetUncaughtExceptionHandler注册捕获错误无法调用"><a href="#NSSetUncaughtExceptionHandler注册捕获错误无法调用" class="headerlink" title="NSSetUncaughtExceptionHandler注册捕获错误无法调用"></a>NSSetUncaughtExceptionHandler注册捕获错误无法调用</h2><p>原因是老代码中集成了友盟分析，并且没有关闭友盟错误收集机制。友盟内部的错误收集方式也是采用这个方式，所以自己注册的错误处理函数被友盟覆盖，因此不会被执行。</p>
+<p>同理，多种第三方的错误日志应该是不能同时实现捕获的。也是看到了友盟的文件夹才想到这点，stackoverflow上面说的都不是很符合这种情况。</p>
+<h2 id="自动提示宏"><a href="#自动提示宏" class="headerlink" title="自动提示宏"></a>自动提示宏</h2><p>什么情况下需要用到自动提示宏</p>
+<ul>
+<li>使用KVO，KVC时使用(归档的时候也可以使用，这样就不用设置一堆宏了)</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">keyPath(objc, keyPath) @(((<span class="keyword">void</span>)objc.keyPath, <span class="meta">#keyPath))</span></span><br><span class="line"><span class="comment">// void 去警告</span></span><br><span class="line"><span class="comment">// # 表示转成c字符串</span></span><br><span class="line"><span class="comment">// , 逗号表达式，取最右的值</span></span><br><span class="line"><span class="comment">// @() 基本类型转oc类型</span></span><br></pre></td></tr></table></figure>
+<h2 id="frame和bounds"><a href="#frame和bounds" class="headerlink" title="frame和bounds"></a>frame和bounds</h2><p>今天要实现图片浏览器中的一个需求，然后就遇到了这个问题，需要明确两者之间的区别。后来google了一些资料，有一篇<a href="https://www.objc.io/issues/3-views/scroll-view/" target="_blank" rel="noopener">UIScrollView原理</a>解决了我的问题。</p>
+<p>里面对于我最重要的就是这句话了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">This is, in fact, exactly how a scroll view works when you set its contentOffset property: it changes the origin of the scroll view’s bounds</span><br></pre></td></tr></table></figure>
+<p>所以UIScrollView的偏移是通过设置bounds的origin来实现的。看了一些MWPhotoBrowser源码也确实使用UIScrollView的bounds来改变对应子视图的frame：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">- (void)layoutSubviews &#123;</span><br><span class="line">	....</span><br><span class="line">	// Update tap view frame</span><br><span class="line">	_tapView.frame = self.bounds;</span><br><span class="line">	....</span><br><span class="line">	[super layoutSubviews];</span><br><span class="line">	....</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后忽然又想到了另一个问题，在这里记录备忘：<code>CGAffineTransform实际改变的是bounds</code>。</p>
+<p><a href="https://github.com/AttackOnDobby/iOS-Core-Animation-Advanced-Techniques" target="_blank" rel="noopener">iOS-Core-Animation-Advanced-Techniques</a>中有一句：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">frame并不是一个非常清晰的属性，它其实是一个虚拟属性，是根据bounds，position和transform计算而来</span><br></pre></td></tr></table></figure>
+<p>所以改变视图的transform，实际上是改变其layer的bounds。苹果相关库头文件中也有这么一句话：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">extension UIView &#123;</span><br><span class="line">    </span><br><span class="line">    // animatable. do not use frame if view is transformed since it will not correctly reflect the actual location of the view. use bounds + center instead.</span><br><span class="line">    public var frame: CGRect</span><br><span class="line">	// use bounds/center and not frame if non-identity transform. if bounds dimension is odd, center may be have fractional part</span><br><span class="line">    public var bounds: CGRect // default bounds is zero origin, frame size. animatable</span><br><span class="line">    public var center: CGPoint // center is center of frame. animatable</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Swift中inout和C-C-中指针-引用的区别"><a href="#Swift中inout和C-C-中指针-引用的区别" class="headerlink" title="Swift中inout和C/C++中指针/引用的区别"></a>Swift中inout和C/C++中指针/引用的区别</h2><p>首先明确概念：</p>
+<ul>
+<li>inout是passed-in-passed-back形式</li>
+<li>C/C++中是引用形式</li>
+</ul>
+<p>关于inout关键字，Swift的一些官方文档给出了很详细的一些回答，如下:<br><br><img src="/images/Snip20151231_1.png" alt=""><br><br><img src="/images/Snip20151231_3.png" alt=""><br><br><img src="/images/Snip20151231_4.png" alt=""><br><br><img src="/images/Snip20151231_5.png" alt=""><br><br>从这么多篇幅的解释中，可以很清楚地知道inout的作用方式：<br><br>1、函数被调用，拷贝实参<br><br>2、拷贝在函数中被修改<br><br>3、函数返回，拷贝被赋给源参<br><br>并且一旦相应的函数返回，上面步骤就结束了，剩下的操作便无法改变源参。以下代码段都不会改变传入的参数：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">/// 1</span><br><span class="line">func increment(inout n: Int) -&gt; () -&gt; Int &#123;</span><br><span class="line">    return &#123; ++n &#125;</span><br><span class="line">&#125;</span><br><span class="line">var x = 0</span><br><span class="line">let i = increment(&amp;x)</span><br><span class="line">print(x)   // 0</span><br><span class="line">print(i()) // 1</span><br><span class="line"></span><br><span class="line">/// 2</span><br><span class="line">func increment(inout n: Int) &#123;</span><br><span class="line">    dispatch_async(dispatch_get_global_queue(0, 0)) &#123; () -&gt; Void in</span><br><span class="line">        // 假设在子线程执行前就已经return</span><br><span class="line">        ++n</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">var x = 0</span><br><span class="line">increment(&amp;x)</span><br><span class="line">print(x) // 0</span><br></pre></td></tr></table></figure>
+<p>在Swift中，如果想改变上面代码段传入的参数，可以使用UnsafeMutablePointer指针（只是例子，实际并不推荐这么做，这种方式是不安全的）:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">/// 1</span><br><span class="line">func increment(n: UnsafeMutablePointer&lt;Int&gt;) -&gt; () -&gt; Int &#123;</span><br><span class="line">    return &#123; ++n.memory &#125;</span><br><span class="line">&#125;</span><br><span class="line">var x = 0</span><br><span class="line">increment(&amp;x)()</span><br><span class="line">print(x)</span><br><span class="line"></span><br><span class="line">/// 2</span><br><span class="line">func increment(n: UnsafeMutablePointer&lt;Int&gt;) &#123;</span><br><span class="line">    dispatch_async(dispatch_get_global_queue(0, 0)) &#123; () -&gt; Void in</span><br><span class="line">        // 假设在子线程执行前就已经return</span><br><span class="line">        ++n.memory</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">var x = 0</span><br><span class="line">increment(&amp;x)</span><br><span class="line">sleep(1)</span><br><span class="line">print(x)</span><br></pre></td></tr></table></figure>
+<h2 id="获取UICollectionView的高度"><a href="#获取UICollectionView的高度" class="headerlink" title="获取UICollectionView的高度"></a>获取UICollectionView的高度</h2><p>UICollectionView的高度通过其布局属性，也就是以下属性进行获取：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">@property (nonatomic, strong) UICollectionViewLayout *collectionViewLayout;</span><br></pre></td></tr></table></figure>
+<p>布局属性有个获取Size的方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">- (CGSize)collectionViewContentSize;</span><br></pre></td></tr></table></figure>
+<p>需要注意的是这个方法UICollectionViewLayout的子类必须进行重写（流水布局已经重写了）。<br><br>这样就可以在UICollectionView的子类中重写sizeToFit方法进行自适应了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">- (void)sizeToFit &#123;</span><br><span class="line">    [super sizeToFit];</span><br><span class="line">    self.frame = (CGRect)&#123;</span><br><span class="line">        .origin = self.frame.origin,</span><br><span class="line">        .size = self.collectionViewLayout.collectionViewContentSize</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同理，如果是一个视图的子视图，也可以同时设置父视图的frame：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">- (void)sizeToFit &#123;</span><br><span class="line">    [super sizeToFit];</span><br><span class="line">    _collectionView.frame = (CGRect)&#123;</span><br><span class="line">        .origin = _collectionView.frame.origin,</span><br><span class="line">        .size = _collectionView.collectionViewLayout.collectionViewContentSize</span><br><span class="line">    &#125;;</span><br><span class="line">    self.frame = _collectionView.bounds;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样以来就可以很方便地对UICollectionView进行一些操作了，比如在UITableView中嵌入一个流水布局的UICollectionView就可以利用上面的方法获取其实际高度。<a href="https://github.com/tripleCC/TPCSkillTagView" target="_blank" rel="noopener">实际业务的应用</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/碎片系列/" rel="tag"># 碎片系列</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2015/11/05/2015-11-05-gitkai-fa-liu-cheng/" rel="next" title="Git开发流程">
+                <i class="fa fa-chevron-left"></i> Git开发流程
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2015/12/07/2015-12-07-swiftyuan-ma-yue-du-runtime/" rel="prev" title="Swift源码阅读Runtime">
+                Swift源码阅读Runtime <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#NSSetUncaughtExceptionHandler注册捕获错误无法调用"><span class="nav-number">1.</span> <span class="nav-text">NSSetUncaughtExceptionHandler注册捕获错误无法调用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#自动提示宏"><span class="nav-number">2.</span> <span class="nav-text">自动提示宏</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#frame和bounds"><span class="nav-number">3.</span> <span class="nav-text">frame和bounds</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Swift中inout和C-C-中指针-引用的区别"><span class="nav-number">4.</span> <span class="nav-text">Swift中inout和C/C++中指针/引用的区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取UICollectionView的高度"><span class="nav-number">5.</span> <span class="nav-text">获取UICollectionView的高度</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/';
+          this.page.identifier = '2015/12/07/2015-12-07-ioszhi-shi-sui-pian-san/';
+          this.page.title = 'iOS知识碎片三';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

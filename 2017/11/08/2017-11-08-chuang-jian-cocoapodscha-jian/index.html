@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+    
+      
+    
+
+    
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic|Monda:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="CocoaPods,Ruby,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="经过对旧项目持续地拆分，组件库已经初具规模，组件粒度也变得越来越小，管理组件的成本也逐渐显现出来。目前团队采用的方式是，每个组件由特定的负责人进行管理，只有责任人才拥有 master 分支的访问权限，并且打 tag、发布组件版本都需要由负责人操作。 当一个特性涉及到的组件库不多时，直接在钉钉上通知相关负责人升级下组件版本即可，然后将各个组件的新版本重新写入 Podfile。刚开始我会查下负责人是谁">
+<meta name="keywords" content="CocoaPods,Ruby">
+<meta property="og:type" content="article">
+<meta property="og:title" content="编写自己的 CocoaPods 插件">
+<meta property="og:url" content="https://triplecc.github.io/2017/11/08/2017-11-08-chuang-jian-cocoapodscha-jian/index.html">
+<meta property="og:site_name" content="tripleCC&#39;s Blog">
+<meta property="og:description" content="经过对旧项目持续地拆分，组件库已经初具规模，组件粒度也变得越来越小，管理组件的成本也逐渐显现出来。目前团队采用的方式是，每个组件由特定的负责人进行管理，只有责任人才拥有 master 分支的访问权限，并且打 tag、发布组件版本都需要由负责人操作。 当一个特性涉及到的组件库不多时，直接在钉钉上通知相关负责人升级下组件版本即可，然后将各个组件的新版本重新写入 Podfile。刚开始我会查下负责人是谁">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2021-05-28T00:50:58.929Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="编写自己的 CocoaPods 插件">
+<meta name="twitter:description" content="经过对旧项目持续地拆分，组件库已经初具规模，组件粒度也变得越来越小，管理组件的成本也逐渐显现出来。目前团队采用的方式是，每个组件由特定的负责人进行管理，只有责任人才拥有 master 分支的访问权限，并且打 tag、发布组件版本都需要由负责人操作。 当一个特性涉及到的组件库不多时，直接在钉钉上通知相关负责人升级下组件版本即可，然后将各个组件的新版本重新写入 Podfile。刚开始我会查下负责人是谁">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="https://triplecc.github.io/2017/11/08/2017-11-08-chuang-jian-cocoapodscha-jian/">
+
+
+
+
+
+  <title>编写自己的 CocoaPods 插件 | tripleCC's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <script type="text/javascript">
+  // https://stackoverflow.com/questions/4723213/detect-http-or-https-then-force-https-in-javascript
+    var host = "triplecc.github.io"
+    console.log(window.location.host, window.location.protocol)
+    if ((host == window.location.host) && (window.location.protocol != "https:")) {
+      console.log('切到 https 站点...')
+      window.location.protocol = "https:"
+    }
+    console.log('加载完毕.')
+  </script>
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">tripleCC's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://triplecc.github.io/2017/11/08/2017-11-08-chuang-jian-cocoapodscha-jian/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="tripleCC">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="tripleCC's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">编写自己的 CocoaPods 插件</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2017-11-08T14:19:01+00:00">
+                2017-11-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/ruby/" itemprop="url" rel="index">
+                    <span itemprop="name">ruby</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2017/11/08/2017-11-08-chuang-jian-cocoapodscha-jian/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2017/11/08/2017-11-08-chuang-jian-cocoapodscha-jian/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>经过对旧项目持续地拆分，组件库已经初具规模，组件粒度也变得越来越小，管理组件的成本也逐渐显现出来。目前团队采用的方式是，每个组件由特定的负责人进行管理，只有责任人才拥有 master 分支的访问权限，并且打 tag、发布组件版本都需要由负责人操作。</p>
+<p>当一个特性涉及到的组件库不多时，直接在钉钉上通知相关负责人升级下组件版本即可，然后将各个组件的新版本重新写入 Podfile。刚开始我会查下负责人是谁，然后在群组里罗列他需要升级的组件。但是修改的组件一多就比较麻烦了，如果直接把涉及的所有组件名往群组里一扔，组员有时候也会看漏了。</p>
+<p>于是我就有了下面的想法：<br><br>用脚本获取 Podfile 指向分支的组件名，然后去本地私有源获取组件的作者，再匹配本地存储的组员名，最后将负责人和所负责的组件发送到钉钉群组中。</p>
+<a id="more"></a>
+<h2 id="准备"><a href="#准备" class="headerlink" title="准备"></a>准备</h2><p>cocoapods 有许多好用的小插件，比如 <code>cocoapods-open</code> （ 执行 <code>pod open</code> 可以直接打开 <code>.xcworkspace</code> 文件），这些插件 gem 都有特定的目录分层。刚开始以为自己要从零开始配置，后来发现 <a href="https://github.com/CocoaPods/cocoapods-plugins" target="_blank" rel="noopener">cocoapods-plugin</a> 本身就提供了用来创建一个模版工程的 <code>create</code> 命令。</p>
+<p>输入以下命令即可创建一个模版工程：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// 安装</span><br><span class="line">gem install cocoapods-plugins</span><br><span class="line">// 创建</span><br><span class="line">pod plugins create NAME [TEMPLATE_URL]</span><br></pre></td></tr></table></figure>
+<p>在这个需求中，我创建了 <code>author</code> 子命令，所以输入：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pod plugins create author</span><br></pre></td></tr></table></figure>
+<p>当前路径下会生成 <code>cocoapods-author</code> 目录，其结构如下：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── Gemfile</span><br><span class="line">├── LICENSE.txt</span><br><span class="line">├── README.md</span><br><span class="line">├── Rakefile</span><br><span class="line">├── cocoapods-author.gemspec</span><br><span class="line">├── lib</span><br><span class="line">│   ├── cocoapods-author</span><br><span class="line">│   │   ├── <span class="built_in">command</span></span><br><span class="line">│   │   │   └── author.rb</span><br><span class="line">│   │   ├── command.rb</span><br><span class="line">│   │   └── gem_version.rb</span><br><span class="line">│   ├── cocoapods-author.rb</span><br><span class="line">│   └── cocoapods_plugin.rb</span><br><span class="line">└── spec</span><br><span class="line">    ├── <span class="built_in">command</span></span><br><span class="line">    │   └── author_spec.rb</span><br><span class="line">    └── spec_helper.rb</span><br></pre></td></tr></table></figure>
+<p>其中 <code>author.rb</code> 的初始内容如下（添加了点注释）：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">module</span> <span class="title">Pod</span></span></span><br><span class="line">  <span class="class"><span class="keyword">class</span> <span class="title">Command</span></span></span><br><span class="line">    <span class="comment"># This is an example of a cocoapods plugin adding a top-level subcommand</span></span><br><span class="line">    <span class="comment"># to the 'pod' command.</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># You can also create subcommands of existing or new commands. Say you</span></span><br><span class="line">    <span class="comment"># wanted to add a subcommand to `list` to show newly deprecated pods,</span></span><br><span class="line">    <span class="comment"># (e.g. `pod list deprecated`), there are a few things that would need</span></span><br><span class="line">    <span class="comment"># to change.</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># - move this file to `lib/pod/command/list/deprecated.rb` and update</span></span><br><span class="line">    <span class="comment">#   the class to exist in the the Pod::Command::List namespace</span></span><br><span class="line">    <span class="comment"># - change this class to extend from `List` instead of `Command`. This</span></span><br><span class="line">    <span class="comment">#   tells the plugin system that it is a subcommand of `list`.</span></span><br><span class="line">    <span class="comment"># - edit `lib/cocoapods_plugins.rb` to require this file</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment"># <span class="doctag">@todo</span> Create a PR to add your plugin to CocoaPods/cocoapods.org</span></span><br><span class="line">    <span class="comment">#       in the `plugins.json` file, once your plugin is released.</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="class"><span class="keyword">class</span> <span class="title">Author</span> &lt; Command</span></span><br><span class="line">      <span class="comment"># pod plugins list 时，展示的概要信息</span></span><br><span class="line">      <span class="keyword">self</span>.summary = <span class="string">'Short description of cocoapods-author.'</span></span><br><span class="line"></span><br><span class="line">      <span class="comment"># --help / 命令错误时展示的描述信息</span></span><br><span class="line">      <span class="keyword">self</span>.description = <span class="string">&lt;&lt;-DESC</span></span><br><span class="line"><span class="string">        Longer description of cocoapods-author.</span></span><br><span class="line"><span class="string">      DESC</span></span><br><span class="line"></span><br><span class="line">      <span class="comment"># --help / 命令错误时展示的参数信息</span></span><br><span class="line">      <span class="keyword">self</span>.arguments = <span class="string">'NAME'</span></span><br><span class="line"></span><br><span class="line">      <span class="function"><span class="keyword">def</span> <span class="title">initialize</span><span class="params">(argv)</span></span></span><br><span class="line">        @name = argv.shift_argument</span><br><span class="line">        <span class="keyword">super</span></span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">      <span class="comment"># 校验方法（查看文件是否存在等）</span></span><br><span class="line">      <span class="function"><span class="keyword">def</span> <span class="title">validate!</span></span></span><br><span class="line">        <span class="keyword">super</span></span><br><span class="line">        help! <span class="string">'A Pod name is required.'</span> <span class="keyword">unless</span> @name</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">      <span class="comment"># 运行命令</span></span><br><span class="line">      <span class="function"><span class="keyword">def</span> <span class="title">run</span></span></span><br><span class="line">        UI.puts <span class="string">"Add your implementation for the cocoapods-author plugin in <span class="subst">#&#123;__FILE_<span class="number">_</span>&#125;</span>"</span></span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>注释文档说明了如何创建 <code>list</code> 的子命令 <code>deprecated</code>：</p>
+<p>1、移动目标文件至 <code>lib/pod/command/list/deprecated.rb</code>，并且将这个子命令类放进 Pod::Command::List 命名空间中；  <br><br>2、更改子命令类的父类为 <code>List</code> ； <br><br>3、在 <code>lib/cocoapods_plugins.rb</code> 中载入该文件 <br></p>
+<p>由于我暂时不需要子命令，所以直接继承 Command 就可以了。</p>
+<h2 id="获取-Podfile-untagged-组件名"><a href="#获取-Podfile-untagged-组件名" class="headerlink" title="获取 Podfile untagged 组件名"></a>获取 Podfile untagged 组件名</h2><figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">UNTAGGED_FLAGS = [<span class="symbol">:path</span>, <span class="symbol">:git</span>, <span class="symbol">:branch</span>, <span class="symbol">:commit</span>]</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load_untageed_dependencies_hash</span></span></span><br><span class="line">  file_path = Dir.pwd + <span class="string">'/Podfile'</span></span><br><span class="line"></span><br><span class="line">  raise <span class="string">%Q[没有找到 Podfile，请确认是否在 Podfile 所在文件夹\n]</span> <span class="keyword">unless</span> File.file?(file_path)</span><br><span class="line"></span><br><span class="line">  podfile = Podfile.from_file(file_path)</span><br><span class="line">  dependencies = podfile.to_hash[<span class="string">'target_definitions'</span>].first[<span class="string">'dependencies'</span>]</span><br><span class="line"></span><br><span class="line">  <span class="comment"># UI.puts dependencies</span></span><br><span class="line"></span><br><span class="line">  untageed_dependencies = dependencies.select <span class="keyword">do</span> <span class="params">|dependency|</span></span><br><span class="line">    tagged = <span class="literal">true</span></span><br><span class="line">    <span class="keyword">if</span> dependency.kind_of? Hash</span><br><span class="line">      first = dependency.values.first.first</span><br><span class="line">      <span class="keyword">if</span> first.kind_of? Hash </span><br><span class="line">        tagged = first.keys.reduce(<span class="literal">true</span>) <span class="keyword">do</span> <span class="params">|result, flag|</span></span><br><span class="line">          !UNTAGGED_FLAGS.<span class="keyword">include</span>?(flag) &amp; result</span><br><span class="line">        <span class="keyword">end</span></span><br><span class="line">      <span class="keyword">elsif</span> first.kind_of? String</span><br><span class="line">        tagged = <span class="literal">true</span>   </span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">elsif</span> dependency.is_a?(String)</span><br><span class="line">      tagged = <span class="literal">true</span> </span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">    !tagged</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">  untageed_dependencies.reduce(&#123;&#125;) <span class="keyword">do</span> <span class="params">|result, dependency|</span></span><br><span class="line">    result.merge(dependency)</span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>以上方法返回没有依赖 tag 的组件哈希。这里我为了简单处理，直接获取 <code>target_definitions</code> 第一个元素的 <code>dependencies</code> 作为工程的依赖进行遍历。</p>
+<h2 id="获取本地私有源获取组件的作者"><a href="#获取本地私有源获取组件的作者" class="headerlink" title="获取本地私有源获取组件的作者"></a>获取本地私有源获取组件的作者</h2><p>获取本地私有源的组件作者：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load_pod_authors</span><span class="params">(spec_files)</span></span></span><br><span class="line">  author_hash = &#123;&#125;  </span><br><span class="line">  spec_files.each <span class="keyword">do</span> <span class="params">|file|</span></span><br><span class="line">    <span class="keyword">if</span> !file.<span class="literal">nil</span>? &amp;&amp; File.file?(file)</span><br><span class="line">      podspec = Specification.from_file(file)   </span><br><span class="line">      pod_authors = podspec.attributes_hash[<span class="string">'authors'</span>]</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> pod_authors.kind_of? Hash</span><br><span class="line">        author = pod_authors.keys.first</span><br><span class="line">      <span class="keyword">elsif</span> pod_authors.kind_of? Array</span><br><span class="line">        author = pod_authors.first</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">        author = pod_authors</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">      author = author.downcase</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> !author.<span class="literal">nil</span>? &amp;&amp; !podspec.name.<span class="literal">nil</span>?</span><br><span class="line">        author_hash[author] =  author_hash[author].<span class="literal">nil</span>? ? [] : author_hash[author]</span><br><span class="line">        author_hash[author].append(podspec.name)</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  author_hash</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>获取组员信息：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">load_boss_keeper_members</span></span></span><br><span class="line">  member_hash = &#123;&#125;</span><br><span class="line">  @memebrs_hash.uniq.map.each <span class="keyword">do</span> <span class="params">|nickname|</span> </span><br><span class="line"></span><br><span class="line">    reform_memeber_hash_proc = -&gt; nickname, realname <span class="keyword">do</span></span><br><span class="line">      nickname = nickname.downcase <span class="keyword">unless</span> !nickname.<span class="literal">nil</span>?</span><br><span class="line">      pinyin = Pinyin.t(nickname, <span class="symbol">splitter:</span> <span class="string">''</span>).downcase</span><br><span class="line">      <span class="keyword">if</span> pinyin != nickname </span><br><span class="line">        member_hash[nickname] = realname</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">      member_hash[pinyin] = realname</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> nickname.kind_of? Hash</span><br><span class="line">      name = nickname.keys.first.dup.force_encoding(<span class="string">"UTF-8"</span>)</span><br><span class="line">      nickname.values.first.append(name).each <span class="keyword">do</span> <span class="params">|nickname|</span></span><br><span class="line">        reform_memeber_hash_proc.call(nickname, name)</span><br><span class="line">      enddef load_pod_authors(spec_files)</span><br><span class="line">  author_hash = &#123;&#125;  </span><br><span class="line">  spec_files.each <span class="keyword">do</span> <span class="params">|file|</span></span><br><span class="line">    <span class="keyword">if</span> !file.<span class="literal">nil</span>? &amp;&amp; File.file?(file)</span><br><span class="line">      podspec = Specification.from_file(file)   </span><br><span class="line">      pod_authors = podspec.attributes_hash[<span class="string">'authors'</span>]</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> pod_authors.kind_of? Hash</span><br><span class="line">        author = pod_authors.keys.first</span><br><span class="line">      <span class="keyword">elsif</span> pod_authors.kind_of? Array</span><br><span class="line">        author = pod_authors.first</span><br><span class="line">      <span class="keyword">else</span></span><br><span class="line">        author = pod_authors</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">      author = author.downcase</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> !author.<span class="literal">nil</span>? &amp;&amp; !podspec.name.<span class="literal">nil</span>?</span><br><span class="line">        author_hash[author] =  author_hash[author].<span class="literal">nil</span>? ? [] : author_hash[author]</span><br><span class="line">        author_hash[author].append(podspec.name)</span><br><span class="line">      <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  author_hash</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">      reform_memeber_hash_proc.call(nickname, nickname)</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">  <span class="keyword">end</span></span><br><span class="line">  member_hash</span><br><span class="line"><span class="keyword">end</span></span><br></pre></td></tr></table></figure>
+<p>在钉钉上 <code>@</code> 组员 需要手机号码，这一部分数据都从本地的 yaml 文件读取：</p>
+<figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">file_path = File.join(File.dirname(__FILE_<span class="number">_</span>),<span class="string">"boss_keeper_members.yaml"</span>)</span><br><span class="line">yaml_hash =     </span><br><span class="line"><span class="keyword">begin</span></span><br><span class="line">  YAML.load_file(file_path)</span><br><span class="line"><span class="keyword">rescue</span> Psych::SyntaxError, Errno::EACCES, Errno::ENOENT</span><br><span class="line">  &#123;&#125;</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">@memebrs_hash = yaml_hash[<span class="string">'members'</span>]</span><br><span class="line">@mobiles = yaml_hash[<span class="string">"mobiles"</span>].reduce(&#123;&#125;)&#123; <span class="params">|result, mobile|</span> result.merge(mobile) &#125;</span><br></pre></td></tr></table></figure>
+<p>由于作者一栏存在用花名、原名、昵称的情况，所以 yaml 文件基本格式如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">members:</span><br><span class="line">- 青木:</span><br><span class="line">  - tripleCC</span><br><span class="line"></span><br><span class="line">mobiles:</span><br><span class="line">- 青木:</span><br><span class="line">  - 1xxxxxxx</span><br></pre></td></tr></table></figure>
+<h2 id="匹配本地存储的组员名"><a href="#匹配本地存储的组员名" class="headerlink" title="匹配本地存储的组员名"></a>匹配本地存储的组员名</h2><p>首先匹配是组内组员管理的组件，如果是其他组创建的组件，暂时忽略：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">def load_valid_pod_authors_hash</span><br><span class="line">  authors_hash = &#123;&#125;</span><br><span class="line">  @pod_authors.each do |name, pods|</span><br><span class="line">    member_name = @boss_keeper_members[name.downcase]</span><br><span class="line">    if !member_name.nil?</span><br><span class="line">      member_name = member_name.downcase</span><br><span class="line">      author_pods = authors_hash[member_name].nil? ? [] : authors_hash[member_name]</span><br><span class="line">      authors_hash[member_name] = author_pods.append(pods).flatten</span><br><span class="line">    end</span><br><span class="line">  end</span><br><span class="line">  authors_hash</span><br><span class="line">end</span><br></pre></td></tr></table></figure></p>
+<p>然后将结果和未指定 tag 的组件哈希匹配：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">def load_untageed_dependencies_authors_hash</span><br><span class="line">  authors_hash = &#123;&#125;</span><br><span class="line">  valid_pod_authors = load_valid_pod_authors_hash</span><br><span class="line">  untageed_dependencies_hash = load_untageed_dependencies_hash</span><br><span class="line">  untageed_dependencies_hash.keys.each do |pod|</span><br><span class="line">    valid_pod_authors.each do  |author, pods|</span><br><span class="line">      if pods.include?(pod)</span><br><span class="line">        authors_hash[author] = authors_hash[author].nil? ? [] : authors_hash[author]</span><br><span class="line">        authors_hash[author].append(pod)</span><br><span class="line">      end</span><br><span class="line">    end</span><br><span class="line">  end</span><br><span class="line">  authors_hash</span><br><span class="line">end</span><br></pre></td></tr></table></figure></p>
+<h2 id="整合发送至钉钉"><a href="#整合发送至钉钉" class="headerlink" title="整合发送至钉钉"></a>整合发送至钉钉</h2><p>通过 <code>git rev-parse --abbrev-ref HEAD</code> 获取当前所在分支，然后根据作者、组件名、手机号码创建 curl 命令并执行：<br><figure class="highlight ruby"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">post_message_to_ding_talk</span></span></span><br><span class="line">  current_branch = <span class="string">`git rev-parse --abbrev-ref HEAD`</span>.strip</span><br><span class="line"></span><br><span class="line">  untageed_dependencies_authors_hash = load_untageed_dependencies_authors_hash</span><br><span class="line">  untageed_dependencies_authors_hash.each <span class="keyword">do</span> <span class="params">|author, pods|</span></span><br><span class="line">    content = author + <span class="string">"，<span class="subst">#&#123;current_branch&#125;</span>分支"</span> + <span class="string">"，下面的仓库打个版本："</span> + pods.join(<span class="string">'，'</span>)</span><br><span class="line">    <span class="keyword">if</span> !@mobiles[author].<span class="literal">nil</span>?</span><br><span class="line">      mobile = @mobiles[author].first</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line"></span><br><span class="line">    curl = <span class="string">%Q[</span></span><br><span class="line"><span class="string">    curl 'https://oapi.dingtalk.com/robot/send?access_token=xxxxxxx' \</span></span><br><span class="line"><span class="string">       -H 'Content-Type: application/json' \</span></span><br><span class="line"><span class="string">       -d '</span></span><br><span class="line"><span class="string">      &#123;</span></span><br><span class="line"><span class="string">        "msgtype": "text", </span></span><br><span class="line"><span class="string">        "text": &#123;</span></span><br><span class="line"><span class="string">            "content": "<span class="subst">#&#123;content&#125;</span>"</span></span><br><span class="line"><span class="string">         &#125;,</span></span><br><span class="line"><span class="string">         "at": &#123;</span></span><br><span class="line"><span class="string">            "atMobiles": [</span></span><br><span class="line"><span class="string">              "<span class="subst">#&#123;mobile&#125;</span>"</span></span><br><span class="line"><span class="string">            ]</span>, </span><br><span class="line">            <span class="string">"isAtAll"</span>: <span class="literal">false</span></span><br><span class="line">        &#125;</span><br><span class="line">      &#125;<span class="string">']</span></span><br><span class="line"><span class="string">      # UI.puts curl</span></span><br><span class="line"><span class="string">    Kernel.system curl</span></span><br><span class="line"><span class="string">  end</span></span><br><span class="line"><span class="string">end</span></span><br></pre></td></tr></table></figure></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>后续如果对这个插件进行扩展的话，应该会考虑根据私有源自动生成 Podfile ，解决封版时，需要手动修改 Podfile 的情况，麻烦而且可能存在把版本号写错的情况。</p>
+<p>最后， ruby 的语法还需要多熟悉熟悉，虽然这个插件能用，但是看起来代码质量还是渣。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p><a href="https://github.com/CocoaPods/cocoapods-plugins" target="_blank" rel="noopener">cocoapods-plugins</a></p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/CocoaPods/" rel="tag"># CocoaPods</a>
+          
+            <a href="/tags/Ruby/" rel="tag"># Ruby</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/10/25/2017-10-25-zu-jian-sheng-ming-zhou-qi/" rel="next" title="组件化之组件生命周期管理">
+                <i class="fa fa-chevron-left"></i> 组件化之组件生命周期管理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/12/02/2017-12-02-ioszhi-shi-sui-pian-ba/" rel="prev" title="iOS知识碎片八">
+                iOS知识碎片八 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="disqus_thread">
+        <noscript>
+          Please enable JavaScript to view the
+          <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a>
+        </noscript>
+      </div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/images/avatar.gif" alt="tripleCC">
+            
+              <p class="site-author-name" itemprop="name">tripleCC</p>
+              <p class="site-description motion-element" itemprop="description">ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʕ•̫͡•ʔ-̫͡-ʕ•͓͡•ʔ-̫͡-ʔ</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">68</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">18</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">63</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/tripleCC" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://www.jianshu.com/u/97e39e95c2cc" target="_blank" title="简书">
+                      
+                        <i class="fa fa-fw fa-globe"></i>简书</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://twitter.com/tripleCCBrian" target="_blank" title="Twitter">
+                      
+                        <i class="fa fa-fw fa-twitter"></i>Twitter</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="https://stackoverflow.com/users/5187957/triplecc" target="_blank" title="StackOverflow">
+                      
+                        <i class="fa fa-fw fa-stack-overflow"></i>StackOverflow</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:triplec.linux@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#准备"><span class="nav-number">1.</span> <span class="nav-text">准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取-Podfile-untagged-组件名"><span class="nav-number">2.</span> <span class="nav-text">获取 Podfile untagged 组件名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#获取本地私有源获取组件的作者"><span class="nav-number">3.</span> <span class="nav-text">获取本地私有源获取组件的作者</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#匹配本地存储的组员名"><span class="nav-number">4.</span> <span class="nav-text">匹配本地存储的组员名</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#整合发送至钉钉"><span class="nav-number">5.</span> <span class="nav-text">整合发送至钉钉</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考"><span class="nav-number">7.</span> <span class="nav-text">参考</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">tripleCC</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+    
+      <script id="dsq-count-scr" src="https://tripleCC.disqus.com/count.js" async></script>
+    
+
+    
+      <script type="text/javascript">
+        var disqus_config = function () {
+          this.page.url = 'https://triplecc.github.io/2017/11/08/2017-11-08-chuang-jian-cocoapodscha-jian/';
+          this.page.identifier = '2017/11/08/2017-11-08-chuang-jian-cocoapodscha-jian/';
+          this.page.title = '编写自己的 CocoaPods 插件';
+        };
+        var d = document, s = d.createElement('script');
+        s.src = 'https://tripleCC.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', '' + +new Date());
+        (d.head || d.body).appendChild(s);
+      </script>
+    
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
