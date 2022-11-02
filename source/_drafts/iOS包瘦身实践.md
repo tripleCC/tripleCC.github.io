@@ -103,6 +103,7 @@ tiny png
 
 重命名大小限制 128M，需拆若干个小的 framework
 
+
 ## 监控
 
 ### MR 准入
@@ -132,6 +133,14 @@ tiny png
 	- 关于 `-Oz` ，[On Optimization Flags](http://events17.linuxfoundation.org/sites/events/files/slides/GCC%252FClang%20Optimizations%20for%20Embedded%20Linux.pdf) 显示这个参数会禁止 loop vectorization ，而 [Auto-Vectorization in LLVM](https://llvm.org/docs/Vectorizers.html) 显示，开启 vectorization 的性能明显比未开启高 3 倍以上。关于什么是 [Automatic vectorization](https://en.wikipedia.org/wiki/Automatic_vectorization) 。
 
 关于 `--gc-sections`，[xcode 不支持这个链接选项](https://stackoverflow.com/questions/24734409/make-error-in-mac-clang-ld-unknown-option-gc-sections)，替代选项为 `-dead_strip`。
+
+- llvm-strip
+    - 最终可执行文件中， symbol table 的内容是无用的，rebase/binding，导出符号等信息，都在 Dynamic Loader Info 中，symbol table 的符号都是给静态链接器使用的，所以最终生成产物后，就可以 strip 掉
+		- Dynamic Loader Info 中的数据，基本都会有一个需要修改的地址 + 符号名 (后者可以通过 string table 的 index 表示)
+		- 所以其和 symbol table 是相互独立的，即使去除掉 symbol table，也不会影响 dyld 加载时的处理
+	- 目前已知 `_OBJC_` 的 UNDEF 符号去除不影响实际加载
+		- 非 `_OBJC_` 的 UNDEF，包括 lazy、non-lazy 的符号指针对应的 symbol table / indirect symbol 内容是否可以去除，待考证（需要看 dyld 代码）【如果只是做binding，Dynamic Loader Info 里提供的内容已经足够了】
+		- 如果没有在 ld64 做处理，需要对最终产物进行重签名
 
 ## 参考
 
